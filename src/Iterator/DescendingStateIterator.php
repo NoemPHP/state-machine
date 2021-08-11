@@ -61,7 +61,7 @@ class DescendingStateIterator implements \Iterator
 
     public function determineInitialSubState(HierarchicalStateInterface $parent): ?StateInterface
     {
-        $initial = $parent->initialSubState();
+        $initial = $parent->initial();
         if ($initial) {
             return $initial;
         }
