@@ -7,6 +7,9 @@ namespace Noem\State\Iterator;
 use Noem\State\HierarchicalStateInterface;
 use Noem\State\StateInterface;
 
+/**
+ * Yields all active descendant states of the given origin state
+ */
 class DescendingStateIterator implements \Iterator
 {
 

@@ -6,6 +6,9 @@ namespace Noem\State\Iterator;
 
 use Noem\State\NestedStateInterface;
 
+/**
+ * Recursively yields all parents of the origin state
+ */
 class AscendingStateIterator implements \Iterator
 {
 
