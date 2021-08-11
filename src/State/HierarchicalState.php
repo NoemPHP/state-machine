@@ -49,7 +49,7 @@ class HierarchicalState implements HierarchicalStateInterface
         return $this;
     }
 
-    public function initialSubState(): ?StateInterface
+    public function initial(): ?StateInterface
     {
         return $this->initial;
     }
