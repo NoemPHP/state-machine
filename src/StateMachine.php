@@ -10,13 +10,15 @@ use Noem\State\Observer\ActionObserver;
 use Noem\State\Observer\EnterStateObserver;
 use Noem\State\Observer\ExitStateObserver;
 use Noem\State\Observer\StateMachineObserver;
-use Noem\State\State\SimpleState;
 use Noem\State\Transition\TransitionProviderInterface;
 
 class StateMachine implements ObservableStateMachineInterface, StatefulActorInterface
 {
 
-    private \Iterator $currentTree;
+    /**
+     * @var iterable<StateInterface>
+     */
+    private iterable $currentTree;
 
     /**
      * @var StateMachineObserver[]
@@ -114,13 +116,25 @@ class StateMachine implements ObservableStateMachineInterface, StatefulActorInte
         return $payload;
     }
 
+    /**
+     * Check if the currently active state matches the specified one.
+     * We are deliberately NOT giving out the actual state here and only allow asking for a comparison.
+     *
+     * This is because
+     * 1.   Comparing the state externally no longer guarantees that compound states (hierarchical & parallel)
+     *      are correctly taken into account
+     * 2.   Handing out the state enables and facilitates moving stateful behaviour outside the state machine
+     *      and into business logic
+     *
+     * Consequently, this method is not even part of the interface and its usage
+     * is discouraged outside of testing & debugging scenarios.
+     *
+     * @param string|StateInterface $compareState
+     *
+     * @return bool
+     */
     public function isInState(string|StateInterface $compareState): bool
     {
-        //TODO This needs to go
-        $compareState = is_string($compareState)
-            ? new SimpleState($compareState)
-            : $compareState;
-
         foreach ($this->currentTree as $state) {
             if ($state->equals($compareState)) {
                 return true;
