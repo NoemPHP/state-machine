@@ -13,7 +13,7 @@ class SimpleState implements StateInterface
     {
     }
 
-    public function equals(StateInterface $otherState): bool
+    public function equals(string|StateInterface $otherState): bool
     {
         return (string) $otherState === $this->id;
     }

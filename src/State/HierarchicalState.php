@@ -27,7 +27,7 @@ class HierarchicalState implements HierarchicalStateInterface
         return $this->children;
     }
 
-    public function equals(StateInterface $otherState): bool
+    public function equals(string|StateInterface $otherState): bool
     {
         return $this->id === (string) $otherState;
     }
