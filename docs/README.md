@@ -1,7 +1,7 @@
 # Noem State Machine
 [![Testing](https://github.com/NoemPHP/state-machine/actions/workflows/testing.yml/badge.svg)](https://github.com/NoemPHP/state-machine/actions/workflows/testing.yml)
 
-A finite state machine (FSM) implementation. It is built upon the interfaces declared in [NoemPHP/state-machine-interface](https://github.com/NoemPHP/state-machine-interface)
+A finite state machine (FSM) implementation. It is built upon the interfaces declared in [NoemPHP/state-machine-interface](https://noemphp.github.io/state-machine-interface)
 
 ## Features
 * **Hierarchical states** - If the active state has ascending "super-states", all of them are implicitly active as well.
@@ -17,7 +17,7 @@ Install this package via composer:
 
 ## Usage
 
-### Using [noem/state-machine-loader](https://github.com/NoemPHP/state-machine-loader)
+### Using [noem/state-machine-loader](https://noemphp.github.io/state-machine-loader)
 You can automatically configure a state machine instance from YAML, JSON or php arrays.
 To make yourself familiar with the notation format, please refer to the documentation at the link above
 ```php
