@@ -37,6 +37,5 @@ class StateTreeBuilder
 
     public function finalize()
     {
-        
     }
 }

@@ -42,5 +42,4 @@ class StateDefinitions
 
         return $i;
     }
-
 }

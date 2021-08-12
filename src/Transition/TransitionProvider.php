@@ -42,7 +42,7 @@ class TransitionProvider implements TransitionProviderInterface
     public function registerTransition(string $from, string $to, string|callable|null $triggerNameOrGuard = null): self
     {
         if (!$this->tree->has($from) || !$this->tree->has($to)) {
-            throw new class('Nope') extends \Exception implements StateMachineExceptionInterface {
+            throw new class ('Nope') extends \Exception implements StateMachineExceptionInterface {
 
             };
         }
