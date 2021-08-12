@@ -26,6 +26,10 @@ jobs:
         with:
           dependency-versions: "${{ matrix.dependencies }}"
           composer-options: "${{ matrix.composer-options }}"
+      - name: Run PHP Code Sniffer
+        run: ./vendor/bin/phpcs
+      - name: Run Psalm
+        run: ./vendor/bin/psalm
       - name: Run PHPUnit
         run: ./vendor/bin/phpunit
 
