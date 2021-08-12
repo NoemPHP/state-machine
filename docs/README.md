@@ -34,11 +34,11 @@ foo:
 YAML;
 
 $loader = new YamlLoader($yaml);
-$definitions = $loader->definitions();
+$definitions = $loader->definitions(); // A flat list of all defined states
 
 $stateMachine = new StateMachine(
     $loader->transitions(), // Our generated TransitionProvider
-    new InMemoryStateStorage($definitions->get('bar')) // 
+    new InMemoryStateStorage($definitions->get('bar')) // Initialize in the 'bar' state
 );
 // register the preconfigured action, onEntry, onExit event handlers
 $stateMachine->attach($loader->observer());
