@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Noem\State\Test\Integration;
 
 use Noem\State\InMemoryStateStorage;
+use Noem\State\Loader\Tests\StateMachineTestCase;
 use Noem\State\Observer\EnterStateObserver;
 use Noem\State\State\SimpleState;
 use Noem\State\State\StateDefinitions;

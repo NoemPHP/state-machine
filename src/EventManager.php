@@ -23,18 +23,18 @@ class EventManager implements EnterStateObserver, ExitStateObserver, ActionObser
 
     public function onAction(StateInterface $state, object $payload, ObservableStateMachineInterface $machine)
     {
-        if (!isset($this->actionHandlers[(string) $state])) {
+        if (!isset($this->actionHandlers[(string)$state])) {
             return;
         }
 
         array_walk(
-            $this->actionHandlers[(string) $state],
-            function (callable $handler) use ($payload) {
+            $this->actionHandlers[(string)$state],
+            function (callable $handler) use ($payload, $state) {
                 $parameterType = ParameterDeriver::getParameterType($handler);
                 if (!$payload instanceof $parameterType) {
                     return;
                 }
-                $handler($payload);
+                $handler($payload, $state);
             }
         );
     }
@@ -47,19 +47,19 @@ class EventManager implements EnterStateObserver, ExitStateObserver, ActionObser
      */
     public function addActionHandler(string|StateInterface $state, callable $handler): self
     {
-        $this->actionHandlers[(string) $state][] = $handler;
+        $this->actionHandlers[(string)$state][] = $handler;
 
         return $this;
     }
 
     public function onEnterState(StateInterface $state, ObservableStateMachineInterface $machine)
     {
-        if (!isset($this->entryHandlers[(string) $state])) {
+        if (!isset($this->entryHandlers[(string)$state])) {
             return;
         }
 
         array_walk(
-            $this->entryHandlers[(string) $state],
+            $this->entryHandlers[(string)$state],
             function (callable $handler) use ($state) {
                 $handler($state);
             }
@@ -68,19 +68,19 @@ class EventManager implements EnterStateObserver, ExitStateObserver, ActionObser
 
     public function addEnterStateHandler(string|StateInterface $state, callable $handler): self
     {
-        $this->entryHandlers[(string) $state][] = $handler;
+        $this->entryHandlers[(string)$state][] = $handler;
 
         return $this;
     }
 
     public function onExitState(StateInterface $state, ObservableStateMachineInterface $machine)
     {
-        if (!isset($this->exitHandlers[(string) $state])) {
+        if (!isset($this->exitHandlers[(string)$state])) {
             return;
         }
 
         array_walk(
-            $this->exitHandlers[(string) $state],
+            $this->exitHandlers[(string)$state],
             function (callable $handler) use ($state) {
                 $handler($state);
             }
@@ -89,7 +89,7 @@ class EventManager implements EnterStateObserver, ExitStateObserver, ActionObser
 
     public function addExitStateHandler(string|StateInterface $state, callable $handler): self
     {
-        $this->exitHandlers[(string) $state][] = $handler;
+        $this->exitHandlers[(string)$state][] = $handler;
 
         return $this;
     }

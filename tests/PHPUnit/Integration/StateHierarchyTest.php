@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Noem\State\Test\Integration;
 
+use Noem\State\Loader\Tests\StateMachineTestCase;
+
 class StateHierarchyTest extends StateMachineTestCase
 {
 

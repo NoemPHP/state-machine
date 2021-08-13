@@ -39,6 +39,13 @@ class TransitionProvider implements TransitionProviderInterface
         return null;
     }
 
+    /**
+     * @param string $from
+     * @param string $to
+     * @param string|callable|null $triggerNameOrGuard Either a FQCN of the event, or a guard callback
+     *
+     * @return $this
+     */
     public function registerTransition(string $from, string $to, string|callable|null $triggerNameOrGuard = null): self
     {
         if (!$this->tree->has($from) || !$this->tree->has($to)) {

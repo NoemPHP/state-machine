@@ -6,6 +6,7 @@ namespace Noem\State\Test\Integration;
 
 use Noem\State\InMemoryStateStorage;
 use Noem\State\EventManager;
+use Noem\State\Loader\Tests\StateMachineTestCase;
 use Noem\State\State\SimpleState;
 use Noem\State\State\StateDefinitions;
 use Noem\State\StateMachine;

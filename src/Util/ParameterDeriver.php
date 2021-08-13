@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Noem\State\Util;
 
+use ReflectionParameter;
+use ReflectionType;
+
 class ParameterDeriver
 {
 
@@ -16,37 +19,17 @@ class ParameterDeriver
      * @return string
      *   The class the parameter is type hinted on.
      */
-    public static function getParameterType($callable): string
+    public static function getParameterType($callable, int $param = 0): string
     {
         // We can't type hint $callable as it could be an array, and arrays are not callable. Sometimes. Bah, PHP.
 
         // This try-catch is only here to keep OCD linters happy about uncaught reflection exceptions.
         try {
-            switch (true) {
-                // See note on isClassCallable() for why this must be the first case.
-                case self::isClassCallable($callable):
-                    $reflect = new \ReflectionClass($callable[0]);
-                    $params = $reflect->getMethod($callable[1])->getParameters();
-                    break;
-                case self::isFunctionCallable($callable):
-                case self::isClosureCallable($callable):
-                    $reflect = new \ReflectionFunction($callable);
-                    $params = $reflect->getParameters();
-                    break;
-                case self::isObjectCallable($callable):
-                    $reflect = new \ReflectionObject($callable[0]);
-                    $params = $reflect->getMethod($callable[1])->getParameters();
-                    break;
-                case self::isInvokable($callable):
-                    $params = (new \ReflectionMethod($callable, '__invoke'))->getParameters();
-                    break;
-                default:
-                    throw new \InvalidArgumentException('Not a recognized type of callable');
+            [$params, $returns] = self::reflect($callable);
+            if (!isset($params[$param])) {
+                throw new \InvalidArgumentException("Required Parameter {$param} not declared.");
             }
-            if (!count($params)) {
-                throw new \InvalidArgumentException('Listeners must declare at least one parameter.');
-            }
-            $rType = $params[0]->getType();
+            $rType = $params[$param]->getType();
             if ($rType === null) {
                 throw new \InvalidArgumentException('Listeners must declare an object type they can accept.');
             }
@@ -56,6 +39,56 @@ class ParameterDeriver
         }
 
         return $type;
+    }
+
+    public static function getReturnType($callable): string|null
+    {
+        [$params, $returns] = self::reflect($callable);
+        if(!$returns){
+            return null;
+        }
+        assert($returns instanceof \ReflectionNamedType);
+        return $returns->getName();
+    }
+
+    /**
+     * @param $callable
+     *
+     * @return array{list<ReflectionParameter>,?ReflectionType}
+     * @throws \ReflectionException
+     */
+    protected static function reflect($callable): array
+    {
+        switch (true) {
+            // See note on isClassCallable() for why this must be the first case.
+            case self::isClassCallable($callable):
+                $method = (new \ReflectionClass($callable[0]))->getMethod($callable[1]);
+                $params = $method->getParameters();
+                $returns = $method->getReturnType();
+
+                return [$params, $returns];
+            case self::isFunctionCallable($callable):
+            case self::isClosureCallable($callable):
+                $reflect = new \ReflectionFunction($callable);
+                $params = $reflect->getParameters();
+                $returns = $reflect->getReturnType();
+
+                return [$params, $returns];
+            case self::isObjectCallable($callable):
+                $method = (new \ReflectionObject($callable[0]))->getMethod($callable[1]);
+                $params = $method->getParameters();
+                $returns = $method->getReturnType();
+
+                return [$params, $returns];
+            case self::isInvokable($callable):
+                $method = (new \ReflectionMethod($callable, '__invoke'));
+                $params = $method->getParameters();
+                $returns = $method->getReturnType();
+
+                return [$params, $returns];
+            default:
+                throw new \InvalidArgumentException('Not a recognized type of callable');
+        }
     }
 
     /**
