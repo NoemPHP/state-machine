@@ -44,7 +44,7 @@ class ParameterDeriver
     public static function getReturnType($callable): string|null
     {
         [$params, $returns] = self::reflect($callable);
-        if(!$returns){
+        if (!$returns) {
             return null;
         }
         assert($returns instanceof \ReflectionNamedType);
