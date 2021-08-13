@@ -1,35 +1,36 @@
 name: Testing
 
 on:
-  push:
+    workflow_dispatch:
+    push:
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        php:
-          - "8.0"
-        dependencies:
-          - "lowest"
-          - "highest"
-        include:
-          - php-version: "8.1"
-            composer-options: "--ignore-platform-reqs"
+    test:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                php:
+                    - "8.0"
+                dependencies:
+                    - "lowest"
+                    - "highest"
+                include:
+                    -   php-version: "8.1"
+                        composer-options: "--ignore-platform-reqs"
 
-    steps:
-      - uses: "actions/checkout@v2"
-      - uses: "shivammathur/setup-php@v2"
-        with:
-          php-version: "${{ matrix.php }}"
-      - uses: "ramsey/composer-install@v1"
-        with:
-          dependency-versions: "${{ matrix.dependencies }}"
-          composer-options: "${{ matrix.composer-options }}"
-      - name: Run PHP Code Sniffer
-        run: ./vendor/bin/phpcs
-      - name: Run Psalm
-        run: ./vendor/bin/psalm
-      - name: Run PHPUnit
-        run: ./vendor/bin/phpunit
+        steps:
+            -   uses: "actions/checkout@v2"
+            -   uses: "shivammathur/setup-php@v2"
+                with:
+                    php-version: "${{ matrix.php }}"
+            -   uses: "ramsey/composer-install@v1"
+                with:
+                    dependency-versions: "${{ matrix.dependencies }}"
+                    composer-options: "${{ matrix.composer-options }}"
+            -   name: Run PHP Code Sniffer
+                run: ./vendor/bin/phpcs
+            -   name: Run Psalm
+                run: ./vendor/bin/psalm
+            -   name: Run PHPUnit
+                run: ./vendor/bin/phpunit
 
