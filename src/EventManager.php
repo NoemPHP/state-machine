@@ -12,6 +12,9 @@ use Noem\State\Util\ParameterDeriver;
 class EventManager implements EnterStateObserver, ExitStateObserver, ActionObserver
 {
 
+    /**
+     * @var callable[][]
+     */
     private array $actionHandlers = [];
 
     private array $entryHandlers = [];
@@ -36,6 +39,12 @@ class EventManager implements EnterStateObserver, ExitStateObserver, ActionObser
         );
     }
 
+    /**
+     * @param string|StateInterface $state
+     * @param callable(object):object $handler
+     *
+     * @return $this
+     */
     public function addActionHandler(string|StateInterface $state, callable $handler): self
     {
         $this->actionHandlers[(string) $state][] = $handler;
