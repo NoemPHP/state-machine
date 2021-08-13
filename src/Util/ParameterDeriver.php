@@ -43,7 +43,9 @@ class ParameterDeriver
                 default:
                     throw new \InvalidArgumentException('Not a recognized type of callable');
             }
-
+            if (!count($params)) {
+                throw new \InvalidArgumentException('Listeners must declare at least one parameter.');
+            }
             $rType = $params[0]->getType();
             if ($rType === null) {
                 throw new \InvalidArgumentException('Listeners must declare an object type they can accept.');
