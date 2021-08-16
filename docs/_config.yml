@@ -9,31 +9,18 @@ aux_links:
     - https://github.com/NoemPHP/state-machine
 
 # Footer "Edit this page on GitHub" link text
-gh_edit_repository: https://github.com/NoemPHP/state-machine # Your repo GitHub URL
-
-# Everything above is repo specific.
-
-###############################################################
-
-# This section is repo specific. These can be omitted if defaults make sense.
-
+gh_edit_repository: https://github.com/NoemPHP/state-machine-interface # Your repo GitHub URL
 gh_edit_branch: master # The default branch of the repo. Default: main
 gh_edit_source: docs # The directory containing the docs. Default: docs
 
-###############################################################
+remote_theme: pmarsceill/just-the-docs
 
-# Everything below should be copy and pasted into package repos
-remote_theme: pages-themes/cayman@v0.2.0
-
-###############################################################
-
-# Everything below should be copy and pasted into package repos
 
 plugins:
-  - jekyll-remote-theme
-  - jekyll-seo-tag
-  - jekyll-sitemap
-  - jemoji
+    - jekyll-remote-theme
+    - jekyll-seo-tag
+    - jekyll-sitemap
+    - jemoji
 
 permalink: pretty
-theme: jekyll-theme-cayman
+theme: just-the-docs
