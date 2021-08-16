@@ -12,7 +12,7 @@ use Noem\State\Observer\ExitStateObserver;
 use Noem\State\Observer\StateMachineObserver;
 use Noem\State\Transition\TransitionProviderInterface;
 
-class StateMachine implements ObservableStateMachineInterface, StatefulActorInterface
+class StateMachine implements ObservableStateMachineInterface, ActorInterface
 {
 
     /**
