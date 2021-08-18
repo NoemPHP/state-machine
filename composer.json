@@ -8,6 +8,8 @@
             "email": "email@example.com"
         }
     ],
+    "minimum-stability": "dev",
+    "prefer-stable": true,
     "require": {
         "php": "^8.0",
         "noem/state-machine-interface": "dev-master"
@@ -16,7 +18,8 @@
         "phpunit/phpunit": "^9.1",
         "mockery/mockery": "^1.4",
         "noem/state-machine-loader": "dev-master",
-        "squizlabs/php_codesniffer": "^3.6"
+        "squizlabs/php_codesniffer": "^3.6",
+        "noem/composer-file-embed": "dev-master"
     },
     "autoload": {
         "psr-4": {
