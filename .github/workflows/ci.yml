@@ -33,7 +33,12 @@ jobs:
                         composer-options: "--ignore-platform-reqs"
 
         steps:
+            -   name: "Extract branch name"
+                run: 'echo ::set-output name=branch::${GITHUB_REF#refs/heads/}'
+                id: "extract_branch"
             -   uses: "actions/checkout@v2"
+                with:
+                    ref: "${{ steps.extract_branch.outputs.branch }}"
             -   uses: "shivammathur/setup-php@v2"
                 with:
                     php-version: "${{ matrix.php }}"
@@ -41,10 +46,11 @@ jobs:
                 with:
                     dependency-versions: "${{ matrix.dependencies }}"
                     composer-options: "${{ matrix.composer-options }}"
-            -   name: Run PHP Code Sniffer
-                run: ./vendor/bin/phpcs
+            -   name: "Run PHP Code Sniffer"
+                run: "./vendor/bin/phpcs"
             #            -   name: Run Psalm
             #                run: ./vendor/bin/psalm
-            -   name: Run PHPUnit
-                run: ./vendor/bin/phpunit
+            -   name: "Run PHPUnit"
+                run: "./vendor/bin/phpunit"
+
 
