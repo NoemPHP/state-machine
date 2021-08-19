@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Noem\State;
 
+use Iterator;
 use Noem\State\Iterator\AscendingStateIterator;
+use Noem\State\Iterator\DepthSortedStateIterator;
 use Noem\State\Iterator\ParallelDescendingIterator;
 use Noem\State\Observer\ActionObserver;
 use Noem\State\Observer\EnterStateObserver;
@@ -25,11 +27,31 @@ class StateMachine implements ObservableStateMachineInterface, ActorInterface
      */
     private array $observers = [];
 
+    /**
+     * @var ?Iterator<StateInterface>
+     */
+    private ?Iterator $currentTreeByDepth = null;
+
     public function __construct(
         private TransitionProviderInterface $transitions,
         private StateStorageInterface $store
     ) {
         $this->initializeTreeIterator($this->store->state());
+    }
+
+    private function initializeTreeIterator(StateInterface $state)
+    {
+        if (!$state instanceof NestedStateInterface) {
+            $this->currentTree = new \ArrayIterator([$state]);
+
+            return;
+        }
+        $this->currentTree = new \CachingIterator(
+            new ParallelDescendingIterator(
+                new AscendingStateIterator($state)
+            )
+        );
+        $this->currentTreeByDepth = null;
     }
 
     public function attach(StateMachineObserver $observer): ObservableStateMachineInterface
@@ -49,13 +71,36 @@ class StateMachine implements ObservableStateMachineInterface, ActorInterface
         return $this;
     }
 
-    private function notifyEnter(StateInterface $state): void
+    public function trigger(object $payload): StateMachineInterface
     {
-        foreach ($this->observers as $observer) {
-            if ($observer instanceof EnterStateObserver) {
-                $observer->onEnterState($state, $this);
+        foreach ($this->getTreeByDepth() as $state) {
+            $transition = $this->transitions->getTransitionForTrigger($state, $payload);
+            if (!$transition) {
+                continue;
             }
+            $this->doTransition($state, $transition->target());
+
+            return $this;
         }
+
+        return $this;
+    }
+
+    private function getTreeByDepth(): iterable
+    {
+        if (!$this->currentTreeByDepth) {
+            $this->currentTreeByDepth = new DepthSortedStateIterator($this->currentTree);
+        }
+
+        return $this->currentTreeByDepth;
+    }
+
+    private function doTransition(StateInterface $from, StateInterface $to)
+    {
+        $this->notifyExit($from);
+        $this->initializeTreeIterator($to);
+        $this->store->save($to);
+        $this->notifyEnter($to);
     }
 
     private function notifyExit(StateInterface $state): void
@@ -67,45 +112,18 @@ class StateMachine implements ObservableStateMachineInterface, ActorInterface
         }
     }
 
-    public function trigger(object $payload): StateMachineInterface
+    private function notifyEnter(StateInterface $state): void
     {
-        foreach ($this->currentTree as $state) {
-            $transition = $this->transitions->getTransitionForTrigger($state, $payload);
-            if (!$transition) {
-                continue;
+        foreach ($this->observers as $observer) {
+            if ($observer instanceof EnterStateObserver) {
+                $observer->onEnterState($state, $this);
             }
-            $this->doTransition($state, $transition->target());
-            return $this;
         }
-
-        return $this;
-    }
-
-    private function doTransition(StateInterface $from, StateInterface $to)
-    {
-        $this->notifyExit($from);
-        $this->initializeTreeIterator($to);
-        $this->store->save($to);
-        $this->notifyEnter($to);
-    }
-
-    private function initializeTreeIterator(StateInterface $state)
-    {
-        if (!$state instanceof NestedStateInterface) {
-            $this->currentTree = new \ArrayIterator([$state]);
-
-            return;
-        }
-        $this->currentTree = new \CachingIterator(
-            new ParallelDescendingIterator(
-                new AscendingStateIterator($state)
-            )
-        );
     }
 
     public function action(object $payload): object
     {
-        foreach ($this->currentTree as $state) {
+        foreach ($this->getTreeByDepth() as $state) {
             foreach ($this->observers as $observer) {
                 if ($observer instanceof ActionObserver) {
                     $observer->onAction($state, $payload, $this);
