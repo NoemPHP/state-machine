@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Noem\State\Transition;
 
 use Noem\State\StateInterface;
+use Noem\State\Util\ParameterDeriver;
 
 class GuardedTransition implements TransitionInterface
 {
@@ -37,6 +38,15 @@ class GuardedTransition implements TransitionInterface
 
     public function isEnabled(object $trigger): bool
     {
-        return $this->inner->isEnabled($trigger) and ($this->guard)($trigger, $this);
+        return $this->inner->isEnabled($trigger)
+            and $this->matchesSignature($trigger)
+            and ($this->guard)($trigger, $this);
+    }
+
+    private function matchesSignature(object $trigger): bool
+    {
+        $param = ParameterDeriver::getParameterType($this->guard);
+
+        return $trigger instanceof $param;
     }
 }
