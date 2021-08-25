@@ -41,6 +41,8 @@ class StateMachine implements ObservableStateMachineInterface, ActorInterface
 
     private function initializeTreeIterator(StateInterface $state)
     {
+        $this->currentTreeByDepth = null;
+
         if (!$state instanceof NestedStateInterface) {
             $this->currentTree = new \ArrayIterator([$state]);
 
@@ -51,7 +53,6 @@ class StateMachine implements ObservableStateMachineInterface, ActorInterface
                 new AscendingStateIterator($state)
             )
         );
-        $this->currentTreeByDepth = null;
     }
 
     public function attach(StateMachineObserver $observer): ObservableStateMachineInterface
@@ -105,18 +106,22 @@ class StateMachine implements ObservableStateMachineInterface, ActorInterface
 
     private function notifyExit(StateInterface $state): void
     {
-        foreach ($this->observers as $observer) {
-            if ($observer instanceof ExitStateObserver) {
-                $observer->onExitState($state, $this);
+        foreach ($this->getTreeByDepth() as $state) {
+            foreach ($this->observers as $observer) {
+                if ($observer instanceof ExitStateObserver) {
+                    $observer->onExitState($state, $this);
+                }
             }
         }
     }
 
     private function notifyEnter(StateInterface $state): void
     {
-        foreach ($this->observers as $observer) {
-            if ($observer instanceof EnterStateObserver) {
-                $observer->onEnterState($state, $this);
+        foreach ($this->getTreeByDepth() as $state) {
+            foreach ($this->observers as $observer) {
+                if ($observer instanceof EnterStateObserver) {
+                    $observer->onEnterState($state, $this);
+                }
             }
         }
     }

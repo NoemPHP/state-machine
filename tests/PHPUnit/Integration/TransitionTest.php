@@ -18,16 +18,6 @@ use PHPUnit\Framework\TestCase;
 class TransitionTest extends StateMachineTestCase
 {
 
-    private function createStateMap()
-    {
-        return new StateDefinitions(
-            [
-                'off' => new SimpleState('off'),
-                'on' => new SimpleState('on'),
-            ]
-        );
-    }
-
     public function testSimpleTransition()
     {
         $sut = $this->configureStateMachine(
@@ -42,7 +32,7 @@ class TransitionTest extends StateMachineTestCase
             'off'
         );
 
-        $sut->trigger((object) ['foo' => 'bar']);
+        $sut->trigger((object)['foo' => 'bar']);
         $this->assertTrue($sut->isInState('on'));
     }
 
@@ -60,7 +50,7 @@ class TransitionTest extends StateMachineTestCase
             'off'
         );
 
-        $sut->trigger((object) ['foo' => 'bar']);
+        $sut->trigger((object)['foo' => 'bar']);
         $this->assertNotTrue($sut->isInState('off'));
     }
 
@@ -100,7 +90,7 @@ class TransitionTest extends StateMachineTestCase
             }
         );
 
-        $sut->trigger((object) ['foo' => 'bar']);
+        $sut->trigger((object)['foo' => 'bar']);
         $this->assertTrue($notified);
     }
 
@@ -114,7 +104,6 @@ class TransitionTest extends StateMachineTestCase
                     'transitions' => ['on'],
                 ],
                 'on' => [
-                    'transitions' => ['off'],
                     'onEntry' => '@onEnter',
                 ],
             ],
@@ -126,7 +115,37 @@ class TransitionTest extends StateMachineTestCase
             ]
         );
 
-        $sut->trigger((object) ['foo' => 'bar']);
+        $sut->trigger((object)['foo' => 'bar']);
+        $this->assertTrue($notified);
+    }
+
+    public function testNotifyEnterOfChild()
+    {
+        $notified = false;
+
+        $sut = $this->configureStateMachine(
+            [
+                'off' => [
+                    'transitions' => ['on'],
+                ],
+                'on' => [
+                    'parallel' => true,
+                    'children' => [
+                        'sub_state' => [
+                            'onEntry' => '@onEnter',
+                        ]
+                    ]
+                ],
+            ],
+            'off',
+            [
+                'onEnter' => function () use (&$notified) {
+                    $notified = true;
+                },
+            ]
+        );
+
+        $sut->trigger((object)['foo' => 'bar']);
         $this->assertTrue($notified);
     }
 
@@ -176,5 +195,15 @@ class TransitionTest extends StateMachineTestCase
 
         $sut->trigger(new \DateTime());
         $this->assertTrue($sut->isInState('on'));
+    }
+
+    private function createStateMap()
+    {
+        return new StateDefinitions(
+            [
+                'off' => new SimpleState('off'),
+                'on' => new SimpleState('on'),
+            ]
+        );
     }
 }

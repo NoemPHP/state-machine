@@ -47,6 +47,6 @@ class GuardedTransition implements TransitionInterface
     {
         $param = ParameterDeriver::getParameterType($this->guard);
 
-        return $trigger instanceof $param;
+        return $param === 'object' || $trigger instanceof $param;
     }
 }
