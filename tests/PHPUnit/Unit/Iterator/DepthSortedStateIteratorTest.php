@@ -7,7 +7,6 @@ namespace tests\PHPUnit\Unit\Iterator;
 use Noem\State\Iterator\DepthSortedStateIterator;
 use Noem\State\Loader\Tests\LoaderTestCase;
 use Noem\State\State\StateDefinitions;
-use PHPUnit\Framework\TestCase;
 
 class DepthSortedStateIteratorTest extends LoaderTestCase
 {
@@ -25,7 +24,7 @@ class DepthSortedStateIteratorTest extends LoaderTestCase
         $list = $closure($map);
         $sut = new DepthSortedStateIterator(new \ArrayIterator($list));
         $result = iterator_to_array($sut);
-        $this->assertSame($expectedResults, array_keys($result));
+        $this->assertSame($expectedResults, array_keys($result), 'Should be able to sort a flat list');
     }
 
     public function stateTree(): \Generator
@@ -41,7 +40,7 @@ foo:
 
 YAML
             ,
-            ['baz', 'bar', 'foo'],
+            ['baz', 'bar', 'foo']
         ];
 
         yield '#1 complex hierarchy' => [
@@ -64,7 +63,7 @@ foo:
 
 YAML
             ,
-            ['baz_2_1_1', 'bar_2_1', 'baz_2_1', 'bar_2', 'baz_2', 'bar', 'baz', 'foo'],
+            ['baz_2_1_1', 'bar_2_1', 'baz_2_1', 'bar_2', 'baz_2', 'bar', 'baz', 'foo']
         ];
     }
 }

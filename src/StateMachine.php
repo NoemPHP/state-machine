@@ -50,7 +50,7 @@ class StateMachine implements ObservableStateMachineInterface, ActorInterface
         }
         $this->currentTree = new \CachingIterator(
             new ParallelDescendingIterator(
-                new AscendingStateIterator($state)
+                new AscendingStateIterator(DepthSortedStateIterator::getDeepestSubState($state))
             )
         );
     }

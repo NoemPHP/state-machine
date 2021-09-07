@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Noem\State\Iterator;
 
+use Noem\State\HierarchicalStateInterface;
 use Noem\State\ParallelStateInterface;
 
 /**

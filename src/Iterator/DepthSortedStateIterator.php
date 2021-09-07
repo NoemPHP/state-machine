@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Noem\State\Iterator;
 
+use Noem\State\HierarchicalStateInterface;
 use Noem\State\NestedStateInterface;
 use Noem\State\StateInterface;
 
@@ -44,5 +45,25 @@ class DepthSortedStateIterator extends \ArrayIterator
         }
 
         return $i;
+    }
+
+    public static function getDeepestSubState(
+        NestedStateInterface $state,
+        ?callable $determineInitialSubState = null
+    ): NestedStateInterface {
+        if (!$state instanceof HierarchicalStateInterface) {
+            return $state;
+        }
+        $sorted =
+            new self(
+                new ParallelDescendingIterator(
+                    new DescendingStateIterator(
+                        $state, $determineInitialSubState
+                    ),
+                    $determineInitialSubState
+                )
+            );
+
+        return $sorted->current();
     }
 }
