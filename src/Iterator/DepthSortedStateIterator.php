@@ -58,7 +58,8 @@ class DepthSortedStateIterator extends \ArrayIterator
             new self(
                 new ParallelDescendingIterator(
                     new DescendingStateIterator(
-                        $state, $determineInitialSubState
+                        $state,
+                        $determineInitialSubState
                     ),
                     $determineInitialSubState
                 )
