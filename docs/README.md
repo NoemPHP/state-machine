@@ -9,7 +9,7 @@ in [NoemPHP/state-machine-interface](https://noemphp.github.io/state-machine-int
 
 * **Hierarchical states** - If the active state has ascending "super-states", all of them are implicitly active as well.
 * **Parallel states** - All children of an active parallel state are simultaneously active.
-* **Guards** - Enable a given transition only when the specified event name matches or a given callback returns `true`.
+* **Guards** - Enable a given transition only when the specified event type matches and/or a given callback returns `true`.
 * **Actions** - Dispatch actions to the machine to achieve stateful behaviour. Only the action handlers corresponding to
   the active state will get called.
 * **Entry & Exit events** - Attach arbitrary subscribers to state changes.
