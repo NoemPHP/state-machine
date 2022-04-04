@@ -27,7 +27,7 @@ class ParallelDescendingIterator implements \Iterator
         $this->rewind();
     }
 
-    public function current()
+    public function current(): mixed
     {
         if ($this->currentDescent && $this->currentDescent->valid()) {
             return $this->currentDescent->current();
@@ -36,7 +36,7 @@ class ParallelDescendingIterator implements \Iterator
         return $this->stateIterator->current();
     }
 
-    public function next()
+    public function next(): void
     {
         if (!$this->currentDescent && $this->stateIterator->current() instanceof ParallelStateInterface) {
             $appendIterator = new \AppendIterator();
@@ -79,7 +79,7 @@ class ParallelDescendingIterator implements \Iterator
         return $this->stateIterator->valid();
     }
 
-    public function rewind()
+    public function rewind(): void
     {
         $this->stateIterator->rewind();
         $this->currentDescent = null;

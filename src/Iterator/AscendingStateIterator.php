@@ -24,7 +24,7 @@ class AscendingStateIterator implements \Iterator
         return $this->current;
     }
 
-    public function next()
+    public function next(): void
     {
         $this->current = $this->current->parent();
     }
@@ -39,7 +39,7 @@ class AscendingStateIterator implements \Iterator
         return $this->current instanceof NestedStateInterface;
     }
 
-    public function rewind()
+    public function rewind(): void
     {
         $this->current = $this->state;
     }

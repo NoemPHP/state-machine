@@ -39,7 +39,7 @@ class DescendingStateIterator implements \Iterator
         return $this->current;
     }
 
-    public function next()
+    public function next(): void
     {
         $this->current = ($this->determineInitialSubState)($this->current, $this);
     }
@@ -54,7 +54,7 @@ class DescendingStateIterator implements \Iterator
         return $this->current instanceof HierarchicalStateInterface;
     }
 
-    public function rewind()
+    public function rewind(): void
     {
         $this->current = $this->state;
     }
