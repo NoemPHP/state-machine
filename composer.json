@@ -30,5 +30,10 @@
         "psr-4": {
             "Noem\\State\\Test\\": "tests/PHPUnit"
         }
+    },
+    "config": {
+        "allow-plugins": {
+            "noem/composer-file-embed": true
+        }
     }
 }
