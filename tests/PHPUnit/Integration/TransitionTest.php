@@ -133,8 +133,8 @@ class TransitionTest extends StateMachineTestCase
                     'children' => [
                         'sub_state' => [
                             'onEntry' => '@onEnter',
-                        ]
-                    ]
+                        ],
+                    ],
                 ],
             ],
             'off',
@@ -147,6 +147,39 @@ class TransitionTest extends StateMachineTestCase
 
         $sut->trigger((object)['foo' => 'bar']);
         $this->assertTrue($notified);
+    }
+
+    public function testNotifyEnterNotRecurringForSuperstates()
+    {
+        $notified = 0;
+
+        $sut = $this->configureStateMachine(
+            [
+                'off' => [
+                    'transitions' => ['on'],
+                ],
+                'on' => [
+                    'onEntry' => '@onEnter',
+                    'children' => [
+                        'sub_state1' => [
+                            'transitions' => ['sub_state2'],
+                        ],
+                        'sub_state2' => [],
+
+                    ],
+                ],
+            ],
+            'off',
+            [
+                'onEnter' => function () use (&$notified) {
+                    $notified++;
+                },
+            ]
+        );
+
+        $sut->trigger((object)['foo' => 'bar']);
+        $sut->trigger((object)['foo' => 'bar']);
+        $this->assertSame(1, $notified, 'onEntry callback should only run once if substates change');
     }
 
     public function testEventEnabled()

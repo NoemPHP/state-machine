@@ -4,54 +4,48 @@ declare(strict_types=1);
 
 namespace Noem\State;
 
-use Iterator;
-use Noem\State\Iterator\AscendingStateIterator;
-use Noem\State\Iterator\DepthSortedStateIterator;
-use Noem\State\Iterator\ParallelDescendingIterator;
 use Noem\State\Observer\ActionObserver;
 use Noem\State\Observer\EnterStateObserver;
 use Noem\State\Observer\ExitStateObserver;
 use Noem\State\Observer\StateMachineObserver;
+use Noem\State\State\StateTree;
 use Noem\State\Transition\TransitionProviderInterface;
 
 class StateMachine implements ObservableStateMachineInterface, ActorInterface
 {
+
     /**
-     * @var iterable<StateInterface>
+     * The current state. Note that in hierarchical state machines,
+     * any number of states can be active at the same time. So this really only represents
+     * the origin of the current tree of active states
+     *
+     * @var StateInterface
      */
-    private iterable $currentTree;
+    private StateInterface $currentState;
+
+    private \SplObjectStorage $trees;
 
     /**
      * @var StateMachineObserver[]
      */
     private array $observers = [];
 
-    /**
-     * @var ?Iterator<StateInterface>
-     */
-    private ?Iterator $currentTreeByDepth = null;
-
     public function __construct(
         private TransitionProviderInterface $transitions,
         private StateStorageInterface $store
     ) {
-        $this->initializeTreeIterator($this->store->state());
+        $this->trees = new \SplObjectStorage();
+        $this->currentState = $this->store->state();
     }
 
-    private function initializeTreeIterator(StateInterface $state)
+    private function getTree(?StateInterface $state = null): StateTree
     {
-        $this->currentTreeByDepth = null;
-
-        if (!$state instanceof NestedStateInterface) {
-            $this->currentTree = new \ArrayIterator([$state]);
-
-            return;
+        $state = $state ?? $this->currentState;
+        if (!isset($this->trees[$state])) {
+            $this->trees[$state] = new StateTree($state);
         }
-        $this->currentTree = new \CachingIterator(
-            new ParallelDescendingIterator(
-                new AscendingStateIterator(DepthSortedStateIterator::getDeepestSubState($state))
-            )
-        );
+
+        return $this->trees[$state];
     }
 
     public function attach(StateMachineObserver $observer): ObservableStateMachineInterface
@@ -73,7 +67,7 @@ class StateMachine implements ObservableStateMachineInterface, ActorInterface
 
     public function trigger(object $payload): StateMachineInterface
     {
-        foreach ($this->getTreeByDepth() as $state) {
+        foreach ($this->getTree()->upwards() as $state) {
             $transition = $this->transitions->getTransitionForTrigger($state, $payload);
             if (!$transition) {
                 continue;
@@ -86,26 +80,21 @@ class StateMachine implements ObservableStateMachineInterface, ActorInterface
         return $this;
     }
 
-    private function getTreeByDepth(): iterable
-    {
-        if (!$this->currentTreeByDepth) {
-            $this->currentTreeByDepth = new DepthSortedStateIterator($this->currentTree);
-        }
-
-        return $this->currentTreeByDepth;
-    }
-
     private function doTransition(StateInterface $from, StateInterface $to)
     {
-        $this->notifyExit($from);
-        $this->initializeTreeIterator($to);
+        $this->notifyExit($from, $to);
+        $this->currentState = $to;
         $this->store->save($to);
-        $this->notifyEnter($to);
+        $this->notifyEnter($from, $to);
     }
 
-    private function notifyExit(StateInterface $state): void
+    private function notifyExit(StateInterface $from, StateInterface $to): void
     {
-        foreach ($this->getTreeByDepth() as $state) {
+        $newTree = $this->getTree($to);
+        foreach ($this->getTree($from)->upwards() as $state) {
+            if ($newTree->isInState($state)) {
+                continue;
+            }
             foreach ($this->observers as $observer) {
                 if ($observer instanceof ExitStateObserver) {
                     $observer->onExitState($state, $this);
@@ -114,9 +103,13 @@ class StateMachine implements ObservableStateMachineInterface, ActorInterface
         }
     }
 
-    private function notifyEnter(StateInterface $state): void
+    private function notifyEnter(StateInterface $from, StateInterface $to): void
     {
-        foreach ($this->getTreeByDepth() as $state) {
+        $oldTree = $this->getTree($from);
+        foreach ($this->getTree($to)->upwards() as $state) {
+            if ($oldTree->isInState($state)) {
+                continue;
+            }
             foreach ($this->observers as $observer) {
                 if ($observer instanceof EnterStateObserver) {
                     $observer->onEnterState($state, $this);
@@ -127,7 +120,7 @@ class StateMachine implements ObservableStateMachineInterface, ActorInterface
 
     public function action(object $payload): object
     {
-        foreach ($this->getTreeByDepth() as $state) {
+        foreach ($this->getTree()->upwards() as $state) {
             foreach ($this->observers as $observer) {
                 if ($observer instanceof ActionObserver) {
                     $observer->onAction($state, $payload, $this);
@@ -157,12 +150,6 @@ class StateMachine implements ObservableStateMachineInterface, ActorInterface
      */
     public function isInState(string|StateInterface $compareState): bool
     {
-        foreach ($this->currentTree as $state) {
-            if ($state->equals($compareState)) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->getTree()->isInState($compareState);
     }
 }
