@@ -32,7 +32,7 @@ class HierarchicalState implements HierarchicalStateInterface
         return $this->id === (string) $otherState;
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         return $this->id;
     }
