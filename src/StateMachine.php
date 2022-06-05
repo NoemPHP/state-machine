@@ -13,7 +13,6 @@ use Noem\State\Transition\TransitionProviderInterface;
 
 class StateMachine implements ObservableStateMachineInterface, ActorInterface
 {
-
     /**
      * The current state. Note that in hierarchical state machines,
      * any number of states can be active at the same time. So this really only represents

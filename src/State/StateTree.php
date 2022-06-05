@@ -13,7 +13,6 @@ use Noem\State\StateInterface;
 
 class StateTree
 {
-
     /**
      * @var iterable<StateInterface>
      */
