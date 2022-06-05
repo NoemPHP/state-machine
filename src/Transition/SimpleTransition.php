@@ -8,7 +8,6 @@ use Noem\State\StateInterface;
 
 class SimpleTransition implements TransitionInterface
 {
-
     public function __construct(
         private StateInterface $source,
         private StateInterface $target

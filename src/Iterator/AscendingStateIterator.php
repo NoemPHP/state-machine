@@ -11,7 +11,6 @@ use Noem\State\NestedStateInterface;
  */
 class AscendingStateIterator implements \Iterator
 {
-
     private ?NestedStateInterface $current;
 
     public function __construct(private NestedStateInterface $state)

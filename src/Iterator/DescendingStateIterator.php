@@ -12,7 +12,6 @@ use Noem\State\StateInterface;
  */
 class DescendingStateIterator implements \Iterator
 {
-
     /**
      * @var callable(StateInterface):StateInterface|null
      */

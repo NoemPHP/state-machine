@@ -14,7 +14,6 @@ use Noem\State\Util\ParameterDeriver;
 
 class Transition
 {
-
     public static function create(string|StateInterface $from, string|StateInterface $to): TransitionInterface
     {
         $from = is_string($from)

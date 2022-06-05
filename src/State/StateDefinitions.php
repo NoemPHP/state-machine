@@ -9,7 +9,6 @@ use Noem\State\StateInterface;
 
 class StateDefinitions
 {
-
     /**
      * StateTree constructor.
      *

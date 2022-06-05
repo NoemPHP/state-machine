@@ -8,7 +8,6 @@ use Noem\State\StateInterface;
 
 class SimpleState implements StateInterface
 {
-
     public function __construct(private string $id)
     {
     }

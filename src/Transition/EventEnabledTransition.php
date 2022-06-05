@@ -8,7 +8,6 @@ use Noem\State\StateInterface;
 
 class EventEnabledTransition implements TransitionInterface
 {
-
     public function __construct(private TransitionInterface $inner, private string $eventName)
     {
     }

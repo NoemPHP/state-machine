@@ -10,7 +10,6 @@ use Noem\State\StateInterface;
 
 class TransitionProvider implements TransitionProviderInterface
 {
-
     private array $transitions;
 
     /**
@@ -50,7 +49,6 @@ class TransitionProvider implements TransitionProviderInterface
     {
         if (!$this->tree->has($from) || !$this->tree->has($to)) {
             throw new class ('Nope') extends \Exception implements StateMachineExceptionInterface {
-
             };
         }
         $transition = new SimpleTransition($this->tree->get($from), $this->tree->get($to));

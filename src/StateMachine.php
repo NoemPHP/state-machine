@@ -16,7 +16,6 @@ use Noem\State\Transition\TransitionProviderInterface;
 
 class StateMachine implements ObservableStateMachineInterface, ActorInterface
 {
-
     /**
      * @var iterable<StateInterface>
      */

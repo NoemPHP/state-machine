@@ -8,5 +8,4 @@ use Noem\State\ParallelStateInterface;
 
 class ParallelState extends HierarchicalState implements ParallelStateInterface
 {
-
 }

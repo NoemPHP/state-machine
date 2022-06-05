@@ -6,7 +6,6 @@ namespace Noem\State;
 
 class InMemoryStateStorage implements StateStorageInterface
 {
-
     public function __construct(private StateInterface $state)
     {
     }

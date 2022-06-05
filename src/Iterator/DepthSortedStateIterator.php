@@ -15,7 +15,6 @@ use Noem\State\StateInterface;
  */
 class DepthSortedStateIterator extends \ArrayIterator
 {
-
     /**
      * @param \Iterator<StateInterface> $stateIterator
      */

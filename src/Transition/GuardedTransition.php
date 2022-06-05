@@ -9,7 +9,6 @@ use Noem\State\Util\ParameterDeriver;
 
 class GuardedTransition implements TransitionInterface
 {
-
     /**
      * @var callable(object, TransitionInterface):bool
      */
