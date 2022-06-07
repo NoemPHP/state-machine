@@ -6,6 +6,7 @@ namespace Noem\State\Iterator;
 
 use Noem\State\HierarchicalStateInterface;
 use Noem\State\NestedStateInterface;
+use Noem\State\State\StateDepthTrait;
 use Noem\State\StateInterface;
 
 /**
@@ -15,6 +16,7 @@ use Noem\State\StateInterface;
  */
 class DepthSortedStateIterator extends \ArrayIterator
 {
+    use StateDepthTrait;
     /**
      * @param \Iterator<StateInterface> $stateIterator
      */
@@ -31,19 +33,6 @@ class DepthSortedStateIterator extends \ArrayIterator
         $depthB = $this->getDepth($b);
 
         return $depthB <=> $depthA;
-    }
-
-    private function getDepth(StateInterface $state): int
-    {
-        if (!$state instanceof NestedStateInterface) {
-            return 0;
-        }
-        $i = 0;
-        while ($state = $state->parent()) {
-            $i++;
-        }
-
-        return $i;
     }
 
     public static function getDeepestSubState(

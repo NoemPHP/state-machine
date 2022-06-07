@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Noem\State;
 
+use Noem\State\Exception\StateMachineExceptionInterface;
 use Noem\State\Observer\ActionObserver;
 use Noem\State\Observer\EnterStateObserver;
 use Noem\State\Observer\ExitStateObserver;
@@ -24,6 +25,8 @@ class StateMachine implements ObservableStateMachineInterface, ActorInterface
     private StateInterface $currentState;
 
     private \SplObjectStorage $trees;
+
+    private bool $isTransitioning = false;
 
     /**
      * @var StateMachineObserver[]
@@ -67,15 +70,24 @@ class StateMachine implements ObservableStateMachineInterface, ActorInterface
 
     public function trigger(object $payload): StateMachineInterface
     {
+        if ($this->isTransitioning) {
+            throw new class('State machine is currently transitioning')
+                extends \RuntimeException
+                implements StateMachineExceptionInterface {
+
+            };
+        }
+        $this->isTransitioning = true;
         foreach ($this->getTree()->upwards() as $state) {
             $transition = $this->transitions->getTransitionForTrigger($state, $payload);
             if (!$transition) {
                 continue;
             }
             $this->doTransition($state, $transition->target());
-
-            return $this;
+            break;
         }
+
+        $this->isTransitioning = false;
 
         return $this;
     }
