@@ -15,7 +15,6 @@ use Noem\State\StateInterface;
 
 class StateTree
 {
-
     use StateDepthTrait;
 
     /**
@@ -45,11 +44,11 @@ class StateTree
                         return $iterator->determineInitialSubState($parent);
                     }
                     $stateParent = $state;
-                    while($stateParent->parent()){
-                        if($stateParent->parent()->equals($parent)){
+                    while ($stateParent->parent()) {
+                        if ($stateParent->parent()->equals($parent)) {
                             return $stateParent;
                         }
-                        $stateParent=$stateParent->parent();
+                        $stateParent = $stateParent->parent();
                     }
                     /**
                      * Original implementation below

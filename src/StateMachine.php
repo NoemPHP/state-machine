@@ -70,10 +70,7 @@ class StateMachine implements ObservableStateMachineInterface, ActorInterface
     public function trigger(object $payload): StateMachineInterface
     {
         if ($this->isTransitioning) {
-            throw new class('State machine is currently transitioning')
-                extends \RuntimeException
-                implements StateMachineExceptionInterface {
-
+            throw new class ('State machine is currently transitioning') extends \RuntimeException implements StateMachineExceptionInterface {
             };
         }
         $this->isTransitioning = true;
