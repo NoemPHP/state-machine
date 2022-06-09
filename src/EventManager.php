@@ -28,12 +28,12 @@ class EventManager implements EnterStateObserver, ExitStateObserver, ActionObser
 
         array_walk(
             $this->actionHandlers[(string)$state],
-            function (callable $handler) use ($payload, $state) {
+            function (callable $handler) use ($payload, $state, $machine) {
                 $parameterType = ParameterDeriver::getParameterType($handler);
                 if (!$payload instanceof $parameterType) {
                     return;
                 }
-                $handler($payload, $state);
+                $handler($payload, $state, $machine);
             }
         );
     }
