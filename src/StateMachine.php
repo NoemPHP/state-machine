@@ -12,8 +12,9 @@ use Noem\State\Observer\StateMachineObserver;
 use Noem\State\State\StateTree;
 use Noem\State\Transition\TransitionProviderInterface;
 
-class StateMachine implements ObservableStateMachineInterface, ActorInterface
+class StateMachine implements ObservableStateMachineInterface, ContextAwareStateMachineInterface, ActorInterface
 {
+
     /**
      * The current state. Note that in hierarchical state machines,
      * any number of states can be active at the same time. So this really only represents
@@ -28,16 +29,24 @@ class StateMachine implements ObservableStateMachineInterface, ActorInterface
     private bool $isTransitioning = false;
 
     /**
+     * @var \SplObjectStorage<StateInterface, ImmutableContextInterface>
+     */
+    private \SplObjectStorage $contextMap;
+
+    /**
      * @var StateMachineObserver[]
      */
     private array $observers = [];
 
     public function __construct(
-        private TransitionProviderInterface $transitions,
-        private StateStorageInterface $store
+        private readonly TransitionProviderInterface $transitions,
+        private readonly StateStorageInterface $store,
+        private readonly ?object $initialTrigger = null
     ) {
         $this->trees = new \SplObjectStorage();
         $this->currentState = $this->store->state();
+        $this->contextMap = new \SplObjectStorage();
+        $this->contextMap[$this->currentState] = new Context($this->initialTrigger ?? new \stdClass());
     }
 
     private function getTree(?StateInterface $state = null): StateTree
@@ -70,7 +79,9 @@ class StateMachine implements ObservableStateMachineInterface, ActorInterface
     public function trigger(object $payload): StateMachineInterface
     {
         if ($this->isTransitioning) {
-            throw new class ('State machine is currently transitioning') extends \RuntimeException implements StateMachineExceptionInterface {
+            throw new class ('State machine is currently transitioning') extends \RuntimeException implements
+                StateMachineExceptionInterface {
+
             };
         }
         $this->isTransitioning = true;
@@ -79,7 +90,7 @@ class StateMachine implements ObservableStateMachineInterface, ActorInterface
             if (!$transition) {
                 continue;
             }
-            $this->doTransition($state, $transition->target());
+            $this->doTransition($state, $transition->target(), $payload);
             break;
         }
 
@@ -88,10 +99,11 @@ class StateMachine implements ObservableStateMachineInterface, ActorInterface
         return $this;
     }
 
-    private function doTransition(StateInterface $from, StateInterface $to)
+    private function doTransition(StateInterface $from, StateInterface $to, object $payload)
     {
         $this->notifyExit($from, $to);
         $this->currentState = $to;
+        $this->updateContexts($this->getTree($to), $payload);
         $this->store->save($to);
         $this->notifyEnter($from, $to);
     }
@@ -108,6 +120,18 @@ class StateMachine implements ObservableStateMachineInterface, ActorInterface
                     $observer->onExitState($state, $this);
                 }
             }
+        }
+    }
+
+    private function updateContexts(StateTree $tree, object $trigger)
+    {
+        foreach ($tree->upwards() as $state) {
+            if (!$this->contextMap->offsetExists($state)) {
+                $newContext = new Context($trigger);
+            } else {
+                $newContext = $this->contextMap[$state]->withTrigger($trigger);
+            }
+            $this->contextMap[$state] = $newContext;
         }
     }
 
@@ -159,5 +183,10 @@ class StateMachine implements ObservableStateMachineInterface, ActorInterface
     public function isInState(string|StateInterface $compareState): bool
     {
         return $this->getTree()->isInState($compareState);
+    }
+
+    public function context(StateInterface $state): ContextInterface
+    {
+        return $this->contextMap[$state];
     }
 }

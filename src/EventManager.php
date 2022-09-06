@@ -11,6 +11,7 @@ use Noem\State\Util\ParameterDeriver;
 
 class EventManager implements EnterStateObserver, ExitStateObserver, ActionObserver
 {
+
     /**
      * @var callable[][]
      */
@@ -59,8 +60,8 @@ class EventManager implements EnterStateObserver, ExitStateObserver, ActionObser
 
         array_walk(
             $this->entryHandlers[(string)$state],
-            function (callable $handler) use ($state) {
-                $handler($state);
+            function (callable $handler) use ($state, $machine) {
+                $handler($state, $machine);
             }
         );
     }
@@ -80,8 +81,8 @@ class EventManager implements EnterStateObserver, ExitStateObserver, ActionObser
 
         array_walk(
             $this->exitHandlers[(string)$state],
-            function (callable $handler) use ($state) {
-                $handler($state);
+            function (callable $handler) use ($state, $machine) {
+                $handler($state, $machine);
             }
         );
     }
