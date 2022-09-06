@@ -6,7 +6,6 @@ namespace Noem\State;
 
 class Context extends \ArrayObject implements ImmutableContextInterface
 {
-
     public function __construct(private object $trigger)
     {
         parent::__construct();

@@ -11,7 +11,6 @@ use Noem\State\Util\ParameterDeriver;
 
 class EventManager implements EnterStateObserver, ExitStateObserver, ActionObserver
 {
-
     /**
      * @var callable[][]
      */
