@@ -9,9 +9,10 @@ use Noem\State\ContextInterface;
 
 class Context extends \ArrayObject implements ImmutableContextInterface
 {
-    public function __construct(private object $trigger, array $data = [])
+
+    public function __construct(private object $trigger, private array $initialData = [])
     {
-        parent::__construct($data);
+        parent::__construct($initialData);
     }
 
     public function trigger(): object
@@ -24,6 +25,11 @@ class Context extends \ArrayObject implements ImmutableContextInterface
         $this->exchangeArray([]);
 
         return $this;
+    }
+
+    public function reset(): self
+    {
+        $this->replace($this->initialData);
     }
 
     public function replace(array $data): ContextInterface
