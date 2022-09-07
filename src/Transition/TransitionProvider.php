@@ -7,6 +7,7 @@ namespace Noem\State\Transition;
 use Noem\State\Exception\StateMachineExceptionInterface;
 use Noem\State\State\StateDefinitions;
 use Noem\State\StateInterface;
+use Noem\State\StateMachineInterface;
 
 class TransitionProvider implements TransitionProviderInterface
 {
@@ -22,13 +23,17 @@ class TransitionProvider implements TransitionProviderInterface
         $this->transitions = $transitionList;
     }
 
-    public function getTransitionForTrigger(StateInterface $state, object $trigger): ?TransitionInterface
+    public function getTransitionForTrigger(
+        StateInterface $state,
+        object $trigger,
+        StateMachineInterface $stateMachine
+    ): ?TransitionInterface
     {
         foreach ($this->transitions as $possibleTransition) {
             if (!$possibleTransition->source()->equals($state)) {
                 continue;
             }
-            if (!$possibleTransition->isEnabled($trigger)) {
+            if (!$possibleTransition->isEnabled($trigger, $stateMachine)) {
                 continue;
             }
 

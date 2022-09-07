@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Noem\State\Transition;
 
 use Noem\State\StateInterface;
+use Noem\State\StateMachineInterface;
 
 class AggregateTransitionProvider implements TransitionProviderInterface
 {
@@ -15,10 +16,14 @@ class AggregateTransitionProvider implements TransitionProviderInterface
         $this->providers = $providers;
     }
 
-    public function getTransitionForTrigger(StateInterface $state, object $trigger): ?TransitionInterface
+    public function getTransitionForTrigger(
+        StateInterface $state,
+        object $trigger,
+        StateMachineInterface $stateMachine
+    ): ?TransitionInterface
     {
         foreach ($this->providers as $provider) {
-            if (($t = $provider->getTransitionForTrigger($state, $trigger)) !== null) {
+            if (($t = $provider->getTransitionForTrigger($state, $trigger, $stateMachine)) !== null) {
                 return $t;
             }
         }

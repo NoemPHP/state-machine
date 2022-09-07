@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Noem\State\Transition;
 
 use Noem\State\StateInterface;
+use Noem\State\StateMachineInterface;
 
 class EventEnabledTransition implements TransitionInterface
 {
@@ -22,8 +23,8 @@ class EventEnabledTransition implements TransitionInterface
         return $this->inner->target();
     }
 
-    public function isEnabled(object $trigger): bool
+    public function isEnabled(object $trigger, StateMachineInterface $stateMachine): bool
     {
-        return $this->inner->isEnabled($trigger) and $trigger instanceof $this->eventName;
+        return $this->inner->isEnabled($trigger, $stateMachine) and $trigger instanceof $this->eventName;
     }
 }

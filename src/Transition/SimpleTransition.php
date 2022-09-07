@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Noem\State\Transition;
 
 use Noem\State\StateInterface;
+use Noem\State\StateMachineInterface;
 
 class SimpleTransition implements TransitionInterface
 {
@@ -24,7 +25,7 @@ class SimpleTransition implements TransitionInterface
         return $this->target;
     }
 
-    public function isEnabled(object $trigger): bool
+    public function isEnabled(object $trigger, StateMachineInterface $stateMachine): bool
     {
         return true;
     }

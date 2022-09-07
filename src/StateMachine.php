@@ -45,7 +45,7 @@ class StateMachine implements ObservableStateMachineInterface, ContextAwareState
         $this->trees = new \SplObjectStorage();
         $this->currentState = $this->store->state();
         $this->contextMap = new \SplObjectStorage();
-        $this->contextMap[$this->currentState] = new Context($this->initialTrigger ?? new \stdClass());
+        $this->updateContexts($this->getTree(),$this->initialTrigger ?? new \stdClass());
     }
 
     private function getTree(?StateInterface $state = null): StateTree
@@ -85,7 +85,7 @@ class StateMachine implements ObservableStateMachineInterface, ContextAwareState
         }
         $this->isTransitioning = true;
         foreach ($this->getTree()->upwards() as $state) {
-            $transition = $this->transitions->getTransitionForTrigger($state, $payload);
+            $transition = $this->transitions->getTransitionForTrigger($state, $payload, $this);
             if (!$transition) {
                 continue;
             }
