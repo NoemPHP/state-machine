@@ -10,7 +10,6 @@ use Noem\State\StateInterface;
  */
 interface ContextProviderInterface
 {
-
     /**
      * Create a new context for the given state.
      * This allows implementors to set a preconfigured context from arbitrary data sources, which might be preferable
