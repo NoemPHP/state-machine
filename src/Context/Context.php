@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Noem\State;
+namespace Noem\State\Context;
+
+use Noem\State\ImmutableContextInterface;
+use Noem\State\ContextInterface;
 
 class Context extends \ArrayObject implements ImmutableContextInterface
 {

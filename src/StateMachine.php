@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Noem\State;
 
+use Noem\State\Context\Context;
+use Noem\State\Context\ContextProviderInterface;
+use Noem\State\Context\EmptyContextProvider;
 use Noem\State\Exception\StateMachineExceptionInterface;
 use Noem\State\Observer\ActionObserver;
 use Noem\State\Observer\EnterStateObserver;
@@ -14,6 +17,7 @@ use Noem\State\Transition\TransitionProviderInterface;
 
 class StateMachine implements ObservableStateMachineInterface, ContextAwareStateMachineInterface, ActorInterface
 {
+
     /**
      * The current state. Note that in hierarchical state machines,
      * any number of states can be active at the same time. So this really only represents
@@ -40,12 +44,13 @@ class StateMachine implements ObservableStateMachineInterface, ContextAwareState
     public function __construct(
         private readonly TransitionProviderInterface $transitions,
         private readonly StateStorageInterface $store,
-        private readonly ?object $initialTrigger = null
+        private readonly ?object $initialTrigger = null,
+        private readonly ContextProviderInterface $contextProvider = new EmptyContextProvider()
     ) {
         $this->trees = new \SplObjectStorage();
         $this->currentState = $this->store->state();
         $this->contextMap = new \SplObjectStorage();
-        $this->updateContexts($this->getTree(),$this->initialTrigger ?? new \stdClass());
+        $this->updateContexts($this->getTree(), $this->initialTrigger ?? new \stdClass());
     }
 
     private function getTree(?StateInterface $state = null): StateTree
@@ -79,8 +84,8 @@ class StateMachine implements ObservableStateMachineInterface, ContextAwareState
     {
         if ($this->isTransitioning) {
             throw new class ('State machine is currently transitioning') extends \RuntimeException implements
-                StateMachineExceptionInterface
-            {
+                StateMachineExceptionInterface {
+
             };
         }
         $this->isTransitioning = true;
@@ -126,7 +131,7 @@ class StateMachine implements ObservableStateMachineInterface, ContextAwareState
     {
         foreach ($tree->upwards() as $state) {
             if (!$this->contextMap->offsetExists($state)) {
-                $newContext = new Context($trigger);
+                $newContext = $this->contextProvider->createContext($state, $trigger);
             } else {
                 $newContext = $this->contextMap[$state]->withTrigger($trigger);
             }
