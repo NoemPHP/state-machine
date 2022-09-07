@@ -27,8 +27,7 @@ class TransitionProvider implements TransitionProviderInterface
         StateInterface $state,
         object $trigger,
         StateMachineInterface $stateMachine
-    ): ?TransitionInterface
-    {
+    ): ?TransitionInterface {
         foreach ($this->transitions as $possibleTransition) {
             if (!$possibleTransition->source()->equals($state)) {
                 continue;
