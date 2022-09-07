@@ -9,9 +9,9 @@ use Noem\State\ContextInterface;
 
 class Context extends \ArrayObject implements ImmutableContextInterface
 {
-    public function __construct(private object $trigger)
+    public function __construct(private object $trigger, array $data = [])
     {
-        parent::__construct();
+        parent::__construct($data);
     }
 
     public function trigger(): object
