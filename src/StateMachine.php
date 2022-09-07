@@ -45,7 +45,7 @@ class StateMachine implements ObservableStateMachineInterface, ContextAwareState
         $this->trees = new \SplObjectStorage();
         $this->currentState = $this->store->state();
         $this->contextMap = new \SplObjectStorage();
-        $this->updateContexts($this->getTree(),$this->initialTrigger ?? new \stdClass());
+        $this->updateContexts($this->getTree(), $this->initialTrigger ?? new \stdClass());
     }
 
     private function getTree(?StateInterface $state = null): StateTree

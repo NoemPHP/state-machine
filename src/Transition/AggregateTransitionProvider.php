@@ -20,8 +20,7 @@ class AggregateTransitionProvider implements TransitionProviderInterface
         StateInterface $state,
         object $trigger,
         StateMachineInterface $stateMachine
-    ): ?TransitionInterface
-    {
+    ): ?TransitionInterface {
         foreach ($this->providers as $provider) {
             if (($t = $provider->getTransitionForTrigger($state, $trigger, $stateMachine)) !== null) {
                 return $t;
