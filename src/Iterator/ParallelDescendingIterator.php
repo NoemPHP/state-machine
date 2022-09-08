@@ -9,7 +9,7 @@ use Noem\State\ParallelStateInterface;
 
 /**
  * Passes through the given Iterator, but recursively descends into all children of a ParallelStateInterface
- * Recursion means: Any nested ParallelStateInterface found when descending is also found and processed
+ * Recursion means: Any nested ParallelStateInterface encountered when descending is also processed
  */
 class ParallelDescendingIterator implements \Iterator
 {
