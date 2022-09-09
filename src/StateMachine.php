@@ -89,6 +89,9 @@ class StateMachine implements ObservableStateMachineInterface, ContextAwareState
         }
         $this->isTransitioning = true;
         foreach ($this->getTree()->upwards() as $state) {
+            /**
+             * TODO for some reason, we're not taking nested parallel state changes into account here...
+             */
             $transition = $this->transitions->getTransitionForTrigger($state, $payload, $this);
             if (!$transition) {
                 continue;
@@ -107,6 +110,9 @@ class StateMachine implements ObservableStateMachineInterface, ContextAwareState
         $this->notifyExit($from, $to);
 
         $newTree = $this->getTree($to);
+        $this->updateContexts($newTree, $payload);
+        $this->notifyEnter($from, $to);
+
         if ($immediateChildOfParallelState = $newTree->findAncestorWithParallelParent($to)) {
             $this->store->save($to, $immediateChildOfParallelState);
             $this->currentState = $immediateChildOfParallelState->parent();
@@ -115,9 +121,6 @@ class StateMachine implements ObservableStateMachineInterface, ContextAwareState
             $this->store->save($to);
             $this->currentState = $to;
         }
-        $this->updateContexts($newTree, $payload);
-        $this->store->save($to);
-        $this->notifyEnter($from, $to);
     }
 
     private function notifyExit(StateInterface $from, StateInterface $to): void

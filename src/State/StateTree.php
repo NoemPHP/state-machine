@@ -17,6 +17,7 @@ use Noem\State\StateStorageInterface;
 
 class StateTree
 {
+
     use StateDepthTrait;
 
     /**
@@ -30,7 +31,7 @@ class StateTree
     private ?Iterator $currentTreeByDepth = null;
 
     public function __construct(
-        StateInterface $state,
+        private StateInterface $state,
         private StateStorageInterface $stateStorage
     ) {
         if (!$state instanceof NestedStateInterface) {
@@ -38,27 +39,7 @@ class StateTree
 
             return;
         }
-        $determineInitialSubState = function (NestedStateInterface $parent) use ($state) {
-            try {
-                $stored = $this->stateStorage->state($parent);
-            } catch (\OutOfBoundsException $exception) {
-                /**
-                 * Fallback behaviour: Check if there's an initial state configured
-                 * If not, return the first child
-                 */
-                if ($parent instanceof HierarchicalStateInterface && $initial = $parent->initial()) {
-                    return $initial;
-                }
-                $children = $parent->children();
-                if (count($children)) {
-                    return current($children);
-                }
-
-                return null;
-            }
-
-            return $stored;
-        };
+        $determineInitialSubState = \Closure::fromCallable([$this, 'determineInitialSubState']);
         $this->tree = new \CachingIterator(
             new ParallelDescendingIterator(
                 new AscendingStateIterator(
@@ -67,6 +48,29 @@ class StateTree
                 $determineInitialSubState
             )
         );
+    }
+
+    private function determineInitialSubState(NestedStateInterface $parent): ?StateInterface
+    {
+        try {
+            $stored = $this->stateStorage->state($parent);
+        } catch (\OutOfBoundsException $exception) {
+            /**
+             * Fallback behaviour: Check if there's an initial state configured
+             * If not, return the first child
+             */
+            if ($parent instanceof HierarchicalStateInterface && $initial = $parent->initial()) {
+                return $initial;
+            }
+            $children = $parent->children();
+            if (count($children)) {
+                return current($children);
+            }
+
+            return null;
+        }
+
+        return $stored;
     }
 
     public function findAncestorWithParallelParent(StateInterface $state): ?NestedStateInterface
