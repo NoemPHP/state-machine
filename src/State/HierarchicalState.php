@@ -9,7 +9,6 @@ use Noem\State\StateInterface;
 
 class HierarchicalState extends NestedState implements HierarchicalStateInterface
 {
-
     private ?StateInterface $initial = null;
 
     public function __construct(string $id, ?StateInterface $parent = null, StateInterface ...$children)
