@@ -7,8 +7,9 @@ namespace Noem\State\State;
 use Noem\State\HierarchicalStateInterface;
 use Noem\State\StateInterface;
 
-class HierarchicalState implements HierarchicalStateInterface
+class HierarchicalState extends NestedState implements HierarchicalStateInterface
 {
+
     /**
      * @var StateInterface[]
      */
@@ -16,36 +17,15 @@ class HierarchicalState implements HierarchicalStateInterface
 
     private ?StateInterface $initial = null;
 
-    public function __construct(private string $id, private ?StateInterface $parent = null, StateInterface ...$children)
+    public function __construct(string $id, ?StateInterface $parent = null, StateInterface ...$regions)
     {
-        $this->children = $children;
+        $this->children = $regions;
+        parent::__construct($id, $parent);
     }
 
     public function children(): array
     {
         return $this->children;
-    }
-
-    public function equals(string|StateInterface $otherState): bool
-    {
-        return $this->id === (string) $otherState;
-    }
-
-    public function __toString(): string
-    {
-        return $this->id;
-    }
-
-    public function parent(): ?StateInterface
-    {
-        return $this->parent;
-    }
-
-    public function setParent(StateInterface $parent): self
-    {
-        $this->parent = $parent;
-
-        return $this;
     }
 
     public function initial(): ?StateInterface
