@@ -11,10 +11,13 @@ use Noem\State\Iterator\DepthSortedStateIterator;
 use Noem\State\Iterator\DescendingStateIterator;
 use Noem\State\Iterator\ParallelDescendingIterator;
 use Noem\State\NestedStateInterface;
+use Noem\State\ParallelStateInterface;
 use Noem\State\StateInterface;
+use Noem\State\StateStorageInterface;
 
 class StateTree
 {
+
     use StateDepthTrait;
 
     /**
@@ -27,54 +30,82 @@ class StateTree
      */
     private ?Iterator $currentTreeByDepth = null;
 
-    public function __construct(StateInterface $state)
-    {
+    public function __construct(
+        StateInterface $state,
+        private StateStorageInterface $stateStorage
+    ) {
         if (!$state instanceof NestedStateInterface) {
             $this->tree = new \ArrayIterator([$state]);
 
             return;
         }
+        $determineInitialSubState = function (NestedStateInterface $parent) use ($state) {
+            try {
+                $stored = $this->stateStorage->state($parent);
+            } catch (\OutOfBoundsException $exception) {
+                /**
+                 * Fallback behaviour: Check if there's an initial state configured
+                 * If not, return the first child
+                 */
+                if ($parent instanceof HierarchicalStateInterface && $initial = $parent->initial()) {
+                    return $initial;
+                }
+                $children = $parent->children();
+                if (count($children)) {
+                    return current($children);
+                }
+
+                return null;
+            }
+
+            return $stored;
+        };
         $this->tree = new \CachingIterator(
             new ParallelDescendingIterator(
-                new AscendingStateIterator(DepthSortedStateIterator::getDeepestSubState($state)),
-                function (HierarchicalStateInterface $parent, DescendingStateIterator $iterator) use ($state) {
-                    $parentDepth = $this->getDepth($parent);
-                    $childDepth = $this->getDepth($state);
-                    if ($parentDepth > $childDepth) {
-                        return $iterator->determineInitialSubState($parent);
-                    }
-                    $stateParent = $state;
-                    while ($stateParent->parent()) {
-                        if ($stateParent->parent()->equals($parent)) {
-                            return $stateParent;
-                        }
-                        $stateParent = $stateParent->parent();
-                    }
-                    /**
-                     * Original implementation below
-                     * TODO: find a way to make it reusable. Decorator?
-                     */
-                    $initial = $parent->initial();
-                    if ($initial) {
-                        return $initial;
-                    }
-                    $children = $parent->children();
-                    if (count($children)) {
-                        return current($children);
-                    }
-
-                    return null;
-                }
+                new AscendingStateIterator(
+                    DepthSortedStateIterator::getDeepestSubState($state, $determineInitialSubState)
+                ),
+                $determineInitialSubState
             )
         );
     }
 
-    public function isInState(string|StateInterface $compareState): bool
+    public function findAncestorWithParallelParent(StateInterface $state): ?NestedStateInterface
+    {
+        if (!$state instanceof NestedStateInterface) {
+            return null;
+        }
+        $lastState = $state;
+        while ($state = $state->parent()) {
+            if ($state instanceof ParallelStateInterface) {
+                return $lastState;
+            }
+            $lastState = $state;
+        }
+
+        return null;
+    }
+
+    public function findByString(string $stateName): ?StateInterface
+    {
+        foreach ($this->tree as $state) {
+            if ($state->equals($stateName)) {
+                return $state;
+            }
+        }
+
+        return null;
+    }
+
+    public function isInState(StateInterface $compareState): bool
     {
         foreach ($this->tree as $state) {
             if ($state->equals($compareState)) {
                 return true;
             }
+            //if ($state instanceof ParallelStateInterface && $state->isInState($compareState)) {
+            //    return true;
+            //}
         }
 
         return false;

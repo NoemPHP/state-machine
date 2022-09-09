@@ -17,6 +17,7 @@ use Noem\State\Transition\TransitionProviderInterface;
 
 class StateMachine implements ObservableStateMachineInterface, ContextAwareStateMachineInterface, ActorInterface
 {
+
     /**
      * The current state. Note that in hierarchical state machines,
      * any number of states can be active at the same time. So this really only represents
@@ -56,7 +57,7 @@ class StateMachine implements ObservableStateMachineInterface, ContextAwareState
     {
         $state = $state ?? $this->currentState;
         if (!isset($this->trees[$state])) {
-            $this->trees[$state] = new StateTree($state);
+            $this->trees[$state] = new StateTree($state, $this->store);
         }
 
         return $this->trees[$state];
@@ -83,8 +84,8 @@ class StateMachine implements ObservableStateMachineInterface, ContextAwareState
     {
         if ($this->isTransitioning) {
             throw new class ('State machine is currently transitioning') extends \RuntimeException implements
-                StateMachineExceptionInterface
-            {
+                StateMachineExceptionInterface {
+
             };
         }
         $this->isTransitioning = true;
@@ -105,8 +106,17 @@ class StateMachine implements ObservableStateMachineInterface, ContextAwareState
     private function doTransition(StateInterface $from, StateInterface $to, object $payload)
     {
         $this->notifyExit($from, $to);
-        $this->currentState = $to;
-        $this->updateContexts($this->getTree($to), $payload);
+
+        $newTree = $this->getTree($to);
+        if ($immediateChildOfParallelState = $newTree->findAncestorWithParallelParent($to)) {
+            $this->store->save($to, $immediateChildOfParallelState);
+            $this->currentState = $immediateChildOfParallelState->parent();
+            unset($this->trees[$to]); // Tree cache is stale now
+        } else {
+            $this->store->save($to);
+            $this->currentState = $to;
+        }
+        $this->updateContexts($newTree, $payload);
         $this->store->save($to);
         $this->notifyEnter($from, $to);
     }
@@ -185,7 +195,15 @@ class StateMachine implements ObservableStateMachineInterface, ContextAwareState
      */
     public function isInState(string|StateInterface $compareState): bool
     {
-        return $this->getTree()->isInState($compareState);
+        $stateTree = $this->getTree();
+        if (is_string($compareState)) {
+            $stateObject = $stateTree->findByString($compareState);
+            if (!$stateObject) {
+                return false;
+            }
+        }
+
+        return $stateTree->isInState($stateObject);
     }
 
     public function context(StateInterface $state): ContextInterface

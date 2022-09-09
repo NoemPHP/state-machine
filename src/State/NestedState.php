@@ -9,9 +9,21 @@ use Noem\State\StateInterface;
 
 abstract class NestedState extends SimpleState implements NestedStateInterface
 {
-    public function __construct(string $id, private ?StateInterface $parent = null)
+
+    /**
+     * @var StateInterface[]
+     */
+    private array $children;
+
+    public function __construct(string $id, private ?StateInterface $parent = null, StateInterface ...$children)
     {
+        $this->children = $children;
         parent::__construct($id);
+    }
+
+    public function children(): array
+    {
+        return $this->children;
     }
 
     public function parent(): ?StateInterface

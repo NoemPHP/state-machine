@@ -9,22 +9,12 @@ use Noem\State\StateInterface;
 
 class HierarchicalState extends NestedState implements HierarchicalStateInterface
 {
-    /**
-     * @var StateInterface[]
-     */
-    private array $children;
 
     private ?StateInterface $initial = null;
 
-    public function __construct(string $id, ?StateInterface $parent = null, StateInterface ...$regions)
+    public function __construct(string $id, ?StateInterface $parent = null, StateInterface ...$children)
     {
-        $this->children = $regions;
-        parent::__construct($id, $parent);
-    }
-
-    public function children(): array
-    {
-        return $this->children;
+        parent::__construct($id, $parent, ...$children);
     }
 
     public function initial(): ?StateInterface

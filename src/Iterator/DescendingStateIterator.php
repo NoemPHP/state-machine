@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Noem\State\Iterator;
 
 use Noem\State\HierarchicalStateInterface;
+use Noem\State\NestedStateInterface;
 use Noem\State\StateInterface;
 
 /**
@@ -17,7 +18,7 @@ class DescendingStateIterator implements \Iterator
      */
     private $determineInitialSubState;
 
-    private ?HierarchicalStateInterface $current;
+    private ?NestedStateInterface $current;
 
     /**
      * DescendingStateIterator constructor.
@@ -26,14 +27,14 @@ class DescendingStateIterator implements \Iterator
      * @param null|callable(StateInterface, DescendingStateIterator):StateInterface|null $determineInitialSubState
      */
     public function __construct(
-        private HierarchicalStateInterface $state,
+        private NestedStateInterface $state,
         ?callable $determineInitialSubState = null
     ) {
         $this->determineInitialSubState = $determineInitialSubState ?? [$this, 'determineInitialSubState'];
         $this->rewind();
     }
 
-    public function current(): HierarchicalStateInterface
+    public function current(): NestedStateInterface
     {
         return $this->current;
     }
@@ -50,7 +51,7 @@ class DescendingStateIterator implements \Iterator
 
     public function valid(): bool
     {
-        return $this->current instanceof HierarchicalStateInterface;
+        return $this->current instanceof NestedStateInterface;
     }
 
     public function rewind(): void
@@ -58,10 +59,9 @@ class DescendingStateIterator implements \Iterator
         $this->current = $this->state;
     }
 
-    public function determineInitialSubState(HierarchicalStateInterface $parent): ?StateInterface
+    public function determineInitialSubState(NestedStateInterface $parent): ?StateInterface
     {
-        $initial = $parent->initial();
-        if ($initial) {
+        if ($parent instanceof HierarchicalStateInterface && $initial = $parent->initial()) {
             return $initial;
         }
         $children = $parent->children();

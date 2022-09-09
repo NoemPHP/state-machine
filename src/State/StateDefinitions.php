@@ -9,6 +9,7 @@ use Noem\State\StateInterface;
 
 class StateDefinitions
 {
+
     /**
      * StateTree constructor.
      *
@@ -40,5 +41,23 @@ class StateDefinitions
         }
 
         return $i;
+    }
+
+    private function getLayer(int $layerDepth)
+    {
+        $layer = [];
+        foreach ($this->tree as $item) {
+            if ($this->getDepth((string)$item) == $layerDepth) {
+                $layer[] = $item;
+            }
+        }
+
+        return $layer;
+    }
+
+    public function initial(): StateInterface
+    {
+        // TODO Try to actually read some initial flag from the tree
+        return current($this->getLayer(0));
     }
 }

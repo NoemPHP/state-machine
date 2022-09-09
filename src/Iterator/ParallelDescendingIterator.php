@@ -13,6 +13,7 @@ use Noem\State\ParallelStateInterface;
  */
 class ParallelDescendingIterator implements \Iterator
 {
+
     /**
      * @var callable|null
      */
