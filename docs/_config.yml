@@ -13,7 +13,7 @@ gh_edit_repository: https://github.com/NoemPHP/state-machine-interface # Your re
 gh_edit_branch: master # The default branch of the repo. Default: main
 gh_edit_source: docs # The directory containing the docs. Default: docs
 
-remote_theme: pmarsceill/just-the-docs
+remote_theme: just-the-docs/just-the-docs
 
 
 plugins:
