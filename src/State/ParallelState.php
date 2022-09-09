@@ -11,7 +11,6 @@ use Noem\State\StateMachineInterface;
 
 class ParallelState extends NestedState implements ParallelStateInterface
 {
-
     /**
      * @var StateMachine[]
      */

@@ -9,7 +9,6 @@ use Noem\State\StateInterface;
 
 class HierarchicalState extends NestedState implements HierarchicalStateInterface
 {
-
     /**
      * @var StateInterface[]
      */
