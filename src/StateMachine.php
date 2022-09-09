@@ -197,13 +197,13 @@ class StateMachine implements ObservableStateMachineInterface, ContextAwareState
     {
         $stateTree = $this->getTree();
         if (is_string($compareState)) {
-            $stateObject = $stateTree->findByString($compareState);
-            if (!$stateObject) {
+            $compareState = $stateTree->findByString($compareState);
+            if (!$compareState) {
                 return false;
             }
         }
 
-        return $stateTree->isInState($stateObject);
+        return $stateTree->isInState($compareState);
     }
 
     public function context(StateInterface $state): ContextInterface
