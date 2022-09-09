@@ -17,7 +17,6 @@ use Noem\State\Transition\TransitionProviderInterface;
 
 class StateMachine implements ObservableStateMachineInterface, ContextAwareStateMachineInterface, ActorInterface
 {
-
     /**
      * The current state. Note that in hierarchical state machines,
      * any number of states can be active at the same time. So this really only represents
@@ -84,8 +83,8 @@ class StateMachine implements ObservableStateMachineInterface, ContextAwareState
     {
         if ($this->isTransitioning) {
             throw new class ('State machine is currently transitioning') extends \RuntimeException implements
-                StateMachineExceptionInterface {
-
+                StateMachineExceptionInterface
+            {
             };
         }
         $this->isTransitioning = true;

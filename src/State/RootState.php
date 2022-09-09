@@ -8,7 +8,6 @@ use Noem\State\StateInterface;
 
 class RootState implements StateInterface
 {
-
     public function equals(StateInterface|string $otherState): bool
     {
         return (string)$this === (string)$otherState;

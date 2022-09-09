@@ -9,7 +9,6 @@ use Noem\State\StateInterface;
 
 abstract class NestedState extends SimpleState implements NestedStateInterface
 {
-
     /**
      * @var StateInterface[]
      */

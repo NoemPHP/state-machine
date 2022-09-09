@@ -8,7 +8,6 @@ use Noem\State\State\RootState;
 
 class InMemoryStateStorage implements StateStorageInterface
 {
-
     private array $storage = [];
 
     private RootState $root;
