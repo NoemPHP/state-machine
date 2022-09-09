@@ -17,7 +17,6 @@ use Noem\State\StateStorageInterface;
 
 class StateTree
 {
-
     use StateDepthTrait;
 
     /**
