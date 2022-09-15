@@ -17,6 +17,7 @@ use Noem\State\Transition\TransitionProviderInterface;
 
 class StateMachine implements ObservableStateMachineInterface, ContextAwareStateMachineInterface, ActorInterface
 {
+
     /**
      * The current state. Note that in hierarchical state machines,
      * any number of states can be active at the same time. So this really only represents
@@ -42,7 +43,7 @@ class StateMachine implements ObservableStateMachineInterface, ContextAwareState
 
     public function __construct(
         private readonly TransitionProviderInterface $transitions,
-        private readonly StateStorageInterface $store,
+        private StateStorageInterface $store,
         private readonly ?object $initialTrigger = null,
         private readonly ContextProviderInterface $contextProvider = new EmptyContextProvider()
     ) {
@@ -83,23 +84,34 @@ class StateMachine implements ObservableStateMachineInterface, ContextAwareState
     {
         if ($this->isTransitioning) {
             throw new class ('State machine is currently transitioning') extends \RuntimeException implements
-                StateMachineExceptionInterface
-            {
+                StateMachineExceptionInterface {
+
             };
         }
         $this->isTransitioning = true;
+        /**
+         * Gather the enabled transitions first. Then perform them one by one,
+         * each time checking if the source state has not been left
+         *
+         * @see https://www.w3.org/TR/scxml/#SelectingTransitions
+         */
+        $enabledTransitions = [];
         foreach ($this->getTree()->upwards() as $state) {
-            /**
-             * TODO for some reason, we're not taking nested parallel state changes into account here...
-             */
             $transition = $this->transitions->getTransitionForTrigger($state, $payload, $this);
             if (!$transition) {
                 continue;
             }
-            $this->doTransition($state, $transition->target(), $payload);
-            break;
+            $enabledTransitions[] = $transition;
         }
-
+        foreach ($enabledTransitions as $enabledTransition) {
+            /**
+             * We deliberately re-fetch the current tree each time here,
+             * since it might have changed during a previous transition
+             */
+            if ($this->getTree()->isInState($enabledTransition->source())) {
+                $this->doTransition($enabledTransition->source(), $enabledTransition->target(), $payload);
+            }
+        }
         $this->isTransitioning = false;
 
         return $this;
@@ -109,18 +121,31 @@ class StateMachine implements ObservableStateMachineInterface, ContextAwareState
     {
         $this->notifyExit($from, $to);
 
+        /**
+         * We can already grab this tree because it can be deterministically built from the target upwards
+         * without storing the target state first
+         */
         $newTree = $this->getTree($to);
         $this->updateContexts($newTree, $payload);
-        $this->notifyEnter($from, $to);
-
+        /**
+         * Check if this is a non-atomic transition.
+         * If we are transitioning to a descendant of a parallel state, we need
+         * to delegate
+         */
         if ($immediateChildOfParallelState = $newTree->findAncestorWithParallelParent($to)) {
+            /**
+             * Create a new instance of our store. Instances of the source tree would otherwise
+             * use the updated configuration, resulting in wrong "history"
+             */
+            $this->store = clone $this->store;
             $this->store->save($to, $immediateChildOfParallelState);
             $this->currentState = $immediateChildOfParallelState->parent();
-            unset($this->trees[$to]); // Tree cache is stale now
+            unset($this->trees[$this->currentState]); // Tree cache is stale now
         } else {
             $this->store->save($to);
             $this->currentState = $to;
         }
+        $this->notifyEnter($from, $to);
     }
 
     private function notifyExit(StateInterface $from, StateInterface $to): void
