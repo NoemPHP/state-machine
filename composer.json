@@ -24,7 +24,10 @@
     "autoload": {
         "psr-4": {
             "Noem\\State\\": "src/"
-        }
+        },
+        "files": [
+            "inc/functions.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
