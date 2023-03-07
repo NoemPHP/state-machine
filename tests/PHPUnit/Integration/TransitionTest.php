@@ -83,7 +83,7 @@ class TransitionTest extends StateMachineTestCase
                 {
                 }
 
-                public function onEnterState(StateInterface $state, StateMachineInterface $machine)
+                public function onEnterState(StateInterface $state,StateInterface $from, StateMachineInterface $machine)
                 {
                     $this->flag = true;
                 }
