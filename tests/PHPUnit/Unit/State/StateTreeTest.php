@@ -6,6 +6,8 @@ namespace Noem\State\Test\Unit\Iterator;
 
 use Noem\State\InMemoryStateStorage;
 use Noem\State\Loader\Tests\LoaderTestCase;
+use Noem\State\NestedStateInterface;
+use Noem\State\State\HierarchicalState;
 use Noem\State\State\StateTree;
 
 class StateTreeTest extends LoaderTestCase
@@ -25,8 +27,22 @@ class StateTreeTest extends LoaderTestCase
         $map = $this->configureLoader($yaml)->definitions();
         $initialState = $map->get($initialStateName);
         $leafState = $map->get($leaf);
-        $sut = new StateTree($initialState, new InMemoryStateStorage($initialState));
-        $this->assertSame($expected, $sut->existsInBranch($leafState));
+        $stateStorage = new InMemoryStateStorage($initialState);
+
+        if ($initialState instanceof NestedStateInterface) {
+            $parent = $initialState->parent();
+            if ($parent instanceof HierarchicalState) {
+                $parent->setInitial($initialState);
+            }
+        }
+
+        $sut = new StateTree($initialState, $stateStorage);
+        $maybeNot=$expected?'':'NOT ';
+        $this->assertSame(
+            $expected,
+            $sut->existsInBranch($leafState),
+            "State '{$leaf}' should {$maybeNot}be active at the same time as '{$initialStateName}'"
+        );
     }
 
     public function provideTestData(): \Generator
