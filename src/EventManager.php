@@ -51,7 +51,7 @@ class EventManager implements EnterStateObserver, ExitStateObserver, ActionObser
         return $this;
     }
 
-    public function onEnterState(StateInterface $state, ObservableStateMachineInterface $machine)
+    public function onEnterState(StateInterface $state, StateInterface $from, ObservableStateMachineInterface $machine)
     {
         if (!isset($this->entryHandlers[(string)$state])) {
             return;
@@ -59,8 +59,8 @@ class EventManager implements EnterStateObserver, ExitStateObserver, ActionObser
 
         array_walk(
             $this->entryHandlers[(string)$state],
-            function (callable $handler) use ($state, $machine) {
-                $handler($state, $machine);
+            function (callable $handler) use ($state, $from, $machine) {
+                $handler($state, $from, $machine);
             }
         );
     }
@@ -72,7 +72,7 @@ class EventManager implements EnterStateObserver, ExitStateObserver, ActionObser
         return $this;
     }
 
-    public function onExitState(StateInterface $state, ObservableStateMachineInterface $machine)
+    public function onExitState(StateInterface $state, StateInterface $from, ObservableStateMachineInterface $machine)
     {
         if (!isset($this->exitHandlers[(string)$state])) {
             return;
@@ -80,8 +80,8 @@ class EventManager implements EnterStateObserver, ExitStateObserver, ActionObser
 
         array_walk(
             $this->exitHandlers[(string)$state],
-            function (callable $handler) use ($state, $machine) {
-                $handler($state, $machine);
+            function (callable $handler) use ($state, $from, $machine) {
+                $handler($state, $from, $machine);
             }
         );
     }
