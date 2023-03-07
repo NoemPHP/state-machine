@@ -17,6 +17,7 @@ use Noem\State\Transition\TransitionProviderInterface;
 
 class StateMachine implements ObservableStateMachineInterface, ContextAwareStateMachineInterface, ActorInterface
 {
+
     /**
      * The current state. Note that in hierarchical state machines,
      * any number of states can be active at the same time. So this really only represents
@@ -50,6 +51,21 @@ class StateMachine implements ObservableStateMachineInterface, ContextAwareState
         $this->currentState = $this->store->state();
         $this->contextMap = new \SplObjectStorage();
         $this->updateContexts($this->getTree(), $this->initialTrigger ?? new \stdClass());
+        $this->notifyEnter(
+            $this->currentState,
+            new class implements StateInterface {
+
+                public function __toString(): string
+                {
+                    return uniqid('@@null');
+                }
+
+                public function equals(StateInterface|string $otherState): bool
+                {
+                    return false;
+                }
+            }
+        );
     }
 
     private function getTree(?StateInterface $state = null): StateTree
@@ -83,8 +99,8 @@ class StateMachine implements ObservableStateMachineInterface, ContextAwareState
     {
         if ($this->isTransitioning) {
             throw new class ('State machine is currently transitioning') extends \RuntimeException implements
-                StateMachineExceptionInterface
-            {
+                StateMachineExceptionInterface {
+
             };
         }
         $this->isTransitioning = true;
@@ -156,7 +172,7 @@ class StateMachine implements ObservableStateMachineInterface, ContextAwareState
             }
             foreach ($this->observers as $observer) {
                 if ($observer instanceof ExitStateObserver) {
-                    $observer->onExitState($state, $this);
+                    $observer->onExitState($state, $from, $this);
                 }
             }
         }
@@ -183,7 +199,7 @@ class StateMachine implements ObservableStateMachineInterface, ContextAwareState
             }
             foreach ($this->observers as $observer) {
                 if ($observer instanceof EnterStateObserver) {
-                    $observer->onEnterState($state, $this);
+                    $observer->onEnterState($state, $from, $this);
                 }
             }
         }

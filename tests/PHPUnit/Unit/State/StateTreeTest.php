@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Noem\State\Test\Unit\Iterator;
 
+use Noem\State\InMemoryStateStorage;
 use Noem\State\Loader\Tests\LoaderTestCase;
 use Noem\State\State\StateTree;
 
@@ -24,7 +25,7 @@ class StateTreeTest extends LoaderTestCase
         $map = $this->configureLoader($yaml)->definitions();
         $initialState = $map->get($initialStateName);
         $leafState = $map->get($leaf);
-        $sut = new StateTree($initialState);
+        $sut = new StateTree($initialState, new InMemoryStateStorage($initialState));
         $this->assertSame($expected, $sut->existsInBranch($leafState));
     }
 
