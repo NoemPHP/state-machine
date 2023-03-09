@@ -6,6 +6,7 @@ namespace Noem\State;
 
 /**
  * Retrieve the root state of the given nested state
+ *
  * @param NestedStateInterface $state
  *
  * @return HierarchicalStateInterface
@@ -22,6 +23,7 @@ function root(NestedStateInterface $state): HierarchicalStateInterface
 
 /**
  * Try to find a specified parent state by name upwards in the given state hierarchy
+ *
  * @param string $parent
  * @param NestedStateInterface $state
  *
@@ -41,5 +43,34 @@ function parent(string $parent, NestedStateInterface $state): HierarchicalStateI
     throw new \RuntimeException(
         "{$parent} is not a parent state of {$originState}"
     );
+}
+
+/**
+ * Returns the entire branch from the given state until the root parent
+ *
+ * @param NestedStateInterface $state
+ *
+ * @return \Traversable
+ */
+function branch(NestedStateInterface $state): \Traversable
+{
+    yield $state;
+    while (($state = $state->parent()) !== null) {
+        yield $state;
+    }
+}
+
+function bubble(NestedStateInterface $state, callable $callback): void
+{
+    foreach (branch($state) as $node) {
+        $callback($node);
+    }
+}
+
+function cascade(NestedStateInterface $state, callable $callback): void
+{
+    foreach (array_reverse(iterator_to_array(branch($state))) as $node) {
+        $callback($node);
+    }
 }
 
