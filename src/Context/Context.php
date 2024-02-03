@@ -7,7 +7,7 @@ namespace Noem\State\Context;
 use Noem\State\ImmutableContextInterface;
 use Noem\State\ContextInterface;
 
-class Context extends \ArrayObject implements ImmutableContextInterface
+class Context extends \ArrayObject implements ContextInterface
 {
     public function __construct(private object $trigger, private array $initialData = [])
     {
@@ -38,11 +38,9 @@ class Context extends \ArrayObject implements ImmutableContextInterface
         return $this;
     }
 
-    public function withTrigger(object $trigger): ImmutableContextInterface
+    public function withTrigger(object $trigger): self
     {
-        $new = clone $this;
-        $new->trigger = $trigger;
-
-        return $new;
+        $this->trigger = $trigger;
+        return $this;
     }
 }

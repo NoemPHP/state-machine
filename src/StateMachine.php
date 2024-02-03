@@ -31,7 +31,7 @@ class StateMachine implements ObservableStateMachineInterface, ContextAwareState
     private bool $isTransitioning = false;
 
     /**
-     * @var \SplObjectStorage<StateInterface, ImmutableContextInterface>
+     * @var \SplObjectStorage<StateInterface, ContextInterface>
      */
     private \SplObjectStorage $contextMap;
 
@@ -170,7 +170,7 @@ class StateMachine implements ObservableStateMachineInterface, ContextAwareState
             }
             foreach ($this->observers as $observer) {
                 if ($observer instanceof ExitStateObserver) {
-                    $observer->onExitState($state, $from, $this);
+                    $observer->onExitState($state, $from, $this); // TODO something's not right here
                 }
             }
         }
