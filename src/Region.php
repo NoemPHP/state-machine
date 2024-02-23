@@ -8,7 +8,6 @@ use Noem\State\Util\ParameterDeriver;
 
 class Region
 {
-
     private string $currentState;
 
     private array $regions;
