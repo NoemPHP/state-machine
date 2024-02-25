@@ -6,7 +6,6 @@ namespace Noem\State;
 
 class StateMachine
 {
-
     public function __construct(
         private Region $region,
         private ?Context $context = null

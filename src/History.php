@@ -4,5 +4,4 @@ namespace Noem\State;
 
 class History
 {
-
 }
