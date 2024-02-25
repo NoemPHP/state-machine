@@ -8,6 +8,7 @@ use Noem\State\Util\ParameterDeriver;
 
 class Region
 {
+
     private string $currentState;
 
     private array $regions;
@@ -15,7 +16,7 @@ class Region
     private array $transitions;
 
     /**
-     * @var callable[][]
+     * @var \Closure[][]
      */
     private array $actionHandlers = [];
 
@@ -29,36 +30,46 @@ class Region
      */
     private array $exitHandlers = [];
 
-    public function __construct(private readonly array $states, ?string $initial = null)
-    {
+    private array $receives;
+
+    public function __construct(
+        private readonly array $states,
+        ?string $initial = null
+    ) {
         $this->currentState = $initial ?? current($this->states);
     }
 
-    public function trigger(object $payload): object
+    public function id(): string
+    {
+    }
+
+    public function trigger(object $payload, Context $context): object
     {
         if (isset($this->actionHandlers[$this->currentState])) {
             foreach ($this->actionHandlers[$this->currentState] as $actionHandler) {
-                $parameterType = ParameterDeriver::getParameterType($actionHandler);
-                if ($parameterType !== 'object' && !$payload instanceof $parameterType) {
+                if (!$this->isValidCallback($actionHandler, $payload)) {
                     continue;
                 }
-                $actionHandler($payload);
+                $actionHandler->call($context->extendedState, $payload);
             }
         }
         foreach ($regions = $this->regions() as $region) {
-            $region->trigger($payload);
+            $context->push($region);
+            $region->trigger($payload, $context);
+            $context->pop();
         }
-
+        /**
+         * We cannot transition away before all regions have finished
+         */
         foreach ($regions as $region) {
-            if ($region->isFinal()) {
+            if (!$region->isFinal()) {
                 return $payload;
             }
         }
 
         if (isset($this->transitions[$this->currentState])) {
             foreach ($this->transitions[$this->currentState] as $target => $guard) {
-                $parameterType = ParameterDeriver::getParameterType($guard);
-                if ($parameterType !== 'object' && !$payload instanceof $parameterType) {
+                if (!$this->isValidCallback($guard, $payload)) {
                     continue;
                 }
                 if ($guard($payload)) {
@@ -69,6 +80,16 @@ class Region
         }
 
         return $payload;
+    }
+
+    private function isValidCallback(callable $callback, object $payload): bool
+    {
+        $parameterType = ParameterDeriver::getParameterType($callback);
+        if ($parameterType !== 'object' && !$payload instanceof $parameterType) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -86,6 +107,16 @@ class Region
     private function doTransition(string $to)
     {
         $this->currentState = $to;
+    }
+
+    public function setKeysToReference(array $keys)
+    {
+        $this->receives = $keys;
+    }
+
+    public function references(string $key): bool
+    {
+        return in_array($this->receives);
     }
 
     public function isFinal(): bool
