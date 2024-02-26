@@ -8,7 +8,7 @@ class Context
     /**
      * @var iterable<Region>
      */
-    private \SplQueue $stack;
+    private \SplQueue $regionStack;
 
     private array $data = [];
 
@@ -16,30 +16,40 @@ class Context
 
     public function __construct()
     {
-        $this->stack = new \SplQueue();
-        $this->stack->setIteratorMode(\SplDoublyLinkedList::IT_MODE_LIFO);
+        $this->regionStack = new \SplQueue();
         $this->extendedState = new ExtendedState($this);
         $this->history = new History($this);
     }
 
     public function push(Region $region)
     {
-        $this->stack->push($region);
+        $this->regionStack->push($region);
     }
 
     public function pop()
     {
-        return $this->stack->pop();
+        return $this->regionStack->pop();
     }
 
     public function getFromStack(string $key): mixed
     {
-        foreach ($this->stack as $item) {
-            if (!$item->references($key)) {
+        foreach ($this->regionStack as $item) {
+            if (!$item->isInheritedKey($key)) {
                 continue;
             }
 
             return $this->data[$key] ?? null;
+        }
+    }
+
+    public function setOnStack(string $key, mixed $value): mixed
+    {
+        foreach ($this->regionStack as $item) {
+            if (!$item->isInheritedKey($key)) {
+                continue;
+            }
+
+            return $this->data[$key] = $value;
         }
     }
 }

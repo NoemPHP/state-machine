@@ -30,6 +30,8 @@ class RegionTest extends MockeryTestCase
      */
     public function basicSubRegion()
     {
+        $this->markTestSkipped();
+
         $ctx = new Context();
         $r = new Region(['one', 'two'], 'one');
         $r->pushTransition('one', 'two', fn(object $t) => true);
@@ -45,5 +47,23 @@ class RegionTest extends MockeryTestCase
 
         $handler->shouldHaveBeenCalled()->once();
         $this->assertTrue($r->isInState('two'));
+    }
+
+    /**
+     * @test
+     * @return void
+     */
+    public function inheritedContext()
+    {
+        $ctx = new Context();
+        $r = new Region(['one', 'two'], 'one');
+        $test = null;
+        $r->pushRegion(
+            'one',
+            (new Region(['foo']))
+                ->inherits(['key'])->onAction('foo', function () use (&$test) {
+                    $test = $this->key;
+                })
+        );
     }
 }

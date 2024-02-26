@@ -30,17 +30,15 @@ class Region
      */
     private array $exitHandlers = [];
 
-    private array $receives;
+    private array $inheritKeys;
+
+    private string $finalState;
 
     public function __construct(
         private readonly array $states,
         ?string $initial = null
     ) {
         $this->currentState = $initial ?? current($this->states);
-    }
-
-    public function id(): string
-    {
     }
 
     public function trigger(object $payload, Context $context): object
@@ -109,19 +107,21 @@ class Region
         $this->currentState = $to;
     }
 
-    public function setKeysToReference(array $keys)
+    public function inherits(array $keys): self
     {
-        $this->receives = $keys;
+        $this->inheritKeys = $keys;
+
+        return $this;
     }
 
-    public function references(string $key): bool
+    public function isInheritedKey(string $key): bool
     {
-        return in_array($this->receives);
+        return in_array($key, $this->inheritKeys);
     }
 
     public function isFinal(): bool
     {
-        return true;
+        return $this->currentState === $this->finalState;
     }
 
     public function pushRegion(string $state, Region $region)
@@ -134,8 +134,11 @@ class Region
         $this->transitions[$from][$to] = $guard;
     }
 
-    public function markFinal(string $state)
+    public function markFinal(string $state): self
     {
+        $this->finalState = $state;
+
+        return $this;
     }
 
     public function isInState(string $state)
