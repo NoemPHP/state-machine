@@ -4,7 +4,6 @@ namespace Noem\State;
 
 class ExtendedState
 {
-
     public function __construct(private Context $context)
     {
     }

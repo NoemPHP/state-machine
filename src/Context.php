@@ -4,7 +4,6 @@ namespace Noem\State;
 
 class Context
 {
-
     /**
      * @var iterable<Region>
      */
