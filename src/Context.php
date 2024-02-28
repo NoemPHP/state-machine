@@ -4,25 +4,29 @@ namespace Noem\State;
 
 class Context
 {
+
     /**
      * @var iterable<Region>
      */
     private \SplQueue $regionStack;
 
-    private array $data = [];
+    private \SplObjectStorage $regionContext;
 
     public readonly ExtendedState $extendedState;
 
     public function __construct()
     {
         $this->regionStack = new \SplQueue();
-        $this->extendedState = new ExtendedState($this);
+        $this->regionContext = new \SplObjectStorage();
         $this->history = new History($this);
     }
 
     public function push(Region $region)
     {
         $this->regionStack->push($region);
+        if (!$this->regionContext->contains($region)) {
+            $this->setRegionContext($region, []);
+        }
     }
 
     public function pop()
@@ -30,25 +34,10 @@ class Context
         return $this->regionStack->pop();
     }
 
-    public function getFromStack(string $key): mixed
+
+
+    public function setRegionContext(Region $region, array $context)
     {
-        foreach ($this->regionStack as $item) {
-            if (!$item->isInheritedKey($key)) {
-                continue;
-            }
-
-            return $this->data[$key] ?? null;
-        }
-    }
-
-    public function setOnStack(string $key, mixed $value): mixed
-    {
-        foreach ($this->regionStack as $item) {
-            if (!$item->isInheritedKey($key)) {
-                continue;
-            }
-
-            return $this->data[$key] = $value;
-        }
+        $this->regionContext->attach($region, $context);
     }
 }

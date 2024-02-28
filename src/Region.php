@@ -8,53 +8,56 @@ use Noem\State\Util\ParameterDeriver;
 
 class Region
 {
+
     private string $currentState;
-
-    private array $regions;
-
-    private array $transitions;
-
-    /**
-     * @var \Closure[][]
-     */
-    private array $actionHandlers = [];
-
-    /**
-     * @var callable[][]
-     */
-    private array $entryHandlers = [];
-
-    /**
-     * @var callable[][]
-     */
-    private array $exitHandlers = [];
-
-    private array $inheritKeys;
-
-    private string $finalState;
 
     public function __construct(
         private readonly array $states,
-        ?string $initial = null
+        private readonly array $regions,
+        private readonly array $transitions,
+        private readonly Events $events,
+        private array $stateContext,
+        private array $regionContext,
+        private readonly array $cascadingContext,
+        string $initial,
+        private string $final
     ) {
         $this->currentState = $initial ?? current($this->states);
     }
 
-    public function trigger(object $payload, Context $context): object
+    /**
+     * Triggers an action on this region and its sub-regions.
+     *
+     * @param object $payload Payload containing data related to the triggered action
+     *
+     * @return object Returns the modified payload after processing by all regions involved
+     */
+    public function trigger(object $payload): object
     {
-        if (isset($this->actionHandlers[$this->currentState])) {
-            foreach ($this->actionHandlers[$this->currentState] as $actionHandler) {
-                if (!$this->isValidCallback($actionHandler, $payload)) {
-                    continue;
-                }
-                $actionHandler->call($context->extendedState, $payload);
-            }
-        }
+        $regionStack = new \SplStack();
+        $regionStack->push($this);
+        $extendedState = new ExtendedState($regionStack);
+
+        return $this->processTrigger($payload, $extendedState, $regionStack);
+    }
+
+    /**
+     * Carries out all actions relevant to the current trigger while maintaining a stack of nested regions
+     *
+     * @param object $payload
+     * @param ExtendedState $extendedState
+     * @param \SplStack $regionStack
+     *
+     * @return object
+     */
+    private function processTrigger(object $payload, ExtendedState $extendedState, \SplStack $regionStack): object
+    {
         foreach ($regions = $this->regions() as $region) {
-            $context->push($region);
-            $region->trigger($payload, $context);
-            $context->pop();
+            $regionStack->push($region);
+            $region->processTrigger($payload, $extendedState, $regionStack);
+            $regionStack->pop();
         }
+        $this->events->onAction($this->currentState, $payload, $extendedState);
         /**
          * We cannot transition away before all regions have finished
          */
@@ -66,11 +69,11 @@ class Region
 
         if (isset($this->transitions[$this->currentState])) {
             foreach ($this->transitions[$this->currentState] as $target => $guard) {
-                if (!$this->isValidCallback($guard, $payload)) {
+                if (!ParameterDeriver::isCompatibleCallback($guard, $payload)) {
                     continue;
                 }
                 if ($guard($payload)) {
-                    $this->doTransition($target);
+                    $this->doTransition($target, $extendedState);
                     break;
                 }
             }
@@ -79,18 +82,10 @@ class Region
         return $payload;
     }
 
-    private function isValidCallback(callable $callback, object $payload): bool
-    {
-        $parameterType = ParameterDeriver::getParameterType($callback);
-        if ($parameterType !== 'object' && !$payload instanceof $parameterType) {
-            return false;
-        }
-
-        return true;
-    }
-
     /**
-     * @return Region[]
+     * Retrieves a list of regions associated with the current state.
+     *
+     * @return Region[] Array of current regions
      */
     private function regions(): array
     {
@@ -101,54 +96,99 @@ class Region
         return $this->regions[$this->currentState];
     }
 
-    private function doTransition(string $to)
+    /**
+     * Transition to another state based on the defined transitions.
+     *
+     * @param string $to Target state to transition to
+     * @param ExtendedState $extendedState
+     *
+     * @return void
+     */
+    private function doTransition(string $to, ExtendedState $extendedState): void
     {
+        $this->events->onExitState($this->currentState, $extendedState);
         $this->currentState = $to;
+        $this->events->onEnterState($to, $extendedState);
     }
 
-    public function inherits(array $keys): self
+    /**
+     * Checks whether a given key is marked as inheritable across multiple regions.
+     *
+     * @param string $key Key to check
+     *
+     * @return bool True if it's an inherited key; false otherwise
+     */
+    public function inherits(string $key): bool
     {
-        $this->inheritKeys = $keys;
-
-        return $this;
+        return in_array($key, $this->cascadingContext);
     }
 
-    public function isInheritedKey(string $key): bool
-    {
-        return in_array($key, $this->inheritKeys);
-    }
-
+    /**
+     * Determines if we have reached the end or final state.
+     *
+     * @return bool True if we are at the final state; false otherwise
+     */
     public function isFinal(): bool
     {
-        return $this->currentState === $this->finalState;
+        return $this->currentState === $this->final;
     }
 
-    public function pushRegion(string $state, Region $region)
-    {
-        $this->regions[$state][] = $region;
-    }
-
-    public function pushTransition(string $from, string $to, callable $guard)
-    {
-        $this->transitions[$from][$to] = $guard;
-    }
-
-    public function markFinal(string $state): self
-    {
-        $this->finalState = $state;
-
-        return $this;
-    }
-
-    public function isInState(string $state)
+    /**
+     * Checks if the current state matches the specified one.
+     *
+     * @param string $state State to compare against
+     *
+     * @return bool True if the current state matches the provided state; false otherwise
+     */
+    public function isInState(string $state): bool
     {
         return $this->currentState === $state;
     }
-
-    public function onAction(string $state, callable $callback): static
+    /**
+     * Gets the value mapped under `$key` from the region context.
+     *
+     * @param string $key Key to look up
+     *
+     * @return mixed Returns the stored value corresponding to the requested key or null if not found
+     */
+    public function getRegionContext(string $key): mixed
     {
-        $this->actionHandlers[$state][] = $callback;
+        return $this->regionContext[$key] ?? null;
+    }
+    /**
+     * Sets the value for the given `$key` in the region context.
+     * Throws exception when trying to set an inherited key.
+     *
+     * @param string $key Key to save the value under
+     * @param mixed $value Value to assign
+     */
+    public function setRegionContext(string $key, mixed $value): void
+    {
+        if ($this->inherits($key)) {
+            throw new \RuntimeException("Cannot set key '{$key}': It is flagged as inherited");
+        }
+        $this->regionContext[$key] = $value;
+    }
+    /**
+     * Gets the value mapped under `$key` from the state context.
+     *
+     * @param string $key Key to look up
+     *
+     * @return mixed Returns the stored value corresponding to the requested key or null if not found
+     */
+    public function getStateContext(string $key): mixed
+    {
+        return $this->stateContext[$this->currentState][$key] ?? null;
+    }
 
-        return $this;
+    /**
+     * Sets the value for the given `$key` in the state context.
+     *
+     * @param string $key Key to save the value under
+     * @param mixed $value Value to assign
+     */
+    public function setStateContext(string $key, mixed $value): void
+    {
+        $this->stateContext[$this->currentState][$key] = $value;
     }
 }

@@ -50,6 +50,16 @@ class ParameterDeriver
         return $returns->getName();
     }
 
+    public static function isCompatibleCallback(callable $callback, object $payload): bool
+    {
+        $parameterType = self::getParameterType($callback);
+        if ($parameterType !== 'object' && !$payload instanceof $parameterType) {
+            return false;
+        }
+
+        return true;
+    }
+
     /**
      * @param $callable
      *

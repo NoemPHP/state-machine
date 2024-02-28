@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace Noem\State\Test\Integration;
 
 use Mockery\Adapter\Phpunit\MockeryTestCase;
-use Noem\State\Context;
-use Noem\State\Region;
+use Noem\State\RegionBuilder;
 
 class RegionTest extends MockeryTestCase
 {
@@ -17,11 +16,18 @@ class RegionTest extends MockeryTestCase
      */
     public function basicTransition()
     {
-        $this->markTestSkipped();
-        $r = new Region(['one', 'two'], 'one');
-        $r->pushTransition('one', 'two', fn(object $t) => true);
+        //$this->markTestSkipped();
+
+        $spy = \Mockery::spy(fn() => true);
+
+        $r = (new RegionBuilder())
+            ->setStates(['one', 'two'])
+            ->markInitial('one')
+            ->pushTransition('one', 'two', fn(object $t) => $spy())
+            ->build();
         $r->trigger((object)['foo' => 1]);
         $this->assertTrue($r->isInState('two'));
+        $spy->shouldHaveBeenCalled()->once();
     }
 
     /**
@@ -30,40 +36,132 @@ class RegionTest extends MockeryTestCase
      */
     public function basicSubRegion()
     {
-        $this->markTestSkipped();
+        //$this->markTestSkipped();
 
-        $ctx = new Context();
-        $r = new Region(['one', 'two'], 'one');
-        $r->pushTransition('one', 'two', fn(object $t) => true);
         $handler = \Mockery::spy(fn() => true);
-        $r->pushRegion(
-            'one',
-            (new Region(['foo']))
-                ->onAction('foo', function (object $t) use ($handler) {
-                    $handler();
-                })
-        );
-        $r->trigger((object)['foo' => 1], $ctx);
+
+        $r = (new RegionBuilder())
+            ->setStates(['one', 'two'])
+            ->markInitial('one')
+            ->pushTransition(
+                'one', 'two',
+                fn(object $t) => true
+            )
+            ->addRegion(
+                'one',
+                (new RegionBuilder)->setStates(['foo'])
+                    ->onAction('foo', function (object $t) use ($handler) {
+                        $handler();
+                    })->build()
+            );
+        $region = $r->build();
+        $region->trigger((object)['foo' => 1]);
 
         $handler->shouldHaveBeenCalled()->once();
-        $this->assertTrue($r->isInState('two'));
+        $this->assertTrue($region->isInState('two'));
     }
 
     /**
      * @test
      * @return void
      */
-    public function inheritedContext()
+    public function getStateContext()
     {
-        $ctx = new Context();
-        $r = new Region(['one', 'two'], 'one');
         $test = null;
-        $r->pushRegion(
-            'one',
-            (new Region(['foo']))
-                ->inherits(['key'])->onAction('foo', function () use (&$test) {
-                    $test = $this->key;
-                })
-        );
+        $r = new RegionBuilder();
+        $r->setStates(['one'])
+            ->addRegion(
+                'one',
+                (new RegionBuilder())
+                    ->setStates(['foo'])
+                    ->inherits(['key'])
+                    ->onAction('foo', function (object $t) use (&$test) {
+                        $test = $this->key;
+                    })
+                    ->setStateContext('foo', [
+                        'key' => 'value',
+                    ])
+                    ->build()
+            );
+
+        $r->build()->trigger((object)['foo' => 1]);
+        $this->assertSame($test, 'value');
+    }
+
+    /**
+     * @test
+     * @return void
+     */
+    public function nestedRegionContext()
+    {
+        $test = null;
+        $r = new RegionBuilder();
+        $r->setStates(['one'])
+            ->addRegion(
+                'one',
+                (new RegionBuilder())
+                    ->setStates(['foo'])
+                    ->onAction('foo', function (object $t) use (&$test) {
+                        $test = $this->get('key');
+                    })
+                    ->setRegionContext([
+                        'key' => 'value',
+                    ])
+                    ->build()
+            );
+
+        $r->build()->trigger((object)['foo' => 1]);
+        $this->assertSame($test, 'value');
+    }
+
+    /**
+     * @test
+     * @return void
+     */
+    public function getInheritedRegionContext()
+    {
+        $test = null;
+        $r = new RegionBuilder();
+        $r->setStates(['one'])
+            ->addRegion(
+                'one',
+                (new RegionBuilder())
+                    ->setStates(['foo'])
+                    ->inherits(['key'])
+                    ->onAction('foo', function (object $t) use (&$test) {
+                        $test = $this->get('key');
+                    })->build()
+            )
+            ->setRegionContext([
+                'key' => 'value',
+            ]);
+
+        $r->build()->trigger((object)['foo' => 1]);
+        $this->assertSame($test, 'value');
+    }
+
+    /**
+     * @test
+     * @return void
+     */
+    public function setInheritedRegionContext()
+    {
+        $r = new RegionBuilder();
+        $r->setStates(['one'])
+            ->addRegion(
+                'one',
+                (new RegionBuilder())
+                    ->setStates(['foo'])
+                    ->inherits(['key'])
+                    ->onAction('foo', function (object $t) use (&$test) {
+                        $this->set('key', 'newValue');
+                    })->build()
+            )
+            ->setRegionContext([
+                'key' => 'value',
+            ]);
+        $region = $r->build();
+        $region->trigger((object)['foo' => 1]);
+        $this->assertSame($region->getRegionContext('key'), 'newValue');
     }
 }
