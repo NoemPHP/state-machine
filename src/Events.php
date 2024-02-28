@@ -8,7 +8,6 @@ use Noem\State\Util\ParameterDeriver;
 
 class Events
 {
-
     /**
      * @var \Closure[][]
      */

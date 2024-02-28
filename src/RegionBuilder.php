@@ -6,7 +6,6 @@ namespace Noem\State;
 
 class RegionBuilder
 {
-
     private array $states = [];
 
     private array $regions = [];
