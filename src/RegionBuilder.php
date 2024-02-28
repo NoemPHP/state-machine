@@ -6,6 +6,7 @@ namespace Noem\State;
 
 class RegionBuilder
 {
+
     private array $states = [];
 
     private array $regions = [];
@@ -45,13 +46,13 @@ class RegionBuilder
      * Adds a specific region for a particular state
      *
      * @param string $state The name of the state
-     * @param Region $region The region object to be added
+     * @param RegionBuilder $regionBuilder The region builder to be added
      *
      * @return self This builder instance, allowing chaining
      */
-    public function addRegion(string $state, Region $region): self
+    public function addRegion(string $state, RegionBuilder $regionBuilder): self
     {
-        $this->regions[$state][] = $region;
+        $this->regions[$state][] = $regionBuilder;
 
         return $this;
     }
@@ -97,6 +98,20 @@ class RegionBuilder
     public function onAction(string $state, \Closure $callback): self
     {
         $this->events->addActionHandler($state, $callback);
+
+        return $this;
+    }
+
+    public function onEnter(string $state, \Closure $callback): self
+    {
+        $this->events->addEnterStateHandler($state, $callback);
+
+        return $this;
+    }
+
+    public function onExit(string $state, \Closure $callback): self
+    {
+        $this->events->addExitStateHandler($state, $callback);
 
         return $this;
     }
@@ -167,7 +182,7 @@ class RegionBuilder
     {
         return new Region(
             states: $this->states,
-            regions: $this->regions,
+            regions: $this->buildSubRegions(),
             transitions: $this->transitions,
             events: $this->events,
             stateContext: $this->stateContext,
@@ -176,5 +191,15 @@ class RegionBuilder
             initial: $this->initial ?? current($this->states),
             final: $this->final ?? end($this->states)
         );
+    }
+
+    private function buildSubRegions(): array
+    {
+        $built = [];
+        foreach ($this->regions as $state => $regions) {
+            $built[$state] = array_map(fn(RegionBuilder $b) => $b->build(), $regions);
+        }
+
+        return $built;
     }
 }
