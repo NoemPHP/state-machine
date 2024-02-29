@@ -76,7 +76,7 @@ class Region
                     throw new \RuntimeException('Guards must return bool');
                 }
                 if ($guard($payload)) {
-                    $this->doTransition($target, $extendedState);
+                    $this->doTransition($target, $payload, $extendedState);
                     break;
                 }
             }
@@ -107,11 +107,11 @@ class Region
      *
      * @return void
      */
-    private function doTransition(string $to, ExtendedState $extendedState): void
+    private function doTransition(string $to, object $trigger, ExtendedState $extendedState): void
     {
-        $this->events->onExitState($this->currentState, $extendedState);
+        $this->events->onExitState($this->currentState, $trigger, $extendedState);
         $this->currentState = $to;
-        $this->events->onEnterState($to, $extendedState);
+        $this->events->onEnterState($to, $trigger, $extendedState);
     }
 
     /**

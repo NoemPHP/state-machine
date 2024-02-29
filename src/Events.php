@@ -8,6 +8,7 @@ use Noem\State\Util\ParameterDeriver;
 
 class Events
 {
+
     /**
      * @var \Closure[][]
      */
@@ -16,8 +17,6 @@ class Events
     private array $entryHandlers = [];
 
     private array $exitHandlers = [];
-
-
 
     public function onAction(string $state, object $payload, ExtendedState $extendedState)
     {
@@ -46,14 +45,14 @@ class Events
         return $this;
     }
 
-    public function onEnterState(string $state, ExtendedState $extendedState)
+    public function onEnterState(string $state, object $trigger, ExtendedState $extendedState)
     {
         if (!isset($this->entryHandlers[$state])) {
             return;
         }
 
         foreach ($this->entryHandlers[$state] as $entryHandler) {
-            $entryHandler->call($extendedState);
+            $entryHandler->call($extendedState, $trigger);
         }
     }
 
@@ -64,14 +63,14 @@ class Events
         return $this;
     }
 
-    public function onExitState(string $state, ExtendedState $extendedState)
+    public function onExitState(string $state, object $trigger, ExtendedState $extendedState)
     {
         if (!isset($this->exitHandlers[$state])) {
             return;
         }
 
         foreach ($this->exitHandlers[$state] as $exitHandler) {
-            $exitHandler->call($extendedState);
+            $exitHandler->call($extendedState, $trigger);
         }
     }
 

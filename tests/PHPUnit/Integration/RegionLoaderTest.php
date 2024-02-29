@@ -23,21 +23,34 @@ states:
         # language=injectablephp
         guard: !php |
           return function(object $trigger): bool{
-            echo "I am here";
             return true;
           };
   - name: two
     onEnter: 
       # language=injectablephp
-      - callback: !php |
+      - run: !php |
           return function(object $trigger){
-            
+            $this->set('message', 'hello');
           };
     regions:
-     - states:
+     - inherits:
+        - message  
+       states:
         - name: one_one
+          transitions:
+            - target: one_two
         - name: one_two
+          action:
+            - run: !php |
+                return function(object $trigger){
+                  $message = $this->get('message');
+                  $this->set('message', $message.' world');
+                };
+          transitions:
+            - target: one_three
         - name: one_three
+    transitions:
+      - target: three
   - name: three
 initial: one
 final: three
@@ -45,6 +58,10 @@ final: three
 YAML;
         $loader = RegionLoader::fromYaml($yaml);
         $region = $loader->build();
-        $region->trigger((object)['foo' => 'bar']);
+        while (!$region->isFinal()) {
+            $region->trigger((object)['foo' => 'bar']);
+        }
+        $message=$region->getRegionContext('message');
+        $this->assertSame($message,'hello world');
     }
 }
