@@ -22,34 +22,36 @@ Install this package via composer:
 
 ## Usage
 
-### Using [noem/state-machine-loader](https://noemphp.github.io/state-machine-loader)
-
-You can automatically configure a state machine instance from YAML, JSON or php arrays. To make yourself familiar with
-the notation format, please refer to the documentation at the link above
+### Using `RegionBuilder`
 
 ```php
-use Noem\State\Loader\YamlLoader;
-use Noem\State\StateMachine;
-use Noem\State\Transition\TransitionProvider;
-use Noem\State\InMemoryStateStorage;
+<?php
 
-$yaml = <<<YAML
-foo: 
-  children:
-    bar: {}
-    baz: {}
-YAML;
+declare(strict_types=1);
 
-$loader = new YamlLoader($yaml);
-$definitions = $loader->definitions(); // A flat list of all defined states
+use Noem\State\RegionBuilder;
 
-$stateMachine = new StateMachine(
-    $loader->transitions(), // Our generated TransitionProvider
-    new InMemoryStateStorage($definitions->get('bar')) // Initialize in the 'bar' state
-);
-// register the preconfigured action, onEntry, onExit event handlers
-$stateMachine->attach($loader->observer());
+$r = (new RegionBuilder())
+            ->setStates(['off', 'starting', 'on', 'error'])
+            ->markInitial('off') // if not called, will default to the first entry
+            ->markFinal('error') // if not called, will default to the last entry
+            ->pushTransition('off', 'starting', fn(object $trigger)=>true)
+            ->pushTransition('starting', 'on', fn(object $trigger)=>true)
+            ->pushTransition('on', 'error', function(\Throwable $exception){
+                echo 'Error: '. $exception->getMessage();
+                return true;
+            })
+            ->onEnter('starting', function(object $trigger){
+                echo 'Starting application';
+            })
+            ->onAction('on',function (object $trigger){
+                echo $trigger->message;
+                // TODO: Main business logic
+            })
+            ->build();
+            
+while(!$r->isFinal()){
+    $r->trigger((object)['message'=>'hello world']);
+}
 
-var_dump($stateMachine->isInState('foo')); // true
-var_dump($stateMachine->isInState('bar')); // also true
 ```
