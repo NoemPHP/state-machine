@@ -8,6 +8,7 @@ use Noem\State\Util\ParameterDeriver;
 
 class Region
 {
+
     private string $currentState;
 
     public function __construct(
@@ -70,6 +71,9 @@ class Region
             foreach ($this->transitions[$this->currentState] as $target => $guard) {
                 if (!ParameterDeriver::isCompatibleCallback($guard, $payload)) {
                     continue;
+                }
+                if (ParameterDeriver::getReturnType($guard) !== 'bool') {
+                    throw new \RuntimeException('Guards must return bool');
                 }
                 if ($guard($payload)) {
                     $this->doTransition($target, $extendedState);
@@ -143,6 +147,7 @@ class Region
     {
         return $this->currentState === $state;
     }
+
     /**
      * Gets the value mapped under `$key` from the region context.
      *
@@ -154,6 +159,7 @@ class Region
     {
         return $this->regionContext[$key] ?? null;
     }
+
     /**
      * Sets the value for the given `$key` in the region context.
      * Throws exception when trying to set an inherited key.
@@ -168,6 +174,7 @@ class Region
         }
         $this->regionContext[$key] = $value;
     }
+
     /**
      * Gets the value mapped under `$key` from the state context.
      *

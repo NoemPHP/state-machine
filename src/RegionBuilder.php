@@ -180,6 +180,9 @@ class RegionBuilder
      */
     public function build(): Region
     {
+        if(empty($this->states)){
+            throw new \RuntimeException("States cannot be empty");
+        }
         return new Region(
             states: $this->states,
             regions: $this->buildSubRegions(),

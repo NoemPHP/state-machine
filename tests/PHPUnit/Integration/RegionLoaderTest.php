@@ -15,22 +15,36 @@ class RegionLoaderTest extends MockeryTestCase
     public function fromYam()
     {
         // language=yaml
-        $yaml = <<<YAML
+        $yaml = <<<'YAML'
 states:
-  - one
-  - two
-  - three
+  - name: one
+    transitions:
+      - target: two
+        # language=injectablephp
+        guard: !php |
+          return function(object $trigger): bool{
+            echo "I am here";
+            return true;
+          };
+  - name: two
+    onEnter: 
+      # language=injectablephp
+      - callback: !php |
+          return function(object $trigger){
+            
+          };
+    regions:
+     - states:
+        - name: one_one
+        - name: one_two
+        - name: one_three
+  - name: three
 initial: one
 final: three
-regions:
-  two:
-    - states:
-      - one_one
-      - one_two
-      - one_three
 
 YAML;
         $loader = RegionLoader::fromYaml($yaml);
-        $loader->build();
+        $region = $loader->build();
+        $region->trigger((object)['foo' => 'bar']);
     }
 }
