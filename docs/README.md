@@ -6,19 +6,15 @@ This library provides an implementation of a Finite State Machine (FSM) in PHP.
 The benefits of using an FSM architecture include:
 
 1. **Simplified system behavior modeling:** State machines help to represent and organize the behavior of a system in a structured and understandable manner.
-2. **Improved testability:** State machines allow for easier testing of individual states and transitions, making it simpler to isolate and test specific system behaviors.
-3. **Reusability:** State machines can be reused across different systems, making it easier to develop and maintain software. 
-4. **Parallel processing:** State machines can handle multiple events and transitions simultaneously, allowing for more efficient processing of concurrent events. 
-5. **Flexibility:** State machines can adapt to new requirements and changes in system behavior, making them a versatile tool for system design. 
-6. **Reduced complexity:** By breaking down a complex system into smaller, manageable states, state machines can simplify the overall system design and make it easier to understand. 
-7. **Predictable behavior:** State machines ensure that a system behaves consistently and predictably, as the transitions between states are explicitly defined. 
-8. **Documentation:** State machines can serve as a form of documentation, as they provide a visual/textual representation of the system's behavior and transitions
-
-
+2. **Ease of refactoring:** Significant changes to system architecture can be done without affecting business logic
+3. **Testability:** State machines allow for easier testing of individual states and transitions, making it simpler to isolate and test specific system behaviors.
+4. **Reduced complexity:** By breaking down a complex system into smaller, manageable states, state machines can simplify the overall system design and make it easier to understand. 
+5. **Predictable behavior:** State machines ensure that a system behaves consistently and predictably, as the transitions between states are explicitly defined. 
+6. **Documentation:** State machines serve as a form of documentation, as they provide a visual/textual representation of the system's behavior and transitions
 
 ## Features
 
-* **Nested regions** - One horizontal set of states is called a "region". However, each state can have any number of sub-regions
+* **Nested regions** - One horizontal set of states is called a "region". However, each state can have any number of sub-regions, allowing both *parallel states* and *hierarchical states*
 * **Guards** - Enable a given transition only if a predicate returns `true`.
 * **Actions** - Dispatch actions to the machine to achieve stateful behaviour. Only the action handlers corresponding to
   the active state will get called.
