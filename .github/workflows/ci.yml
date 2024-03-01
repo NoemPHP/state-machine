@@ -12,7 +12,7 @@ jobs:
             -   uses: "shivammathur/setup-php@v2"
                 with:
                     php-version: "8.0"
-            -   uses: "ramsey/composer-install@v1"
+            -   uses: "ramsey/composer-install@v3"
             -   name: "Sync embedded code blocks"
                 run: "composer embed-files"
             -   name: "Run PHPCBF"
@@ -24,13 +24,12 @@ jobs:
         strategy:
             matrix:
                 php:
-                    - "8.0"
+                    - "8.1"
                 dependencies:
                     - "lowest"
                     - "highest"
                 include:
-                    -   php-version: "8.1"
-                        composer-options: "--ignore-platform-reqs"
+                    - composer-options: "--ignore-platform-reqs"
 
         steps:
             -   name: "Extract branch name"
@@ -42,7 +41,7 @@ jobs:
             -   uses: "shivammathur/setup-php@v2"
                 with:
                     php-version: "${{ matrix.php }}"
-            -   uses: "ramsey/composer-install@v1"
+            -   uses: "ramsey/composer-install@v3"
                 with:
                     dependency-versions: "${{ matrix.dependencies }}"
                     composer-options: "${{ matrix.composer-options }}"

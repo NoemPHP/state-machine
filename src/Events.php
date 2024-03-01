@@ -14,21 +14,31 @@ class Events
      */
     private array $actionHandlers = [];
 
+    /**
+     * @var \Closure[][]
+     */
     private array $entryHandlers = [];
 
+    /**
+     * @var \Closure[][]
+     */
     private array $exitHandlers = [];
 
-    public function onAction(string $state, object $payload, ExtendedState $extendedState)
+    public function onAction(string $state, object $trigger, ExtendedState $extendedState)
     {
         if (!isset($this->actionHandlers[$state])) {
             return;
         }
 
         foreach ($this->actionHandlers[$state] as $actionHandler) {
-            if (!ParameterDeriver::isCompatibleCallback($actionHandler, $payload)) {
+            if (!ParameterDeriver::isCompatibleParameter($actionHandler, $trigger)) {
                 continue;
             }
-            $actionHandler->call($extendedState, $payload);
+            try {
+                $actionHandler->call($extendedState, $trigger);
+            } catch (\Throwable $exception) {
+                $extendedState->handleException($exception);
+            }
         }
     }
 
@@ -52,7 +62,14 @@ class Events
         }
 
         foreach ($this->entryHandlers[$state] as $entryHandler) {
-            $entryHandler->call($extendedState, $trigger);
+            if (!ParameterDeriver::isCompatibleParameter($entryHandler, $trigger)) {
+                continue;
+            }
+            try {
+                $entryHandler->call($extendedState, $trigger);
+            } catch (\Throwable $exception) {
+                $extendedState->handleException($exception);
+            }
         }
     }
 
@@ -70,7 +87,14 @@ class Events
         }
 
         foreach ($this->exitHandlers[$state] as $exitHandler) {
-            $exitHandler->call($extendedState, $trigger);
+            if (!ParameterDeriver::isCompatibleParameter($exitHandler, $trigger)) {
+                continue;
+            }
+            try {
+                $exitHandler->call($extendedState, $trigger);
+            } catch (\Throwable $exception) {
+                $extendedState->handleException($exception);
+            }
         }
     }
 

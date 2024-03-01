@@ -4,6 +4,9 @@ namespace Noem\State;
 
 class ExtendedState
 {
+
+    private bool $isHandlingException = false;
+
     public function __construct(private \SplStack $regionStack)
     {
     }
@@ -66,7 +69,8 @@ class ExtendedState
     }
 
     /**
-     * Sets a given value across all regions within the stack, only when the key does not inherit from any cascaded context.
+     * Sets a given value across all regions within the stack, only when the key does not inherit from any cascaded
+     * context.
      *
      * @param string $key Target key to associate the provided value with
      * @param mixed $value Desired value
@@ -80,6 +84,28 @@ class ExtendedState
             }
 
             $region->setRegionContext($key, $value);
+        }
+    }
+
+    public function handleException(\Throwable $exception): void
+    {
+        /**
+         * If handling one exception causes another one, we give up
+         */
+        if ($this->isHandlingException) {
+            throw $exception;
+        }
+        $this->isHandlingException = true;
+        foreach ($this->regionStack as $region) {
+            assert($region instanceof Region);
+            $region->trigger($exception);
+        }
+        $this->isHandlingException = false;
+
+        $rootRegion = $this->regionStack->top();
+        assert($rootRegion instanceof Region);
+        if (!$rootRegion->isFinal()) {
+            throw $exception;
         }
     }
 }

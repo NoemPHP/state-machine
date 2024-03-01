@@ -9,6 +9,7 @@ use ReflectionType;
 
 class ParameterDeriver
 {
+
     /**
      * Derives the class type of the first argument of a callable.
      *
@@ -47,12 +48,13 @@ class ParameterDeriver
             return null;
         }
         assert($returns instanceof \ReflectionNamedType);
+
         return $returns->getName();
     }
 
-    public static function isCompatibleCallback(callable $callback, object $payload): bool
+    public static function isCompatibleParameter(callable $callback, object $payload, int $param = 0): bool
     {
-        $parameterType = self::getParameterType($callback);
+        $parameterType = self::getParameterType($callback, $param);
         if ($parameterType !== 'object' && !$payload instanceof $parameterType) {
             return false;
         }

@@ -8,6 +8,19 @@ use Symfony\Component\Yaml\Yaml;
 class RegionLoader
 {
 
+    public function __construct(private array $helpers)
+    {
+    }
+
+    private function resolveHelper(string $name, string $content): mixed
+    {
+        if (isset($this->helpers[$name])) {
+            return $this->helpers[$name]($content);
+        }
+
+        throw new \RuntimeException("Undefined helper '{$name}'");
+    }
+
     /**
      * Load a region builder from YAML input.
      *
@@ -15,9 +28,12 @@ class RegionLoader
      *
      * @return RegionBuilder Returns an instance of RegionBuilder initialized with data from given YAML input
      */
-    public static function fromYaml(string $yaml): RegionBuilder
+    public function fromYaml(string $yaml): RegionBuilder
     {
-        $array = Yaml::parse($yaml);
+        $array = Yaml::parse(
+            $yaml,
+            Yaml::PARSE_CUSTOM_TAGS
+        );
 
         return self::fromArray($array);
     }
@@ -29,10 +45,10 @@ class RegionLoader
      *
      * @return RegionBuilder Returns an instance of RegionBuilder initialized with data from given array input
      */
-    public static function fromArray(array $array): RegionBuilder
+    public function fromArray(array $array): RegionBuilder
     {
         $builder = new RegionBuilder();
-        [$states, $regions, $transitions, $callbacks] = self::extractConfig($array['states'] ?? []);
+        [$states, $regions, $transitions, $callbacks] = $this->extractConfig($array['states'] ?? []);
         $builder->setStates($states);
         foreach ($regions as $state => $subRegions) {
             foreach ($subRegions as $region) {
@@ -41,22 +57,22 @@ class RegionLoader
         }
         foreach ($transitions as $state => $stateTransitions) {
             foreach ($stateTransitions as $transition) {
-                $builder->pushTransition($state, $transition['target'], self::createTransitionGuard($transition));
+                $builder->pushTransition($state, $transition['target'], $this->createTransitionGuard($transition));
             }
         }
         foreach ($callbacks['onEnter'] as $state => $stateCallbacks) {
             foreach ($stateCallbacks as $stateCallback) {
-                $builder->onEnter($state, self::createStateCallback($stateCallback));
+                $builder->onEnter($state, $this->createStateCallback($stateCallback));
             }
         }
         foreach ($callbacks['onExit'] as $state => $stateCallbacks) {
             foreach ($stateCallbacks as $stateCallback) {
-                $builder->onExit($state, self::createStateCallback($stateCallback));
+                $builder->onExit($state, $this->createStateCallback($stateCallback));
             }
         }
         foreach ($callbacks['action'] as $state => $stateCallbacks) {
             foreach ($stateCallbacks as $stateCallback) {
-                $builder->onAction($state, self::createStateCallback($stateCallback));
+                $builder->onAction($state, $this->createStateCallback($stateCallback));
             }
         }
         isset($array['initial']) && $builder->markInitial($array['initial']);
@@ -73,20 +89,14 @@ class RegionLoader
      *
      * @return \Closure A callback suitable for use as a transition guard
      */
-    public static function createTransitionGuard(array $transition): \Closure
+    public function createTransitionGuard(array $transition): \Closure
     {
         if (!isset($transition['guard'])) {
             return fn(object $t): bool => true;
         }
         $guard = $transition['guard'];
         if ($guard instanceof TaggedValue) {
-            if ($guard->getTag() === 'php') {
-                return eval($guard->getValue());
-            }
-
-            if ($guard->getTag() === 'get') {
-                //TODO access container
-            }
+            return $this->resolveHelper($guard->getTag(), $guard->getValue());
         }
         if (is_callable($transition['guard'])) {
             return \Closure::fromCallable($transition['guard']);
@@ -102,17 +112,11 @@ class RegionLoader
      *
      * @return \Closure A callback suitable for use as the specified event handler
      */
-    public static function createStateCallback(array $definition): \Closure
+    public function createStateCallback(array $definition): \Closure
     {
         $run = $definition['run'];
         if ($run instanceof TaggedValue) {
-            if ($run->getTag() === 'php') {
-                return eval($run->getValue());
-            }
-
-            if ($run->getTag() === 'get') {
-                //TODO access container
-            }
+            return $this->resolveHelper($run->getTag(), $run->getValue());
         }
         if (is_callable($run)) {
             return \Closure::fromCallable($run);
@@ -128,7 +132,7 @@ class RegionLoader
      * @return array Returns an array composed by `states`, `regions`, `transitions`, and `callbacks` extracted from
      *     provided input
      */
-    public static function extractConfig(array $raw): array
+    public function extractConfig(array $raw): array
     {
         $states = [];
         $regions = [];

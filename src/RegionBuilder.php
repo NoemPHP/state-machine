@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Noem\State;
 
+use Noem\State\Util\ParameterDeriver;
+
 class RegionBuilder
 {
 
@@ -23,9 +25,32 @@ class RegionBuilder
 
     private ?string $final;
 
+    private array $middlewares = [];
+
     public function __construct()
     {
         $this->events = new Events();
+    }
+
+    public function pushMiddleware(\Closure $middleware): self
+    {
+        $this->middlewares[] = $middleware;
+
+        return $this;
+    }
+
+    private function applyMiddlewares(RegionBuilder $regionBuilder): Region
+    {
+        $creator = fn() => (function () {
+            return $this->createRegionObject();
+        })->call($regionBuilder);
+        foreach ($this->middlewares as $middleware) {
+            $creator = function () use ($middleware, $regionBuilder, $creator) {
+                return $middleware($regionBuilder, $creator);
+            };
+        }
+
+        return $creator();
     }
 
     /**
@@ -38,6 +63,22 @@ class RegionBuilder
     public function setStates(array $states): self
     {
         $this->states = $states;
+
+        return $this;
+    }
+
+    public function addState(string $state): self
+    {
+        $this->states[] = $state;
+
+        return $this;
+    }
+
+    public function eachState(\Closure $callback): self
+    {
+        foreach ($this->states as $state) {
+            $callback($state, $this);
+        }
 
         return $this;
     }
@@ -62,13 +103,13 @@ class RegionBuilder
      *
      * @param string $from State that triggers this transition
      * @param string $to Target state after successful transition
-     * @param \Closure $guard Guard callback returning true or false
+     * @param ?\Closure $guard Guard callback returning true or false. Optional, allow by default
      *
      * @return self This builder instance, allowing chaining
      */
-    public function pushTransition(string $from, string $to, \Closure $guard): self
+    public function pushTransition(string $from, string $to, ?\Closure $guard = null): self
     {
-        $this->transitions[$from][$to] = $guard;
+        $this->transitions[$from][$to] = $guard ?? fn(object $t): bool => true;
 
         return $this;
     }
@@ -180,9 +221,20 @@ class RegionBuilder
      */
     public function build(): Region
     {
-        if(empty($this->states)){
+        $this->assertValidConfig();
+
+        return $this->applyMiddlewares($this);
+    }
+
+    private function assertValidConfig()
+    {
+        if (empty($this->states)) {
             throw new \RuntimeException("States cannot be empty");
         }
+    }
+
+    private function createRegionObject(): Region
+    {
         return new Region(
             states: $this->states,
             regions: $this->buildSubRegions(),
@@ -200,7 +252,19 @@ class RegionBuilder
     {
         $built = [];
         foreach ($this->regions as $state => $regions) {
-            $built[$state] = array_map(fn(RegionBuilder $b) => $b->build(), $regions);
+            $built[$state] = array_map(
+                function (RegionBuilder $b) {
+                    /**
+                     * Pass on current middlewares to sub-region builders
+                     */
+                    foreach ($this->middlewares as $middleware) {
+                        $b->pushMiddleware($middleware);
+                    }
+
+                    return $b->build();
+                },
+                $regions
+            );
         }
 
         return $built;

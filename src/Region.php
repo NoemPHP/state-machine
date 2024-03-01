@@ -69,7 +69,7 @@ class Region
 
         if (isset($this->transitions[$this->currentState])) {
             foreach ($this->transitions[$this->currentState] as $target => $guard) {
-                if (!ParameterDeriver::isCompatibleCallback($guard, $payload)) {
+                if (!ParameterDeriver::isCompatibleParameter($guard, $payload)) {
                     continue;
                 }
                 if (ParameterDeriver::getReturnType($guard) !== 'bool') {
