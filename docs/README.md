@@ -7,7 +7,7 @@ A finite state machine (FSM) implementation.
 ## Features
 
 * **Nested regions** - One horizontal set of states is called a "region". However, each state can have any number of sub-regions
-* **Guards** - Enable a given transition only a predicate returns `true`.
+* **Guards** - Enable a given transition only if a predicate returns `true`.
 * **Actions** - Dispatch actions to the machine to achieve stateful behaviour. Only the action handlers corresponding to
   the active state will get called.
 * **Entry & Exit events** - Attach arbitrary subscribers to state changes.
