@@ -45,23 +45,30 @@ declare(strict_types=1);
 use Noem\State\RegionBuilder;
 
 $r = (new RegionBuilder())
-        ->setStates(['off', 'starting', 'on', 'error'])
-        ->markInitial('off') // if not called, will default to the first entry
-        ->markFinal('error') // if not called, will default to the last entry
-        ->pushTransition('off', 'starting', fn(object $trigger)=>true)
-        ->pushTransition('starting', 'on', fn(object $trigger)=>true)
+        // Define all possible states
+        ->setStates('off', 'starting', 'on', 'error')
+        // if not called, will default to the first entry
+        ->markInitial('off')
+        // if not called, will default to the last entry
+        ->markFinal('error')
+        // Define a transition from one state to another
+        // <FROM> <TO> <PREDICATE>
+        ->pushTransition('off', 'starting', fn(object $trigger):bool => true)
+        // no predicate means always true 
+        ->pushTransition('starting', 'on') 
         ->pushTransition('on', 'error', function(\Throwable $exception){
             echo 'Error: '. $exception->getMessage();
             return true;
         })
+        // Add a callback that runs whenever the specified state is entered
         ->onEnter('starting', function(object $trigger){
             echo 'Starting application';
         })
         ->onAction('on',function (object $trigger){
-            echo $trigger->message;
             // TODO: Main business logic
+            echo $trigger->message;
         })
-        ->build();
+        ->build(); // returns the actual Region object
             
 while(!$r->isFinal()){
     $r->trigger((object)['message'=>'hello world']);
