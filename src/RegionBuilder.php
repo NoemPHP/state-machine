@@ -8,7 +8,6 @@ use Noem\State\Util\ParameterDeriver;
 
 class RegionBuilder
 {
-
     private array $states = [];
 
     private array $regions = [];
@@ -230,8 +229,7 @@ class RegionBuilder
         if (empty($this->states)) {
             throw new \RuntimeException("States cannot be empty");
         }
-        if(count($this->states)>1){
-
+        if (count($this->states) > 1) {
         }
     }
 

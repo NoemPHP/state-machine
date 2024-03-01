@@ -8,7 +8,6 @@ use Psr\Container\ContainerInterface;
 
 class ContainerGetHelper
 {
-
     public function __construct(private ContainerInterface $container)
     {
     }

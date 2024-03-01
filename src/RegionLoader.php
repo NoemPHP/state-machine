@@ -17,7 +17,6 @@ use Symfony\Component\Yaml\Yaml;
  */
 class RegionLoader
 {
-
     public function __construct(private readonly array $helpers)
     {
     }
