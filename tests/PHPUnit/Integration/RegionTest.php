@@ -22,7 +22,7 @@ class RegionTest extends MockeryTestCase
         $guardSpy = \Mockery::spy(fn() => true);
 
         $r = (new RegionBuilder())
-            ->setStates(['one', 'two'])
+            ->setStates('one', 'two')
             ->onExit('one', fn(object $t) => $exitSpy())
             ->onEnter('two', fn(object $t) => $enterSpy())
             ->markInitial('one')
@@ -44,7 +44,7 @@ class RegionTest extends MockeryTestCase
     public function exceptionHandling()
     {
         $r = (new RegionBuilder())
-            ->setStates(['one', 'two', 'error'])
+            ->setStates('one', 'two', 'error')
             ->onEnter('two', function (object $t) {
                 throw new \Exception('Boo!');
             })
@@ -67,15 +67,16 @@ class RegionTest extends MockeryTestCase
         $handler = \Mockery::spy(fn() => true);
 
         $r = (new RegionBuilder())
-            ->setStates(['one', 'two'])
+            ->setStates('one', 'two')
             ->markInitial('one')
             ->pushTransition(
-                'one', 'two',
+                'one',
+                'two',
                 fn(object $t): bool => true
             )
             ->addRegion(
                 'one',
-                (new RegionBuilder)->setStates(['foo','bar'])
+                (new RegionBuilder())->setStates('foo', 'bar')
                     ->onAction('foo', function (object $t) use ($handler) {
                         $handler();
                     })->markFinal('foo')
@@ -95,11 +96,11 @@ class RegionTest extends MockeryTestCase
     {
         $test = null;
         $r = new RegionBuilder();
-        $r->setStates(['one','two'])
+        $r->setStates('one', 'two')
             ->addRegion(
                 'one',
                 (new RegionBuilder())
-                    ->setStates(['foo','bar'])
+                    ->setStates('foo', 'bar')
                     ->inherits(['key'])
                     ->onAction('foo', function (object $t) use (&$test) {
                         $test = $this->key;
@@ -121,7 +122,7 @@ class RegionTest extends MockeryTestCase
     {
         $test = null;
         $subRegion = (new RegionBuilder())
-            ->setStates(['foo','bar'])
+            ->setStates('foo', 'bar')
             ->onAction('foo', function (object $t) use (&$test) {
                 $test = $this->get('key');
             })
@@ -129,7 +130,7 @@ class RegionTest extends MockeryTestCase
                 'key' => 'value',
             ]);
         $r = new RegionBuilder();
-        $r->setStates(['one','two'])
+        $r->setStates('one', 'two')
             ->addRegion('one', $subRegion);
 
         $r->build()->trigger((object)['foo' => 1]);
@@ -144,11 +145,11 @@ class RegionTest extends MockeryTestCase
     {
         $test = null;
         $r = new RegionBuilder();
-        $r->setStates(['one','two'])
+        $r->setStates('one', 'two')
             ->addRegion(
                 'one',
                 (new RegionBuilder())
-                    ->setStates(['foo','bar'])
+                    ->setStates('foo', 'bar')
                     ->inherits(['key'])
                     ->onAction('foo', function (object $t) use (&$test) {
                         $test = $this->get('key');
@@ -169,13 +170,13 @@ class RegionTest extends MockeryTestCase
     public function setInheritedRegionContext()
     {
         $subRegionBuilder = (new RegionBuilder())
-            ->setStates(['foo','bar'])
+            ->setStates('foo', 'bar')
             ->inherits(['key'])
             ->onAction('foo', function (object $t) use (&$test) {
                 $this->set('key', 'newValue');
             });
         $r = new RegionBuilder();
-        $r->setStates(['one','two'])
+        $r->setStates('one', 'two')
             ->addRegion('one', $subRegionBuilder)
             ->setRegionContext([
                 'key' => 'value',
@@ -201,14 +202,14 @@ class RegionTest extends MockeryTestCase
     public function mutateInheritedRegionContext()
     {
         $subRegionBuilder = (new RegionBuilder())
-            ->setStates(['foo','bar'])
+            ->setStates('foo', 'bar')
             ->inherits(['key'])
             ->onAction('foo', function (object $t) use (&$test) {
                 $key = $this->get('key');
                 $this->set('key', $key.' world');
             });
         $r = new RegionBuilder();
-        $r->setStates(['one','two'])
+        $r->setStates('one', 'two')
             ->addRegion('one', $subRegionBuilder)
             ->setRegionContext([
                 'key' => 'hello',
@@ -234,7 +235,7 @@ class RegionTest extends MockeryTestCase
     public function simpleMiddleware()
     {
         $r = new RegionBuilder();
-        $r->setStates(['one', 'two', 'three'])
+        $r->setStates('one', 'two', 'three')
             ->pushTransition('one', 'two')
             ->pushMiddleware(function (RegionBuilder $builder, \Closure $next) {
                 $builder->pushTransition('two', 'three');
@@ -269,13 +270,12 @@ class RegionTest extends MockeryTestCase
         };
 
         $subRegion = (new RegionBuilder())
-            ->setStates(['foo', 'bar'])
+            ->setStates('foo', 'bar')
             ->pushTransition('foo', 'bar')
             ->pushMiddleware($middleware);
 
-
         $r = new RegionBuilder();
-        $r->setStates(['one', 'two'])
+        $r->setStates('one', 'two')
             ->pushTransition('one', 'two')
             ->addRegion('two', $subRegion)
             ->pushMiddleware($middleware);

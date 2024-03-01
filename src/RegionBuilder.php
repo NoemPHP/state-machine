@@ -60,7 +60,7 @@ class RegionBuilder
      *
      * @return self This builder instance, allowing chaining
      */
-    public function setStates(array $states): self
+    public function setStates(string ...$states): self
     {
         $this->states = $states;
 

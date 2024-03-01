@@ -11,7 +11,6 @@ use Psr\Container\NotFoundExceptionInterface;
 
 class RegionLoaderTest extends MockeryTestCase
 {
-
     /**
      * @test
      * @return void
@@ -84,8 +83,7 @@ YAML;
 
     private function createContainer(array $data)
     {
-        return new class($data) implements ContainerInterface {
-
+        return new class ($data) implements ContainerInterface {
             public function __construct(private array $data)
             {
             }
@@ -93,10 +91,7 @@ YAML;
             public function get(string $id)
             {
                 if (!$this->has($id)) {
-                    throw new class("ID {$id} not found in container")
-                        extends \Exception
-                        implements NotFoundExceptionInterface {
-
+                    throw new class ("ID {$id} not found in container") extends \Exception implements NotFoundExceptionInterface {
                     };
                 }
 

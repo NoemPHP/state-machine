@@ -68,7 +68,7 @@ class RegionLoader
     {
         $builder = new RegionBuilder();
         [$states, $regions, $transitions, $callbacks] = $this->extractConfig($array['states'] ?? []);
-        $builder->setStates($states);
+        $builder->setStates(...$states);
         foreach ($regions as $state => $subRegions) {
             foreach ($subRegions as $region) {
                 $builder->addRegion($state, self::fromArray($region));
