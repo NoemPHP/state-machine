@@ -2,7 +2,12 @@
 
 [![CI](https://github.com/NoemPHP/state-machine/actions/workflows/ci.yml/badge.svg)](https://github.com/NoemPHP/state-machine/actions/workflows/ci.yml)
 
-A finite state machine (FSM) implementation.
+his library provides an implementation of a Finite State Machine (FSM) for developers 
+to manage complex systems with multiple states and transitions. 
+The benefits of using an FSM pattern include clearer system behavior, easier testing, 
+improved reusability, and simplified debugging. FSMs -and Noem State Machine in particular - 
+enable developers to model and control the behavior of a system by defining 
+states, transitions, guards, actions, entry and exit events, and nested regions.
 
 ## Features
 
@@ -13,6 +18,7 @@ A finite state machine (FSM) implementation.
 * **Entry & Exit events** - Attach arbitrary subscribers to state changes.
 * **Region & State context** - Store data relevant to the current application state. Data can be scoped for an individual state - or shared with the entire region
 * **State inheritance** - Since regions can be nested, each region can request specific data to be passed down from the parent region.
+* **Middleware** - Before creating the final machine, your can augment your definitions with reusable middlewares
 
 ## Installation
 
@@ -96,5 +102,43 @@ declare(strict_types=1);
 use Noem\State\RegionLoader;
 
 $loader = (new RegionLoader())->fromYaml($yaml);
+
+```
+
+### Middleware
+
+It is easy to think of common & repetitive concerns that are portable from one machine to the other, for example
+* **Logging** - Keeping track of any state change by adding a listener on each entry/exit event
+* **Exception handling** - Adding an error state as well as a transition to it whenever an exception is caught
+* **Re/Store state** - Serialize the machine context and restore it when it is reinitialized
+
+This example shows a simple logging middleware:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use Noem\State\RegionBuilder;
+
+$logs = [];
+$middleware = function (RegionBuilder $builder, \Closure $next) use (&$logs) {
+    $builder->eachState(function (string $s) use ($builder, &$logs) {
+        $builder->onEnter($s, function (object $trigger) use ($s, &$logs) {
+            $logs[] = "ENTER: $s";
+        });
+        $builder->onExit($s, function (object $trigger) use ($s, &$logs) {
+            $logs[] = "EXIT: $s";
+        });
+    });
+
+    return $next($builder);
+};
+
+$region = (new RegionBuilder())
+    ->setStates(['foo', 'bar'])
+    ->pushTransition('foo', 'bar')
+    ->pushMiddleware($middleware)
+    ->build();
 
 ```
