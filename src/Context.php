@@ -2,7 +2,7 @@
 
 namespace Noem\State;
 
-class ExtendedState
+class Context
 {
 
     private bool $isHandlingException = false;

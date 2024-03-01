@@ -42,6 +42,7 @@ class RegionBuilder
     private function applyMiddlewares(RegionBuilder $regionBuilder): Region
     {
         $creator = fn() => (function () {
+            $this->assertValidConfig();
             return $this->createRegionObject();
         })->call($regionBuilder);
         foreach ($this->middlewares as $middleware) {
@@ -221,8 +222,6 @@ class RegionBuilder
      */
     public function build(): Region
     {
-        $this->assertValidConfig();
-
         return $this->applyMiddlewares($this);
     }
 
@@ -230,6 +229,9 @@ class RegionBuilder
     {
         if (empty($this->states)) {
             throw new \RuntimeException("States cannot be empty");
+        }
+        if(count($this->states)>1){
+
         }
     }
 

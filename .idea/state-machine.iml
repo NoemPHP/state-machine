@@ -21,8 +21,6 @@
       <excludeFolder url="file://$MODULE_DIR$/vendor/nette/utils" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/nikic/php-parser" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/noem/composer-file-embed" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/noem/state-machine-interface" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/noem/state-machine-loader" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/phar-io/manifest" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/phar-io/version" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/phpunit/php-code-coverage" />

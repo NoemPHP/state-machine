@@ -41,8 +41,6 @@
       <path value="$PROJECT_DIR$/vendor/justinrainbow/json-schema" />
       <path value="$PROJECT_DIR$/vendor/composer" />
       <path value="$PROJECT_DIR$/vendor/psr/container" />
-      <path value="$PROJECT_DIR$/vendor/noem/state-machine-loader" />
-      <path value="$PROJECT_DIR$/vendor/noem/state-machine-interface" />
       <path value="$PROJECT_DIR$/vendor/noem/composer-file-embed" />
       <path value="$PROJECT_DIR$/vendor/nette/schema" />
       <path value="$PROJECT_DIR$/vendor/nette/utils" />

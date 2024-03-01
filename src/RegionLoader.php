@@ -2,16 +2,36 @@
 
 namespace Noem\State;
 
+use Closure;
 use Symfony\Component\Yaml\Tag\TaggedValue;
 use Symfony\Component\Yaml\Yaml;
 
+/**
+ * The Noem State Machine's RegionLoader class is responsible for loading and parsing
+ * state machine configurations from YAML or PHP arrays.
+ * It contains methods to resolve helper functions, extract configuration data
+ * from state definitions, and create callbacks for transition guards and
+ * event handlers like entering/exiting states or handling actions.
+ * It can load configurations from YAML input using the fromYaml() method
+ * or from PHP arrays using the fromArray() method.
+ */
 class RegionLoader
 {
 
-    public function __construct(private array $helpers)
+    public function __construct(private readonly array $helpers)
     {
     }
 
+    /**
+     * Resolves a helper function based on the given name and content.
+     *
+     * @param string $name The name of the helper function to resolve.
+     * @param string $content The content to be passed to the helper function.
+     *
+     * @return mixed The result of the helper function when found, or throws an exception if the helper is undefined.
+     *
+     * @throws \RuntimeException
+     */
     private function resolveHelper(string $name, string $content): mixed
     {
         if (isset($this->helpers[$name])) {
@@ -87,9 +107,9 @@ class RegionLoader
      *
      * @param array $transition An array defining a single transition with a potential `guard` property
      *
-     * @return \Closure A callback suitable for use as a transition guard
+     * @return Closure A callback suitable for use as a transition guard
      */
-    public function createTransitionGuard(array $transition): \Closure
+    public function createTransitionGuard(array $transition): Closure
     {
         if (!isset($transition['guard'])) {
             return fn(object $t): bool => true;
@@ -99,7 +119,7 @@ class RegionLoader
             return $this->resolveHelper($guard->getTag(), $guard->getValue());
         }
         if (is_callable($transition['guard'])) {
-            return \Closure::fromCallable($transition['guard']);
+            return Closure::fromCallable($transition['guard']);
         }
         throw new \RuntimeException('Invalid guard');
     }
@@ -110,16 +130,16 @@ class RegionLoader
      *
      * @param array $definition Definition of a state callback event handler
      *
-     * @return \Closure A callback suitable for use as the specified event handler
+     * @return Closure A callback suitable for use as the specified event handler
      */
-    public function createStateCallback(array $definition): \Closure
+    public function createStateCallback(array $definition): Closure
     {
         $run = $definition['run'];
         if ($run instanceof TaggedValue) {
             return $this->resolveHelper($run->getTag(), $run->getValue());
         }
         if (is_callable($run)) {
-            return \Closure::fromCallable($run);
+            return Closure::fromCallable($run);
         }
         throw new \RuntimeException('Invalid guard');
     }
@@ -127,7 +147,7 @@ class RegionLoader
     /**
      * Extracts the relevant configuration data from a list of state definitions.
      *
-     * @param array $array An array representing states' configurations
+     * @param array $raw An array representing states' configurations
      *
      * @return array Returns an array composed by `states`, `regions`, `transitions`, and `callbacks` extracted from
      *     provided input

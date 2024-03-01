@@ -24,7 +24,7 @@ class Events
      */
     private array $exitHandlers = [];
 
-    public function onAction(string $state, object $trigger, ExtendedState $extendedState)
+    public function onAction(string $state, object $trigger, Context $extendedState)
     {
         if (!isset($this->actionHandlers[$state])) {
             return;
@@ -44,7 +44,7 @@ class Events
 
     /**
      * @param string $state
-     * @param callable(object):object $handler
+     * @param \Closure $handler
      *
      * @return $this
      */
@@ -55,7 +55,21 @@ class Events
         return $this;
     }
 
-    public function onEnterState(string $state, object $trigger, ExtendedState $extendedState)
+    /**
+     * Handles the transition into a new state
+     *
+     * This function checks if the entry handler for the specified state exists, and if so, iterates through the list
+     * of entry handlers for that state. It checks the compatibility of the trigger parameter with each entry handler
+     * and, if compatible, calls the entry handler with the extended state and trigger objects as
+     * arguments. Any exceptions thrown during the call are handled by the extended state object.
+     *
+     * @param string $state The name of the new state to enter
+     * @param object $trigger The event or action that triggered the state transition
+     * @param Context $extendedState The extended state object containing additional information
+     *
+     * @throws \Throwable
+     */
+    public function onEnterState(string $state, object $trigger, Context $extendedState): void
     {
         if (!isset($this->entryHandlers[$state])) {
             return;
@@ -80,7 +94,20 @@ class Events
         return $this;
     }
 
-    public function onExitState(string $state, object $trigger, ExtendedState $extendedState)
+    /**
+     * Handles the transition out of a state
+     * This function checks if the exit handler for the specified state exists, and if so, iterates through the list
+     * of exit handlers for that state. It checks the compatibility of the trigger parameter with each exit handler
+     * and, if compatible, calls the exit handler's `call()` method with the extended state and trigger objects as
+     * arguments. Any exceptions thrown during the call are handled by the extended state object.
+     *
+     * @param string $state The name of the state being exited
+     * @param object $trigger The event or action that triggered the state transition
+     * @param Context $extendedState The extended state object containing additional information
+     *
+     * @throws \Throwable
+     */
+    public function onExitState(string $state, object $trigger, Context $extendedState): void
     {
         if (!isset($this->exitHandlers[$state])) {
             return;

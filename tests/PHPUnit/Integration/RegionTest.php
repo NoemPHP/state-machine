@@ -17,10 +17,8 @@ class RegionTest extends MockeryTestCase
      */
     public function basicTransition()
     {
-        //$this->markTestSkipped();
         $enterSpy = \Mockery::spy(fn() => true);
         $exitSpy = \Mockery::spy(fn() => true);
-
         $guardSpy = \Mockery::spy(fn() => true);
 
         $r = (new RegionBuilder())
@@ -30,7 +28,9 @@ class RegionTest extends MockeryTestCase
             ->markInitial('one')
             ->pushTransition('one', 'two', fn(object $t): bool => $guardSpy())
             ->build();
+
         $r->trigger((object)['foo' => 1]);
+
         $this->assertTrue($r->isInState('two'));
         $guardSpy->shouldHaveBeenCalled()->once();
         $exitSpy->shouldHaveBeenCalled()->once();

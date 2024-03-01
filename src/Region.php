@@ -36,7 +36,7 @@ class Region
     {
         $regionStack = new \SplStack();
         $regionStack->push($this);
-        $extendedState = new ExtendedState($regionStack);
+        $extendedState = new Context($regionStack);
 
         return $this->processTrigger($payload, $extendedState, $regionStack);
     }
@@ -45,12 +45,12 @@ class Region
      * Carries out all actions relevant to the current trigger while maintaining a stack of nested regions
      *
      * @param object $payload
-     * @param ExtendedState $extendedState
+     * @param Context $extendedState
      * @param \SplStack $regionStack
      *
      * @return object
      */
-    private function processTrigger(object $payload, ExtendedState $extendedState, \SplStack $regionStack): object
+    private function processTrigger(object $payload, Context $extendedState, \SplStack $regionStack): object
     {
         foreach ($regions = $this->regions() as $region) {
             $regionStack->push($region);
@@ -103,11 +103,11 @@ class Region
      * Transition to another state based on the defined transitions.
      *
      * @param string $to Target state to transition to
-     * @param ExtendedState $extendedState
+     * @param Context $extendedState
      *
      * @return void
      */
-    private function doTransition(string $to, object $trigger, ExtendedState $extendedState): void
+    private function doTransition(string $to, object $trigger, Context $extendedState): void
     {
         $this->events->onExitState($this->currentState, $trigger, $extendedState);
         $this->currentState = $to;
