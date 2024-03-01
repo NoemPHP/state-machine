@@ -8,41 +8,40 @@ jobs:
     housekeeping:
         runs-on: ubuntu-latest
         steps:
-            -   uses: "actions/checkout@v2"
+            -   uses: "actions/checkout@v4"
             -   uses: "shivammathur/setup-php@v2"
                 with:
-                    php-version: "8.0"
-            -   uses: "ramsey/composer-install@v1"
+                    php-version: "8.2"
+            -   uses: "ramsey/composer-install@v3"
             -   name: "Sync embedded code blocks"
                 run: "composer embed-files"
             -   name: "Run PHPCBF"
                 run: "./vendor/bin/phpcbf > /dev/null || true"
-            -   uses: "stefanzweifel/git-auto-commit-action@v4"
+            -   uses: "stefanzweifel/git-auto-commit-action@v5"
     test:
         needs: housekeeping
         runs-on: ubuntu-latest
         strategy:
             matrix:
                 php:
-                    - "8.0"
+                    - "8.2"
                 dependencies:
                     - "lowest"
                     - "highest"
                 include:
-                    -   php-version: "8.1"
-                        composer-options: "--ignore-platform-reqs"
+                    - composer-options: "--ignore-platform-reqs"
 
         steps:
             -   name: "Extract branch name"
-                run: 'echo ::set-output name=branch::${GITHUB_REF#refs/heads/}'
+                run: 'echo "branch=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT'
                 id: "extract_branch"
-            -   uses: "actions/checkout@v2"
+            -   uses: "actions/checkout@v4"
                 with:
                     ref: "${{ steps.extract_branch.outputs.branch }}"
             -   uses: "shivammathur/setup-php@v2"
                 with:
                     php-version: "${{ matrix.php }}"
-            -   uses: "ramsey/composer-install@v1"
+            -   uses: "ramsey/composer-install@v3"
                 with:
                     dependency-versions: "${{ matrix.dependencies }}"
                     composer-options: "${{ matrix.composer-options }}"

@@ -2,17 +2,26 @@
 
 [![CI](https://github.com/NoemPHP/state-machine/actions/workflows/ci.yml/badge.svg)](https://github.com/NoemPHP/state-machine/actions/workflows/ci.yml)
 
-A finite state machine (FSM) implementation. It is built upon the interfaces declared
-in [NoemPHP/state-machine-interface](https://noemphp.github.io/state-machine-interface)
+This library provides an implementation of a Finite State Machine (FSM) in PHP.
+The benefits of using an FSM architecture include:
+
+1. **Simplified system behavior modeling:** State machines help to represent and organize the behavior of a system in a structured and understandable manner.
+2. **Ease of refactoring:** Significant changes to system architecture can be done without affecting business logic
+3. **Testability:** State machines allow for easier testing of individual states and transitions, making it simpler to isolate and test specific system behaviors.
+4. **Reduced complexity:** By breaking down a complex system into smaller, manageable states, state machines can simplify the overall system design and make it easier to understand. 
+5. **Predictable behavior:** State machines ensure that a system behaves consistently and predictably, as the transitions between states are explicitly defined. 
+6. **Documentation:** State machines serve as a form of documentation, as they provide a visual/textual representation of the system's behavior and transitions
 
 ## Features
 
-* **Hierarchical states** - If the active state has ascending "super-states", all of them are implicitly active as well.
-* **Parallel states** - All children of an active parallel state are simultaneously active.
-* **Guards** - Enable a given transition only when the specified event type matches and/or a given callback returns `true`.
-* **Actions** - Dispatch actions to the machine to achieve stateful behaviour. Only the action handlers corresponding to
+* **Nested regions**: One horizontal set of states is called a "region". However, each state can have any number of sub-regions, allowing both *parallel states* and *hierarchical states*
+* **Guards**: Enable a given transition only if a predicate returns `true`.
+* **Actions**: Dispatch actions to the machine to achieve stateful behaviour. Only the action handlers corresponding to
   the active state will get called.
-* **Entry & Exit events** - Attach arbitrary subscribers to state changes.
+* **Entry & Exit events**: Attach arbitrary subscribers to state changes.
+* **Region & State context**: Store data relevant to the current application state. Data can be scoped for an individual state - or shared with the entire region
+* **State inheritance**: Since regions can be nested, each region can request specific data to be passed down from the parent region.
+* **Middleware**: Before creating the final machine, your can augment your definitions with reusable middlewares.
 
 ## Installation
 
@@ -22,34 +31,128 @@ Install this package via composer:
 
 ## Usage
 
-### Using [noem/state-machine-loader](https://noemphp.github.io/state-machine-loader)
+### Using `RegionBuilder`
 
-You can automatically configure a state machine instance from YAML, JSON or php arrays. To make yourself familiar with
-the notation format, please refer to the documentation at the link above
+The `RegionBuilder` in Noem State Machine is a class used for constructing and configuring finite state machines. 
+It allows developers to define states, transitions, guards, entry and exit events and actions 
+within a state machine, making it convenient for implementing stateful behavior in applications.
 
 ```php
-use Noem\State\Loader\YamlLoader;
-use Noem\State\StateMachine;
-use Noem\State\Transition\TransitionProvider;
-use Noem\State\InMemoryStateStorage;
+<?php
 
-$yaml = <<<YAML
-foo: 
-  children:
-    bar: {}
-    baz: {}
-YAML;
+declare(strict_types=1);
 
-$loader = new YamlLoader($yaml);
-$definitions = $loader->definitions(); // A flat list of all defined states
+use Noem\State\RegionBuilder;
 
-$stateMachine = new StateMachine(
-    $loader->transitions(), // Our generated TransitionProvider
-    new InMemoryStateStorage($definitions->get('bar')) // Initialize in the 'bar' state
-);
-// register the preconfigured action, onEntry, onExit event handlers
-$stateMachine->attach($loader->observer());
+$r = (new RegionBuilder())
+        // Define all possible states
+        ->setStates('off', 'starting', 'on', 'error')
+        // if not called, will default to the first entry
+        ->markInitial('off')
+        // if not called, will default to the last entry
+        ->markFinal('error')
+        // Define a transition from one state to another
+        // <FROM> <TO> <PREDICATE>
+        ->pushTransition('off', 'starting', fn(object $trigger):bool => true)
+        // no predicate means always true 
+        ->pushTransition('starting', 'on') 
+        ->pushTransition('on', 'error', function(\Throwable $exception){
+            echo 'Error: '. $exception->getMessage();
+            return true;
+        })
+        // Add a callback that runs whenever the specified state is entered
+        ->onEnter('starting', function(object $trigger){
+            echo 'Starting application';
+        })
+        ->onAction('on',function (object $trigger){
+            // TODO: Main business logic
+            echo $trigger->message;
+        })
+        ->build(); // returns the actual Region object
+            
+while(!$r->isFinal()){
+    $r->trigger((object)['message'=>'hello world']);
+}
+```
+### Using `RegionLoader`
 
-var_dump($stateMachine->isInState('foo')); // true
-var_dump($stateMachine->isInState('bar')); // also true
+You can also load a state machine configuration from YAML. `RegionLoader::fromYaml()` will provide
+a `RegionBuilder` which you can then modify further or start using right away.
+Here is an example:
+
+```yaml
+states:
+  - name: one
+    transitions:
+      - target: two
+  - name: two
+    regions:
+       states:
+        - name: one_one
+          transitions:
+            - target: one_two
+        - name: one_two
+          transitions:
+            - target: one_three
+        - name: one_three
+    transitions:
+      - target: three
+  - name: three
+initial: one
+final: three
+```
+
+This configuration can be loaded like this:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use Noem\State\RegionLoader;
+
+$yaml = file_get_contents('./path/to/machine.yaml');
+$builder = (new RegionLoader())->fromYaml($yaml);
+$builder->pushMiddleware(/** more on that in the next chapter */)->build();
+
+```
+
+### Middleware
+
+It is easy to think of common & repetitive concerns that are portable from one machine to the other, for example
+* **Logging**: Keeping track of any state change by adding a listener on each entry/exit event
+* **Exception handling**: Adding an error state as well as a transition to it whenever an exception is caught
+* **Re/Store state**: Serialize the machine context and restore it when it is reinitialized
+
+For this scenario, `RegionBuilder` offers support for middlewares that can make arbitrary changes
+to a machine before it is built.
+
+This example shows a simple logging middleware:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use Noem\State\RegionBuilder;
+
+$logs = [];
+$middleware = function (RegionBuilder $builder, \Closure $next) use (&$logs) {
+    $builder->eachState(function (string $s) use ($builder, &$logs) {
+        $builder->onEnter($s, function (object $trigger) use ($s, &$logs) {
+            $logs[] = "ENTER: $s";
+        });
+        $builder->onExit($s, function (object $trigger) use ($s, &$logs) {
+            $logs[] = "EXIT: $s";
+        });
+    });
+
+    return $next($builder);
+};
+
+$region = (new RegionBuilder())
+    ->setStates('foo', 'bar')
+    ->pushTransition('foo', 'bar')
+    ->pushMiddleware($middleware)
+    ->build();
 ```

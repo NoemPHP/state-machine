@@ -47,7 +47,18 @@ class ParameterDeriver
             return null;
         }
         assert($returns instanceof \ReflectionNamedType);
+
         return $returns->getName();
+    }
+
+    public static function isCompatibleParameter(callable $callback, object $payload, int $param = 0): bool
+    {
+        $parameterType = self::getParameterType($callback, $param);
+        if ($parameterType !== 'object' && !$payload instanceof $parameterType) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
