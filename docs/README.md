@@ -2,12 +2,19 @@
 
 [![CI](https://github.com/NoemPHP/state-machine/actions/workflows/ci.yml/badge.svg)](https://github.com/NoemPHP/state-machine/actions/workflows/ci.yml)
 
-his library provides an implementation of a Finite State Machine (FSM) for developers 
-to manage complex systems with multiple states and transitions. 
-The benefits of using an FSM pattern include clearer system behavior, easier testing, 
-improved reusability, and simplified debugging. FSMs -and Noem State Machine in particular - 
-enable developers to model and control the behavior of a system by defining 
-states, transitions, guards, actions, entry and exit events, and nested regions.
+This library provides an implementation of a Finite State Machine (FSM) in PHP.
+The benefits of using an FSM architecture include:
+
+1. **Simplified system behavior modeling:** State machines help to represent and organize the behavior of a system in a structured and understandable manner.
+2. **Improved testability:** State machines allow for easier testing of individual states and transitions, making it simpler to isolate and test specific system behaviors.
+3. **Reusability:** State machines can be reused across different systems, making it easier to develop and maintain software. 
+4. **Parallel processing:** State machines can handle multiple events and transitions simultaneously, allowing for more efficient processing of concurrent events. 
+5. **Flexibility:** State machines can adapt to new requirements and changes in system behavior, making them a versatile tool for system design. 
+6. **Reduced complexity:** By breaking down a complex system into smaller, manageable states, state machines can simplify the overall system design and make it easier to understand. 
+7. **Predictable behavior:** State machines ensure that a system behaves consistently and predictably, as the transitions between states are explicitly defined. 
+8. **Documentation:** State machines can serve as a form of documentation, as they provide a visual/textual representation of the system's behavior and transitions
+
+
 
 ## Features
 
@@ -140,5 +147,4 @@ $region = (new RegionBuilder())
     ->pushTransition('foo', 'bar')
     ->pushMiddleware($middleware)
     ->build();
-
 ```

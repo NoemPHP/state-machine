@@ -4,6 +4,7 @@
     <data-source source="LOCAL" name="DDEV" uuid="9547f3a5-c97b-429b-8907-c741ad2ea28f">
       <driver-ref>mariadb</driver-ref>
       <synchronize>true</synchronize>
+      <configured-by-url>true</configured-by-url>
       <remarks>DDEV generated data source</remarks>
       <jdbc-driver>org.mariadb.jdbc.Driver</jdbc-driver>
       <jdbc-url>jdbc:mariadb://127.0.0.1:32770/db?user=db&amp;password=db</jdbc-url>
