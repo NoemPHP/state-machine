@@ -14,14 +14,14 @@ The benefits of using an FSM architecture include:
 
 ## Features
 
-* **Nested regions** - One horizontal set of states is called a "region". However, each state can have any number of sub-regions, allowing both *parallel states* and *hierarchical states*
-* **Guards** - Enable a given transition only if a predicate returns `true`.
-* **Actions** - Dispatch actions to the machine to achieve stateful behaviour. Only the action handlers corresponding to
+* **Nested regions**: One horizontal set of states is called a "region". However, each state can have any number of sub-regions, allowing both *parallel states* and *hierarchical states*
+* **Guards**: Enable a given transition only if a predicate returns `true`.
+* **Actions**: Dispatch actions to the machine to achieve stateful behaviour. Only the action handlers corresponding to
   the active state will get called.
-* **Entry & Exit events** - Attach arbitrary subscribers to state changes.
-* **Region & State context** - Store data relevant to the current application state. Data can be scoped for an individual state - or shared with the entire region
-* **State inheritance** - Since regions can be nested, each region can request specific data to be passed down from the parent region.
-* **Middleware** - Before creating the final machine, your can augment your definitions with reusable middlewares
+* **Entry & Exit events**: Attach arbitrary subscribers to state changes.
+* **Region & State context**: Store data relevant to the current application state. Data can be scoped for an individual state - or shared with the entire region
+* **State inheritance**: Since regions can be nested, each region can request specific data to be passed down from the parent region.
+* **Middleware**: Before creating the final machine, your can augment your definitions with reusable middlewares
 
 ## Installation
 
@@ -33,7 +33,7 @@ Install this package via composer:
 
 ### Using `RegionBuilder`
 
-`RegionBuilder` in Noem State Machine is a class used for constructing and configuring finite state machines. 
+The `RegionBuilder` in Noem State Machine is a class used for constructing and configuring finite state machines. 
 It allows developers to define states, transitions, guards, entry and exit events and actions 
 within a state machine, making it convenient for implementing stateful behavior in applications.
 
@@ -70,7 +70,7 @@ while(!$r->isFinal()){
 ### Using `RegionLoader`
 
 You can also load a state machine configuration from YAML. `RegionLoader::fromYaml()` will provide
-a `RegionBuiler` which you can then modify further or start using right away.
+a `RegionBuilder` which you can then modify further or start using right away.
 Here is an example:
 
 ```yaml
@@ -104,7 +104,9 @@ declare(strict_types=1);
 
 use Noem\State\RegionLoader;
 
-$loader = (new RegionLoader())->fromYaml($yaml);
+$yaml = file_get_contents('./path/to/machine.yaml');
+$builder = (new RegionLoader())->fromYaml($yaml);
+$builder->pushMiddleware(/** more on that in the next chapter */)->build();
 
 ```
 
@@ -114,6 +116,9 @@ It is easy to think of common & repetitive concerns that are portable from one m
 * **Logging** - Keeping track of any state change by adding a listener on each entry/exit event
 * **Exception handling** - Adding an error state as well as a transition to it whenever an exception is caught
 * **Re/Store state** - Serialize the machine context and restore it when it is reinitialized
+
+For this scenario, `RegionBuilder` offers support for middlewares that can make arbitrary changes
+to a machine before it is built.
 
 This example shows a simple logging middleware:
 
