@@ -4,7 +4,6 @@ namespace Noem\State;
 
 class Context
 {
-
     private bool $isHandlingException = false;
 
     public function __construct(private \SplStack $regionStack)

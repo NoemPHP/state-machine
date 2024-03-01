@@ -6,7 +6,6 @@ namespace Noem\State\Helper;
 
 class PhpEvalHelper
 {
-
     public function __invoke(string $content): mixed
     {
         return eval($content);
