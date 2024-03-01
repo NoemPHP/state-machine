@@ -21,7 +21,7 @@ The benefits of using an FSM architecture include:
 * **Entry & Exit events**: Attach arbitrary subscribers to state changes.
 * **Region & State context**: Store data relevant to the current application state. Data can be scoped for an individual state - or shared with the entire region
 * **State inheritance**: Since regions can be nested, each region can request specific data to be passed down from the parent region.
-* **Middleware**: Before creating the final machine, your can augment your definitions with reusable middlewares
+* **Middleware**: Before creating the final machine, your can augment your definitions with reusable middlewares.
 
 ## Installation
 
@@ -120,9 +120,9 @@ $builder->pushMiddleware(/** more on that in the next chapter */)->build();
 ### Middleware
 
 It is easy to think of common & repetitive concerns that are portable from one machine to the other, for example
-* **Logging** - Keeping track of any state change by adding a listener on each entry/exit event
-* **Exception handling** - Adding an error state as well as a transition to it whenever an exception is caught
-* **Re/Store state** - Serialize the machine context and restore it when it is reinitialized
+* **Logging**: Keeping track of any state change by adding a listener on each entry/exit event
+* **Exception handling**: Adding an error state as well as a transition to it whenever an exception is caught
+* **Re/Store state**: Serialize the machine context and restore it when it is reinitialized
 
 For this scenario, `RegionBuilder` offers support for middlewares that can make arbitrary changes
 to a machine before it is built.
@@ -151,7 +151,7 @@ $middleware = function (RegionBuilder $builder, \Closure $next) use (&$logs) {
 };
 
 $region = (new RegionBuilder())
-    ->setStates(['foo', 'bar'])
+    ->setStates('foo', 'bar')
     ->pushTransition('foo', 'bar')
     ->pushMiddleware($middleware)
     ->build();
