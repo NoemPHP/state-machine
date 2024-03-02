@@ -2,8 +2,9 @@
 
 namespace Noem\State;
 
-class Context
+class Context implements \Stringable
 {
+
     private bool $isHandlingException = false;
 
     public function __construct(private \SplStack $regionStack)
@@ -106,5 +107,16 @@ class Context
         if (!$rootRegion->isFinal()) {
             throw $exception;
         }
+    }
+
+    public function __toString(): string
+    {
+        $states = [];
+        foreach ($this->regionStack as $region) {
+            assert($region instanceof Region);
+            $states[] = $region->currentState();
+        }
+
+        return implode('.', array_reverse($states));
     }
 }

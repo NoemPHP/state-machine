@@ -8,6 +8,7 @@ use Noem\State\Util\ParameterDeriver;
 
 class Region
 {
+
     private string $currentState;
 
     public function __construct(
@@ -195,5 +196,15 @@ class Region
     public function setStateContext(string $key, mixed $value): void
     {
         $this->stateContext[$this->currentState][$key] = $value;
+    }
+
+    /**
+     * Returns the current state of the region
+     *
+     * @return string
+     */
+    public function currentState(): string
+    {
+        return $this->currentState;
     }
 }

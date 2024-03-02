@@ -142,11 +142,11 @@ use Noem\State\RegionBuilder;
 $logs = [];
 $middleware = function (RegionBuilder $builder, \Closure $next) use (&$logs) {
     $builder->eachState(function (string $s) use ($builder, &$logs) {
-        $builder->onEnter($s, function (object $trigger) use ($s, &$logs) {
-            $logs[] = "ENTER: $s";
+        $builder->onEnter($s, function (object $trigger) use (&$logs) {
+            $logs[] = "ENTER: $this";
         });
-        $builder->onExit($s, function (object $trigger) use ($s, &$logs) {
-            $logs[] = "EXIT: $s";
+        $builder->onExit($s, function (object $trigger) use (&$logs) {
+            $logs[] = "EXIT: $this";
         });
     });
 

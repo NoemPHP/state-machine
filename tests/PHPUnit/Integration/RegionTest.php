@@ -289,4 +289,26 @@ class RegionTest extends MockeryTestCase
         $this->assertSame(6, count($logs));
         $this->assertTrue($region->isInState('two'));
     }
+
+    /**
+     * @test
+     * @return void
+     */
+    public function nestedStateName()
+    {
+        $fqsn = '';
+        $subRegion = (new RegionBuilder())
+            ->setStates('two')
+            ->onAction('two', function (object $t) use (&$fqsn) {
+                $fqsn = (string)$this;
+            });
+
+        $r = new RegionBuilder();
+        $r->setStates('one')
+            ->addRegion('one', $subRegion);
+
+        $region = $r->build();
+        $region->trigger((object)['foo' => 1]);
+        $this->assertSame('one.two', $fqsn);
+    }
 }
