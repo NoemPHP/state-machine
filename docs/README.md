@@ -2,6 +2,9 @@
 
 [![CI](https://github.com/NoemPHP/state-machine/actions/workflows/ci.yml/badge.svg)](https://github.com/NoemPHP/state-machine/actions/workflows/ci.yml)
 
+![tmpdbpky87p](https://github.com/NoemPHP/state-machine/assets/4208996/2cebcf16-2548-4ff1-a09f-7ba35593b8b8)
+
+
 This library provides an implementation of a Finite State Machine (FSM) in PHP.
 The benefits of using an FSM architecture include:
 
