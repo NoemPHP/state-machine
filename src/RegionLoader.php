@@ -22,7 +22,6 @@ use Nette\Schema\ValidationException;
  */
 class RegionLoader
 {
-
     public function __construct(private readonly array $helpers)
     {
     }
@@ -146,7 +145,7 @@ class RegionLoader
             $processor->process($regionSchema, $data);
         } catch (ValidationException $e) {
             throw new \RuntimeException(
-                'Invalid schema:'.PHP_EOL.
+                'Invalid schema:' . PHP_EOL .
                 implode(
                     PHP_EOL,
                     array_map(fn(Message $m) => $m->toString(), $e->getMessageObjects())
