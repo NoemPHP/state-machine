@@ -5,6 +5,11 @@ namespace Noem\State;
 use Closure;
 use Symfony\Component\Yaml\Tag\TaggedValue;
 use Symfony\Component\Yaml\Yaml;
+use Nette\Schema\Elements\Type;
+use Nette\Schema\Expect;
+use Nette\Schema\Message;
+use Nette\Schema\Processor;
+use Nette\Schema\ValidationException;
 
 /**
  * The Noem State Machine's RegionLoader class is responsible for loading and parsing
@@ -17,6 +22,7 @@ use Symfony\Component\Yaml\Yaml;
  */
 class RegionLoader
 {
+
     public function __construct(private readonly array $helpers)
     {
     }
@@ -66,6 +72,7 @@ class RegionLoader
      */
     public function fromArray(array $array): RegionBuilder
     {
+        $this->assertValidSchema($array);
         $builder = new RegionBuilder();
         [$states, $regions, $transitions, $callbacks] = $this->extractConfig($array['states'] ?? []);
         $builder->setStates(...$states);
@@ -99,6 +106,53 @@ class RegionLoader
         isset($array['inherits']) && $builder->inherits($array['inherits']);
 
         return $builder;
+    }
+
+    public function assertValidSchema(array $data)
+    {
+        $callbackSchema = Expect::anyOf(
+            Expect::string(),
+            Expect::type(TaggedValue::class),
+        );
+        $actionSchema = Expect::structure([
+            'run' => $callbackSchema,
+        ]);
+        $transitionSchema = Expect::structure([
+            'target' => Expect::string()->required(),
+            'guard' => $callbackSchema,
+        ]);
+        $nestedRegionSchema = new Type('list');
+
+        $stateSchema = Expect::structure([
+            'name' => Expect::string()->required(),
+            'transitions' => Expect::listOf($transitionSchema),
+            'onEnter' => Expect::listOf($actionSchema),
+            'onExit' => Expect::listOf($actionSchema),
+            'action' => Expect::listOf($actionSchema),
+            'regions' => $nestedRegionSchema,
+        ]);
+        $regionSchema = Expect::structure([
+            'label' => Expect::string(),
+            'inherits' => Expect::listOf(new Type('string')),
+            'initial' => Expect::string(),
+            'states' => Expect::listOf($stateSchema),
+            'final' => Expect::string(),
+
+        ]);
+        $nestedRegionSchema->items($regionSchema);
+        //$schema = Expect::arrayOf($regionSchema);
+        $processor = new Processor();
+        try {
+            $processor->process($regionSchema, $data);
+        } catch (ValidationException $e) {
+            throw new \RuntimeException(
+                'Invalid schema:'.PHP_EOL.
+                implode(
+                    PHP_EOL,
+                    array_map(fn(Message $m) => $m->toString(), $e->getMessageObjects())
+                )
+            );
+        }
     }
 
     /**
