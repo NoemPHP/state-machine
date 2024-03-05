@@ -8,6 +8,7 @@ use Noem\State\Util\ParameterDeriver;
 
 class Region
 {
+
     private string $currentState;
 
     public function __construct(
@@ -74,8 +75,8 @@ class Region
                 if (ParameterDeriver::getReturnType($guard) !== 'bool') {
                     throw new \RuntimeException('Guards must return bool');
                 }
-                if ($guard($payload)) {
-                    $this->doTransition($target, $payload, $extendedState);
+                if ($guard->call($extendedState, $payload)) {
+                    $this->doTransition($target, $payload, $extendedState, $regionStack);
                     break;
                 }
             }
@@ -106,10 +107,19 @@ class Region
      *
      * @return void
      */
-    private function doTransition(string $to, object $trigger, Context $extendedState): void
-    {
+    private function doTransition(
+        string $to,
+        object $trigger,
+        Context $extendedState,
+        \SplStack $regionStack
+    ): void {
         $this->events->onExitState($this->currentState, $trigger, $extendedState);
         $this->currentState = $to;
+        foreach ($this->regions() as $region) {
+            $regionStack->push($region);
+            $region->events->onEnterState($region->currentState, $trigger, $extendedState);
+            $regionStack->pop();
+        }
         $this->events->onEnterState($to, $trigger, $extendedState);
     }
 
