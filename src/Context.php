@@ -101,7 +101,7 @@ class Context implements \Stringable
         }
         $this->isHandlingException = false;
 
-        $rootRegion = $this->regionStack->top();
+        $rootRegion = $this->regionStack->bottom();
         assert($rootRegion instanceof Region);
         if (!$rootRegion->isFinal()) {
             throw $exception;

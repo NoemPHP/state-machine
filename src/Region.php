@@ -73,7 +73,10 @@ class Region
                     continue;
                 }
                 if (ParameterDeriver::getReturnType($guard) !== 'bool') {
-                    throw new \RuntimeException('Guards must return bool');
+                    throw new \RuntimeException(
+                        "Invalid guard callback for a transition from '{$extendedState}' to '{$target}':\n
+                         Guards must return bool"
+                    );
                 }
                 if ($guard->call($extendedState, $payload)) {
                     $this->doTransition($target, $payload, $extendedState, $regionStack);
