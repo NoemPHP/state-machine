@@ -6,11 +6,10 @@ namespace Noem\State\Helper;
 
 class PhpEvalHelper
 {
-
     public function __invoke(string $content): mixed
     {
         try {
-            return eval($content.';');
+            return eval($content . ';');
         } catch (\Throwable $exception) {
             throw new \RuntimeException(
                 $this->createFragmentForException($content, $exception),
