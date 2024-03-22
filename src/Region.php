@@ -8,6 +8,7 @@ use Noem\State\Util\ParameterDeriver;
 
 class Region
 {
+
     private string $currentState;
 
     public function __construct(
@@ -35,27 +36,28 @@ class Region
     {
         $regionStack = new \SplStack();
         $regionStack->push($this);
-        $extendedState = new Context($regionStack);
 
-        return $this->processTrigger($payload, $extendedState, $regionStack);
+        return $this->processTrigger($payload, $regionStack);
     }
 
     /**
      * Carries out all actions relevant to the current trigger while maintaining a stack of nested regions
      *
      * @param object $payload
-     * @param Context $extendedState
      * @param \SplStack $regionStack
      *
      * @return object
      */
-    private function processTrigger(object $payload, Context $extendedState, \SplStack $regionStack): object
+    private function processTrigger(object $payload, \SplStack $regionStack): object
     {
+        $extendedState = new Context($regionStack);
+
         foreach ($regions = $this->regions() as $region) {
-            $regionStack->push($region);
-            $region->processTrigger($payload, $extendedState, $regionStack);
-            $regionStack->pop();
+            $subRegionStack = clone $regionStack;
+            $subRegionStack->push($region);
+            $region->processTrigger($payload, $subRegionStack);
         }
+
         $this->events->onAction($this->currentState, $payload, $extendedState);
         /**
          * We cannot transition away before all regions have finished
