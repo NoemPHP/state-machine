@@ -4,10 +4,19 @@ namespace Noem\State;
 
 class Context implements \Stringable
 {
+
     private bool $isHandlingException = false;
 
-    public function __construct(private \SplStack $regionStack)
+    private \SplStack $__actions;
+
+    private $onDispatch;
+
+    public function __construct(
+        private \SplStack $regionStack,
+        callable $onDispatch
+    )
     {
+        $this->onDispatch=$onDispatch;
     }
 
     /**
@@ -86,6 +95,20 @@ class Context implements \Stringable
         }
     }
 
+    /**
+     *
+     * @param object $event
+     *
+     * @return void
+     */
+    public function dispatch(object $event): void
+    {
+        ($this->onDispatch)($event);
+    }
+
+    /**
+     * @throws \Throwable
+     */
     public function handleException(\Throwable $exception): void
     {
         /**

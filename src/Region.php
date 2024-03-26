@@ -8,6 +8,7 @@ use Noem\State\Util\ParameterDeriver;
 
 class Region
 {
+
     private string $currentState;
 
     public function __construct(
@@ -49,7 +50,10 @@ class Region
      */
     private function processTrigger(object $payload, \SplStack $regionStack): object
     {
-        $extendedState = new Context($regionStack);
+        $dispatched = [];
+        $extendedState = new Context($regionStack, function (object $trigger) use (&$dispatched) {
+            return $dispatched[] = $trigger;
+        });
 
         foreach ($regions = $this->regions() as $region) {
             $subRegionStack = clone $regionStack;
@@ -83,6 +87,9 @@ class Region
                     break;
                 }
             }
+        }
+        foreach ($dispatched as $trigger) {
+            $this->processTrigger($trigger,$regionStack);
         }
 
         return $payload;
