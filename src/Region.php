@@ -8,7 +8,6 @@ use Noem\State\Util\ParameterDeriver;
 
 class Region
 {
-
     private string $currentState;
 
     public function __construct(
@@ -89,7 +88,7 @@ class Region
             }
         }
         foreach ($dispatched as $trigger) {
-            $this->processTrigger($trigger,$regionStack);
+            $this->processTrigger($trigger, $regionStack);
         }
 
         return $payload;
