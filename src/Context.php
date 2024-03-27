@@ -4,7 +4,6 @@ namespace Noem\State;
 
 class Context implements \Stringable
 {
-
     private bool $isHandlingException = false;
 
     private \SplStack $__actions;
@@ -14,9 +13,8 @@ class Context implements \Stringable
     public function __construct(
         private \SplStack $regionStack,
         callable $onDispatch
-    )
-    {
-        $this->onDispatch=$onDispatch;
+    ) {
+        $this->onDispatch = $onDispatch;
     }
 
     /**
