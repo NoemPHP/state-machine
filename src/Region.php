@@ -11,6 +11,8 @@ class Region
 
     private string $currentState;
 
+    private array $dispatched = [];
+
     public function __construct(
         private readonly array $states,
         private readonly array $regions,
@@ -89,7 +91,7 @@ class Region
             }
         }
         foreach ($dispatched as $trigger) {
-            $this->processTrigger($trigger,$regionStack);
+            $this->processTrigger($trigger, $regionStack);
         }
 
         return $payload;
@@ -131,6 +133,10 @@ class Region
             $regionStack->pop();
         }
         $this->events->onEnterState($to, $trigger, $extendedState);
+    }
+
+    public function onDispatch(object $trigger): void
+    {
     }
 
     /**

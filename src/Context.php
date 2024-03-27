@@ -103,6 +103,12 @@ class Context implements \Stringable
      */
     public function dispatch(object $event): void
     {
+        if ($this->regionStack->count()) {
+            $current = $this->regionStack->bottom();
+            assert($current instanceof Region);
+
+            $current->getStateContext($key);
+        }
         ($this->onDispatch)($event);
     }
 
