@@ -4,17 +4,12 @@ namespace Noem\State;
 
 class Context implements \Stringable
 {
+
     private bool $isHandlingException = false;
-
-    private \SplStack $__actions;
-
-    private $onDispatch;
 
     public function __construct(
         private \SplStack $regionStack,
-        callable $onDispatch
     ) {
-        $this->onDispatch = $onDispatch;
     }
 
     /**
@@ -105,9 +100,8 @@ class Context implements \Stringable
             $current = $this->regionStack->bottom();
             assert($current instanceof Region);
 
-            $current->getStateContext($key);
+            $current->onDispatch($event);
         }
-        ($this->onDispatch)($event);
     }
 
     /**
