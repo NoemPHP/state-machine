@@ -22,6 +22,7 @@ use Nette\Schema\ValidationException;
  */
 class RegionLoader
 {
+
     public function __construct(private readonly array $helpers)
     {
     }
@@ -103,6 +104,7 @@ class RegionLoader
         isset($array['initial']) && $builder->markInitial($array['initial']);
         isset($array['final']) && $builder->markFinal($array['final']);
         isset($array['inherits']) && $builder->inherits($array['inherits']);
+        isset($array['factory']) && $builder->setFactory($this->createFactoryCallback($array['factory']));
 
         return $builder;
     }
@@ -136,6 +138,7 @@ class RegionLoader
             'initial' => Expect::string(),
             'states' => Expect::listOf($stateSchema),
             'final' => Expect::string(),
+            'factory' => $callbackSchema,
 
         ]);
         $nestedRegionSchema->items($regionSchema);
@@ -145,7 +148,7 @@ class RegionLoader
             $processor->process($regionSchema, $data);
         } catch (ValidationException $e) {
             throw new \RuntimeException(
-                'Invalid schema:' . PHP_EOL .
+                'Invalid schema:'.PHP_EOL.
                 implode(
                     PHP_EOL,
                     array_map(fn(Message $m) => $m->toString(), $e->getMessageObjects())
@@ -194,6 +197,17 @@ class RegionLoader
             return Closure::fromCallable($run);
         }
         throw new \RuntimeException('Invalid guard');
+    }
+
+    public function createFactoryCallback(string|TaggedValue $definition): Closure
+    {
+        if ($definition instanceof TaggedValue) {
+            return $this->resolveHelper($definition->getTag(), $definition->getValue());
+        }
+        if (is_callable($definition)) {
+            return Closure::fromCallable($definition);
+        }
+        throw new \RuntimeException('Invalid factory');
     }
 
     /**

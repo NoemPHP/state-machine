@@ -13,7 +13,7 @@ class Region
 
     public function __construct(
         private readonly array $states,
-        private readonly array $regions,
+        protected array $regions,
         private readonly array $transitions,
         private readonly Events $events,
         private array $stateContext,
@@ -48,7 +48,7 @@ class Region
      *
      * @return object
      */
-    private function processTrigger(object $payload, \SplStack $regionStack): object
+    protected function processTrigger(object $payload, \SplStack $regionStack): object
     {
         $extendedState = new Context($regionStack);
 

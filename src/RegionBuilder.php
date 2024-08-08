@@ -8,27 +8,46 @@ use Noem\State\Util\ParameterDeriver;
 
 class RegionBuilder
 {
-    private array $states = [];
+
+    protected Events $events;
+
+    protected array $states = [];
 
     private array $regions = [];
 
-    private array $transitions = [];
+    protected array $transitions = [];
 
-    private array $cascadingContext = [];
+    protected array $cascadingContext = [];
 
-    private array $stateContext = [];
+    protected array $stateContext = [];
 
-    private array $regionContext = [];
+    protected array $regionContext = [];
 
-    private ?string $initial;
+    protected ?string $initial;
 
-    private ?string $final;
+    protected ?string $final;
 
     private array $middlewares = [];
+
+    protected \Closure $regionFactory;
 
     public function __construct()
     {
         $this->events = new Events();
+
+        $this->regionFactory = function (): Region {
+            return new Region(
+                states: $this->states,
+                regions: $this->buildSubRegions(),
+                transitions: $this->transitions,
+                events: $this->events,
+                stateContext: $this->stateContext,
+                regionContext: $this->regionContext,
+                cascadingContext: $this->cascadingContext,
+                initial: $this->initial ?? current($this->states),
+                final: $this->final ?? end($this->states)
+            );
+        };
     }
 
     public function pushMiddleware(\Closure $middleware): self
@@ -42,7 +61,8 @@ class RegionBuilder
     {
         $creator = fn() => (function () {
             $this->assertValidConfig();
-            return $this->createRegionObject();
+
+            return ($this->regionFactory)->call($this);
         })->call($regionBuilder);
         foreach ($this->middlewares as $middleware) {
             $creator = function () use ($middleware, $regionBuilder, $creator) {
@@ -214,6 +234,12 @@ class RegionBuilder
         return $this;
     }
 
+    public function setFactory(callable $factory): self
+    {
+        $this->regionFactory = $factory;
+        return $this;
+    }
+
     /**
      * Builds a new `Region` object using configured settings
      *
@@ -224,7 +250,7 @@ class RegionBuilder
         return $this->applyMiddlewares($this);
     }
 
-    private function assertValidConfig()
+    protected function assertValidConfig()
     {
         if (empty($this->states)) {
             throw new \RuntimeException("States cannot be empty");
@@ -233,22 +259,9 @@ class RegionBuilder
         }
     }
 
-    private function createRegionObject(): Region
-    {
-        return new Region(
-            states: $this->states,
-            regions: $this->buildSubRegions(),
-            transitions: $this->transitions,
-            events: $this->events,
-            stateContext: $this->stateContext,
-            regionContext: $this->regionContext,
-            cascadingContext: $this->cascadingContext,
-            initial: $this->initial ?? current($this->states),
-            final: $this->final ?? end($this->states)
-        );
-    }
 
-    private function buildSubRegions(): array
+
+    protected function buildSubRegions(): array
     {
         $built = [];
         foreach ($this->regions as $state => $regions) {
