@@ -6,8 +6,9 @@ class Context implements \Stringable
 {
     private bool $isHandlingException = false;
 
-    public function __construct(private \SplStack $regionStack)
-    {
+    public function __construct(
+        private \SplStack $regionStack,
+    ) {
     }
 
     /**
@@ -86,6 +87,25 @@ class Context implements \Stringable
         }
     }
 
+    /**
+     *
+     * @param object $event
+     *
+     * @return void
+     */
+    public function dispatch(object $event): void
+    {
+        if ($this->regionStack->count()) {
+            $current = $this->regionStack->bottom();
+            assert($current instanceof Region);
+
+            $current->onDispatch($event);
+        }
+    }
+
+    /**
+     * @throws \Throwable
+     */
     public function handleException(\Throwable $exception): void
     {
         /**

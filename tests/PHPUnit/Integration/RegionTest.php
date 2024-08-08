@@ -270,14 +270,13 @@ class RegionTest extends MockeryTestCase
         };
 
         $subRegion = (new RegionBuilder())
-            ->setStates('foo', 'bar')
-            ->pushTransition('foo', 'bar')
-            ->pushMiddleware($middleware);
+            ->setStates('2_foo', '2_bar')
+            ->pushTransition('2_foo', '2_bar');
 
         $r = new RegionBuilder();
-        $r->setStates('one', 'two')
-            ->pushTransition('one', 'two')
-            ->addRegion('two', $subRegion)
+        $r->setStates('1_one', '1_two')
+            ->pushTransition('1_one', '1_two')
+            ->addRegion('1_two', $subRegion)
             ->pushMiddleware($middleware);
 
         $region = $r->build();
@@ -286,8 +285,8 @@ class RegionTest extends MockeryTestCase
 
         //var_dump($logs);
 
-        $this->assertSame(6, count($logs));
-        $this->assertTrue($region->isInState('two'));
+        $this->assertSame(5, count($logs));
+        $this->assertTrue($region->isInState('1_two'));
     }
 
     /**
@@ -310,5 +309,23 @@ class RegionTest extends MockeryTestCase
         $region = $r->build();
         $region->trigger((object)['foo' => 1]);
         $this->assertSame('one.two', $fqsn);
+    }
+
+    /**
+     * @test
+     * @return void
+     */
+    public function eventDispatching()
+    {
+        $r = new RegionBuilder();
+        $r->setStates('one', 'two', 'three')
+            ->pushTransition('one', 'two')
+            ->pushTransition('two', 'three')
+            ->onEnter('two', function (object $trigger) {
+                $this->dispatch((object)['hello' => 'world']);
+            });
+        $region = $r->build();
+        $region->trigger((object)['foo' => 1]);
+        $this->assertTrue($region->isInState('three'),"Region should be in state 'three'");
     }
 }
