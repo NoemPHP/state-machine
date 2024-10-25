@@ -4,6 +4,7 @@ namespace Noem\State;
 
 class Context implements \Stringable
 {
+
     private bool $isHandlingException = false;
 
     public function __construct(
@@ -20,8 +21,9 @@ class Context implements \Stringable
      *
      * @return mixed Returns value associated with the requested key or null if no region found
      */
-    public function __get(string $key): mixed
+    public function &__get(string $key): mixed
     {
+        $value = null;
         if ($this->regionStack->count()) {
             $current = $this->regionStack->top();
             assert($current instanceof Region);
@@ -29,7 +31,7 @@ class Context implements \Stringable
             return $current->getStateContext($key);
         }
 
-        return null;
+        return $value;
     }
 
     /**

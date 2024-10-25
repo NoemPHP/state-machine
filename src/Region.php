@@ -8,6 +8,7 @@ use Noem\State\Util\ParameterDeriver;
 
 class Region
 {
+
     private string $currentState;
 
     private array $dispatched = [];
@@ -205,9 +206,15 @@ class Region
      *
      * @return mixed Returns the stored value corresponding to the requested key or null if not found
      */
-    public function getStateContext(string $key): mixed
+    public function &getStateContext(string $key): mixed
     {
-        return $this->stateContext[$this->currentState][$key] ?? null;
+        $value = null;
+        if (isset($this->stateContext[$this->currentState][$key])) {
+            $current = &$this->stateContext[$this->currentState];
+            return $current[$key];
+        }
+
+        return $value;
     }
 
     /**

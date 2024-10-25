@@ -176,7 +176,7 @@ class RegionLoader
         if (is_callable($transition['guard'])) {
             return Closure::fromCallable($transition['guard']);
         }
-        throw new \RuntimeException('Invalid guard');
+        throw new \RuntimeException('Invalid "guard" callback');
     }
 
     /**
@@ -196,7 +196,7 @@ class RegionLoader
         if (is_callable($run)) {
             return Closure::fromCallable($run);
         }
-        throw new \RuntimeException('Invalid guard');
+        throw new \RuntimeException('Invalid "run" callback');
     }
 
     public function createFactoryCallback(string|TaggedValue $definition): Closure
