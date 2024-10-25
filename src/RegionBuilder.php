@@ -8,7 +8,6 @@ use Noem\State\Util\ParameterDeriver;
 
 class RegionBuilder
 {
-
     protected Events $events;
 
     protected array $states = [];
