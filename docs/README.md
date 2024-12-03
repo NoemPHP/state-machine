@@ -34,7 +34,63 @@ Install this package via composer:
 
 ## Usage
 
-### Using `RegionBuilder`
+### Practical example
+
+This trivial example shows how a product may move through various states during processing:
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use Noem\State\RegionBuilder;
+
+$orderId = 12345;
+
+// Define the state machine
+$region = (new RegionBuilder())
+    // State configuration
+    ->setStates('Checkout', 'Pending', 'Processing', 'Shipped', 'Delivered')
+    ->markInitial('Checkout')
+    ->markFinal('Delivered')
+
+    // Context for this machine instance
+    ->setRegionContext(['orderId' => $orderId])
+
+    // Transitions
+    // In a real application, these inspect the $trigger and allow/deny the transition based on it
+    ->pushTransition(from: 'Checkout', to: 'Pending', guard: fn(object $trigger): bool => true)
+    ->pushTransition(from: 'Pending', to: 'Processing', guard: fn(object $trigger): bool => true)
+    ->pushTransition(from: 'Processing', to: 'Shipped', guard: fn(object $trigger): bool => true)
+    ->pushTransition(from: 'Shipped', to: 'Delivered', guard: fn(object $trigger): bool => true)
+
+    // Entry events
+    ->onEnter(state: 'Pending', callback: function (object $trigger) {
+        echo "[{$trigger->timestamp->format("Y-m-d H:i:s")}] Order {$this->get('orderId')} has been received and is {$this}.\n";
+    })
+    ->onEnter(state: 'Processing', callback: function (object $trigger) {
+        echo "[{$trigger->timestamp->format("Y-m-d H:i:s")}] Order {$this->get('orderId')} is now {$this}.\n";
+    })
+    ->onEnter(state: 'Shipped', callback: function (object $trigger) {
+        echo "[{$trigger->timestamp->format("Y-m-d H:i:s")}] Order {$this->get('orderId')} is {$this}.\n";
+    })
+    ->onEnter(state: 'Delivered', callback: function (object $trigger) {
+        echo "[{$trigger->timestamp->format("Y-m-d H:i:s")}] Order {$this->get('orderId')} is {$this}.\n";
+    })
+    // Build the state machine
+    ->build();
+
+// Simulate order processing
+$time = DateTimeImmutable::createFromFormat('U.u', microtime(true));
+
+$region->trigger((object)['timestamp' => $time]);
+$region->trigger((object)['timestamp' => $time->add(DateInterval::createFromDateString('1 day'))]);
+$region->trigger((object)['timestamp' => $time->add(DateInterval::createFromDateString('2 day'))]);
+$region->trigger((object)['timestamp' => $time->add(DateInterval::createFromDateString('3 day'))]);
+
+```
+
+### Documented example - Using `RegionBuilder`
 
 The `RegionBuilder` in Noem State Machine is a class used for constructing and configuring finite state machines. 
 It allows developers to define states, transitions, guards, entry and exit events and actions 
