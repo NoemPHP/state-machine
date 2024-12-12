@@ -133,6 +133,37 @@ while(!$r->isFinal()){
     $r->trigger((object)['message'=>'hello world']);
 }
 ```
+
+### Events
+
+Just like PSR-14, the event system filters relevant event callbacks by their parameter type.
+This means you can -for example- only allow a transition when an Exception occurs, as seen above.
+
+```php
+$r = new RegionBuilder();
+$r->setStates('on', 'running', 'error')
+    ->pushTransition('on', 'error', function(\Throwable $exception){
+        echo 'Error: '. $exception->getMessage();
+        return true;
+    })
+;
+```
+
+However, it is also possible to use "named events", which greatly helps serializing application state.
+The syntax is a little more complex, though:
+
+```php
+$r = new RegionBuilder();
+$r->setStates('one', 'two', 'three')
+    ->pushTransition('one', 'two', fn(#[Name('hello-world')] Event $event): bool => true)
+;
+```
+Here, the `Name` attribute works in tandem with the internal `Event` interface that mandates a name.
+If the region encounters a callback written like this, it will only consider the callback if:
+ * the `Event` type matches
+ * and the `$event->name()` matches the value of `#[Name()]`
+
+
 ### Using `RegionLoader`
 
 You can also load a state machine configuration from YAML. `RegionLoader::fromYaml()` will provide

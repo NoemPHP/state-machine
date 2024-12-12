@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace Noem\State\Test\Integration;
 
 use Mockery\Adapter\Phpunit\MockeryTestCase;
+use Noem\State\Event;
+use Noem\State\Name;
 use Noem\State\RegionBuilder;
 use Noem\State\Region;
 
 class RegionTest extends MockeryTestCase
 {
-
     /**
      * @test
      * @return void
@@ -206,7 +207,7 @@ class RegionTest extends MockeryTestCase
             ->inherits(['key'])
             ->onAction('foo', function (object $t) use (&$test) {
                 $key = $this->get('key');
-                $this->set('key', $key.' world');
+                $this->set('key', $key . ' world');
             });
         $r = new RegionBuilder();
         $r->setStates('one', 'two')
@@ -315,17 +316,47 @@ class RegionTest extends MockeryTestCase
      * @test
      * @return void
      */
-    public function eventDispatching()
+    public function eventChaining()
     {
         $r = new RegionBuilder();
         $r->setStates('one', 'two', 'three')
             ->pushTransition('one', 'two')
             ->pushTransition('two', 'three')
             ->onEnter('two', function (object $trigger) {
+                /** @noinspection PhpUndefinedMethodInspection */
                 $this->dispatch((object)['hello' => 'world']);
             });
         $region = $r->build();
         $region->trigger((object)['foo' => 1]);
-        $this->assertTrue($region->isInState('three'),"Region should be in state 'three'");
+        $this->assertTrue($region->isInState('three'), "Region should be in state 'three'");
+    }
+
+    /**
+     * @test
+     * @return void
+     */
+    public function namedEvents()
+    {
+        $guardSpy = \Mockery::spy(fn() => true);
+
+        $r = new RegionBuilder();
+        $r->setStates('one', 'two', 'three')
+            ->pushTransition('one', 'two', fn(#[Name('hello-world')] Event $t): bool => $guardSpy())
+        ;
+        $region = $r->build();
+        $region->trigger((object)['foo' => 1]);
+        $this->assertFalse($region->isInState('two'), "Region should ignore non-matching event'");
+
+        $event = new class implements Event
+        {
+            public function name(): string
+            {
+                return 'hello-world';
+            }
+        };
+
+        $region->trigger($event);
+
+        $this->assertTrue($region->isInState('two'), "Region should be in state 'three'");
     }
 }

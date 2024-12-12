@@ -4,16 +4,30 @@ declare(strict_types=1);
 
 namespace Noem\State\Util;
 
+use Noem\State\Event;
+use Noem\State\Name;
 use ReflectionParameter;
 use ReflectionType;
 
+/**
+ * Class ParameterDeriver
+ *
+ * The ParameterDeriver class provides utility methods to inspect and validate callable parameters.
+ * It supports various types of callables, including functions, closures, object methods,
+ * static methods, and invokable objects. This class is particularly useful in scenarios where
+ * dynamic function or method invocation is required, such as event handling, callback execution,
+ * or dependency injection.
+ *
+ * @package NoNamespace
+ */
 class ParameterDeriver
 {
     /**
      * Derives the class type of the first argument of a callable.
      *
-     * @param callable $callable
+     * @param array|callable $callable $callable
      *   The callable for which we want the parameter type.
+     * @param int $param
      *
      * @return string
      *   The class the parameter is type hinted on.
@@ -30,11 +44,12 @@ class ParameterDeriver
             }
             $rType = $params[$param]->getType();
             if ($rType === null) {
-                throw new \InvalidArgumentException('Listeners must declare an object type they can accept.');
+                throw new \InvalidArgumentException('Listeners must typehint their first parameter.');
             }
             $type = $rType->getName();
         } catch (\ReflectionException $e) {
-            throw new \RuntimeException('Type error registering listener.', 0, $e);
+            throw $e;
+            throw new \RuntimeException('Type error registering callable.', 0, $e);
         }
 
         return $type;
@@ -51,10 +66,77 @@ class ParameterDeriver
         return $returns->getName();
     }
 
+    /**
+     * Retrieves the event name associated with a specified parameter of a callable.
+     *
+     * This method inspects the given callable to determine if the specified parameter
+     * is of type `Event` or a subclass thereof. If such a parameter exists and has
+     * an associated `Name` attribute, this method returns the event name from that attribute.
+     *
+     * @param array|callable $callable $callable The callable to inspect.
+     * @param int $param The index of the parameter to check (default is 0).
+     *
+     * @return string|null The event name if found, otherwise null.
+     */
+    protected static function getEventName($callable, int $param = 0): ?string
+    {
+        try {
+            [$params, $returns] = self::reflect($callable);
+            if (!isset($params[$param])) {
+                throw new \InvalidArgumentException("Required Parameter {$param} not declared.");
+            }
+            $parameter = $params[$param];
+            // Check if the first parameter is an Event type
+            if (!$parameter->getType() instanceof \ReflectionNamedType) {
+                throw new \InvalidArgumentException('Listeners must typehint their first parameter.');
+            }
+            $paramType = $parameter->getType()->getName();
+
+            if ($paramType === Event::class || is_subclass_of($paramType, Event::class)) {
+                // Check for the Name attribute
+                foreach ($parameter->getAttributes(Name::class) as $attribute) {
+                    $nameAttribute = $attribute->newInstance();
+                    assert($nameAttribute instanceof Name);
+
+                    return $nameAttribute->eventName;
+                }
+            }
+        } catch (\ReflectionException $e) {
+            throw new \RuntimeException('Type error registering callable.', 0, $e);
+        }
+
+        return null;
+    }
+
+    /**
+     * Checks if the given payload is compatible with the specified parameter of a callable.
+     *
+     * This method determines if the type of the provided payload matches the expected
+     * parameter type of the callable at the specified position. If the parameter type
+     * is 'object', it checks if the payload is an instance of that object type.
+     *
+     * @param callable $callback
+     *   The callable for which to check the parameter compatibility.
+     * @param object $payload
+     *   The payload object to be checked against the parameter type.
+     * @param int $param
+     *   (Optional) The index of the parameter to check. Defaults to 0.
+     *
+     * @return bool
+     *   Returns true if the payload is compatible with the parameter type, false otherwise.
+     */
     public static function isCompatibleParameter(callable $callback, object $payload, int $param = 0): bool
     {
         $parameterType = self::getParameterType($callback, $param);
         if ($parameterType !== 'object' && !$payload instanceof $parameterType) {
+            return false;
+        }
+
+        /**
+         * Check if a named event is subscribed to via name attribute
+         */
+        $eventName = self::getEventName($callback);
+        if ($eventName !== null && $payload instanceof Event && $payload->name() !== $eventName) {
             return false;
         }
 
@@ -110,7 +192,7 @@ class ParameterDeriver
      *
      * @return True if the callable represents a function, false otherwise.
      */
-    protected static function isFunctionCallable(callable $callable): bool
+    protected static function isFunctionCallable($callable): bool
     {
         // We can't check for function_exists() because it may be included later by the time it matters.
         return is_string($callable);
