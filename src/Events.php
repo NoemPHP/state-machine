@@ -23,22 +23,56 @@ class Events
      */
     private array $exitHandlers = [];
 
-    public function onAction(string $state, object $trigger, Context $extendedState)
+    public function onAction(string $state, object $trigger, Context $extendedState): void
     {
         if (!isset($this->actionHandlers[$state])) {
             return;
         }
+        $this->doCall($this->actionHandlers[$state], $trigger, $extendedState);
+    }
 
-        foreach ($this->actionHandlers[$state] as $actionHandler) {
-            if (!ParameterDeriver::isCompatibleParameter($actionHandler, $trigger)) {
-                continue;
-            }
-            try {
-                $actionHandler->call($extendedState, $trigger);
-            } catch (\Throwable $exception) {
-                $extendedState->handleException($exception);
+    private function doCall(array $handlers, object $trigger, Context $extendedState): void
+    {
+        $events = [
+//            Before::fromEvent($trigger),
+            $trigger,
+//            After::fromEvent($trigger)
+        ];
+        foreach ($events as $event) {
+
+            foreach ($handlers as $handler) {
+                if (!ParameterDeriver::isCompatibleParameter($handler, $event)) {
+                    continue;
+                }
+                try {
+                    $handler->call($extendedState, $event);
+                } catch (\Throwable $exception) {
+                    $extendedState->handleException($exception);
+                }
             }
         }
+
+    }
+
+    private function maybeWrapHook(\Closure $handler): \Closure
+    {
+        $reflect = ParameterDeriver::reflect($handler);
+        $attributes = $reflect->getAttributes();
+        foreach ($attributes as $attribute) {
+            $instance = $attribute->newInstance();
+            switch (true) {
+                case $instance instanceof After:
+                    $handler = function (After $after) use ($instance, $handler) {
+                        $originalTrigger = $after->event;
+                        if (!ParameterDeriver::isCompatibleParameter($handler, $originalTrigger)) {
+                            return;
+                        }
+                        $handler->call($this, $originalTrigger);
+                    };
+
+            }
+        }
+        return $handler;
     }
 
     /**
@@ -49,7 +83,7 @@ class Events
      */
     public function addActionHandler(string $state, \Closure $handler): self
     {
-        $this->actionHandlers[$state][] = $handler;
+        $this->actionHandlers[$state][] = $this->maybeWrapHook($handler);
 
         return $this;
     }
@@ -73,22 +107,13 @@ class Events
         if (!isset($this->entryHandlers[$state])) {
             return;
         }
+        $this->doCall($this->entryHandlers[$state], $trigger, $extendedState);
 
-        foreach ($this->entryHandlers[$state] as $entryHandler) {
-            if (!ParameterDeriver::isCompatibleParameter($entryHandler, $trigger)) {
-                continue;
-            }
-            try {
-                $entryHandler->call($extendedState, $trigger);
-            } catch (\Throwable $exception) {
-                $extendedState->handleException($exception);
-            }
-        }
     }
 
     public function addEnterStateHandler(string $state, \Closure $handler): self
     {
-        $this->entryHandlers[$state][] = $handler;
+        $this->entryHandlers[$state][] = $this->maybeWrapHook($handler);
 
         return $this;
     }
@@ -111,22 +136,13 @@ class Events
         if (!isset($this->exitHandlers[$state])) {
             return;
         }
+        $this->doCall($this->exitHandlers[$state], $trigger, $extendedState);
 
-        foreach ($this->exitHandlers[$state] as $exitHandler) {
-            if (!ParameterDeriver::isCompatibleParameter($exitHandler, $trigger)) {
-                continue;
-            }
-            try {
-                $exitHandler->call($extendedState, $trigger);
-            } catch (\Throwable $exception) {
-                $extendedState->handleException($exception);
-            }
-        }
     }
 
     public function addExitStateHandler(string $state, \Closure $handler): self
     {
-        $this->exitHandlers[$state][] = $handler;
+        $this->exitHandlers[$state][] = $this->maybeWrapHook($handler);
 
         return $this;
     }

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Noem\State\Util;
 
+use Noem\State\After;
 use Noem\State\Event;
+use Noem\State\Hook;
 use Noem\State\Name;
 use ReflectionParameter;
 use ReflectionType;
@@ -31,6 +33,7 @@ class ParameterDeriver
      *
      * @return string
      *   The class the parameter is type hinted on.
+     * @throws \ReflectionException
      */
     public static function getParameterType($callable, int $param = 0): string
     {
@@ -38,7 +41,8 @@ class ParameterDeriver
 
         // This try-catch is only here to keep OCD linters happy about uncaught reflection exceptions.
         try {
-            [$params, $returns] = self::reflect($callable);
+            $reflect = self::reflect($callable);
+            $params = $reflect->getParameters();
             if (!isset($params[$param])) {
                 throw new \InvalidArgumentException("Required Parameter {$param} not declared.");
             }
@@ -55,9 +59,13 @@ class ParameterDeriver
         return $type;
     }
 
+    /**
+     * @throws \ReflectionException
+     */
     public static function getReturnType($callable): string|null
     {
-        [$params, $returns] = self::reflect($callable);
+        $returns = self::reflect($callable)->getReturnType();
+
         if (!$returns) {
             return null;
         }
@@ -81,7 +89,8 @@ class ParameterDeriver
     protected static function getEventName($callable, int $param = 0): ?string
     {
         try {
-            [$params, $returns] = self::reflect($callable);
+            $reflect = self::reflect($callable);
+            $params = $reflect->getParameters();
             if (!isset($params[$param])) {
                 throw new \InvalidArgumentException("Required Parameter {$param} not declared.");
             }
@@ -127,11 +136,26 @@ class ParameterDeriver
      */
     public static function isCompatibleParameter(callable $callback, object $payload, int $param = 0): bool
     {
+        $reflect = self::reflect($callback);
         $parameterType = self::getParameterType($callback, $param);
         if ($parameterType !== 'object' && !$payload instanceof $parameterType) {
             return false;
         }
-
+        /**
+         * Catch-all listeners do not receive before/after events.
+         * This is more of an emotional decision than a technical one because it "feels" right not to call
+         * a listener 3 times for a single trigger.
+         */
+        if ($parameterType === 'object' && $payload instanceof Hook) {
+            return false;
+        }
+        $attributes = $reflect->getAttributes();
+        foreach ($attributes as $attribute) {
+            $instance = $attribute->newInstance();
+            if ($instance instanceof Hook && !$payload instanceof Hook) {
+                return false;
+            }
+        }
         /**
          * Check if a named event is subscribed to via name attribute
          */
@@ -140,47 +164,25 @@ class ParameterDeriver
             return false;
         }
 
+
         return true;
     }
 
     /**
      * @param $callable
      *
-     * @return array{list<ReflectionParameter>,?ReflectionType}
+     * @return \ReflectionFunction|\ReflectionMethod
      * @throws \ReflectionException
      */
-    protected static function reflect($callable): array
+    public static function reflect($callable): \ReflectionFunction|\ReflectionMethod
     {
-        switch (true) {
-            // See note on isClassCallable() for why this must be the first case.
-            case self::isClassCallable($callable):
-                $method = (new \ReflectionClass($callable[0]))->getMethod($callable[1]);
-                $params = $method->getParameters();
-                $returns = $method->getReturnType();
-
-                return [$params, $returns];
-            case self::isFunctionCallable($callable):
-            case self::isClosureCallable($callable):
-                $reflect = new \ReflectionFunction($callable);
-                $params = $reflect->getParameters();
-                $returns = $reflect->getReturnType();
-
-                return [$params, $returns];
-            case self::isObjectCallable($callable):
-                $method = (new \ReflectionObject($callable[0]))->getMethod($callable[1]);
-                $params = $method->getParameters();
-                $returns = $method->getReturnType();
-
-                return [$params, $returns];
-            case self::isInvokable($callable):
-                $method = (new \ReflectionMethod($callable, '__invoke'));
-                $params = $method->getParameters();
-                $returns = $method->getReturnType();
-
-                return [$params, $returns];
-            default:
-                throw new \InvalidArgumentException('Not a recognized type of callable');
-        }
+        return match (true) {
+            self::isClassCallable($callable) => (new \ReflectionClass($callable[0]))->getMethod($callable[1]),
+            self::isFunctionCallable($callable), self::isClosureCallable($callable) => new \ReflectionFunction($callable),
+            self::isObjectCallable($callable) => (new \ReflectionObject($callable[0]))->getMethod($callable[1]),
+            self::isInvokable($callable) => (new \ReflectionMethod($callable, '__invoke')),
+            default => throw new \InvalidArgumentException('Not a recognized type of callable'),
+        };
     }
 
     /**

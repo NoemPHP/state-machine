@@ -113,6 +113,7 @@ class RegionLoader
         $callbackSchema = Expect::anyOf(
             Expect::string(),
             Expect::type(TaggedValue::class),
+            Expect::type(Closure::class),
         );
         $actionSchema = Expect::structure([
             'run' => $callbackSchema,

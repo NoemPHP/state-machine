@@ -10,19 +10,23 @@ class Region
 {
     private string $currentState;
 
+    /**
+     * @var object[]
+     */
     private array $dispatched = [];
 
     public function __construct(
-        private readonly array $states,
-        protected array $regions,
-        private readonly array $transitions,
+        private readonly array  $states,
+        protected array         $regions,
+        private readonly array  $transitions,
         private readonly Events $events,
-        private array $stateContext,
-        private array $regionContext,
-        private readonly array $cascadingContext,
-        string $initial,
-        private string $final
-    ) {
+        private array           $stateContext,
+        private array           $regionContext,
+        private readonly array  $cascadingContext,
+        string                  $initial,
+        private string          $final
+    )
+    {
         $this->currentState = $initial ?? current($this->states);
     }
 
@@ -51,7 +55,7 @@ class Region
      */
     protected function processTrigger(object $payload, \SplStack $regionStack): object
     {
-        $this->dispatched = [];
+        $this->doDispatch($regionStack);
         $extendedState = new Context($regionStack);
 
         foreach ($regions = $this->regions() as $region) {
@@ -59,8 +63,15 @@ class Region
             $subRegionStack->push($region);
             $region->processTrigger($payload, $subRegionStack);
         }
+        $events = [
+            Before::fromEvent($payload),
+            $payload,
+            After::fromEvent($payload)
+        ];
+        foreach ($events as $event) {
+            $this->events->onAction($this->currentState, $event, $extendedState);
 
-        $this->events->onAction($this->currentState, $payload, $extendedState);
+        }
         /**
          * We cannot transition away before all regions have finished
          */
@@ -72,26 +83,40 @@ class Region
 
         if (isset($this->transitions[$this->currentState])) {
             foreach ($this->transitions[$this->currentState] as $target => $guard) {
-                if (!ParameterDeriver::isCompatibleParameter($guard, $payload)) {
-                    continue;
-                }
-                if (ParameterDeriver::getReturnType($guard) !== 'bool') {
-                    throw new \RuntimeException(
-                        "Invalid guard callback for a transition from '{$extendedState}' to '{$target}':\n
+                foreach ($events as $event) {
+                    if (!ParameterDeriver::isCompatibleParameter($guard, $event)) {
+                        continue;
+                    }
+                    if (ParameterDeriver::getReturnType($guard) !== 'bool') {
+                        throw new \RuntimeException(
+                            "Invalid guard callback for a transition from '{$extendedState}' to '{$target}':\n
                          Guards must return bool"
-                    );
+                        );
+                    }
+                    if ($guard->call($extendedState, $event)) {
+                        $this->doTransition($target, $event, $extendedState, $regionStack);
+                        break;
+                    }
                 }
-                if ($guard->call($extendedState, $payload)) {
-                    $this->doTransition($target, $payload, $extendedState, $regionStack);
-                    break;
-                }
+
             }
         }
-        foreach ($this->dispatched as $trigger) {
-            $this->processTrigger($trigger, $regionStack);
-        }
+        $this->doDispatch($regionStack);
+
 
         return $payload;
+    }
+
+    private function doDispatch(\SplStack $regionStack)
+    {
+        /**
+         * Copy array and clear the source. This prevents infinite loops
+         */
+        $dispatched = [...$this->dispatched];
+        $this->dispatched = [];
+        foreach ($dispatched as $trigger) {
+            $this->processTrigger((object)$trigger, $regionStack);
+        }
     }
 
     /**
@@ -115,21 +140,35 @@ class Region
      * @param Context $extendedState
      *
      * @return void
+     * @throws \Throwable
      */
     private function doTransition(
-        string $to,
-        object $trigger,
-        Context $extendedState,
+        string    $to,
+        object    $trigger,
+        Context   $extendedState,
         \SplStack $regionStack
-    ): void {
+    ): void
+    {
         $this->events->onExitState($this->currentState, $trigger, $extendedState);
         $this->currentState = $to;
         foreach ($this->regions() as $region) {
-            $regionStack->push($region);
-            $region->events->onEnterState($region->currentState, $trigger, $extendedState);
-            $regionStack->pop();
+            $region->onEnterParent($trigger, $regionStack, $extendedState);
         }
         $this->events->onEnterState($to, $trigger, $extendedState);
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function onEnterParent(object $trigger, \SplStack $parentRegions, Context $extendedState): void
+    {
+        $parentRegions->push($this);
+        $this->events->onEnterState($this->currentState, $trigger, $extendedState);
+        /**
+         * If onEnter dispatched anything, we can safely process them right away
+         */
+        $this->doDispatch($parentRegions);
+        $parentRegions->pop();
     }
 
     public function onDispatch(object $trigger): void
