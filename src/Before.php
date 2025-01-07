@@ -2,7 +2,6 @@
 
 namespace Noem\State;
 
-
 class Before implements Hook
 {
     private object $__event;

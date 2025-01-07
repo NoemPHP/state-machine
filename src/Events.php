@@ -39,7 +39,6 @@ class Events
 //            After::fromEvent($trigger)
         ];
         foreach ($events as $event) {
-
             foreach ($handlers as $handler) {
                 if (!ParameterDeriver::isCompatibleParameter($handler, $event)) {
                     continue;
@@ -51,7 +50,6 @@ class Events
                 }
             }
         }
-
     }
 
     private function maybeWrapHook(\Closure $handler): \Closure
@@ -69,7 +67,6 @@ class Events
                         }
                         $handler->call($this, $originalTrigger);
                     };
-
             }
         }
         return $handler;
@@ -108,7 +105,6 @@ class Events
             return;
         }
         $this->doCall($this->entryHandlers[$state], $trigger, $extendedState);
-
     }
 
     public function addEnterStateHandler(string $state, \Closure $handler): self
@@ -137,7 +133,6 @@ class Events
             return;
         }
         $this->doCall($this->exitHandlers[$state], $trigger, $extendedState);
-
     }
 
     public function addExitStateHandler(string $state, \Closure $handler): self

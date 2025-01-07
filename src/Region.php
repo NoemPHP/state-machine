@@ -16,17 +16,16 @@ class Region
     private array $dispatched = [];
 
     public function __construct(
-        private readonly array  $states,
-        protected array         $regions,
-        private readonly array  $transitions,
+        private readonly array $states,
+        protected array $regions,
+        private readonly array $transitions,
         private readonly Events $events,
-        private array           $stateContext,
-        private array           $regionContext,
-        private readonly array  $cascadingContext,
-        string                  $initial,
-        private string          $final
-    )
-    {
+        private array $stateContext,
+        private array $regionContext,
+        private readonly array $cascadingContext,
+        string $initial,
+        private string $final
+    ) {
         $this->currentState = $initial ?? current($this->states);
     }
 
@@ -70,7 +69,6 @@ class Region
         ];
         foreach ($events as $event) {
             $this->events->onAction($this->currentState, $event, $extendedState);
-
         }
         /**
          * We cannot transition away before all regions have finished
@@ -98,7 +96,6 @@ class Region
                         break;
                     }
                 }
-
             }
         }
         $this->doDispatch($regionStack);
@@ -143,12 +140,11 @@ class Region
      * @throws \Throwable
      */
     private function doTransition(
-        string    $to,
-        object    $trigger,
-        Context   $extendedState,
+        string $to,
+        object $trigger,
+        Context $extendedState,
         \SplStack $regionStack
-    ): void
-    {
+    ): void {
         $this->events->onExitState($this->currentState, $trigger, $extendedState);
         $this->currentState = $to;
         foreach ($this->regions() as $region) {

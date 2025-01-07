@@ -1,6 +1,7 @@
 <?php
 
 namespace Noem\State;
+
 #[\Attribute]
 class After implements Hook
 {
