@@ -5,7 +5,6 @@ namespace Noem\State;
 #[\Attribute]
 class After implements Hook
 {
-
     private object $__event;
 
     public object $event {

@@ -8,7 +8,6 @@ use Noem\State\Util\ParameterDeriver;
 
 class Events
 {
-
     /**
      * @var \Closure[][]
      */
@@ -35,10 +34,12 @@ class Events
     private function doCall(array $handlers, object $trigger, Context $extendedState): void
     {
         foreach ($handlers as $handler) {
-            if (!ParameterDeriver::isCompatibleParameter(
-                $handler,
-                $trigger
-            )) {
+            if (
+                !ParameterDeriver::isCompatibleParameter(
+                    $handler,
+                    $trigger
+                )
+            ) {
                 if (!ParameterDeriver::isCompatibleHook($handler, $trigger)) {
                     continue;
                 }

@@ -8,7 +8,6 @@ use Noem\State\Util\ParameterDeriver;
 
 class Region
 {
-
     private string $currentState;
 
     /**
@@ -79,10 +78,12 @@ class Region
 
         if (isset($this->transitions[$this->currentState])) {
             foreach ($this->transitions[$this->currentState] as $target => $guard) {
-                if (!ParameterDeriver::isCompatibleParameter(
-                    $guard,
-                    $payload
-                )) {
+                if (
+                    !ParameterDeriver::isCompatibleParameter(
+                        $guard,
+                        $payload
+                    )
+                ) {
                     if (!ParameterDeriver::isCompatibleHook($guard, $payload)) {
                         continue;
                     }
