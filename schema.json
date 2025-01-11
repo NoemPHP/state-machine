@@ -1,0 +1,104 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "State Machine Configuration Schema",
+    "type": "object",
+    "properties": {
+        "label": { "type": "string" },
+        "inherits": {
+            "type": "array",
+            "items": { "type": "string" }
+        },
+        "initial": { "type": "string" },
+        "final": { "type": "string" },
+        "states": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/state"
+            }
+        },
+        "factory": {
+            "anyOf": [
+                { "type": "string" },
+                { "$ref": "#/definitions/taggedValue" }
+            ]
+        }
+    },
+    "required": ["states"],
+    "additionalProperties": false,
+    "definitions": {
+        "state": {
+            "type": "object",
+            "properties": {
+                "name": { "type": "string", "minLength": 1 },
+                "transitions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/transition"
+                    }
+                },
+                "onEnter": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/action"
+                    }
+                },
+                "onExit": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/action"
+                    }
+                },
+                "action": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/action"
+                    }
+                },
+                "regions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#"
+                    }
+                }
+            },
+            "required": ["name"],
+            "additionalProperties": false
+        },
+        "transition": {
+            "type": "object",
+            "properties": {
+                "target": { "type": "string", "minLength": 1 },
+                "guard": {
+                    "anyOf": [
+                        { "type": "string" },
+                        { "$ref": "#/definitions/taggedValue" }
+                    ]
+                }
+            },
+            "required": ["target"],
+            "additionalProperties": false
+        },
+        "action": {
+            "type": "object",
+            "properties": {
+                "run": {
+                    "anyOf": [
+                        { "type": "string" },
+                        { "$ref": "#/definitions/taggedValue" }
+                    ]
+                }
+            },
+            "required": ["run"],
+            "additionalProperties": false
+        },
+        "taggedValue": {
+            "type": "object",
+            "properties": {
+                "value": {},
+                "tag": { "type": "string", "minLength": 1 }
+            },
+            "required": ["value", "tag"],
+            "additionalProperties": false
+        }
+    }
+}

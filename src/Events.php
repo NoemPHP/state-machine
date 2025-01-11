@@ -8,6 +8,7 @@ use Noem\State\Util\ParameterDeriver;
 
 class Events
 {
+
     /**
      * @var \Closure[][]
      */
@@ -33,27 +34,30 @@ class Events
 
     private function doCall(array $handlers, object $trigger, Context $extendedState): void
     {
-        $events = [
-//            Before::fromEvent($trigger),
-            $trigger,
-//            After::fromEvent($trigger)
-        ];
-        foreach ($events as $event) {
-            foreach ($handlers as $handler) {
-                if (!ParameterDeriver::isCompatibleParameter($handler, $event)) {
+        foreach ($handlers as $handler) {
+            if (!ParameterDeriver::isCompatibleParameter(
+                $handler,
+                $trigger
+            )) {
+                if (!ParameterDeriver::isCompatibleHook($handler, $trigger)) {
                     continue;
                 }
-                try {
-                    $handler->call($extendedState, $event);
-                } catch (\Throwable $exception) {
-                    $extendedState->handleException($exception);
+                $trigger = ParameterDeriver::getHookedParameter($handler, $trigger);
+                if (!ParameterDeriver::isCompatibleParameter($handler, $trigger, 0, false)) {
+                    continue;
                 }
+            }
+            try {
+                $handler->call($extendedState, $trigger);
+            } catch (\Throwable $exception) {
+                $extendedState->handleException($exception);
             }
         }
     }
 
     private function maybeWrapHook(\Closure $handler): \Closure
     {
+        return $handler;
         $reflect = ParameterDeriver::reflect($handler);
         $attributes = $reflect->getAttributes();
         foreach ($attributes as $attribute) {
@@ -69,6 +73,7 @@ class Events
                     };
             }
         }
+
         return $handler;
     }
 

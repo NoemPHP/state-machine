@@ -8,6 +8,7 @@ use Noem\State\Util\ParameterDeriver;
 
 class Region
 {
+
     private string $currentState;
 
     /**
@@ -40,8 +41,10 @@ class Region
     {
         $regionStack = new \SplStack();
         $regionStack->push($this);
+        $this->dispatched[] = $payload;
 
-        return $this->processTrigger($payload, $regionStack);
+        $this->doDispatch($regionStack);
+        return $payload;
     }
 
     /**
@@ -54,7 +57,7 @@ class Region
      */
     protected function processTrigger(object $payload, \SplStack $regionStack): object
     {
-        $this->doDispatch($regionStack);
+        //$this->doDispatch($regionStack);
         $extendedState = new Context($regionStack);
 
         foreach ($regions = $this->regions() as $region) {
@@ -62,14 +65,9 @@ class Region
             $subRegionStack->push($region);
             $region->processTrigger($payload, $subRegionStack);
         }
-        $events = [
-            Before::fromEvent($payload),
-            $payload,
-            After::fromEvent($payload)
-        ];
-        foreach ($events as $event) {
-            $this->events->onAction($this->currentState, $event, $extendedState);
-        }
+
+
+        $this->events->onAction($this->currentState, $payload, $extendedState);
         /**
          * We cannot transition away before all regions have finished
          */
@@ -81,25 +79,31 @@ class Region
 
         if (isset($this->transitions[$this->currentState])) {
             foreach ($this->transitions[$this->currentState] as $target => $guard) {
-                foreach ($events as $event) {
-                    if (!ParameterDeriver::isCompatibleParameter($guard, $event)) {
+                if (!ParameterDeriver::isCompatibleParameter(
+                    $guard,
+                    $payload
+                )) {
+                    if (!ParameterDeriver::isCompatibleHook($guard, $payload)) {
                         continue;
                     }
-                    if (ParameterDeriver::getReturnType($guard) !== 'bool') {
-                        throw new \RuntimeException(
-                            "Invalid guard callback for a transition from '{$extendedState}' to '{$target}':\n
+                    $payload = ParameterDeriver::getHookedParameter($guard, $payload);
+                    if (!ParameterDeriver::isCompatibleParameter($guard, $payload, 0, false)) {
+                        continue;
+                    }
+                }
+                if (ParameterDeriver::getReturnType($guard) !== 'bool') {
+                    throw new \RuntimeException(
+                        "Invalid guard callback for a transition from '{$extendedState}' to '{$target}':\n
                          Guards must return bool"
-                        );
-                    }
-                    if ($guard->call($extendedState, $event)) {
-                        $this->doTransition($target, $event, $extendedState, $regionStack);
-                        break;
-                    }
+                    );
+                }
+                if ($guard->call($extendedState, $payload)) {
+                    $this->doTransition($target, $payload, $extendedState, $regionStack);
+                    break;
                 }
             }
         }
-        $this->doDispatch($regionStack);
-
+        //$this->doDispatch($regionStack);
 
         return $payload;
     }
@@ -112,7 +116,14 @@ class Region
         $dispatched = [...$this->dispatched];
         $this->dispatched = [];
         foreach ($dispatched as $trigger) {
-            $this->processTrigger((object)$trigger, $regionStack);
+            $events = [
+                Before::fromEvent($trigger),
+                $trigger,
+                After::fromEvent($trigger),
+            ];
+            foreach ($events as $event) {
+                $this->processTrigger((object)$event, $regionStack);
+            }
         }
     }
 
@@ -245,6 +256,7 @@ class Region
         $value = null;
         if (isset($this->stateContext[$this->currentState][$key])) {
             $current = &$this->stateContext[$this->currentState];
+
             return $current[$key];
         }
 

@@ -133,6 +133,19 @@ while(!$r->isFinal()){
     $r->trigger((object)['message'=>'hello world']);
 }
 ```
+### Notes about callbacks
+
+#### Guard Functions:
+Guard functions must return `true` or `false`.
+If not provided, transitions are always allowed.
+#### Callback and Action Functions:
+These functions can modify state context.
+They receive a trigger object as an argument.
+#### Inheritance in Regions:
+Inherited regions allow for shared configurations across multiple states or regions.
+#### Initial and Final States:
+ - `initial` specifies the starting state of the machine.
+ - `final` specifies the terminal state where no further transitions are allowed.
 
 ### Events
 
@@ -149,8 +162,8 @@ $r->setStates('on', 'running', 'error')
 ;
 ```
 
-However, it is also possible to use "named events", which greatly helps serializing application state.
-The syntax is a little more complex, though:
+However, it is also possible to use "named events", which provides a nice shortcut when using YAML definitions 
+and greatly helps serializing application state. The syntax is a little more complex, though:
 
 ```php
 $r = new RegionBuilder();

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Noem\State\Test\Integration;
 
 use Mockery\Adapter\Phpunit\MockeryTestCase;
+use Noem\State\After;
 use Noem\State\Event;
 use Noem\State\Name;
 use Noem\State\RegionBuilder;
@@ -357,6 +358,33 @@ class RegionTest extends MockeryTestCase
 
         $region->trigger($event);
 
-        $this->assertTrue($region->isInState('two'), "Region should be in state 'three'");
+        $this->assertTrue($region->isInState('two'), "Region should be in state 'two'");
+    }
+
+    /**
+     * @test
+     * @return void
+     */
+    public function afterEvent()
+    {
+        $guardSpy = \Mockery::spy(fn() => true);
+        $r = new RegionBuilder();
+        $r->setStates('one', 'two', 'three')
+            ->pushTransition('one', 'two', #[After] fn( Event $t): bool => $guardSpy());
+        $region = $r->build();
+        $region->trigger((object)['foo' => 1]);
+        $this->assertFalse($region->isInState('two'), "Region should ignore non-matching event'");
+
+        $event = new class implements Event {
+
+            public function name(): string
+            {
+                return 'hello-world';
+            }
+        };
+
+        $region->trigger($event);
+        $guardSpy->shouldHaveBeenCalled()->once();
+        $this->assertTrue($region->isInState('two'), "Region should be in state 'two'");
     }
 }

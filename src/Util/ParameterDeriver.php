@@ -24,6 +24,7 @@ use ReflectionType;
  */
 class ParameterDeriver
 {
+
     /**
      * Derives the class type of the first argument of a callable.
      *
@@ -134,13 +135,18 @@ class ParameterDeriver
      * @return bool
      *   Returns true if the payload is compatible with the parameter type, false otherwise.
      */
-    public static function isCompatibleParameter(callable $callback, object $payload, int $param = 0): bool
-    {
-        $reflect = self::reflect($callback);
+    public static function isCompatibleParameter(
+        callable $callback,
+        object $payload,
+        int $param = 0,
+        bool $processHooks = true
+    ): bool {
         $parameterType = self::getParameterType($callback, $param);
+
         if ($parameterType !== 'object' && !$payload instanceof $parameterType) {
             return false;
         }
+
         /**
          * Catch-all listeners do not receive before/after events.
          * This is more of an emotional decision than a technical one because it "feels" right not to call
@@ -149,13 +155,17 @@ class ParameterDeriver
         if ($parameterType === 'object' && $payload instanceof Hook) {
             return false;
         }
-        $attributes = $reflect->getAttributes();
-        foreach ($attributes as $attribute) {
-            $instance = $attribute->newInstance();
-            if ($instance instanceof Hook && !$payload instanceof Hook) {
-                return false;
+        if ($processHooks) {
+            $reflect = self::reflect($callback);
+            $attributes = $reflect->getAttributes();
+            foreach ($attributes as $attribute) {
+                $instance = $attribute->newInstance();
+                if ($instance instanceof Hook) {
+                    return get_class($payload) === get_class($instance);
+                }
             }
         }
+
         /**
          * Check if a named event is subscribed to via name attribute
          */
@@ -164,8 +174,38 @@ class ParameterDeriver
             return false;
         }
 
-
         return true;
+    }
+
+    public static function isCompatibleHook(callable $callback, object $payload, int $param = 0): bool
+    {
+        $reflect = self::reflect($callback);
+        $attributes = $reflect->getAttributes();
+        foreach ($attributes as $attribute) {
+            $instance = $attribute->newInstance();
+            if ($instance instanceof Hook) {
+                return get_class($payload) === get_class($instance);
+            }
+        }
+
+        return false;
+    }
+
+    public static function getHookedParameter(callable $callback, object $payload, int $param = 0): mixed
+    {
+        $reflect = self::reflect($callback);
+        $attributes = $reflect->getAttributes();
+        foreach ($attributes as $attribute) {
+            $instance = $attribute->newInstance();
+            if (
+                $instance instanceof Hook
+                && get_class($payload) === get_class($instance)
+            ) {
+                return $payload->event;
+            }
+        }
+
+        return $payload;
     }
 
     /**
@@ -178,7 +218,9 @@ class ParameterDeriver
     {
         return match (true) {
             self::isClassCallable($callable) => (new \ReflectionClass($callable[0]))->getMethod($callable[1]),
-            self::isFunctionCallable($callable), self::isClosureCallable($callable) => new \ReflectionFunction($callable),
+            self::isFunctionCallable($callable), self::isClosureCallable($callable) => new \ReflectionFunction(
+                $callable
+            ),
             self::isObjectCallable($callable) => (new \ReflectionObject($callable[0]))->getMethod($callable[1]),
             self::isInvokable($callable) => (new \ReflectionMethod($callable, '__invoke')),
             default => throw new \InvalidArgumentException('Not a recognized type of callable'),
