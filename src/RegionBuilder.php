@@ -128,7 +128,7 @@ class RegionBuilder
      */
     public function pushTransition(string $from, string $to, ?\Closure $guard = null): self
     {
-        $this->transitions[$from][$to] = $guard ?? fn(object $t): bool => true;
+        $this->transitions[$from][$to][] = $guard ?? fn(object $t): bool => true;
 
         return $this;
     }

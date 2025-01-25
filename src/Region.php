@@ -77,30 +77,32 @@ class Region
         }
 
         if (isset($this->transitions[$this->currentState])) {
-            foreach ($this->transitions[$this->currentState] as $target => $guard) {
-                if (
-                    !ParameterDeriver::isCompatibleParameter(
-                        $guard,
-                        $payload
-                    )
-                ) {
-                    if (!ParameterDeriver::isCompatibleHook($guard, $payload)) {
-                        continue;
+            foreach ($this->transitions[$this->currentState] as $target => $guards) {
+                foreach ($guards as $guard) {
+                    if (
+                        !ParameterDeriver::isCompatibleParameter(
+                            $guard,
+                            $payload
+                        )
+                    ) {
+                        if (!ParameterDeriver::isCompatibleHook($guard, $payload)) {
+                            continue;
+                        }
+                        $payload = ParameterDeriver::getHookedParameter($guard, $payload);
+                        if (!ParameterDeriver::isCompatibleParameter($guard, $payload, 0, false)) {
+                            continue;
+                        }
                     }
-                    $payload = ParameterDeriver::getHookedParameter($guard, $payload);
-                    if (!ParameterDeriver::isCompatibleParameter($guard, $payload, 0, false)) {
-                        continue;
-                    }
-                }
-                if (ParameterDeriver::getReturnType($guard) !== 'bool') {
-                    throw new \RuntimeException(
-                        "Invalid guard callback for a transition from '{$extendedState}' to '{$target}':\n
+                    if (ParameterDeriver::getReturnType($guard) !== 'bool') {
+                        throw new \RuntimeException(
+                            "Invalid guard callback for a transition from '{$extendedState}' to '{$target}':\n
                          Guards must return bool"
-                    );
-                }
-                if ($guard->call($extendedState, $payload)) {
-                    $this->doTransition($target, $payload, $extendedState, $regionStack);
-                    break;
+                        );
+                    }
+                    if ($guard->call($extendedState, $payload)) {
+                        $this->doTransition($target, $payload, $extendedState, $regionStack);
+                        break 2;
+                    }
                 }
             }
         }
