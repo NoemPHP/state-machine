@@ -319,6 +319,7 @@ class RegionTest extends MockeryTestCase
      */
     public function eventChaining()
     {
+        $this->markTestSkipped("I am worried about the infinite-loop-potential of dispatching immediately. This is disabled for now until I find a roadblock that forces me to have this functionality");
         $r = new RegionBuilder();
         $r->setStates('one', 'two', 'three')
             ->pushTransition('one', 'two')
