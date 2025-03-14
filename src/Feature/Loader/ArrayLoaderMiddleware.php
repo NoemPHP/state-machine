@@ -1,84 +1,67 @@
 <?php
 
-namespace Noem\State;
+declare(strict_types=1);
+
+namespace Noem\State\Feature\Loader;
 
 use Closure;
-use Symfony\Component\Yaml\Tag\TaggedValue;
-use Symfony\Component\Yaml\Yaml;
 use Nette\Schema\Elements\Type;
 use Nette\Schema\Expect;
 use Nette\Schema\Message;
 use Nette\Schema\Processor;
 use Nette\Schema\ValidationException;
+use Noem\State\Connection;
+use Noem\State\Feature\Loader\LoaderChains\Context\LoaderContext;
+use Noem\State\Feature\Loader\LoaderChains\Context\SchemaContext;
+use Noem\State\Feature\Loader\LoaderChains\Schema;
+use Noem\State\Feature\Loader\LoaderChains\TransformArray;
+use Noem\State\Feature\OrthogonalRegions\SuperState;
+use Noem\State\Region;
+use Noem\State\RegionBuilder;
 
-/**
- * The Noem State Machine's RegionLoader class is responsible for loading and parsing
- * state machine configurations from YAML or PHP arrays.
- * It contains methods to resolve helper functions, extract configuration data
- * from state definitions, and create callbacks for transition guards and
- * event handlers like entering/exiting states or handling actions.
- * It can load configurations from YAML input using the fromYaml() method
- * or from PHP arrays using the fromArray() method.
- */
-class RegionLoader
+class ArrayLoaderMiddleware
 {
-    public function __construct(private readonly array $helpers)
-    {
+
+    public function __construct(
+        private readonly Schema $schema,
+        private readonly TransformArray $transformArray
+    ) {
     }
 
-    /**
-     * Resolves a helper function based on the given name and content.
-     *
-     * @param string $name The name of the helper function to resolve.
-     * @param string $content The content to be passed to the helper function.
-     *
-     * @return mixed The result of the helper function when found, or throws an exception if the helper is undefined.
-     *
-     * @throws \RuntimeException
-     */
-    private function resolveHelper(string $name, string $content): mixed
+    public function __invoke(LoaderContext $context, callable $next, callable $first): RegionBuilder
     {
-        if (isset($this->helpers[$name])) {
-            return $this->helpers[$name]($content);
+        $builder = $next($context);
+        assert($builder instanceof RegionBuilder);
+        /**
+         * If a sub-region is being built, we need a separate builder for it since the current builder is already
+         * dedicated to the parent region.
+         * However, the middleware configuration needs to be passed on, which is why the new instance must be
+         * received from an existing one.
+         */
+        if ($context->recursion) {
+            $builder = $builder->newInstance();
         }
+        $array = (array)$this->transformArray->call($context->data);
 
-        throw new \RuntimeException("Undefined helper '{$name}'");
-    }
-
-    /**
-     * Load a region builder from YAML input.
-     *
-     * @param string $yaml The path or content of the YAML file containing the configuration data
-     *
-     * @return RegionBuilder Returns an instance of RegionBuilder initialized with data from given YAML input
-     */
-    public function fromYaml(string $yaml): RegionBuilder
-    {
-        $array = Yaml::parse(
-            $yaml,
-            Yaml::PARSE_CUSTOM_TAGS
-        );
-
-        return self::fromArray($array);
-    }
-
-    /**
-     * Load a region builder from PHP associative arrays.
-     *
-     * @param array $array Configuration data stored in a nested array structure
-     *
-     * @return RegionBuilder Returns an instance of RegionBuilder initialized with data from given array input
-     */
-    public function fromArray(array $array): RegionBuilder
-    {
         $this->assertValidSchema($array);
-        $builder = new RegionBuilder();
         [$states, $regions, $transitions, $callbacks] = $this->extractConfig($array['states'] ?? []);
+
         $builder->setStates(...$states);
         foreach ($regions as $state => $subRegions) {
             foreach ($subRegions as $region) {
-                $builder->addRegion($state, self::fromArray($region));
+                $context->data = $region;
+                $context->recursion = true;
+                $subRegion = $first($context)->build(true);
+                $builder->connect(
+                    $subRegion,
+                    Connection::DYNAMIC
+                    | Connection::RECEIVE_EVENTS
+                    | Connection::RECEIVE_ACTIONS
+                    | Connection::RECEIVE_META,
+                    fn(Connection $c) => $c->local->currentState() === $state
+                );
             }
+            $context->recursion = false;
         }
         foreach ($transitions as $state => $stateTransitions) {
             foreach ($stateTransitions as $transition) {
@@ -108,47 +91,55 @@ class RegionLoader
         return $builder;
     }
 
-    public function assertValidSchema(array $data)
+    public function assertValidSchema(array $data): void
     {
-        $callbackSchema = Expect::anyOf(
+        $callback = Expect::anyOf(
             Expect::string(),
-            Expect::type(TaggedValue::class),
             Expect::type(Closure::class),
         );
-        $actionSchema = Expect::structure([
-            'run' => $callbackSchema,
+        $action = Expect::structure([
+            'run' => $callback,
         ]);
-        $transitionSchema = Expect::structure([
+        $transition = Expect::structure([
             'target' => Expect::string()->required(),
-            'guard' => $callbackSchema,
+            'guard' => $callback,
         ]);
-        $nestedRegionSchema = new Type('list');
 
-        $stateSchema = Expect::structure([
+        $state = Expect::structure([
             'name' => Expect::string()->required(),
-            'transitions' => Expect::listOf($transitionSchema),
-            'onEnter' => Expect::listOf($actionSchema),
-            'onExit' => Expect::listOf($actionSchema),
-            'action' => Expect::listOf($actionSchema),
-            'regions' => $nestedRegionSchema,
+            'transitions' => Expect::listOf($transition),
+            'onEnter' => Expect::listOf($action),
+            'onExit' => Expect::listOf($action),
+            'action' => Expect::listOf($action),
+
         ]);
-        $regionSchema = Expect::structure([
+        $region = Expect::structure([
             'label' => Expect::string(),
             'inherits' => Expect::listOf(new Type('string')),
             'initial' => Expect::string(),
-            'states' => Expect::listOf($stateSchema),
+            'states' => Expect::listOf($state),
             'final' => Expect::string(),
-            'factory' => $callbackSchema,
-
+            'factory' => $callback,
         ]);
-        $nestedRegionSchema->items($regionSchema);
+        $schemaContext = new SchemaContext(
+            $callback,
+            $action,
+            $state,
+            $region
+        );
+
         //$schema = Expect::arrayOf($regionSchema);
-        $processor = new Processor();
+
         try {
-            $processor->process($regionSchema, $data);
+            $this->schema->withProvider(function (SchemaContext $context) use ($data) {
+                $processor = new Processor();
+                $processor->process($context->region, $data);
+            })->call(
+                $schemaContext
+            );
         } catch (ValidationException $e) {
             throw new \RuntimeException(
-                'Invalid schema:' . PHP_EOL .
+                'Invalid schema:'.PHP_EOL.
                 implode(
                     PHP_EOL,
                     array_map(fn(Message $m) => $m->toString(), $e->getMessageObjects())
@@ -170,11 +161,8 @@ class RegionLoader
             return fn(object $t): bool => true;
         }
         $guard = $transition['guard'];
-        if ($guard instanceof TaggedValue) {
-            return $this->resolveHelper($guard->getTag(), $guard->getValue());
-        }
-        if (is_callable($transition['guard'])) {
-            return Closure::fromCallable($transition['guard']);
+        if (is_callable($guard)) {
+            return $guard(...);
         }
         throw new \RuntimeException('Invalid "guard" callback');
     }
@@ -190,22 +178,16 @@ class RegionLoader
     public function createStateCallback(array $definition): Closure
     {
         $run = $definition['run'];
-        if ($run instanceof TaggedValue) {
-            return $this->resolveHelper($run->getTag(), $run->getValue());
-        }
         if (is_callable($run)) {
-            return Closure::fromCallable($run);
+            return $run(...);
         }
         throw new \RuntimeException('Invalid "run" callback');
     }
 
-    public function createFactoryCallback(string|TaggedValue $definition): Closure
+    public function createFactoryCallback(string $definition): Closure
     {
-        if ($definition instanceof TaggedValue) {
-            return $this->resolveHelper($definition->getTag(), $definition->getValue());
-        }
         if (is_callable($definition)) {
-            return Closure::fromCallable($definition);
+            return $definition(...);
         }
         throw new \RuntimeException('Invalid factory');
     }

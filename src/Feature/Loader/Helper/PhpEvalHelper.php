@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Noem\State\Helper;
+namespace Noem\State\Feature\Loader\Helper;
 
 class PhpEvalHelper
 {
@@ -20,7 +20,7 @@ class PhpEvalHelper
         }
     }
 
-    private function createFragmentForException(string $content, \Throwable $exception)
+    private function createFragmentForException(string $content, \Throwable $exception): string
     {
         $lines = explode(
             "\n",
