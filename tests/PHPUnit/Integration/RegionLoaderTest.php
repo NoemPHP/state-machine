@@ -3,19 +3,29 @@
 namespace Noem\State\Test\Integration;
 
 use Mockery\Adapter\Phpunit\MockeryTestCase;
-use Noem\State\Helper\ContainerGetHelper;
-use Noem\State\Helper\PhpEvalHelper;
-use Noem\State\RegionLoader;
+use Noem\State\Chains\Params\Get;
+use Noem\State\Feature\ExtendedState\ExtendedState;
+use Noem\State\Feature\Loader\Helper\ContainerGetHelper;
+use Noem\State\Feature\Loader\Helper\PhpEvalHelper;
+use Noem\State\Feature\Loader\RegionLoader;
+use Noem\State\Feature\OrthogonalRegions\OrthogonalRegions;
+use Noem\State\Middleware\ChainException;
+use Noem\State\RegionBuilder;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\TestDox;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 
-class RegionLoaderTest extends MockeryTestCase
+class RegionLoaderTest extends RegionBuilderTestCase
 {
+
     /**
-     * @test
      * @return void
+     * @throws ChainException
      */
-    public function fromYam()
+    #[Test]
+    #[TestDox('It creates a working state machine from a yaml string')]
+    public function fromYaml()
     {
         // language=yaml
         $yaml = <<<'YAML'
@@ -62,28 +72,33 @@ final: three
 
 YAML;
         $spy = \Mockery::spy(fn() => true);
-        $loader = (new RegionLoader(
-            [
-                'php' => new PhpEvalHelper(),
-                'get' => new ContainerGetHelper($this->createContainer([
-                    'onEnterOneTwo' => function (object $t) use ($spy) {
-                        $spy();
-                    },
-                ])),
-            ]
-        ))->fromYaml($yaml);
-        $region = $loader->build();
+        $helpers = [
+            'php' => new PhpEvalHelper(),
+            'get' => new ContainerGetHelper($this->createContainer([
+                'onEnterOneTwo' => function (object $t) use ($spy) {
+                    $spy();
+                },
+            ])),
+        ];
+        $loaderFeature = new RegionLoader()->withYamlSupport($yaml, $helpers);
+        $this->builder->enableFeatures(
+            $loaderFeature,
+            new ExtendedState(),
+            new OrthogonalRegions()
+        );
+        $region = $this->builder->build();
         while (!$region->isFinal()) {
             $region->trigger((object)['foo' => 'bar']);
         }
-        $message = $region->getRegionContext('message');
-        $this->assertSame($message, 'hello world');
+
+        $this->assertRegionContext($region, 'message', 'hello world');
         $spy->shouldHaveBeenCalled()->once();
     }
 
     private function createContainer(array $data)
     {
         return new class ($data) implements ContainerInterface {
+
             public function __construct(private array $data)
             {
             }
@@ -91,7 +106,9 @@ YAML;
             public function get(string $id)
             {
                 if (!$this->has($id)) {
-                    throw new class ("ID {$id} not found in container") extends \Exception implements NotFoundExceptionInterface {
+                    throw new class ("ID {$id} not found in container") extends \Exception implements
+                        NotFoundExceptionInterface {
+
                     };
                 }
 

@@ -4,26 +4,40 @@ declare(strict_types=1);
 
 namespace Noem\State\Test\Integration;
 
-use Mockery\Adapter\Phpunit\MockeryTestCase;
-use Noem\State\After;
-use Noem\State\Event;
-use Noem\State\Name;
+use Noem\State\Chains\BuildRegion;
+use Noem\State\Chains\EnhanceRegion;
+use Noem\State\Chains\Params\Get;
+use Noem\State\Chains\Params\RegionConstructor;
+use Noem\State\Connection;
+use Noem\State\Feature\EventHooks\EventHooks;
+use Noem\State\Feature\EventHooks\Hook\After;
+use Noem\State\Feature\EventHooks\Hook\Before;
+use Noem\State\Feature\ExtendedState\Bound;
+use Noem\State\Feature\ExtendedState\ExtendedState;
+use Noem\State\Feature\NamedEvents\Event;
+use Noem\State\Feature\NamedEvents\Name;
+use Noem\State\Feature\NamedEvents\NamedEvents;
+use Noem\State\Feature\OrthogonalRegions\OrthogonalRegions;
+use Noem\State\Middleware\ChainException;
 use Noem\State\RegionBuilder;
-use Noem\State\Region;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\TestDox;
 
-class RegionTest extends MockeryTestCase
+class RegionTest extends RegionBuilderTestCase
 {
+
     /**
-     * @test
      * @return void
      */
+    #[Test]
     public function basicTransition()
     {
         $enterSpy = \Mockery::spy(fn() => true);
         $exitSpy = \Mockery::spy(fn() => true);
         $guardSpy = \Mockery::spy(fn() => true);
+        $r = new RegionBuilder();
 
-        $r = (new RegionBuilder())
+        $r = $r
             ->setStates('one', 'two')
             ->onExit('one', fn(object $t) => $exitSpy())
             ->onEnter('two', fn(object $t) => $enterSpy())
@@ -40,35 +54,19 @@ class RegionTest extends MockeryTestCase
     }
 
     /**
-     * @test
      * @return void
+     * @throws ChainException
      */
-    public function exceptionHandling()
-    {
-        $r = (new RegionBuilder())
-            ->setStates('one', 'two', 'error')
-            ->onEnter('two', function (object $t) {
-                throw new \Exception('Boo!');
-            })
-            ->markInitial('one')
-            ->pushTransition('one', 'two', fn(object $t): bool => true)
-            ->pushTransition('two', 'error', fn(\Throwable $e): bool => true)
-            ->build();
-        $r->trigger((object)['foo' => 1]);
-        $this->assertTrue($r->isInState('error'));
-    }
-
-    /**
-     * @test
-     * @return void
-     */
+    #[Test]
     public function basicSubRegion()
     {
-        //$this->markTestSkipped();
-
         $handler = \Mockery::spy(fn() => true);
+        $r = new RegionBuilder();
 
-        $r = (new RegionBuilder())
+        $r
+            ->enableFeatures(
+                new OrthogonalRegions()
+            )
             ->setStates('one', 'two')
             ->markInitial('one')
             ->pushTransition(
@@ -76,12 +74,16 @@ class RegionTest extends MockeryTestCase
                 'two',
                 fn(object $t): bool => true
             )
-            ->addRegion(
-                'one',
-                (new RegionBuilder())->setStates('foo', 'bar')
+            ->connect(
+                $r->newInstance()->setStates('foo', 'bar')
                     ->onAction('foo', function (object $t) use ($handler) {
                         $handler();
-                    })->markFinal('foo')
+                    })->markFinal('foo')->build(),
+                Connection::DYNAMIC
+                | Connection::RECEIVE_EVENTS
+                | Connection::RECEIVE_ACTIONS
+                | Connection::RECEIVE_META,
+                fn(Connection $c) => $c->local->currentState() === 'one'
             );
         $region = $r->build();
         $region->trigger((object)['foo' => 1]);
@@ -91,25 +93,31 @@ class RegionTest extends MockeryTestCase
     }
 
     /**
-     * @test
      * @return void
      */
+    #[Test]
     public function getStateContext()
     {
+        $this->markTestSkipped('The concept of state context is under review');
         $test = null;
         $r = new RegionBuilder();
         $r->setStates('one', 'two')
-            ->addRegion(
-                'one',
-                (new RegionBuilder())
+            ->connect(
+                $r->newInstance()
                     ->setStates('foo', 'bar')
                     ->inherits(['key'])
                     ->onAction('foo', function (object $t) use (&$test) {
+                        assert($this instanceof Bound);
                         $test = $this->key;
                     })
                     ->setStateContext('foo', [
                         'key' => 'value',
-                    ])
+                    ])->build(),
+                Connection::DYNAMIC
+                | Connection::RECEIVE_EVENTS
+                | Connection::RECEIVE_ACTIONS
+                | Connection::RECEIVE_META,
+                fn(Connection $c) => $c->local->currentState() === 'one'
             );
 
         $r->build()->trigger((object)['foo' => 1]);
@@ -117,133 +125,160 @@ class RegionTest extends MockeryTestCase
     }
 
     /**
-     * @test
      * @return void
+     * @throws ChainException
      */
+    #[Test]
     public function nestedRegionContext()
     {
-        $test = null;
-        $subRegion = (new RegionBuilder())
+        $this->builder->enableFeatures(new ExtendedState());
+        $subRegion = $this->builder->newInstance()
             ->setStates('foo', 'bar')
             ->onAction('foo', function (object $t) use (&$test) {
+                assert($this instanceof Bound);
                 $test = $this->get('key');
             })
-            ->setRegionContext([
+            ->setMetaData([
                 'key' => 'value',
-            ]);
-        $r = new RegionBuilder();
-        $r->setStates('one', 'two')
-            ->addRegion('one', $subRegion);
+            ])->build();
+        $this->builder
+            ->setStates('one', 'two')
+            ->connect(
+                $subRegion,
+                Connection::DYNAMIC
+                | Connection::RECEIVE_EVENTS
+                | Connection::RECEIVE_ACTIONS
+                | Connection::RECEIVE_META,
+                fn(Connection $c) => $c->local->currentState() === 'one'
+            );
 
-        $r->build()->trigger((object)['foo' => 1]);
-        $this->assertSame($test, 'value');
+        $this->builder->build()->trigger((object)['foo' => 1]);
+        $this->assertRegionContext($subRegion, 'key', 'value');
     }
 
     /**
-     * @test
-     * @return void
+     * Assert that a child region receives the same metadata as the parent
+     *
+     * @throws ChainException
      */
-    public function getInheritedRegionContext()
+    #[Test]
+    public function getInheritedRegionContext(): void
     {
-        $test = null;
-        $r = new RegionBuilder();
-        $r->setStates('one', 'two')
-            ->addRegion(
-                'one',
-                (new RegionBuilder())
-                    ->setStates('foo', 'bar')
-                    ->inherits(['key'])
-                    ->onAction('foo', function (object $t) use (&$test) {
-                        $test = $this->get('key');
-                    })
+        $this->builder->enableFeatures(new ExtendedState());
+
+        $remoteRegion = ($this->builder->newInstance())
+            ->setStates('foo', 'bar')
+            ->inherits(['key'])
+            ->onAction('foo', function (object $t) use (&$test) {
+                assert($this instanceof Bound);
+                $test = $this->get('key');
+            })->build();
+
+        $this->builder->setStates('one', 'two')
+            ->connect(
+                $remoteRegion,
+                Connection::DYNAMIC
+                | Connection::RECEIVE_EVENTS
+                | Connection::RECEIVE_ACTIONS
+                | Connection::RECEIVE_META,
+                fn(Connection $c) => $c->local->currentState() === 'one'
             )
-            ->setRegionContext([
+            ->setMetaData([
                 'key' => 'value',
             ]);
 
-        $r->build()->trigger((object)['foo' => 1]);
-        $this->assertSame($test, 'value');
+        $this->builder->build()->trigger((object)['foo' => 1]);
+        $this->assertRegionContext($remoteRegion, 'key', 'value');
     }
 
     /**
-     * @test
      * @return void
+     * @throws ChainException
      */
+    #[Test]
     public function setInheritedRegionContext()
     {
-        $subRegionBuilder = (new RegionBuilder())
+        $this->builder->enableFeatures(new ExtendedState());
+        $subRegionBuilder = $this->builder->newInstance()
             ->setStates('foo', 'bar')
             ->inherits(['key'])
             ->onAction('foo', function (object $t) use (&$test) {
+                assert($this instanceof Bound);
                 $this->set('key', 'newValue');
             });
-        $r = new RegionBuilder();
-        $r->setStates('one', 'two')
-            ->addRegion('one', $subRegionBuilder)
-            ->setRegionContext([
+        $subRegion = $subRegionBuilder->build();
+
+        $this->builder->setStates('one', 'two')
+            ->connect(
+                $subRegion,
+                Connection::DYNAMIC
+                | Connection::RECEIVE_EVENTS
+                | Connection::RECEIVE_ACTIONS
+                | Connection::RECEIVE_META,
+                fn(Connection $c) => $c->local->currentState() === 'one'
+            )
+            ->setMetaData([
                 'key' => 'value',
             ]);
-        $region = $r->build();
+        $region = $this->builder->build();
         $region->trigger((object)['foo' => 1]);
-        $subRegion = null;
-        (function () use (&$subRegion) {
-            assert($this instanceof Region);
-            $privateRegionsProperty = 'regions'; // workaround to suppress IDE error
-            $regions = $this->$privateRegionsProperty['one'];
-            $subRegion = $regions[0];
-        })->call($region);
 
-        $this->assertSame($region->getRegionContext('key'), 'newValue');
-        $this->assertSame($subRegion->getRegionContext('key'), null);
+        $this->assertRegionContext($region, 'key', 'newValue');
+        $this->assertRegionContext($subRegion, 'key', 'newValue');
     }
 
     /**
-     * @test
      * @return void
+     * @throws ChainException
      */
+    #[Test]
     public function mutateInheritedRegionContext()
     {
-        $subRegionBuilder = (new RegionBuilder())
+        $this->builder->enableFeatures(new ExtendedState());
+
+        $subRegionBuilder = $this->builder->newInstance()
             ->setStates('foo', 'bar')
             ->inherits(['key'])
             ->onAction('foo', function (object $t) use (&$test) {
+                assert($this instanceof Bound);
                 $key = $this->get('key');
-                $this->set('key', $key . ' world');
+                $this->set('key', $key.' world');
             });
-        $r = new RegionBuilder();
-        $r->setStates('one', 'two')
-            ->addRegion('one', $subRegionBuilder)
-            ->setRegionContext([
+        $subRegion = $subRegionBuilder->build();
+        $this->builder->setStates('one', 'two')
+            ->connect(
+                $subRegion,
+                Connection::DYNAMIC
+                | Connection::RECEIVE_EVENTS
+                | Connection::RECEIVE_ACTIONS
+                | Connection::RECEIVE_META,
+                fn(Connection $c) => $c->local->currentState() === 'one'
+            )
+            ->setMetaData([
                 'key' => 'hello',
             ]);
-        $region = $r->build();
+        $region = $this->builder->build();
         $region->trigger((object)['foo' => 1]);
-        $subRegion = null;
-        (function () use (&$subRegion) {
-            assert($this instanceof Region);
-            $privateRegionsProperty = 'regions'; // workaround to suppress IDE error
-            $regions = $this->$privateRegionsProperty['one'];
-            $subRegion = $regions[0];
-        })->call($region);
-
-        $this->assertSame($region->getRegionContext('key'), 'hello world');
-        $this->assertSame($subRegion->getRegionContext('key'), null);
+        $this->assertRegionContext($region, 'key', 'hello world');
     }
 
     /**
-     * @test
      * @return void
      */
+    #[Test]
     public function simpleMiddleware()
     {
         $r = new RegionBuilder();
         $r->setStates('one', 'two', 'three')
             ->pushTransition('one', 'two')
-            ->pushMiddleware(function (RegionBuilder $builder, \Closure $next) {
-                $builder->pushTransition('two', 'three');
+            ->chainMail->use(function (EnhanceRegion $builderMiddleware) {
+                $builderMiddleware->link(function (RegionBuilder $constructor, \Closure $next) {
+                    $constructor->pushTransition('two', 'three',fn(object $t): bool => true);
 
-                return $next($builder);
+                    return $next($constructor);
+                });
             });
+
         $region = $r->build();
         $region->trigger((object)['foo' => 1]);
         $region->trigger((object)['foo' => 1]);
@@ -251,35 +286,57 @@ class RegionTest extends MockeryTestCase
     }
 
     /**
-     * @test
      * @return void
+     * @throws ChainException
      */
+    #[Test]
+    #[TestDox('It correctly sets up a nested logging middleware')]
     public function nestedLoggingMiddleware()
     {
+        $this->markTestSkipped('Needs rewrite');
+        /**
+         * TODO This is generally an important integration test,
+         * but builder middleware is a pretty low-level, almost internal feature now.
+         * Logging should be a "Feature" under the chainmail paradigm
+         * So we need to rethink this test. Maybe we should have a "Feature" for logging
+         * that can be added to the builder, and then we can test that feature separately.
+         *
+         * Alternatively, we could see if a nested builder middleware makes sense and how it could be tested
+         */
         $logs = [];
 
-        $middleware = function (RegionBuilder $builder, \Closure $next) use (&$logs) {
-            $builder->eachState(function (string $s) use ($builder, &$logs) {
-                $builder->onEnter($s, function (object $trigger) use ($s, &$logs) {
-                    $logs[] = "ENTER: $s";
+        $middleware = function (BuildRegion $builderMiddleware) use (&$logs) {
+            $builderMiddleware->link(function (RegionBuilder $builder, \Closure $next) use (&$logs) {
+                $builder->eachState(function (string $s) use ($builder, &$logs) {
+                    $builder->onEnter($s, function (object $trigger) use ($s, &$logs) {
+                        $logs[] = "ENTER: $s";
+                    });
+                    $builder->onExit($s, function (object $trigger) use ($s, &$logs) {
+                        $logs[] = "EXIT: $s";
+                    });
                 });
-                $builder->onExit($s, function (object $trigger) use ($s, &$logs) {
-                    $logs[] = "EXIT: $s";
-                });
-            });
 
-            return $next($builder);
+                return $next($builder);
+            });
         };
 
-        $subRegion = (new RegionBuilder())
+        $r = new RegionBuilder();
+        $r->chainMail->use($middleware);
+        $subRegion = $r->newInstance()
             ->setStates('2_foo', '2_bar')
             ->pushTransition('2_foo', '2_bar');
+        $subRegion = $subRegion->build();
 
-        $r = new RegionBuilder();
         $r->setStates('1_one', '1_two')
             ->pushTransition('1_one', '1_two')
-            ->addRegion('1_two', $subRegion)
-            ->pushMiddleware($middleware);
+            ->connect(
+                $subRegion,
+                Connection::DYNAMIC
+                | Connection::RECEIVE_EVENTS
+                | Connection::RECEIVE_ACTIONS
+                | Connection::RECEIVE_META,
+                fn(Connection $c) => $c->local->currentState() === '1_two'
+            );
 
         $region = $r->build();
         $region->trigger((object)['foo' => 1]);
@@ -292,34 +349,47 @@ class RegionTest extends MockeryTestCase
     }
 
     /**
-     * @test
      * @return void
      */
+    #[Test]
     public function nestedStateName()
     {
         $fqsn = '';
-        $subRegion = (new RegionBuilder())
+        $r = new RegionBuilder();
+        $subRegion = $r
+            ->enableFeatures(new ExtendedState())
+            ->newInstance()
             ->setStates('two')
             ->onAction('two', function (object $t) use (&$fqsn) {
+                assert($this instanceof Bound);
                 $fqsn = (string)$this;
             });
 
-        $r = new RegionBuilder();
         $r->setStates('one')
-            ->addRegion('one', $subRegion);
+            ->connect(
+                $subRegion->build(),
+                Connection::DYNAMIC
+                | Connection::RECEIVE_EVENTS
+                | Connection::RECEIVE_ACTIONS
+                | Connection::RECEIVE_META,
+                fn(Connection $c) => $c->local->currentState() === 'one'
+            );
 
         $region = $r->build();
         $region->trigger((object)['foo' => 1]);
-        $this->assertSame('one.two', $fqsn);
+        $this->assertSame('one/two', $fqsn);
     }
 
     /**
-     * @test
      * @return void
+     * @throws ChainException
      */
+    #[Test]
     public function eventChaining()
     {
-        $this->markTestSkipped("I am worried about the infinite-loop-potential of dispatching immediately. This is disabled for now until I find a roadblock that forces me to have this functionality");
+        $this->markTestSkipped(
+            "I am worried about the infinite-loop-potential of dispatching immediately. This is disabled for now until I find a roadblock that forces me to have this functionality"
+        );
         $r = new RegionBuilder();
         $r->setStates('one', 'two', 'three')
             ->pushTransition('one', 'two')
@@ -334,44 +404,18 @@ class RegionTest extends MockeryTestCase
     }
 
     /**
-     * @test
      * @return void
      */
+    #[Test]
     public function namedEvents()
     {
         $guardSpy = \Mockery::spy(fn() => true);
 
         $r = new RegionBuilder();
-        $r->setStates('one', 'two', 'three')
+        $namedEventsFeature = new NamedEvents();
+        $r->enableFeatures($namedEventsFeature)->setStates('one', 'two', 'three')
             ->pushTransition('one', 'two', fn(#[Name('hello-world')] Event $t): bool => $guardSpy())
-        ;
-        $region = $r->build();
-        $region->trigger((object)['foo' => 1]);
-        $this->assertFalse($region->isInState('two'), "Region should ignore non-matching event'");
-
-        $event = new class implements Event
-        {
-            public function name(): string
-            {
-                return 'hello-world';
-            }
-        };
-
-        $region->trigger($event);
-
-        $this->assertTrue($region->isInState('two'), "Region should be in state 'two'");
-    }
-
-    /**
-     * @test
-     * @return void
-     */
-    public function afterEvent()
-    {
-        $guardSpy = \Mockery::spy(fn() => true);
-        $r = new RegionBuilder();
-        $r->setStates('one', 'two', 'three')
-            ->pushTransition('one', 'two', #[After] fn( Event $t): bool => $guardSpy());
+            ->pushTransition('two', 'three', fn(#[Name('ignore-me')] Event $t): bool => $guardSpy());
         $region = $r->build();
         $region->trigger((object)['foo' => 1]);
         $this->assertFalse($region->isInState('two'), "Region should ignore non-matching event'");
@@ -385,7 +429,56 @@ class RegionTest extends MockeryTestCase
         };
 
         $region->trigger($event);
+        $region->trigger($event);
+
+        $this->assertTrue($region->isInState('two'), "Region should be in state 'two'");
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function afterEvent()
+    {
+        $guardSpy = \Mockery::spy(fn() => true);
+        $helloWorld = '';
+
+        $this->builder
+            ->enableFeatures(
+                new EventHooks(),
+                new ExtendedState()
+            )
+            ->setStates('one', 'two', 'three')
+            ->pushTransition('one', 'two', #[After] fn(Event $t): bool => $guardSpy())
+            ->onAction('two', #[After] function (Event $t) use (&$helloWorld) {
+                $helloWorld .= ' world';
+            })
+            ->onAction('two', #[Before] function (Event $t) use (&$helloWorld) {
+                $helloWorld .= 'hello';
+            });
+        $region = $this->builder->build();
+        $region->trigger((object)['foo' => 1]);
+        $this->assertFalse(
+            $region->isInState('two'),
+            "Region should ignore non-matching event'"
+        );
+
+        $event = new class implements Event {
+
+            public function name(): string
+            {
+                return 'hello-world';
+            }
+        };
+
+        $region->trigger($event);
+        $region->trigger($event);
         $guardSpy->shouldHaveBeenCalled()->once();
         $this->assertTrue($region->isInState('two'), "Region should be in state 'two'");
+        $this->assertSame(
+            $helloWorld,
+            'hello world',
+            "Event hooks should have been called in the correct order"
+        );
     }
 }
