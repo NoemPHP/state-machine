@@ -4,12 +4,7 @@ declare(strict_types=1);
 
 namespace Noem\State\Util;
 
-use Noem\State\After;
-use Noem\State\Event;
-use Noem\State\Hook;
-use Noem\State\Name;
-use ReflectionParameter;
-use ReflectionType;
+use ReflectionException;
 
 /**
  * Class ParameterDeriver
@@ -24,18 +19,18 @@ use ReflectionType;
  */
 class ParameterDeriver
 {
+
     /**
      * Derives the class type of the first argument of a callable.
      *
-     * @param array|callable $callable $callable
+     * @param callable|array $callable $callable
      *   The callable for which we want the parameter type.
      * @param int $param
      *
      * @return string
      *   The class the parameter is type hinted on.
-     * @throws \ReflectionException
      */
-    public static function getParameterType($callable, int $param = 0): string
+    public static function getParameterType(callable|array $callable, int $param = 0): string
     {
         // We can't type hint $callable as it could be an array, and arrays are not callable. Sometimes. Bah, PHP.
 
@@ -48,11 +43,10 @@ class ParameterDeriver
             }
             $rType = $params[$param]->getType();
             if ($rType === null) {
-                throw new \InvalidArgumentException('Listeners must typehint their first parameter.');
+                throw new \InvalidArgumentException("No type hint defined for parameter {$param}.");
             }
             $type = $rType->getName();
-        } catch (\ReflectionException $e) {
-            throw $e;
+        } catch (ReflectionException $e) {
             throw new \RuntimeException('Type error registering callable.', 0, $e);
         }
 
@@ -60,7 +54,55 @@ class ParameterDeriver
     }
 
     /**
-     * @throws \ReflectionException
+     * Checks if the specified parameter of a callable is nullable.
+     *
+     * @param callable|array $callable The callable for which we want to check parameter nullability.
+     * @param int $param The index of the parameter to check. Defaults to 0.
+     *
+     * @return bool Returns true if the parameter is nullable, false otherwise.
+     */
+    public static function isParameterNullable(callable|array $callable, int $param = 0): bool
+    {
+        try {
+            $reflect = self::reflect($callable);
+            $params = $reflect->getParameters();
+
+            if (!isset($params[$param])) {
+                throw new \InvalidArgumentException("Required Parameter {$param} not declared.");
+            }
+
+            $rType = $params[$param]->getType();
+
+            // If the parameter has no type or is a scalar (which cannot be null), return false
+            if (!$rType || $rType->isBuiltin()) {
+                return false;
+            }
+
+            // Check if the type allows nulls
+            return $rType->allowsNull();
+        } catch (\ReflectionException $e) {
+            throw new \InvalidArgumentException('Not a recognized type of callable', 0, $e);
+        }
+    }
+
+    /**
+     * Returns the number of parameters
+     *
+     * @param $callable
+     *
+     * @return int
+     * @throws ReflectionException
+     */
+    public static function getParameterCount($callable): int
+    {
+        $reflect = self::reflect($callable);
+        $params = $reflect->getParameters();
+
+        return count($params);
+    }
+
+    /**
+     * @throws ReflectionException
      */
     public static function getReturnType($callable): string|null
     {
@@ -72,49 +114,6 @@ class ParameterDeriver
         assert($returns instanceof \ReflectionNamedType);
 
         return $returns->getName();
-    }
-
-    /**
-     * Retrieves the event name associated with a specified parameter of a callable.
-     *
-     * This method inspects the given callable to determine if the specified parameter
-     * is of type `Event` or a subclass thereof. If such a parameter exists and has
-     * an associated `Name` attribute, this method returns the event name from that attribute.
-     *
-     * @param array|callable $callable $callable The callable to inspect.
-     * @param int $param The index of the parameter to check (default is 0).
-     *
-     * @return string|null The event name if found, otherwise null.
-     */
-    protected static function getEventName($callable, int $param = 0): ?string
-    {
-        try {
-            $reflect = self::reflect($callable);
-            $params = $reflect->getParameters();
-            if (!isset($params[$param])) {
-                throw new \InvalidArgumentException("Required Parameter {$param} not declared.");
-            }
-            $parameter = $params[$param];
-            // Check if the first parameter is an Event type
-            if (!$parameter->getType() instanceof \ReflectionNamedType) {
-                throw new \InvalidArgumentException('Listeners must typehint their first parameter.');
-            }
-            $paramType = $parameter->getType()->getName();
-
-            if ($paramType === Event::class || is_subclass_of($paramType, Event::class)) {
-                // Check for the Name attribute
-                foreach ($parameter->getAttributes(Name::class) as $attribute) {
-                    $nameAttribute = $attribute->newInstance();
-                    assert($nameAttribute instanceof Name);
-
-                    return $nameAttribute->eventName;
-                }
-            }
-        } catch (\ReflectionException $e) {
-            throw new \RuntimeException('Type error registering callable.', 0, $e);
-        }
-
-        return null;
     }
 
     /**
@@ -137,8 +136,7 @@ class ParameterDeriver
     public static function isCompatibleParameter(
         callable $callback,
         object $payload,
-        int $param = 0,
-        bool $processHooks = true
+        int $param = 0
     ): bool {
         $parameterType = self::getParameterType($callback, $param);
 
@@ -146,72 +144,60 @@ class ParameterDeriver
             return false;
         }
 
-        /**
-         * Catch-all listeners do not receive before/after events.
-         * This is more of an emotional decision than a technical one because it "feels" right not to call
-         * a listener 3 times for a single trigger.
-         */
-        if ($parameterType === 'object' && $payload instanceof Hook) {
+        return true;
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public static function areSignaturesIdentical(callable $callable1, callable $callable2): bool
+    {
+        // Get reflection objects for both callables
+        $reflection1 = self::reflect($callable1);
+        $reflection2 = self::reflect($callable2);
+
+        // Check if the number of parameters is the same
+        $parameters1 = $reflection1->getParameters();
+        $parameters2 = $reflection2->getParameters();
+
+        if (count($parameters1) !== count($parameters2)) {
             return false;
         }
-        if ($processHooks) {
-            $reflect = self::reflect($callback);
-            $attributes = $reflect->getAttributes();
-            foreach ($attributes as $attribute) {
-                $instance = $attribute->newInstance();
-                if ($instance instanceof Hook) {
-                    return get_class($payload) === get_class($instance);
-                }
+
+        // Compare each parameter
+        foreach ($parameters1 as $index => $param1) {
+            $param2 = $parameters2[$index];
+
+            // Check if the types are the same
+            if ($param1->getType() !== $param2->getType()) {
+                return false;
+            }
+
+            // Check if the names are the same (if available)
+            if ($param1->getName() !== $param2->getName()) {
+                return false;
             }
         }
 
-        /**
-         * Check if a named event is subscribed to via name attribute
-         */
-        $eventName = self::getEventName($callback);
-        if ($eventName !== null && $payload instanceof Event && $payload->name() !== $eventName) {
+        // Check if the reflection object has a return type
+        $return1 = $reflection1->getReturnType();
+        $return2 = $reflection2->getReturnType();
+
+        if (is_null($return1) && is_null($return2)) {
+            return false;
+        }
+        if ($return1 && (string)$return1 !== (string)$return2) {
             return false;
         }
 
         return true;
     }
 
-    public static function isCompatibleHook(callable $callback, object $payload, int $param = 0): bool
-    {
-        $reflect = self::reflect($callback);
-        $attributes = $reflect->getAttributes();
-        foreach ($attributes as $attribute) {
-            $instance = $attribute->newInstance();
-            if ($instance instanceof Hook) {
-                return get_class($payload) === get_class($instance);
-            }
-        }
-
-        return false;
-    }
-
-    public static function getHookedParameter(callable $callback, object $payload, int $param = 0): mixed
-    {
-        $reflect = self::reflect($callback);
-        $attributes = $reflect->getAttributes();
-        foreach ($attributes as $attribute) {
-            $instance = $attribute->newInstance();
-            if (
-                $instance instanceof Hook
-                && get_class($payload) === get_class($instance)
-            ) {
-                return $payload->event;
-            }
-        }
-
-        return $payload;
-    }
-
     /**
      * @param $callable
      *
      * @return \ReflectionFunction|\ReflectionMethod
-     * @throws \ReflectionException
+     * @throws ReflectionException
      */
     public static function reflect($callable): \ReflectionFunction|\ReflectionMethod
     {
@@ -276,7 +262,7 @@ class ParameterDeriver
      *
      * Note that this method must therefore be the first in the switch statement
      * above, or else subsequent calls will break as the array is not going to satisfy
-     * the callable type hint but it would pass `is_callable()`.  Because PHP.
+     * the callable type hint, but it would pass `is_callable()`. Because PHP.
      *
      * @param callable $callable
      *
