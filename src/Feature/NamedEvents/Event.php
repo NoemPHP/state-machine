@@ -1,6 +1,6 @@
 <?php
 
-namespace Noem\State;
+namespace Noem\State\Feature\NamedEvents;
 
 interface Event
 {
