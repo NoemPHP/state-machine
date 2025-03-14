@@ -1,6 +1,6 @@
 <?php
 
-namespace Noem\State;
+namespace Noem\State\Feature\EventHooks\Hook;
 
 /**
  * phpcs 3.11.3 trips over the property hooks here.
