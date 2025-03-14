@@ -4,22 +4,16 @@
     bootstrap="tests/bootstrap.php"
     backupGlobals="false"
     colors="true"
-    convertErrorsToExceptions="true"
-    convertNoticesToExceptions="true"
-    convertWarningsToExceptions="true"
+    displayDetailsOnTestsThatTriggerDeprecations="true"
+    displayDetailsOnTestsThatTriggerErrors="true"
+    displayDetailsOnTestsThatTriggerNotices="true"
+    displayDetailsOnTestsThatTriggerWarnings="true"
+    displayDetailsOnPhpunitDeprecations="true"
     xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd"
 >
-  <coverage processUncoveredFiles="true">
-    <include>
-      <directory suffix=".php">./src</directory>
-    </include>
-  </coverage>
   <testsuites>
     <testsuite name="Noem State Machine PHP unit tests">
       <directory suffix="Test.php">./tests/PHPUnit</directory>
     </testsuite>
   </testsuites>
-  <listeners>
-    <listener class="\Mockery\Adapter\Phpunit\TestListener"/>
-  </listeners>
 </phpunit>

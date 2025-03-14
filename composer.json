@@ -36,6 +36,7 @@
     "config": {
         "allow-plugins": {
             "noem/composer-file-embed": true
-        }
+        },
+        "process-timeout": 0
     }
 }

@@ -1,3 +1,5 @@
 vendor/
+.idea/dataSources.xml
+.idea/dataSources
 *.lock
 .phpunit.result.cache
