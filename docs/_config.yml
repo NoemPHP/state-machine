@@ -9,7 +9,7 @@ aux_links:
     - https://github.com/NoemPHP/state-machine
 
 # Footer "Edit this page on GitHub" link text
-gh_edit_repository: https://github.com/NoemPHP/state-machine-interface # Your repo GitHub URL
+gh_edit_repository: https://github.com/NoemPHP/state-machine # Your repo GitHub URL
 gh_edit_branch: master # The default branch of the repo. Default: main
 gh_edit_source: docs # The directory containing the docs. Default: docs
 

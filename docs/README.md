@@ -15,16 +15,23 @@ The benefits of using an FSM architecture include:
 5. **Predictable behavior:** State machines ensure that a system behaves consistently and predictably, as the transitions between states are explicitly defined. 
 6. **Documentation:** State machines serve as a form of documentation, as they provide a visual/textual representation of the system's behavior and transitions
 
-## Features
+## Core Features
 
-* **Nested regions**: One horizontal set of states is called a "region". However, each state can have any number of sub-regions, allowing both *parallel states* and *hierarchical states*
+* **Orthogonal regions**: One horizontal set of states is called a "region". However, each state can have any number of connected regions, allowing both *parallel states*, *hierarchical states* and *portals*
 * **Guards**: Enable a given transition only if a predicate returns `true`.
 * **Actions**: Dispatch actions to the machine to achieve stateful behaviour. Only the action handlers corresponding to
   the active state will get called.
-* **Entry & Exit events**: Attach arbitrary subscribers to state changes.
-* **Region & State context**: Store data relevant to the current application state. Data can be scoped for an individual state - or shared with the entire region
-* **State inheritance**: Since regions can be nested, each region can request specific data to be passed down from the parent region.
+* **Entry & Exit callbacks**: Attach arbitrary subscribers to state changes.
+* **Extended state**: Store data relevant to the current application state. Data can be scoped for an individual state - or shared with the entire region
+* **Compound state**: Since regions can be connected, they use a common extended state.
 * **Middleware**: Before creating the final machine, your can augment your definitions with reusable middlewares.
+
+## Extensions
+
+* **State Machine Loader**: Build a state machine from different formats like YAML or raw PHP arrays.
+* **Named events**: Allow you to define and trigger events using a named string instead of an object.
+* **Event hooks**: Provide a way to execute code before or after an event, allowing for side effects such as logging or updating external systems.
+
 
 ## Installation
 
@@ -212,7 +219,7 @@ This configuration can be loaded like this:
 
 declare(strict_types=1);
 
-use Noem\State\RegionLoader;
+use Noem\State\Feature\Loader\RegionLoader;
 
 $yaml = file_get_contents('./path/to/machine.yaml');
 $builder = (new RegionLoader())->fromYaml($yaml);
