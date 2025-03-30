@@ -13,7 +13,6 @@ use Noem\State\Middleware\ChainMail;
 
 class RegionBuilder extends Region
 {
-
     protected Events $events;
 
     protected array $states = [];

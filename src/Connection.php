@@ -4,7 +4,6 @@ namespace Noem\State;
 
 final class Connection
 {
-
     public const RECEIVE_ACTIONS = 1; // 001 in octal
     public const RECEIVE_EVENTS = 2; // 002 in octal
     public const RECEIVE_META = 4; // 004 in octal
@@ -59,4 +58,3 @@ final class Connection
         return ($this->predicate)($this);
     }
 }
-

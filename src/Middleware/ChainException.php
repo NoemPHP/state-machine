@@ -6,5 +6,4 @@ namespace Noem\State\Middleware;
 
 class ChainException extends \Exception
 {
-
 }

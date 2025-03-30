@@ -12,5 +12,4 @@ use Noem\State\Middleware\Chain;
  */
 class Set extends Chain
 {
-
 }

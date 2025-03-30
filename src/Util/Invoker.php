@@ -6,7 +6,6 @@ namespace Noem\State\Util;
 
 trait Invoker
 {
-
     private $cache = [];
 
     public function invoke(callable $callable): mixed

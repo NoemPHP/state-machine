@@ -14,7 +14,6 @@ use Noem\State\Region;
 
 class ExtendedState implements Feature
 {
-
     public function __invoke(ChainMail $chainMail): void
     {
         $chainMail->use(function (

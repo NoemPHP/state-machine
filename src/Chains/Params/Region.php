@@ -8,7 +8,6 @@ use Noem\State\Region as RegionObject;
 
 class Region
 {
-
     public function __construct(public readonly RegionObject $region)
     {
     }

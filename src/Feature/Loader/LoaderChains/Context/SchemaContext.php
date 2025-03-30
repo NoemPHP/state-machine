@@ -9,7 +9,6 @@ use Nette\Schema\Schema;
 
 class SchemaContext
 {
-
     public function __construct(
         public Schema $callback,
         public Structure $action,

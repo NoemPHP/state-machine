@@ -6,7 +6,6 @@ namespace Noem\State\Chains\Params;
 
 class Callback
 {
-
     public \Noem\State\Region $region;
 
     /**

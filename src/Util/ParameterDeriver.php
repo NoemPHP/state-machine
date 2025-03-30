@@ -19,7 +19,6 @@ use ReflectionException;
  */
 class ParameterDeriver
 {
-
     /**
      * Derives the class type of the first argument of a callable.
      *

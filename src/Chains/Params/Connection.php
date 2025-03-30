@@ -9,7 +9,6 @@ use Noem\State\Region;
 
 class Connection
 {
-
     public function __construct(
         public readonly Region $region,
         /**

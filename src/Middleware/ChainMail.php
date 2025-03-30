@@ -10,7 +10,6 @@ use TypeError;
 
 class ChainMail
 {
-
     use Invoker;
 
     private array $dependencies = [];

@@ -25,7 +25,6 @@ use Noem\State\Util\ParameterDeriver;
  */
 class EventHooks implements Feature
 {
-
     public function __invoke(ChainMail $chainMail): void
     {
         $chainMail->use(function (

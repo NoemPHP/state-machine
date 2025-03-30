@@ -8,7 +8,6 @@ use Noem\State\Region;
 
 class ExtendedState
 {
-
     public bool $pristine = true;
 
     public function __construct(

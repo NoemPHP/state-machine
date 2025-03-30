@@ -9,7 +9,6 @@ use Noem\State\Chains;
 
 class RegionConstructor
 {
-
     public function __construct(
         public array $states,
         public array $transitions,

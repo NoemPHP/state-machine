@@ -6,7 +6,6 @@ use ArrayAccess;
 
 final class Record
 {
-
     public const TRANSIENT = 1; // 001 in octal
     public const TAXONOMIC = 2; // 002 in octal
     public const READONLY = 4; // 004 in octal
@@ -64,4 +63,3 @@ final class Record
         return ($this->predicate)($this);
     }
 }
-

@@ -12,7 +12,6 @@ use Noem\State\RegionBuilder;
  */
 class EnhanceRegion extends Chain
 {
-
     protected int $maxRestarts = -1;
 
     public function __construct()

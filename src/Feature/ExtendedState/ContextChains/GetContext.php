@@ -6,5 +6,4 @@ namespace Noem\State\Feature\ExtendedState\ContextChains;
 
 class GetContext
 {
-
 }
