@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Noem\State\Feature\JsonSchema;
 
-use Nette\Schema\Elements\Type;
+use Nette\Schema\Elements\Structure;
+use Nette\Schema\Expect;
 use Noem\State\Feature\Feature;
 use Noem\State\Feature\Loader\LoaderChains\Context\SchemaContext;
-use Noem\State\Feature\OrthogonalRegions\RegionChains\ParentRegion;
 use Noem\State\Middleware\ChainMail;
 use Noem\State\Feature\Loader\LoaderChains;
 
@@ -25,12 +25,29 @@ class JsonSchemaFeature implements Feature
                  * Extend the region schema to support the 'regions' item within a state config
                  */
                 $schema?->link(function (SchemaContext $context, callable $next) {
-                    $nestedRegion = new Type('list');
-                    $context->state->extend([
-                        'context' => $nestedRegion,
+                    $contextSchema = $context->getCustomSchema('context');
+                    assert($contextSchema instanceof Structure);
+                    $contextSchema = $contextSchema->extend([
+                        'schema' => Expect::listOf(
+                            Expect::structure(
+                                [
+                                    'name' => Expect::string(),
+                                    'type' => Expect::string(),
+                                    'default' => Expect::string(),
+                                    'description' => Expect::string(),
+                                ]
+                            )
+                        ),
                     ]);
-                    $nestedRegion->items($context->region);
-                    $next($context);
+                    $context->addCustomSchema('context', $contextSchema);
+                    /**
+                     * Update the reference on the region schema since we just produced a new object
+                     */
+                    $context->region = $context->region->extend([
+                        'context' => $contextSchema,
+                    ]);
+
+                    return $next($context);
                 });
             }
         );
