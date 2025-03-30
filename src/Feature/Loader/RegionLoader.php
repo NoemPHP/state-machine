@@ -3,7 +3,7 @@
 namespace Noem\State\Feature\Loader;
 
 use Noem\State\Chains\BuildRegion;
-use Noem\State\Chains\EnhanceRegion;
+use Noem\State\Chains\EnhanceRegionBuilder;
 use Noem\State\Chains\Params;
 use Noem\State\Feature\Feature;
 use Noem\State\Feature\Loader\LoaderChains\Context\LoaderContext;
@@ -80,7 +80,7 @@ class RegionLoader implements Feature
              * Inject the Loader chain into the regular build pipeline
              */
             ->use(
-                function (EnhanceRegion $builderEnhancer, Loader $loaderChain): void {
+                function (EnhanceRegionBuilder $builderEnhancer, Loader $loaderChain): void {
                     foreach ($this->loader as $loaderMiddleware) {
                         $loaderChain->link($loaderMiddleware);
                     }
