@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Noem\State\Test\Integration;
 
 use Noem\State\Chains\Meta;
-use Noem\State\Chains\Params\Get;
+use Noem\State\Chains\Params;
+use Noem\State\Feature\ExtendedState\ContextMetaType;
 use Noem\State\Feature\ExtendedState\ExtendedState;
 use Noem\State\Region;
 use Noem\State\RegionBuilder;
@@ -16,17 +17,16 @@ abstract class RegionBuilderTestCase extends TestCase
 
     protected RegionBuilder $builder;
 
-    protected Meta $meta;
+    protected Meta $meta {
+        get {
+            return $this->builder->chainMail->get(Meta::class);
+        }
+    }
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->builder = new RegionBuilder();
-        $this->meta = $this->builder->chainMail->use(
-            function (Meta $meta) {
-                return $meta;
-            }
-        );
     }
 
     protected function assertContext(
@@ -36,7 +36,8 @@ abstract class RegionBuilderTestCase extends TestCase
         mixed $assumed,
         string $message = ''
     ): void {
-        $mesh = $this->meta->call($region);
+        $metaParams = new Params\Meta($region, ContextMetaType::get());
+        $mesh = $this->meta->call($metaParams);
         $this->assertSame(
             $assumed,
             $mesh[$key],

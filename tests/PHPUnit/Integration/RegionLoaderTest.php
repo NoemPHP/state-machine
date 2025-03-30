@@ -4,7 +4,9 @@ namespace Noem\State\Test\Integration;
 
 use Mockery\Adapter\Phpunit\MockeryTestCase;
 use Noem\State\Chains\Params\Get;
+use Noem\State\Feature\Async\AsyncFeature;
 use Noem\State\Feature\ExtendedState\ExtendedState;
+use Noem\State\Feature\JsonSchema\JsonSchemaFeature;
 use Noem\State\Feature\Loader\Helper\ContainerGetHelper;
 use Noem\State\Feature\Loader\Helper\PhpEvalHelper;
 use Noem\State\Feature\Loader\RegionLoader;
@@ -46,9 +48,7 @@ states:
             $this->set('message', 'hello');
           };
     regions:
-     - inherits:
-        - message  
-       states:
+      - states:
         - name: one_one
           transitions:
             - target: one_two
@@ -64,12 +64,27 @@ states:
           transitions:
             - target: one_three
         - name: one_three
+
     transitions:
       - target: three
   - name: three
 initial: one
 final: three
-
+context:
+  schema:
+    - name: message
+      type: string
+      default: Lorem ipsum
+      description: The message to use by the machine
+  resolvers:
+    - name: html
+      run: !php |
+          return function(){
+            yield;
+            yield;
+            $message = $this->get('message');
+            return '<div>' . $message . '</div>';
+          }
 YAML;
         $spy = \Mockery::spy(fn() => true);
         $helpers = [
@@ -84,14 +99,18 @@ YAML;
         $this->builder->enableFeatures(
             $loaderFeature,
             new ExtendedState(),
-            new OrthogonalRegions()
+            new OrthogonalRegions(),
+            new AsyncFeature(),
+            new JsonSchemaFeature()
         );
         $region = $this->builder->build();
+        $this->assertRegionContext($region, 'html', null);
         while (!$region->isFinal()) {
             $region->trigger((object)['foo' => 'bar']);
         }
 
         $this->assertRegionContext($region, 'message', 'hello world');
+        $this->assertRegionContext($region, 'html', '<div>hello</div>');
         $spy->shouldHaveBeenCalled()->once();
     }
 

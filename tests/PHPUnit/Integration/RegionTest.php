@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Noem\State\Test\Integration;
 
 use Noem\State\Chains\BuildRegion;
-use Noem\State\Chains\EnhanceRegion;
+use Noem\State\Chains\EnhanceRegionBuilder;
 use Noem\State\Chains\Params\Get;
 use Noem\State\Chains\Params\RegionConstructor;
 use Noem\State\Connection;
@@ -13,6 +13,7 @@ use Noem\State\Feature\EventHooks\EventHooks;
 use Noem\State\Feature\EventHooks\Hook\After;
 use Noem\State\Feature\EventHooks\Hook\Before;
 use Noem\State\Feature\ExtendedState\Bound;
+use Noem\State\Feature\ExtendedState\ContextMetaType;
 use Noem\State\Feature\ExtendedState\ExtendedState;
 use Noem\State\Feature\NamedEvents\Event;
 use Noem\State\Feature\NamedEvents\Name;
@@ -132,28 +133,38 @@ class RegionTest extends RegionBuilderTestCase
     public function nestedRegionContext()
     {
         $this->builder->enableFeatures(new ExtendedState());
-        $subRegion = $this->builder->newInstance()
-            ->setStates('foo', 'bar')
-            ->onAction('foo', function (object $t) use (&$test) {
+        $remoteChildRegion = $this->builder->newInstance()
+            ->setStates('child1', 'child2')
+            ->onAction('child1', function (object $t) use (&$test) {
                 assert($this instanceof Bound);
                 $test = $this->get('key');
             })
-            ->setMetaData([
-                'key' => 'value',
-            ])->build();
+            ->build();
+
         $this->builder
-            ->setStates('one', 'two')
+            ->setStates('parent1', 'parent2')
+            ->setMetaData(
+                [
+                    'key' => 'value',
+                ],
+                ContextMetaType::get()
+            )
             ->connect(
-                $subRegion,
+                $remoteChildRegion,
                 Connection::DYNAMIC
                 | Connection::RECEIVE_EVENTS
                 | Connection::RECEIVE_ACTIONS
                 | Connection::RECEIVE_META,
-                fn(Connection $c) => $c->local->currentState() === 'one'
+                fn(Connection $c) => $c->local->currentState() === 'parent1'
             );
 
         $this->builder->build()->trigger((object)['foo' => 1]);
-        $this->assertRegionContext($subRegion, 'key', 'value');
+        $this->assertRegionContext(
+            $remoteChildRegion,
+            'key',
+            'value',
+            'Subregion should have received the "key" => "value" context data from its parent'
+        );
     }
 
     /**
@@ -185,7 +196,7 @@ class RegionTest extends RegionBuilderTestCase
             )
             ->setMetaData([
                 'key' => 'value',
-            ]);
+            ], ContextMetaType::get());
 
         $this->builder->build()->trigger((object)['foo' => 1]);
         $this->assertRegionContext($remoteRegion, 'key', 'value');
@@ -219,7 +230,7 @@ class RegionTest extends RegionBuilderTestCase
             )
             ->setMetaData([
                 'key' => 'value',
-            ]);
+            ], ContextMetaType::get());
         $region = $this->builder->build();
         $region->trigger((object)['foo' => 1]);
 
@@ -256,7 +267,7 @@ class RegionTest extends RegionBuilderTestCase
             )
             ->setMetaData([
                 'key' => 'hello',
-            ]);
+            ], ContextMetaType::get());
         $region = $this->builder->build();
         $region->trigger((object)['foo' => 1]);
         $this->assertRegionContext($region, 'key', 'hello world');
@@ -271,9 +282,9 @@ class RegionTest extends RegionBuilderTestCase
         $r = new RegionBuilder();
         $r->setStates('one', 'two', 'three')
             ->pushTransition('one', 'two')
-            ->chainMail->use(function (EnhanceRegion $builderMiddleware) {
+            ->chainMail->use(function (EnhanceRegionBuilder $builderMiddleware) {
                 $builderMiddleware->link(function (RegionBuilder $constructor, \Closure $next) {
-                    $constructor->pushTransition('two', 'three',fn(object $t): bool => true);
+                    $constructor->pushTransition('two', 'three', fn(object $t): bool => true);
 
                     return $next($constructor);
                 });
