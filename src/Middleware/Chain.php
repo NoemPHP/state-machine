@@ -13,6 +13,7 @@ use Override;
  */
 class Chain implements ChainInterface
 {
+
     protected int $maxRestarts = 1; // Maximum number of restarts to prevent infinite loops
 
     private array $middlewares;
@@ -48,30 +49,43 @@ class Chain implements ChainInterface
 
     /**
      * @param callable( C $context, callable(C $c ): R $next, callable(C $c ): R $first): R $callback
+     * @param bool $prepend Whether to prepend or append the middleware
      *
      * @return $this
      */
-    #[Override] public function link(callable $callback): self
+    #[Override] public function link(callable $callback, bool $prepend = false): self
     {
-        $this->middlewares[] = $callback;
+        if ($prepend) {
+            array_unshift($this->middlewares, $callback);
+        } else {
+            $this->middlewares[] = $callback;
+        }
         $this->currentChain = null;
 
         return $this;
     }
 
+    /**
+     * @param callable(mixed, mixed):bool|null $equalityCheck
+     *
+     * @return $this
+     */
     public function memoize(?callable $equalityCheck = null): self
     {
         $equalityCheck = $equalityCheck ?? fn($a, $b) => $a === $b; // Default equality check is strict comparison
-        array_unshift($this->middlewares, function (mixed $context, callable $next) use ($equalityCheck) {
-            static $lastContext;
-            static $lastResult;
-            if (!isset($lastContext) || !$equalityCheck($lastContext, $context)) {
-                $lastResult = $next($context);
-                $lastContext = $context;
-            }
+        array_unshift(
+            $this->middlewares,
+            function (mixed $context, callable $next) use ($equalityCheck) {
+                static $lastContext;
+                static $lastResult;
+                if (!isset($lastContext) || !$equalityCheck($lastContext, $context)) {
+                    $lastResult = $next($context);
+                    $lastContext = $context;
+                }
 
-            return $lastResult; // Return the stored result to memoize it
-        });
+                return $lastResult; // Return the stored result to memoize it
+            }
+        );
         $this->currentChain = null;
 
         return $this;
@@ -86,6 +100,7 @@ class Chain implements ChainInterface
     {
         $middlewares = array_reverse($this->middlewares);
         $first = new class {
+
             public $callback;
 
             public function __invoke(mixed $context): mixed

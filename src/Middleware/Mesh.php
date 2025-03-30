@@ -37,27 +37,40 @@ class Mesh implements ArrayAccess, Iterator
 
     private Chain $offsetUnsetChain;
 
-    public function __construct(private ?iterable $data = [])
-    {
-        $this->offsetExistsChain = new Chain()->withProvider(function ($offset) {
+    public function __construct(
+        private ?iterable &$data = [],
+        ?callable $offsetExists = null,
+        ?callable $offsetGet = null,
+        ?callable $offsetSet = null,
+        ?callable $offsetUnset = null,
+    ) {
+        $this->offsetExistsChain = new Chain(
+            $offsetExists ?? function ($offset) {
             return isset($this->data[$offset]);
-        });
+        }, [], 0
+        );
 
-        $this->offsetGetChain = new Chain()->withProvider(function ($offset) {
+        $this->offsetGetChain = new Chain(
+            $offsetGet ?? function ($offset) {
             return $this->data[$offset] ?? null;
-        });
+        }, [], 0
+        );
 
-        $this->offsetSetChain = new Chain()->withProvider(function ($context) {
+        $this->offsetSetChain = new Chain()->withProvider(
+            $offsetSet ?? function ($context) {
             if (is_null($context->offset)) {
                 $this->data[] = $context->value;
             } else {
                 $this->data[$context->offset] = $context->value;
             }
-        });
+        }
+        );
 
-        $this->offsetUnsetChain = new Chain()->withProvider(function ($offset) {
+        $this->offsetUnsetChain = new Chain()->withProvider(
+            $offsetUnset ?? function ($offset) {
             unset($this->data[$offset]);
-        });
+        }
+        );
     }
 
     public function offsetExists($offset): bool
@@ -105,7 +118,7 @@ class Mesh implements ArrayAccess, Iterator
         $this->position = 0;
     }
 
-    public function extend(array|ArrayAccess &$extension): void
+    public function extendWith(array|ArrayAccess &$extension): void
     {
         $this->offsetExistsChain->link(function (mixed $offset, callable $next) use (&$extension): bool {
             return $next($offset) || isset($extension[$offset]);
@@ -134,5 +147,43 @@ class Mesh implements ArrayAccess, Iterator
                 $next($offset);
             }
         });
+    }
+
+    /**
+     * @param callable(mixed, callable, callable):bool|null $offsetExists
+     * @param callable(string, callable, callable):void|null $offsetGet
+     * @param callable(object, callable, callable):void|null $offsetSet
+     * @param callable(string, callable, callable):void|null $offsetUnset
+     *
+     * @return void
+     */
+    public function extend(
+        ?callable $offsetExists = null,
+        ?callable $offsetGet = null,
+        ?callable $offsetSet = null,
+        ?callable $offsetUnset = null,
+    ): void {
+        $offsetExists && $this->offsetExistsChain->link($offsetExists);
+        $offsetGet && $this->offsetGetChain->link($offsetGet);
+        $offsetSet && $this->offsetSetChain->link($offsetSet);
+        $offsetUnset && $this->offsetUnsetChain->link($offsetUnset);
+    }
+
+    /**
+     * @param null|callable(mixed, mixed):bool $equalityCheck
+     */
+    public function memoize(?callable $equalityCheck = null): void
+    {
+        $this->offsetGetChain->memoize($equalityCheck);
+    }
+
+    public function getArrayCopy(): array
+    {
+        $data = [];
+        foreach ($this as $key => $value) {
+            $data[$key] = $value;
+        }
+
+        return $data;
     }
 }
