@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Noem\State\Chains;
 
 use Noem\State\Chains\Params;
+use Noem\State\Chains\Params\Callback;
 use Noem\State\Middleware\Chain;
 use Noem\State\Util\ParameterDeriver;
 
@@ -15,9 +16,10 @@ class Guard extends Chain
 {
 
     public function __construct(
-        InvokeCallback $invokeCallback
+        InvokeCallback $invokeCallback,
+        PrepareInvokable $prepareInvokable
     ) {
-        parent::__construct(function (Params\Guard $ctx) use ($invokeCallback): bool {
+        parent::__construct(function (Params\Guard $ctx) use ($invokeCallback, $prepareInvokable): bool {
             if (
                 !ParameterDeriver::isCompatibleParameter(
                     $ctx->handler,
@@ -33,8 +35,10 @@ class Guard extends Chain
                 );
             }
             $callbackContext = new Params\Callback($ctx->region, $ctx->handler, $ctx->trigger);
+            $invokable = $prepareInvokable->call($callbackContext);
+            $context = new Callback($ctx->region, $invokable, $ctx->trigger);
 
-            return $invokeCallback->call($callbackContext);
+            return $invokeCallback->call($context);
         });
     }
 }

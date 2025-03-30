@@ -7,9 +7,23 @@ use ArrayAccess;
 final class Record
 {
 
+    /**
+     * Whether to wipe the record upon transitions
+     */
     public const TRANSIENT = 1; // 001 in octal
+    /**
+     * Whether to treat the metadata contained herein as classifications.
+     * This may be used to query regions by category
+     */
     public const TAXONOMIC = 2; // 002 in octal
+    /**
+     * Whether to allow external write access
+     */
     public const READONLY = 4; // 004 in octal
+    /**
+     * Whether to gate read access behind a predicate function
+     * This may be used to make certain data only appear in certain states of a region
+     */
     public const DYNAMIC = 8; // 004 in octal
 
     private int $flags;
@@ -22,6 +36,7 @@ final class Record
     public function __construct(
         public readonly Region $origin,
         public array|ArrayAccess $data,
+        public MetaType $type,
         int $flags = 0,
         ?callable $predicate = null
     ) {

@@ -8,9 +8,9 @@ use Noem\State\Region;
 use Noem\State\RegionBuilder;
 
 /**
- * @template-extends Chain<Region,Region>
+ * @template-extends Chain<RegionBuilder,RegionBuilder>
  */
-class EnhanceRegion extends Chain
+class EnhanceRegionBuilder extends Chain
 {
 
     protected int $maxRestarts = -1;

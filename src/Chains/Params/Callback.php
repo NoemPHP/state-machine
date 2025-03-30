@@ -10,13 +10,13 @@ class Callback
     public \Noem\State\Region $region;
 
     /**
-     * @var callable
+     * @var \Closure
      */
-    public $handler;
+    public \Closure $handler;
 
     public object $trigger;
 
-    public function __construct(\Noem\State\Region $region, callable $handler, object $trigger)
+    public function __construct(\Noem\State\Region $region, \Closure $handler, object $trigger)
     {
         $this->handler = $handler;
         $this->trigger = $trigger;

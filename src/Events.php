@@ -6,6 +6,7 @@ namespace Noem\State;
 
 use Noem\State\Chains\Params\Callback;
 use Noem\State\Chains\InvokeCallback;
+use Noem\State\Chains\PrepareInvokable;
 use Noem\State\Chains\ValidateCallback;
 use Noem\State\Middleware\Chain;
 use Noem\State\Util\ParameterDeriver;
@@ -29,11 +30,25 @@ class Events
          * @var callable(Callback $ontext):bool $validateCallback
          */
         private readonly ValidateCallback $validateCallback,
+        private readonly PrepareInvokable $prepareInvokable,
         private readonly InvokeCallback $invokeCallback
     ) {
         $this->onEnter = new \SplObjectStorage();
         $this->onExit = new \SplObjectStorage();
         $this->action = new \SplObjectStorage();
+    }
+
+    public static function conjure(): \Closure
+    {
+        return fn(
+            Chains\ValidateCallback $v,
+            Chains\PrepareInvokable $p,
+            Chains\InvokeCallback $i
+        ): Events => new Events(
+            $v,
+            $p,
+            $i
+        );
     }
 
     /**
@@ -42,10 +57,23 @@ class Events
     private function doCall(Region $region, array $handlers, object $trigger): void
     {
         foreach ($handlers as $handler) {
+            /**
+             * First we need to inspect the signature of the raw closure.
+             * If it does not match the signature of the trigger, we skip it.
+             */
             $context = new Callback($region, $handler, $trigger);
             if (!$this->validateCallback->call($context)) {
                 continue;
             }
+            /**
+             * Now we need to prepare the handler for invocation.
+             * This might involve binding it to a new object or setting up some state.
+             */
+            $invokable = $this->prepareInvokable->call($context);
+            $context = new Callback($region, $invokable, $trigger);
+            /**
+             * Finally, we can invoke the handler.
+             */
             $this->invokeCallback->call($context);
         }
     }
@@ -118,15 +146,15 @@ class Events
      * state object to ensure robust error handling.
      *
      * @param Region $region The region or context within which the action is executed
-     * @param string $action The specific action to be handled
+     * @param string $state The specific action to be handled
      * @param object $trigger An object representing the event or input that triggered the action
      *
      * @throws Throwable If any error occurs during action execution or if an exception is thrown by an action handler,
      *                   it will be caught and managed according to the extended state's exception handling strategy.
      */
-    public function onAction(Region $region, string $action, object $trigger): void
+    public function onAction(Region $region, string $state, object $trigger): void
     {
-        $handlers = $this->getHandlersForRegionAndState($this->action, $region, $action);
+        $handlers = $this->getHandlersForRegionAndState($this->action, $region, $state);
         if ($handlers) {
             $this->doCall($region, $handlers, $trigger);
         }

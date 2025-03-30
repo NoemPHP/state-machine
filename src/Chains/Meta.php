@@ -8,6 +8,8 @@ namespace Noem\State\Chains;
 
 use Noem\State\Chains\Params;
 use Noem\State\Connection;
+use Noem\State\Feature\ExtendedState\ContextMetaType;
+use Noem\State\MetaData;
 use Noem\State\Middleware\Chain;
 use Noem\State\Middleware\Mesh;
 use Noem\State\Record;
@@ -15,10 +17,11 @@ use Noem\State\Region;
 use SplObjectStorage;
 
 /**
- * @template-extends Chain<Region,Mesh>
+ * @template-extends Chain<Params\Meta,Mesh>
  */
 class Meta extends Chain
 {
+
     /**
      * @var list<Record>
      */
@@ -27,24 +30,31 @@ class Meta extends Chain
     public function __construct(ConnectedRegions $connectedRegions)
     {
         /**
-         * @var SplObjectStorage<Region,Mesh> $metaData
+         * @var SplObjectStorage<Region,MetaData> $metaData
          */
         $metaData = new SplObjectStorage();
 
-        parent::__construct(function (Region $region) use ($metaData): Mesh {
-            if ($metaData->contains($region)) {
-                return $metaData->offsetGet($region);
+        parent::__construct(function (Params\Meta $metaParams) use ($metaData): Mesh {
+            if (!$metaData->contains($metaParams->region)) {
+                $metaData->attach($metaParams->region, new MetaData());
+            }
+            $metaType = (string)$metaParams->type;
+            if (
+                $metaData->contains($metaParams->region)
+                && $metaData[$metaParams->region]->offsetExists($metaType)
+            ) {
+                return $metaData->offsetGet($metaParams->region)->offsetGet($metaType);
             }
             $validRecords = array_filter(
                 $this->records,
-                function ($record) use ($region) {
+                function ($record) use ($metaParams) {
                     return !($record->hasFlag(Record::DYNAMIC) && !$record->isActive())
-                        && $record->origin === $region;
+                        && $record->origin === $metaParams->region;
                 }
             );
             if (count($validRecords) === 0) {
                 $mesh = new Mesh();
-                $metaData->attach($region, $mesh);
+                $metaData[$metaParams->region][$metaType] = $mesh;
 
                 return $mesh;
             }
@@ -52,11 +62,11 @@ class Meta extends Chain
             if (count($validRecords) >= 1) {
                 next($validRecords);
                 foreach ($validRecords as $record) {
-                    $mesh->extend($record->data);
+                    $mesh->extendWith($record->data);
                 }
             }
 
-            $metaData->attach($region, $mesh);
+            $metaData->attach($metaParams->region, $mesh);
 
             return $mesh;
         });
@@ -64,9 +74,12 @@ class Meta extends Chain
          * Return the correct shared Mesh for a set of connections
          */
         $this->link(
-            function (Region $region, callable $next, callable $first) use ($metaData, $connectedRegions): Mesh {
+            function (Params\Meta $metaParams, callable $next, callable $first) use (
+                $metaData,
+                $connectedRegions
+            ): Mesh {
                 $connectionParams = new Params\Connection(
-                    $region,
+                    $metaParams->region,
                     false, // fetch a parent if exists
                     Connection::RECEIVE_META
                 );
@@ -76,7 +89,7 @@ class Meta extends Chain
                      * This Region has no parents.
                      * Allow the creation of a new Mesh
                      */
-                    return $next($region);
+                    return $next($metaParams);
                 }
                 $parentRegion = reset($regions);
                 /**
@@ -85,13 +98,14 @@ class Meta extends Chain
                  * we connect the Mesh for the current Region
                  * to the Mesh of the parent Region
                  */
-                if (!$metaData->contains($parentRegion) || !$metaData->contains($region)) {
-                    $parent = $first($parentRegion);
-                    $child = $next($region);
-                    $parent->extend($child);
+                if (!$metaData->contains($parentRegion) || !$metaData->contains($metaParams->region)) {
+                    $parentMetaParams = new Params\Meta($parentRegion, ContextMetaType::get());
+                    $parent = $first($parentMetaParams);
+                    $child = $next($metaParams);
+                    $parent->extendwith($child);
                 }
 
-                return $metaData[$parentRegion];
+                return $metaData[$parentRegion][(string)$metaParams->type];
             }
         );
     }

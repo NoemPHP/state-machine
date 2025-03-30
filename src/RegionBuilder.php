@@ -6,12 +6,11 @@ namespace Noem\State;
 
 use ArrayAccess;
 use Noem\State\Chains\ConnectedRegions;
-use Noem\State\Chains\EnhanceRegion;
+use Noem\State\Chains\PrepareInvokable;
 use Noem\State\Feature\Feature;
-use Noem\State\Middleware\Chain;
 use Noem\State\Middleware\ChainMail;
 
-class RegionBuilder extends Region
+class RegionBuilder
 {
 
     protected Events $events;
@@ -40,42 +39,31 @@ class RegionBuilder extends Region
             $chainMail = new ChainMail();
             $chainMail->supply(
                 fn(): RegionBuilder => $this,
-                fn(): Chains\EnhanceRegion => new Chains\EnhanceRegion(),
+                fn(): Chains\EnhanceRegionBuilder => new Chains\EnhanceRegionBuilder(),
                 fn(): Chains\DispatchAction => new Chains\DispatchAction(),
-                fn(Chains\InvokeCallback $invokeCallback): Chains\Guard => new Chains\Guard($invokeCallback),
+                fn(Chains\InvokeCallback $i, PrepareInvokable $p): Chains\Guard => new Chains\Guard($i, $p),
                 fn(): Chains\ValidateCallback => new Chains\ValidateCallback(),
+                fn(): Chains\PrepareInvokable => new Chains\PrepareInvokable(),
                 fn(): Chains\InvokeCallback => new Chains\InvokeCallback(),
                 fn(): Chains\ConnectedRegions => new Chains\ConnectedRegions(),
                 fn(): Chains\ExtendedState => new Chains\ExtendedState(),
                 fn(Chains\ConnectedRegions $connectedRegions): Chains\Meta => new Chains\Meta($connectedRegions),
                 fn(): Chains\Set => new Chains\Set(),
                 fn(): Chains\Get => new Chains\Get(),
-                fn(Chains\ValidateCallback $v, Chains\InvokeCallback $i): Events => new Events($v, $i),
-                //fn(
-                //    Chains\Get $get,
-                //    Chains\Set $set,
-                //    Chains\ExtendedState $ext,
-                //    Chains\ConnectedRegions $reg
-                //): ExtendedState => new ExtendedState(
-                //    $get,
-                //    $set,
-                //    $ext,
-                //    $reg
-                //),
+                Events::conjure(),
                 fn(Chains\ConnectedRegions $connections): Chains\Path => new Chains\Path($connections)
             );
         }
         $this->chainMail = $chainMail;
-
-        /**
-         * Grab a few dependencies immediately
-         */
-        $this->chainMail->use(function (
-            Chains\Meta $meta,
-        ) {
-            $this->meta = $meta;
-        });
+        $this->meta = $this->chainMail->get(Chains\Meta::class);
         $this->buildChain = new Chains\BuildRegion();
+    }
+
+    public function addStep(callable $callback): self
+    {
+        $this->buildChain->link($callback);
+
+        return $this;
     }
 
     public function enableFeatures(Feature ...$features): self
@@ -118,15 +106,6 @@ class RegionBuilder extends Region
         return $this;
     }
 
-    public function eachState(\Closure $callback): self
-    {
-        foreach ($this->states as $state) {
-            $callback($state, $this);
-        }
-
-        return $this;
-    }
-
     /**
      * Connect a region to the current builder using a connection type.
      * This allows for nested state machines and hierarchical state management.
@@ -146,7 +125,7 @@ class RegionBuilder extends Region
     ): self {
         $this->buildChain->link(
             function (RegionBuilder $builder, callable $next) use ($remoteRegion, $flags, $predicate) {
-                [$connectedRegions] = $builder->chainMail->use(fn(ConnectedRegions $c) => func_get_args());
+                $connectedRegions = $this->chainMail->get(ConnectedRegions::class);
                 assert($connectedRegions instanceof ConnectedRegions);
                 $region = $next($builder);
 
@@ -202,7 +181,7 @@ class RegionBuilder extends Region
     {
         $this->buildChain->link(
             function (RegionBuilder $builder, callable $next) use ($state, $callback) {
-                [$events] = $builder->chainMail->use(fn(Events $events) => func_get_args());
+                $events = $this->chainMail->get(Events::class);
                 $region = $next($builder);
                 $events->addActionHandler($region, $state, $callback);
 
@@ -217,7 +196,7 @@ class RegionBuilder extends Region
     {
         $this->buildChain->link(
             function (RegionBuilder $builder, callable $next) use ($state, $callback) {
-                [$events] = $builder->chainMail->use(fn(Events $events) => func_get_args());
+                $events = $this->chainMail->get(Events::class);
                 $region = $next($builder);
                 $events->addEnterStateHandler($region, $state, $callback);
 
@@ -232,7 +211,7 @@ class RegionBuilder extends Region
     {
         $this->buildChain->link(
             function (RegionBuilder $builder, callable $next) use ($state, $callback) {
-                [$events] = $builder->chainMail->use(fn(Events $events) => func_get_args());
+                $events = $this->chainMail->get(Events::class);
                 $region = $next($builder);
                 $events->addExitStateHandler($region, $state, $callback);
 
@@ -252,18 +231,22 @@ class RegionBuilder extends Region
      * accessed through the appropriate chains.
      *
      * @param array|ArrayAccess $data The metadata to add for the region
+     * @param MetaType $type
      * @param int $flags
      * @param callable|null $predicate
      *
      * @return self The current instance of the builder, allowing for method chaining.
      */
-    public function setMetaData(array|ArrayAccess $data, int $flags = 0, ?callable $predicate = null): self
-    {
+    public function setMetaData(
+        array|ArrayAccess $data,
+        MetaType $type,
+        int $flags = 0,
+        ?callable $predicate = null
+    ): self {
         $this->buildChain->link(
-            function (RegionBuilder $regionBuilder, callable $next) use ($data, $flags, $predicate) {
+            function (RegionBuilder $regionBuilder, callable $next) use ($data, $type, $flags, $predicate) {
                 $region = $next($regionBuilder);
-
-                $this->meta->addRecord(new Record($region, $data, $flags, $predicate));
+                $this->meta->addRecord(new Record($region, $data, $type, $flags, $predicate));
 
                 return $region;
             }
@@ -314,27 +297,16 @@ class RegionBuilder extends Region
      */
     public function build(?bool $skipMiddlewares = false): Region
     {
-        [$enhance] = $this->chainMail->use(
-            fn(Chains\EnhanceRegion $e) => func_get_args()
-        );
+        $this->chainMail->boot();
+        $enhance = $this->chainMail->get(Chains\EnhanceRegionBuilder::class);
 
         $provider = function (RegionBuilder $builder) {
+            $guardChain = $this->chainMail->get(Chains\Guard::class);
+            $actionChain = $this->chainMail->get(Chains\DispatchAction::class);
+            $connectionsChain = $this->chainMail->get(Chains\ConnectedRegions::class);
+            $path = $this->chainMail->get(Chains\Path::class);
+            $events = $this->chainMail->get(Events::class);
             $this->assertValidConfig();
-            [
-                $guardChain,
-                $actionChain,
-                $connectionsChain,
-                $path,
-                $events
-            ] = $builder->chainMail->use(
-                fn(
-                    Chains\Guard $guardChain,
-                    Chains\DispatchAction $actionChain,
-                    Chains\ConnectedRegions $connectionsChain,
-                    Chains\Path $path,
-                    Events $events
-                ) => func_get_args()
-            );
 
             return new Region(
                 states: $builder->states,
