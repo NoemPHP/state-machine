@@ -11,10 +11,9 @@ class Completion
     private Request $request;
 
     public function __construct(
-        string|Request         $request,
+        string|Request $request,
         private readonly ?bool $asText = true
-    )
-    {
+    ) {
         if (is_scalar($request)) {
             $request = new RequestBuilder()->setPrompt($request)->build();
         }

@@ -67,7 +67,8 @@ class AiFeature implements Feature
                         [
                             'name' => 'list',
                             'schema' => $schema,
-                        ]))
+                        ]
+                    ))
                     ->build();
                 $generator = new Chat($request)();
                 $result = implode(iterator_to_array($generator, false));

@@ -59,7 +59,7 @@ class TemplateFactory
                     break;
                 case NodeType::SECTION_OPEN:
                     $index = $this->currentLevel + 1;
-                    $level=$this->getLevel($index);
+                    $level = $this->getLevel($index);
                     $this->getLevel()->link(function (Invocation $data, callable $next) use ($level) {
                         yield from $level->call($data);
                         yield from $next($data);

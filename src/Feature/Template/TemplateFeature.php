@@ -23,8 +23,8 @@ class TemplateFeature implements Feature
             fn(Helpers $h): TemplateFactory => new TemplateFactory($h)
         );
         $chainMail->use(function (
-            BoundAccess     $boundAccess,
-            Meta            $meta,
+            BoundAccess $boundAccess,
+            Meta $meta,
             TemplateFactory $templateFactory,
         ) {
             $boundAccess->link(function (BoundAccessParams $params, callable $next) use ($meta, $templateFactory) {

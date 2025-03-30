@@ -10,11 +10,10 @@ class Invocation
         public array|\ArrayAccess $data,
         public array|\ArrayAccess $args,
         public array|\ArrayAccess $hash,
-        public bool               $isBlock = false,
+        public bool $isBlock = false,
         public string $buffer = ''
-    )
-    {
-        $foo=1;
+    ) {
+        $foo = 1;
     }
 
     public function setData(array|\ArrayAccess $newData): self
@@ -47,5 +46,4 @@ class Invocation
 
         return $this;
     }
-
 }
