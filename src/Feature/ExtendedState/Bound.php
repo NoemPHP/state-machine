@@ -4,6 +4,8 @@ namespace Noem\State\Feature\ExtendedState;
 
 use Noem\State\Chains;
 use Noem\State\Chains\Params;
+use Noem\State\Feature\ExtendedState\ContextChains\BoundAccess;
+use Noem\State\Feature\ExtendedState\ContextChains\Params\BoundAccessParams;
 use Noem\State\Region;
 
 /**
@@ -17,27 +19,22 @@ class Bound implements \Stringable
 
     public function __construct(
         private readonly Region $region,
-        private readonly Chains\Get $get,
-        private readonly Chains\Set $set
+        private readonly BoundAccess $boundAccess
     ) {
     }
 
     /**
-     *  @param string $key Key to fetch
+     * @param string $key Key to fetch
      *
      * @return mixed Returns value associated with the requested key or null if no region found
      */
     public function &__get(string $key): mixed
     {
-        $call = $this->get->call(
-            new Params\Get(
-                $this->region,
-                $key,
-                $this->region->currentState()
-            )
+        $result = $this->boundAccess->call(
+            new BoundAccessParams($this->region, BoundAccessParams::TYPE_PROPERTY, $key)
         );
 
-        return $call;
+        return $result;
     }
 
     /**
@@ -46,13 +43,8 @@ class Bound implements \Stringable
      */
     public function __set(string $key, mixed $value): void
     {
-        $this->set->call(
-            new Params\Set(
-                $this->region,
-                $key,
-                $value,
-                false
-            )
+        $this->boundAccess->call(
+            new BoundAccessParams($this->region, BoundAccessParams::TYPE_PROPERTY, $key, $value)
         );
     }
 
@@ -61,16 +53,18 @@ class Bound implements \Stringable
      *
      * @return mixed Returns the matched value or null if not found
      */
-    public function &get(string $key): mixed
+    public function &__call(string $key, array $arguments): mixed
     {
-        $call = $this->get->call(
-            new Params\Get(
+        $result = $this->boundAccess->call(
+            new BoundAccessParams(
                 $this->region,
-                $key
+                BoundAccessParams::TYPE_METHOD,
+                $key,
+                $arguments
             )
         );
 
-        return $call;
+        return $result;
     }
 
     /**
@@ -80,16 +74,16 @@ class Bound implements \Stringable
      * @param string $key Target key to associate the provided value with
      * @param mixed $value Desired value
      */
-    public function set(string $key, mixed $value): void
-    {
-        $this->set->call(
-            new Params\Set(
-                $this->region,
-                $key,
-                $value
-            )
-        );
-    }
+    //public function set(string $key, mixed $value): void
+    //{
+    //    $this->set->call(
+    //        new Params\Set(
+    //            $this->region,
+    //            $key,
+    //            $value
+    //        )
+    //    );
+    //}
 
     /**
      *
@@ -97,15 +91,15 @@ class Bound implements \Stringable
      *
      * @return void
      */
-    public function dispatch(object $event): void
-    {
-        if ($this->regionStack->count()) {
-            $current = $this->regionStack->bottom();
-            assert($current instanceof Region);
-
-            $current->onDispatch($event);
-        }
-    }
+    //public function dispatch(object $event): void
+    //{
+    //    if ($this->regionStack->count()) {
+    //        $current = $this->regionStack->bottom();
+    //        assert($current instanceof Region);
+    //
+    //        $current->onDispatch($event);
+    //    }
+    //}
 
     public function __toString(): string
     {
