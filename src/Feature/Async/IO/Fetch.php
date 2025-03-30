@@ -1,0 +1,51 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Noem\State\Feature\Async\IO;
+
+use Noem\State\Feature\Async\CoroutineScheduler;
+
+readonly class Fetch
+{
+    public function __construct(
+        private string $url,
+        private string $method = 'GET',
+        private array $headers = [],
+        private string $body = '',
+    ) {
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function __invoke(): \Generator
+    {
+        $headerString = $this->compileHeaders();
+        $headerString .= "\r\nContent-Length: " . strlen($this->body);
+        $context = stream_context_create([
+            'http' => [
+                'method' => $this->method,
+                'header' => $headerString,
+                'content' => $this->body,
+            ],
+        ]);
+
+        $resource = fopen($this->url, 'r', false, $context);
+        if ($resource === false) {
+            throw new \Exception('Failed to open stream');
+        }
+
+        yield from new StreamHandler($resource)();
+    }
+
+    private function compileHeaders(): string
+    {
+        $headerLines = [];
+        foreach ($this->headers as $header => $value) {
+            $headerLines[] = "$header: $value";
+        }
+
+        return implode("\r\n", $headerLines);
+    }
+}
