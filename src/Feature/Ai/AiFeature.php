@@ -21,13 +21,62 @@ class AiFeature implements Feature
                 $upcoming = $next($private);
 
                 if (!$invocation->isBlock) {
-                    yield from new Completion($invocation->buffer)();
+                    $request = new RequestBuilder()
+                        ->setPrompt($invocation->buffer)
+                        ->setStop($invocation->hash['stop'] ?? '')
+                        ->build();
+                    $generator = new Completion($request)();
+                    while ($generator->valid()) {
+                        $chunk = $generator->current();
+                        yield $chunk;
+                        $generator->next();
+                    }
                     yield from $upcoming;
 
                     return;
                 }
                 $prompt = implode(iterator_to_array($upcoming, false));
-                yield from new Completion($prompt . PHP_EOL . $invocation->buffer)();
+                $request = new RequestBuilder()
+                    ->setPrompt($prompt . PHP_EOL . $invocation->buffer)
+                    ->setStop($invocation->hash['stop'] ?? '')
+                    ->build();
+                yield from new Completion($request)();
+            });
+
+            $helpers->registerHelper('capture', function (Invocation $invocation, callable $next) {
+                $key = $invocation->args[0];
+                $upcoming = $next($invocation);
+                $schema = [
+                    'type' => 'array',
+                    'items' => [
+                        'type' => 'string'
+                    ]
+                ];
+                $prompt = $invocation->buffer;
+                if ($invocation->isBlock) {
+                    $prompt .= PHP_EOL . implode(iterator_to_array($upcoming, false));
+                }
+                $prompt .= PHP_EOL . "Return as JSON";
+
+
+                $request = new RequestBuilder()
+                    ->setPrompt($prompt)
+//                        ->setStop($invocation->hash['stop'] ?? '')
+                    ->setResponseFormat(new ResponseFormat(
+                        'json_schema',
+                        [
+                            'name' => 'list',
+                            'schema' => $schema,
+                        ]))
+                    ->build();
+                $generator = new Chat($request)();
+                $result = implode(iterator_to_array($generator, false));
+                $decoded = json_decode($result, true);
+                $invocation->data[$key] = $decoded;
+                if (!$invocation->isBlock) {
+                    yield from $upcoming;
+                }
+                return yield '';
             });
         });
     }

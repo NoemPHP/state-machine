@@ -11,9 +11,10 @@ class Chat
     private Request $request;
 
     public function __construct(
-        string|Request $request,
+        string|Request         $request,
         private readonly ?bool $asText = true
-    ) {
+    )
+    {
         if (is_scalar($request)) {
             $request = new RequestBuilder()->setPrompt($request)->build();
         }
@@ -37,7 +38,8 @@ class Chat
                     'content' => $this->request->prompt,
                 ],
             ],
-            'stream' => $this->request->stream,
+            'stream' => false,
+//            'stream' => $this->request->stream,
         ];
 
         if ($this->request->responseFormat) {
@@ -82,20 +84,17 @@ class Chat
         // Split the buffer into lines
         $lines = explode("\n", $buffer);
         foreach (array_slice($lines, 0, -1) as $line) {
-            if (strpos($line, 'data: ') === 0) {
-                $payload = substr($line, strlen('data: '));
-                if ($payload !== '') {
-                    $decoded = json_decode($payload, true);
-                    if (!$decoded) {
-                        continue;
-                    }
-                    if ($this->asText) {
-                        yield $decoded['choices'][0]['delta']['content'];
-                        continue;
-                    }
-                    yield $decoded;
-                }
+
+            $decoded = json_decode($line, true);
+            if (!$decoded) {
+                continue;
             }
+            if ($this->asText) {
+                yield $decoded['choices'][0]['message']['content'];
+                continue;
+            }
+            yield $decoded;
+
         }
 
         // Keep the last incomplete line in the buffer

@@ -15,6 +15,9 @@ class TemplateFactory
     private array $levels;
 
     private int $currentLevel = 0;// used to track the current level of nesting
+    private bool $isParsingBlock = false;// used to track the current level of nesting
+
+    private Chain $currentChain;
 
     private const LAST_OPEN = ' LAST ';
 
@@ -46,24 +49,26 @@ class TemplateFactory
             assert($node instanceof Node);
             switch ($node->type) {
                 case NodeType::TEXT:
-                    //$this->getLevel()->link($this->appendBuffer());
                     $this->getLevel()->link($this->generateText($node, $reference->open));
                     break;
                 case NodeType::VARIABLE_ESCAPE:
-                    //$this->getLevel()->link($this->appendBuffer());
                     $this->getLevel()->link($this->generateVariable($node, $reference->open, true));
                     break;
                 case NodeType::VARIABLE_UNESCAPE:
-                    //$this->getLevel()->link($this->appendBuffer());
                     $this->getLevel()->link($this->generateVariable($node, $reference->open));
                     break;
                 case NodeType::SECTION_OPEN:
-                    //$this->getLevel()->link($this->appendBuffer());
+                    $index = $this->currentLevel + 1;
+                    $level=$this->getLevel($index);
+                    $this->getLevel()->link(function (Invocation $data, callable $next) use ($level) {
+                        yield from $level->call($data);
+                        yield from $next($data);
+                    });
                     $this->currentLevel++;
                     $this->getLevel()->link($this->generateOpen($node, $reference->open));
                     break;
                 case NodeType::SECTION_CLOSE:
-                    //$this->getLevel()->link($this->appendBuffer());
+                    unset($this->levels[$this->currentLevel]);
                     $this->currentLevel--;
                     $this->getLevel()->link($this->generateClose($node, $reference->open));
                     break;
@@ -74,31 +79,8 @@ class TemplateFactory
         }
 
         return function (array|\ArrayAccess|null $context = []) {
-            $chain = new Chain(function () {
-                yield '';
-            });
-            foreach ($this->levels as $level) {
-                $chain->link(function (Invocation $data, callable $next) use ($level) {
-                    yield from $level->call($data);
-                    yield from $next($data);
-                });
-            }
             $invocation = new Invocation($context, [], []);
-            yield from $chain->call($invocation);
-        };
-    }
-
-    private function appendBuffer()
-    {
-        return function (Invocation $data, callable $next) {
-            $upcoming = $next($data);
-            assert($upcoming instanceof \Generator);
-            while ($upcoming->valid()) {
-                $chunk = $upcoming->current();
-                $data->append($chunk);
-                yield $chunk;
-                $upcoming->next();
-            }
+            yield from $this->getLevel(0)->call($invocation);
         };
     }
 
@@ -123,7 +105,7 @@ class TemplateFactory
 
         return function (Invocation $data, callable $next) use ($name, $args, $hash) {
             if (isset($this->helpers[$name])) {
-                $invocation = $data->withArgs($args)->withHash($hash)->withBlockFlag(true);
+                $invocation = $data->setArgs($args)->setHash($hash)->setBlockFlag(true);
 
                 $iterator = $this->helpers[$name]($invocation, $next);
                 while ($iterator->valid()) {
@@ -132,9 +114,13 @@ class TemplateFactory
                     yield $chunk;
                     $iterator->next();
                 }
+                /**
+                 * In case we captured modified data
+                 */
+                $data->data = $invocation->data;
             }
 
-            return yield from $next($data);
+//            return yield from $next($data);
         };
     }
 
@@ -151,7 +137,7 @@ class TemplateFactory
         unset($open[$i]);
 
         return function (Invocation $invocation, callable $next) use ($node) {
-            $newInvocation = $invocation->withBlockFlag(false);
+            $newInvocation = $invocation->setBlockFlag(false);
             yield from $next($newInvocation);
         };
     }

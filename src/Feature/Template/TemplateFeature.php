@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Noem\State\Feature\Template;
 
+use Noem\State\Chains\Meta;
+use Noem\State\Chains\Params;
 use Noem\State\Feature\Async\Call;
 use Noem\State\Feature\ExtendedState\ContextChains\BoundAccess;
 use Noem\State\Feature\ExtendedState\ContextChains\Params\BoundAccessParams;
+use Noem\State\Feature\ExtendedState\ContextMetaType;
 use Noem\State\Feature\Feature;
 use Noem\State\Feature\Template\Compiler\TemplateFactory;
 use Noem\State\Middleware\ChainMail;
@@ -20,21 +23,23 @@ class TemplateFeature implements Feature
             fn(Helpers $h): TemplateFactory => new TemplateFactory($h)
         );
         $chainMail->use(function (
-            BoundAccess $boundAccess,
+            BoundAccess     $boundAccess,
+            Meta            $meta,
             TemplateFactory $templateFactory,
         ) {
-            $boundAccess->link(function (BoundAccessParams $params, callable $next) use ($templateFactory) {
+            $boundAccess->link(function (BoundAccessParams $params, callable $next) use ($meta, $templateFactory) {
                 if ($params->type !== BoundAccessParams::TYPE_METHOD) {
                     return $next($params);
                 }
                 switch ($params->name) {
                     case 'template':
+                        $medaData = $meta->call(new Params\Meta($params->region, ContextMetaType::get()));
                         $args = $params->payload;
                         $key = array_shift($args);
                         $template = $templateFactory->create($key);
 
-                        return (function () use ($template, $args) {
-                            $generator = $template($args);
+                        return (function () use ($template, $medaData) {
+                            $generator = $template($medaData);
                             $result = '';
                             while ($generator->valid()) {
                                 $chunk = $generator->current();

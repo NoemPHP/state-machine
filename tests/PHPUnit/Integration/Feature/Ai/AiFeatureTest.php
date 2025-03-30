@@ -4,13 +4,19 @@ declare(strict_types=1);
 
 namespace Noem\State\Test\Integration\Feature\Ai;
 
+use Noem\State\Chains\ConnectedRegions;
+use Noem\State\Chains\Get;
 use Noem\State\Chains\InvokeCallback;
 use Noem\State\Chains\Meta;
 use Noem\State\Chains\Params\Callback;
+use Noem\State\Chains\PrepareInvokable;
+use Noem\State\Chains\Set;
 use Noem\State\Feature\Ai\AiFeature;
 use Noem\State\Feature\Ai\Completion;
 use Noem\State\Feature\Async\AsyncFeature;
 use Noem\State\Feature\Async\Call;
+use Noem\State\Feature\ExtendedState\ContextChains\BoundAccess;
+use Noem\State\Feature\ExtendedState\ExtendedState;
 use Noem\State\Feature\Template\Compiler\TemplateFactory;
 use Noem\State\Feature\Template\Helpers;
 use Noem\State\Feature\Template\TemplateFeature;
@@ -35,11 +41,19 @@ class AiFeatureTest extends TestCase
 
         $this->chainmail->supply(
             fn(): InvokeCallback => $this->invokeCallback,
-            fn(): Meta => $meta
+            fn(): Meta => $meta,
+            fn(): Get => new Get(),
+            fn(): Set => new Set(),
+            fn(): \Noem\State\Chains\ExtendedState => new \Noem\State\Chains\ExtendedState(),
+            fn(): ConnectedRegions=> new ConnectedRegions(),
+            fn(): PrepareInvokable=> new PrepareInvokable(),
+//            fn(): BoundAccess => new B()
         );
+        new ExtendedState()($this->chainmail);
         $async = new AsyncFeature()($this->chainmail);
         $template = new TemplateFeature()($this->chainmail);
         $ai = new AiFeature()($this->chainmail);
+        $this->chainmail->boot();
     }
 
     #[Test]
@@ -67,7 +81,7 @@ class AiFeatureTest extends TestCase
     {
         $region = \Mockery::mock(Region::class);
 
-        $factory = new TemplateFactory($this->chainmail->use(fn(Helpers $h) => $h));
+        $factory = new TemplateFactory($this->chainmail->get(Helpers::class));
         $template = $factory->create('A haiku about cats and birds: {{complete}}');
         $generator = $template();
 
@@ -83,7 +97,7 @@ class AiFeatureTest extends TestCase
     {
         $region = \Mockery::mock(Region::class);
 
-        $factory = new TemplateFactory($this->chainmail->use(fn(Helpers $h) => $h));
+        $factory = new TemplateFactory($this->chainmail->get(Helpers::class));
         $template = $factory->create(
             '{{#complete}}A haiku about cats and birds: {{/complete}}'
         );
@@ -94,5 +108,48 @@ class AiFeatureTest extends TestCase
             $buffer .= $chunk;
         }
         $this->assertSame('Howdy foo', $buffer);
+    }
+
+
+    #[Test] public function captureHelper()
+    {
+        $region = \Mockery::mock(Region::class);
+
+        $factory = new TemplateFactory($this->chainmail->get(Helpers::class));
+        $template = $factory->create(
+            <<<'PROMPT'
+Create a list containing only the words "cat", "dog", "bird"!{{capture list}}
+{{#each list}}{{this}}{{/each}}
+PROMPT
+
+        );
+        $generator = $template();
+
+        $buffer = '';
+        foreach ($generator as $chunk) {
+            $buffer .= $chunk;
+        }
+        $this->assertSame("Create a list containing only the words \"cat\", \"dog\", \"bird\"!\ncatdogbird", $buffer);
+    }
+
+    #[Test] public function captureBlockHelper()
+    {
+        $region = \Mockery::mock(Region::class);
+
+        $factory = new TemplateFactory($this->chainmail->get(Helpers::class));
+        $template = $factory->create(
+            <<<'PROMPT'
+{{#capture list}}Create a list containing only the words "cat", "dog", "bird"!{{/capture}}
+{{#each list}}{{this}}{{/each}}
+PROMPT
+
+        );
+        $generator = $template();
+
+        $buffer = '';
+        foreach ($generator as $chunk) {
+            $buffer .= $chunk;
+        }
+        $this->assertSame("Create a list containing only the words \"cat\", \"dog\", \"bird\"!\ncatdogbird", $buffer);
     }
 }

@@ -2,7 +2,7 @@
 <project version="4">
   <component name="MessDetector">
     <phpmd_settings>
-      <phpmd_by_interpreter asDefaultInterpreter="true" interpreter_id="97149da7-a966-40e2-97db-bbd5090b24a9" timeout="30000" />
+      <MessDetectorConfiguration asDefaultInterpreter="true" timeout="30000" />
     </phpmd_settings>
   </component>
   <component name="MessDetectorOptionsConfiguration">
@@ -20,7 +20,6 @@
   <component name="PhpCodeSniffer">
     <phpcs_settings>
       <PhpCSConfiguration beautifier_path="$PROJECT_DIR$/vendor/bin/phpcbf" standards="MySource;PEAR;PSR1;PSR12;PSR2;Squiz;Zend" tool_path="$PROJECT_DIR$/vendor/bin/phpcs" />
-      <phpcs_by_interpreter asDefaultInterpreter="true" interpreter_id="97149da7-a966-40e2-97db-bbd5090b24a9" beautifier_path="/var/www/html/vendor/bin/phpcbf" standards="MySource;PEAR;PSR1;PSR12;PSR2;Squiz;Zend" tool_path="/var/www/html/vendor/bin/phpcs" timeout="30000" />
     </phpcs_settings>
   </component>
   <component name="PhpIncludePathManager">
@@ -47,7 +46,6 @@
       <path value="$PROJECT_DIR$/vendor/sebastian/version" />
       <path value="$PROJECT_DIR$/vendor/sebastian/global-state" />
       <path value="$PROJECT_DIR$/vendor/squizlabs/php_codesniffer" />
-      <path value="$PROJECT_DIR$/vendor/yosymfony/resource-watcher" />
       <path value="$PROJECT_DIR$/vendor/justinrainbow/json-schema" />
       <path value="$PROJECT_DIR$/vendor/composer" />
       <path value="$PROJECT_DIR$/vendor/psr/container" />
@@ -76,7 +74,6 @@
       <path value="$PROJECT_DIR$/vendor/symfony/polyfill-intl-grapheme" />
       <path value="$PROJECT_DIR$/vendor/symfony/polyfill-intl-normalizer" />
       <path value="$PROJECT_DIR$/vendor/symfony/deprecation-contracts" />
-      <path value="$PROJECT_DIR$/vendor/symfony/polyfill-php80" />
       <path value="$PROJECT_DIR$/vendor/symfony/service-contracts" />
       <path value="$PROJECT_DIR$/vendor/symfony/yaml" />
       <path value="$PROJECT_DIR$/vendor/symfony/finder" />
@@ -134,7 +131,7 @@
       </interpreter>
     </interpreters>
   </component>
-  <component name="PhpProjectSharedConfiguration" php_language_level="8.1">
+  <component name="PhpProjectSharedConfiguration" php_language_level="8.4">
     <option name="suggestChangeDefaultLanguageLevel" value="false" />
   </component>
   <component name="PhpStanOptionsConfiguration">

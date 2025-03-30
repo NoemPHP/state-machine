@@ -7,32 +7,38 @@ namespace Noem\State\Feature\Template\Compiler;
 class Invocation
 {
     public function __construct(
-        public readonly array|\ArrayAccess $data,
-        public readonly array|\ArrayAccess $args,
-        public readonly array|\ArrayAccess $hash,
-        public readonly bool $isBlock = false,
-        private(set) string $buffer = ''
-    ) {
+        public array|\ArrayAccess $data,
+        public array|\ArrayAccess $args,
+        public array|\ArrayAccess $hash,
+        public bool               $isBlock = false,
+        public string $buffer = ''
+    )
+    {
+        $foo=1;
     }
 
-    public function withData(array|\ArrayAccess $newData): self
+    public function setData(array|\ArrayAccess $newData): self
     {
-        return new self($newData, $this->args, $this->hash, $this->isBlock, $this->buffer);
+        $this->data = $newData;
+        return $this;
     }
 
-    public function withArgs(array|\ArrayAccess $newArgs): self
+    public function setArgs(array|\ArrayAccess $newArgs): self
     {
-        return new self($this->data, $newArgs, $this->hash, $this->isBlock, $this->buffer);
+        $this->args = $newArgs;
+        return $this;
     }
 
-    public function withHash(array|\ArrayAccess $newHash): self
+    public function setHash(array|\ArrayAccess $newHash): self
     {
-        return new self($this->data, $this->args, $newHash, $this->isBlock, $this->buffer);
+        $this->hash = $newHash;
+        return $this;
     }
 
-    public function withBlockFlag(bool $status): self
+    public function setBlockFlag(bool $status): self
     {
-        return new self($this->data, $this->args, $this->hash, $status, $this->buffer);
+        $this->isBlock = $status;
+        return $this;
     }
 
     public function append(string $text): self
@@ -41,4 +47,5 @@ class Invocation
 
         return $this;
     }
+
 }

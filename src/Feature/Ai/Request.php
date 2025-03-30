@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Noem\State\Feature\Ai;
 
-use Noem\Agent\ResponseFormat;
-
 class Request
 {
     public function __construct(

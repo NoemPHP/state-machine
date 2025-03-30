@@ -11,9 +11,10 @@ class Completion
     private Request $request;
 
     public function __construct(
-        string|Request $request,
+        string|Request         $request,
         private readonly ?bool $asText = true
-    ) {
+    )
+    {
         if (is_scalar($request)) {
             $request = new RequestBuilder()->setPrompt($request)->build();
         }
@@ -29,6 +30,7 @@ class Completion
             'model' => $this->request->model,
             'prompt' => $this->request->prompt,
             'stream' => $this->request->stream,
+            'suffix' => ''
         ];
 
         if ($this->request->responseFormat) {

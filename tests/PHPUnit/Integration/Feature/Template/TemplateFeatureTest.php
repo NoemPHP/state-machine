@@ -115,4 +115,5 @@ class TemplateFeatureTest extends TestCase
         $metadata = $meta->call(new Params\Meta($region, ContextMetaType::get()));
         $this->assertSame($metadata['result'], 'rofl');
     }
+
 }
