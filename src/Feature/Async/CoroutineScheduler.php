@@ -6,7 +6,6 @@ namespace Noem\State\Feature\Async;
 
 class CoroutineScheduler
 {
-
     /**
      * @var \SplObjectStorage<Task, list<callable>>
      */

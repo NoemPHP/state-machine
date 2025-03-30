@@ -15,7 +15,6 @@ use Noem\State\Middleware\ChainMail;
 
 class OrthogonalRegions implements Feature
 {
-
     public function __invoke(ChainMail $chainMail): void
     {
         $chainMail->supply(

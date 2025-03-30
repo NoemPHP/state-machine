@@ -14,7 +14,6 @@ use Noem\State\Middleware\Chain;
  */
 class Enqueue extends Chain
 {
-
     public function __construct(\SplObjectStorage $coroutinesByRegion)
     {
         parent::__construct(function (EnqueueParams $enqueueParams) use ($coroutinesByRegion) {

@@ -6,7 +6,6 @@ use Closure;
 
 class Call
 {
-
     protected $callback;
 
     public function __construct(callable $callback)
@@ -112,7 +111,6 @@ class Call
                         $return = $newTask->getReturn();
                         $scheduler->resume($task);
                         $task->setSendValue($return);
-
                     }
                 );
             }

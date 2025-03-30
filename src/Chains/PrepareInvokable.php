@@ -13,7 +13,6 @@ use Noem\State\Middleware\Chain;
  */
 class PrepareInvokable extends Chain
 {
-
     public function __construct()
     {
         parent::__construct(function (Params\Callback $context): mixed {

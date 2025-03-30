@@ -6,7 +6,6 @@ namespace Noem\State\Feature\Template\Compiler;
 
 class Invocation
 {
-
     public function __construct(
         public readonly array|\ArrayAccess $data,
         public readonly array|\ArrayAccess $args,

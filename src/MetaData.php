@@ -12,7 +12,6 @@ use Noem\State\Middleware\Mesh;
  */
 class MetaData extends Mesh
 {
-
     //public function __construct()
     //{
     //}

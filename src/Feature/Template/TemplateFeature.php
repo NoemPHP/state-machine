@@ -13,7 +13,6 @@ use Noem\State\Middleware\ChainMail;
 
 class TemplateFeature implements Feature
 {
-
     public function __invoke(ChainMail $chainMail): void
     {
         $chainMail->supply(

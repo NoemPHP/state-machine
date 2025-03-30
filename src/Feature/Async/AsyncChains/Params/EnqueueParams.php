@@ -8,7 +8,6 @@ use Noem\State\Region;
 
 class EnqueueParams
 {
-
     public function __construct(
         public readonly Region $region,
         public readonly \Generator $coroutine

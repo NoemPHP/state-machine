@@ -6,7 +6,6 @@ namespace Noem\State\Feature\Ai\Chains\Params;
 
 class SystemPromptParams
 {
-
     public function __construct(
         public readonly string $persona
     ) {

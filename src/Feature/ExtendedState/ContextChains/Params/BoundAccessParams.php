@@ -8,7 +8,6 @@ use Noem\State\Region;
 
 class BoundAccessParams
 {
-
     public const TYPE_PROPERTY = 0;
     public const TYPE_METHOD = 1;
 

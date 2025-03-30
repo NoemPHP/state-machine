@@ -6,7 +6,6 @@ use ArrayAccess;
 
 final class Record
 {
-
     /**
      * Whether to wipe the record upon transitions
      */

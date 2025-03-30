@@ -21,7 +21,6 @@ use SplObjectStorage;
  */
 class Meta extends Chain
 {
-
     /**
      * @var list<Record>
      */
@@ -74,7 +73,11 @@ class Meta extends Chain
          * Return the correct shared Mesh for a set of connections
          */
         $this->link(
-            function (Params\Meta $metaParams, callable $next, callable $first) use (
+            function (
+                Params\Meta $metaParams,
+                callable $next,
+                callable $first
+            ) use (
                 $metaData,
                 $connectedRegions
             ): Mesh {

@@ -9,7 +9,6 @@ use Noem\State\Middleware\Mesh;
 
 class Helpers extends Mesh
 {
-
     private array $helpers = [];
 
     public function __construct()

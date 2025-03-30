@@ -12,11 +12,10 @@ use React\Promise\PromiseInterface;
 
 use function React\Promise\all;
 use function React\Promise\reject;
-use function \React\Promise\resolve;
+use function React\Promise\resolve;
 
 class Template
 {
-
     private array $tree = [];
 
     /**
@@ -71,12 +70,12 @@ class Template
     {
         //if they are asking for the parent
         if (strpos($path, '../') === 0) {
-            $this->capture(substr($path, 3), $data,$i + 1);
+            $this->capture(substr($path, 3), $data, $i + 1);
             return;
         }
 
         if (strpos($path, './') === 0) {
-            $this->capture(substr($path, 2),$data, $i);
+            $this->capture(substr($path, 2), $data, $i);
             return;
         }
         //separate by .
@@ -105,7 +104,6 @@ class Template
             }
             $current = &$current[$node];
         }
-
     }
 
     public function find($path, $i = 0): PromiseInterface
@@ -293,7 +291,7 @@ class Template
             $promise = $this->stack[$position];
             if ($promise instanceof PromiseInterface) {
                 $promise->then(function ($text) use (&$out, &$position, &$loop, $offset, $deferred) {
-                    $out = $text.$out;
+                    $out = $text . $out;
                     if ($offset > 0 && strlen($out) > $offset) {
                         $deferred->resolve($out);
 
@@ -305,7 +303,7 @@ class Template
 
                 return;
             }
-            $out = $promise.$out;
+            $out = $promise . $out;
             if ($offset > 0 && strlen($out) > $offset) {
                 $deferred->resolve($out);
 
@@ -361,7 +359,7 @@ class Template
 
                     return;
                 }
-                $out = $out.$resolved;
+                $out = $out . $resolved;
                 if (strlen($out) > 25) {
                     $deferred->resolve($out);
 

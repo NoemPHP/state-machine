@@ -6,7 +6,6 @@ namespace Noem\State;
 
 abstract class MetaType
 {
-
     private static ?self $instance = null;
 
     private function __construct()
@@ -30,13 +29,13 @@ abstract class MetaType
     // Prevent cloning of the instance
     private function __clone()
     {
-        throw new \RuntimeException("Cannot clone an instance of ".static::class);
+        throw new \RuntimeException("Cannot clone an instance of " . static::class);
     }
 
     // Prevent unserialization of the instance
     public function __wakeup()
     {
-        throw new \RuntimeException("Cannot unserialize an instance of ".static::class);
+        throw new \RuntimeException("Cannot unserialize an instance of " . static::class);
     }
 
     public function __toString(): string

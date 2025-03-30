@@ -45,30 +45,34 @@ class Mesh implements ArrayAccess, Iterator
     ) {
         $this->offsetExistsChain = new Chain(
             $offsetExists ?? function ($offset) {
-            return isset($this->data[$offset]);
-        }, [], 0
+                return isset($this->data[$offset]);
+            },
+            [],
+            0
         );
 
         $this->offsetGetChain = new Chain(
             $offsetGet ?? function ($offset) {
-            return $this->data[$offset] ?? null;
-        }, [], 0
+                return $this->data[$offset] ?? null;
+            },
+            [],
+            0
         );
 
         $this->offsetSetChain = new Chain()->withProvider(
             $offsetSet ?? function ($context) {
-            if (is_null($context->offset)) {
-                $this->data[] = $context->value;
-            } else {
-                $this->data[$context->offset] = $context->value;
+                if (is_null($context->offset)) {
+                    $this->data[] = $context->value;
+                } else {
+                    $this->data[$context->offset] = $context->value;
+                }
             }
-        }
         );
 
         $this->offsetUnsetChain = new Chain()->withProvider(
             $offsetUnset ?? function ($offset) {
-            unset($this->data[$offset]);
-        }
+                unset($this->data[$offset]);
+            }
         );
     }
 

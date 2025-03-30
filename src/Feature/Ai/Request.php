@@ -8,7 +8,6 @@ use Noem\Agent\ResponseFormat;
 
 class Request
 {
-
     public function __construct(
         public readonly string $baseUrl,
         public readonly string $token,

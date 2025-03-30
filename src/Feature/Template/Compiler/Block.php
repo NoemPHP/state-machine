@@ -6,7 +6,6 @@ namespace Noem\State\Feature\Template\Compiler;
 
 interface Block
 {
-
     const TEXT_LINE = '\r\t$this->append( \'%s\'.\n );';
     const TEXT_LAST = '\r\t$this->append( \'%s\' );';
     const ESCAPE_VALUE = '\r\t$this->append( $this->>stringify( $this->find(\'%s\') ) );\r';

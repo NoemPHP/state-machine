@@ -17,7 +17,6 @@ use Noem\State\Middleware\Mesh;
  */
 class Ornament
 {
-
     private Mesh $mesh;
 
     private array $dependencies = [];

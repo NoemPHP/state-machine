@@ -9,7 +9,6 @@ use Nette\Schema\Schema;
 
 class SchemaContext
 {
-
     private array $customTypes = [];
 
     public function __construct(

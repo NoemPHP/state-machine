@@ -4,7 +4,6 @@ namespace Noem\State\Feature\Async;
 
 class Task
 {
-
     protected \Generator $coroutine;
 
     protected mixed $sendValue = null;

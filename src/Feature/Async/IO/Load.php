@@ -6,7 +6,6 @@ namespace Noem\State\Feature\Async\IO;
 
 class Load
 {
-
     public function __construct(private string $filePath)
     {
     }

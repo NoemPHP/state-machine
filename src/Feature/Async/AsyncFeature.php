@@ -20,7 +20,6 @@ use Noem\State\RegionBuilder;
 
 class AsyncFeature implements Feature
 {
-
     public function __invoke(ChainMail $chainMail): void
     {
         /**

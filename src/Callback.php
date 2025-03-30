@@ -6,7 +6,6 @@ namespace Noem\State;
 
 class Callback
 {
-
     private object $newThis;
 
     public function __construct(

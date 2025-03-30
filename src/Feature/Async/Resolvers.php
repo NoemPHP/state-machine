@@ -8,7 +8,6 @@ use Noem\State\Region;
 
 class Resolvers
 {
-
     /**
      * @var array
      * <string, ResolverRecord>
@@ -59,6 +58,6 @@ class Resolvers
 
     private function generateKey(Region $region, string $key): string
     {
-        return spl_object_id($region).':'.$key;
+        return spl_object_id($region) . ':' . $key;
     }
 }

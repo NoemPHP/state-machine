@@ -8,7 +8,6 @@ use Noem\State\Middleware\Mesh;
 
 class OrnamentResolver
 {
-
     /**
      * @var callable
      */

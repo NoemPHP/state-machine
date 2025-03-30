@@ -2,7 +2,6 @@
 
 namespace Noem\State\Feature\Template\Compiler;
 
-
 enum NodeType
 {
     case TEXT;

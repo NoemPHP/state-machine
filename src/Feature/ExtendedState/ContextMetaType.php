@@ -8,5 +8,4 @@ use Noem\State\MetaType;
 
 class ContextMetaType extends MetaType
 {
-
 }

@@ -8,7 +8,6 @@ use Noem\State\Middleware\Mesh;
 
 class RequestBuilder extends Mesh
 {
-
     private $model;
 
     private $prompt;

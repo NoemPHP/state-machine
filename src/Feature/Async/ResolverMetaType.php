@@ -8,5 +8,4 @@ use Noem\State\MetaType;
 
 class ResolverMetaType extends MetaType
 {
-
 }

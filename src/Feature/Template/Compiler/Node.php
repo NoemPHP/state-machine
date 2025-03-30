@@ -6,7 +6,6 @@ namespace Noem\State\Feature\Template\Compiler;
 
 class Node
 {
-
     public function __construct(
         public readonly NodeType $type,
         public readonly int $line,

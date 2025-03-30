@@ -13,7 +13,6 @@ use Override;
  */
 class Chain implements ChainInterface
 {
-
     protected int $maxRestarts = 1; // Maximum number of restarts to prevent infinite loops
 
     private array $middlewares;
@@ -100,7 +99,6 @@ class Chain implements ChainInterface
     {
         $middlewares = array_reverse($this->middlewares);
         $first = new class {
-
             public $callback;
 
             public function __invoke(mixed $context): mixed
