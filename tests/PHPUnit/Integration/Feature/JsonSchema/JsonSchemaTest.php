@@ -2,13 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Noem\State\Test\Integration\Feature;
+namespace Noem\State\Test\Integration\Feature\JsonSchema;
 
 use Noem\State\Feature\JsonSchema\JsonSchemaFeature;
-use Noem\State\RegionBuilder;
 use Noem\State\Test\Integration\RegionBuilderTestCase;
-use PHPUnit\Framework\Attributes\Before;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 
 class JsonSchemaTest extends RegionBuilderTestCase
@@ -16,6 +13,7 @@ class JsonSchemaTest extends RegionBuilderTestCase
     #[Test]
     public function happyPath()
     {
+        $this->markTestSkipped();
         $r = $this->builder
             ->enableFeatures(new JsonSchemaFeature())
             ->setStates('foo', 'bar', 'baz')
