@@ -87,7 +87,7 @@ class DataTest extends TestCase
     public function testExtendWithArray(): void
     {
         $extension = ['extendedKey' => 'extendedValue'];
-        $this->data->extend($extension);
+        $this->data->extendWith($extension);
 
         $this->assertTrue(isset($this->data['extendedKey']));
         $this->assertSame('extendedValue', $this->data['extendedKey']);
@@ -99,7 +99,7 @@ class DataTest extends TestCase
         $arrayAccessMock->method('offsetExists')->willReturn(true);
         $arrayAccessMock->method('offsetGet')->willReturn('mockedValue');
 
-        $this->data->extend($arrayAccessMock);
+        $this->data->extendWith($arrayAccessMock);
 
         $this->assertTrue(isset($this->data['anyKey']));
         $this->assertSame('mockedValue', $this->data['anyKey']);

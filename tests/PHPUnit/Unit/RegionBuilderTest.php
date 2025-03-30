@@ -6,7 +6,7 @@ namespace Noem\State\Test\Unit;
 
 use Noem\State\Chains\BuildRegion;
 use Noem\State\Chains\DispatchAction;
-use Noem\State\Chains\EnhanceRegion;
+use Noem\State\Chains\EnhanceRegionBuilder;
 use Noem\State\Region;
 use Noem\State\RegionBuilder;
 use PHPUnit\Framework\TestCase;
@@ -19,11 +19,11 @@ class RegionBuilderTest extends TestCase
         $builder = new RegionBuilder();
         $builder->setStates('a', 'b')
             ->chainMail->use(
-                function (EnhanceRegion $builderMiddleware) {
-                    $builderMiddleware->link(function (RegionBuilder $builder, callable $next): Region {
+                function (EnhanceRegionBuilder $builderMiddleware) {
+                    $builderMiddleware->link(function (RegionBuilder $builder, callable $next): RegionBuilder {
                         $builder->pushTransition('a', 'b', fn(object $t): bool => true);
                         $region = $next($builder);
-                        assert($region instanceof Region);
+                        assert($region instanceof RegionBuilder);
 
                         return $region;
                     });
@@ -48,7 +48,7 @@ class RegionBuilderTest extends TestCase
         $builder->chainMail->use(
             function (
                 DispatchAction $regionMiddleware,
-                EnhanceRegion $builderMiddleware
+                EnhanceRegionBuilder $builderMiddleware
             ) {
                 $regionMiddleware->link(function () {
                 });
