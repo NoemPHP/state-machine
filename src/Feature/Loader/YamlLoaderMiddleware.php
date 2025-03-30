@@ -12,7 +12,6 @@ use Symfony\Component\Yaml\Yaml;
 
 readonly class YamlLoaderMiddleware
 {
-
     public function __construct(private mixed $source, private array $helpers)
     {
     }

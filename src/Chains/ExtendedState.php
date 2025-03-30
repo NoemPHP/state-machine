@@ -12,7 +12,6 @@ use Noem\State\Middleware\Mesh;
  */
 class ExtendedState extends Chain
 {
-
     /** @noinspection PhpVariableIsUsedOnlyInClosureInspection */
     public function __construct()
     {

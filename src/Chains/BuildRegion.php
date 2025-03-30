@@ -12,5 +12,4 @@ use Noem\State\RegionBuilder;
 class BuildRegion extends Chain
 {
     protected int $maxRestarts = -1;
-
 }

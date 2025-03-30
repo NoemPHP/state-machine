@@ -6,7 +6,6 @@ namespace Noem\State\Chains\Params;
 
 class Action
 {
-
     private(set) string $currentState;
 
     public object $payload;

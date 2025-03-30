@@ -11,5 +11,4 @@ use Noem\State\Middleware\Chain;
  */
 class Get extends Chain
 {
-
 }

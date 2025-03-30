@@ -79,4 +79,3 @@ final class Record
         return ($this->predicate)($this);
     }
 }
-

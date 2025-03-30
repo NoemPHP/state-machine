@@ -51,9 +51,8 @@ class RegionLoader implements Feature
         return $this;
     }
 
-    public function load():RegionBuilder
+    public function load(): RegionBuilder
     {
-
     }
 
     public function __invoke(ChainMail $chainMail): void

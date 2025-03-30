@@ -7,6 +7,5 @@ use Noem\State\RegionBuilder;
 
 interface Feature
 {
-
     public function __invoke(ChainMail $chainMail): void;
 }

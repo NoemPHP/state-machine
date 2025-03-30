@@ -13,7 +13,6 @@ use Noem\State\Feature\Loader\LoaderChains;
 
 class JsonSchemaFeature implements Feature
 {
-
     public function __invoke(ChainMail $chainMail): void
     {
         $chainMail->supply(

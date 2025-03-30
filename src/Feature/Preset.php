@@ -10,7 +10,6 @@ use Noem\State\RegionBuilder;
 
 class Preset
 {
-
     public function default(RegionBuilder $builder): void
     {
         foreach (

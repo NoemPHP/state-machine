@@ -10,5 +10,4 @@ use Noem\State\Middleware\Chain;
 
 class GetContext
 {
-
 }

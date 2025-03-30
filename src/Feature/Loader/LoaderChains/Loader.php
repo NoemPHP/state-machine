@@ -14,7 +14,6 @@ use Noem\State\RegionBuilder;
  */
 class Loader extends Chain
 {
-
     protected int $maxRestarts = -1;
 
     //public function __construct(Schema $schema)

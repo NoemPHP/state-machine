@@ -10,7 +10,6 @@ use Noem\State\Region;
 
 class ParentRegion
 {
-
     public function __construct(private readonly ConnectedRegions $connectedRegions)
     {
     }

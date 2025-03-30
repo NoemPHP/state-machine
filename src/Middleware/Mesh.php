@@ -26,7 +26,6 @@ use Iterator;
  */
 class Mesh implements ArrayAccess, Iterator
 {
-
     private mixed $position = 0;
 
     private Chain $offsetExistsChain;

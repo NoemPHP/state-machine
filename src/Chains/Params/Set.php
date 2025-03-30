@@ -8,7 +8,6 @@ use Noem\State\Region;
 
 class Set implements AccessParams
 {
-
     public function __construct(
         public Region $region,
         public string $key,

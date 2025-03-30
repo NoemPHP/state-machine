@@ -12,7 +12,6 @@ use Noem\State\RegionBuilder;
  */
 class TransformArray extends Chain
 {
-
     public function __construct()
     {
         parent::__construct(fn(array $a) => $a);

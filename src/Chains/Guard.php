@@ -14,7 +14,6 @@ use Noem\State\Util\ParameterDeriver;
  */
 class Guard extends Chain
 {
-
     public function __construct(
         InvokeCallback $invokeCallback,
         PrepareInvokable $prepareInvokable

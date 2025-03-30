@@ -15,7 +15,6 @@ use Throwable;
 
 class Events
 {
-
     private \SplObjectStorage $onEnter;
 
     private \SplObjectStorage $onExit;

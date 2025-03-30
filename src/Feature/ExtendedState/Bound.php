@@ -16,7 +16,6 @@ use Noem\State\Region;
  */
 class Bound implements \Stringable
 {
-
     public function __construct(
         private readonly Region $region,
         private readonly BoundAccess $boundAccess

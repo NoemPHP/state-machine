@@ -12,7 +12,6 @@ use Noem\State\Middleware\Chain;
  */
 class InvokeCallback extends Chain
 {
-
     public function __construct()
     {
         parent::__construct(function (Callback $context): mixed {
