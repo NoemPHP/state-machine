@@ -9,15 +9,21 @@ use Noem\State\Middleware\Chain;
 
 class TemplateFactory
 {
+
     /**
      * @var array<Chain>
      */
     private array $levels;
 
     private int $currentLevel = 0;// used to track the current level of nesting
+
     private bool $isParsingBlock = false;// used to track the current level of nesting
 
     private Chain $currentChain;
+
+    private \SplStack $blockChains;
+
+    private string $buffer = '';
 
     private const LAST_OPEN = ' LAST ';
 
@@ -25,21 +31,35 @@ class TemplateFactory
     {
     }
 
-    private function getLevel(?int $level = null): Chain
-    {
-        $level = $level ?? $this->currentLevel;
-        if (!isset($this->levels[$level])) {
-            $this->levels[$level] = new Chain(function () {
-                yield '';
-            });
-        }
+    //private function getLevel(?int $level = null): Chain
+    //{
+    //    $level = $level ?? $this->currentLevel;
+    //    if (!isset($this->levels[$level])) {
+    //        $this->levels[$level] = new Chain(function () {
+    //            yield '';
+    //        });
+    //    }
+    //
+    //    return $this->levels[$level];
+    //}
 
-        return $this->levels[$level];
+    public function getBuffer(): string
+    {
+        return $this->buffer;
+    }
+
+    private function createChain(): Chain
+    {
+        return new Chain(function () {
+            yield '';
+        });
     }
 
     public function render(string $template): callable
     {
+        $this->blockChains = new \SplStack();
         $this->levels = [];
+        $this->blockChains->push($this->createChain());
         $this->currentLevel = 0;
         $reference = new \stdClass();
         $reference->buffer = '';
@@ -49,28 +69,23 @@ class TemplateFactory
             assert($node instanceof Node);
             switch ($node->type) {
                 case NodeType::TEXT:
-                    $this->getLevel()->link($this->generateText($node, $reference->open));
+                    $this->blockChains->top()->link($this->generateText($node, $reference->open));
                     break;
                 case NodeType::VARIABLE_ESCAPE:
-                    $this->getLevel()->link($this->generateVariable($node, $reference->open, true));
+                    $this->blockChains->top()->link($this->generateVariable($node, $reference->open, true));
                     break;
                 case NodeType::VARIABLE_UNESCAPE:
-                    $this->getLevel()->link($this->generateVariable($node, $reference->open));
+                    $this->blockChains->top()->link($this->generateVariable($node, $reference->open));
                     break;
                 case NodeType::SECTION_OPEN:
-                    $index = $this->currentLevel + 1;
-                    $level = $this->getLevel($index);
-                    $this->getLevel()->link(function (Invocation $data, callable $next) use ($level) {
-                        yield from $level->call($data);
-                        yield from $next($data);
-                    });
-                    $this->currentLevel++;
-                    $this->getLevel()->link($this->generateOpen($node, $reference->open));
+                    $currentChain = $this->blockChains->top();
+                    $blockChain = $this->createChain();
+                    $this->blockChains->push($blockChain);
+                    $currentChain->link($this->generateOpen($node, $reference->open, $blockChain));
                     break;
                 case NodeType::SECTION_CLOSE:
-                    unset($this->levels[$this->currentLevel]);
-                    $this->currentLevel--;
-                    $this->getLevel()->link($this->generateClose($node, $reference->open));
+                    $this->blockChains->pop();
+                    $this->blockChains->top()->link($this->generateClose($node, $reference->open));
                     break;
             }
         }
@@ -79,8 +94,14 @@ class TemplateFactory
         }
 
         return function (array|\ArrayAccess|null $context = []) {
-            $invocation = new Invocation($context, [], []);
-            yield from $this->getLevel(0)->call($invocation);
+            $invocation = new Invocation($context, [], [], $this);
+            $iterator = $this->blockChains->top()->call($invocation);
+            while ($iterator->valid()) {
+                $chunk = $iterator->current();
+                $this->buffer .= $chunk;
+                yield $chunk;
+                $iterator->next();
+            }
         };
     }
 
@@ -94,7 +115,7 @@ class TemplateFactory
         return $this->render($template);
     }
 
-    protected function generateOpen(Node $node, array &$open): \Closure
+    protected function generateOpen(Node $node, array &$open, Chain $innerContent): \Closure
     {
         $nodeValue = trim($node->value);
 
@@ -103,14 +124,14 @@ class TemplateFactory
 
         [$name, $args, $hash] = $this->parseArguments($nodeValue);
 
-        return function (Invocation $data, callable $next) use ($name, $args, $hash) {
+        return function (Invocation $data, callable $next) use ($name, $args, $hash, $innerContent) {
             if (isset($this->helpers[$name])) {
-                $invocation = $data->setArgs($args)->setHash($hash)->setBlockFlag(true);
+                $invocation = clone $data;
+                $invocation = $invocation->setArgs($args)->setHash($hash)->setBlockContents($innerContent);
 
                 $iterator = $this->helpers[$name]($invocation, $next);
                 while ($iterator->valid()) {
                     $chunk = $iterator->current();
-                    $data->append($chunk);
                     yield $chunk;
                     $iterator->next();
                 }
@@ -119,8 +140,7 @@ class TemplateFactory
                  */
                 $data->data = $invocation->data;
             }
-
-//            return yield from $next($data);
+            //            return yield from $next($data);
         };
     }
 
@@ -129,7 +149,7 @@ class TemplateFactory
         $nodeValue = trim($node->value);
 
         if ($this->findSection($open, $nodeValue) === false) {
-            throw new \RuntimeException('Unknown end block: ' . $nodeValue, $node->line);
+            throw new \RuntimeException('Unknown end block: '.$nodeValue, $node->line);
         }
 
         $i = $this->findSection($open);
@@ -137,7 +157,7 @@ class TemplateFactory
         unset($open[$i]);
 
         return function (Invocation $invocation, callable $next) use ($node) {
-            $newInvocation = $invocation->setBlockFlag(false);
+            $newInvocation = $invocation->setBlockContents(null);
             yield from $next($newInvocation);
         };
     }
@@ -170,10 +190,9 @@ class TemplateFactory
 
         if ($helper) {
             return function (Invocation $data, callable $next) use ($name, $args, $hash) {
-                $generator = $this->helpers[$name]($data->withArgs($args)->withHash($hash), $next);
+                $generator = $this->helpers[$name]($data->setArgs($args)->setHash($hash), $next);
                 while ($generator->valid()) {
                     $chunk = $generator->current();
-                    $data->append($chunk);
                     yield $chunk;
                     $generator->next();
                 }
@@ -188,7 +207,6 @@ class TemplateFactory
 
         return function (Invocation $data, callable $next) use ($value, $escape) {
             $chunk = $this->getValue($value, $data->data, $escape);
-            $data->append($chunk);
             yield $chunk;
             yield from $next($data);
         };
@@ -219,7 +237,6 @@ class TemplateFactory
     {
         return function (Invocation $data, callable $next) use ($node) {
             $chunk = $node->value;
-            $data->append($chunk);
             yield $chunk;
             yield from $next($data);
         };
@@ -239,7 +256,7 @@ class TemplateFactory
             '([^\s]+)',                      // <any group with no spaces>
         ];
 
-        preg_match_all('#' . implode('|', $regex) . '#is', $string, $matches);
+        preg_match_all('#'.implode('|', $regex).'#is', $string, $matches);
 
         $stringArgs = $matches[0];
         $name = array_shift($stringArgs);
@@ -255,7 +272,7 @@ class TemplateFactory
             if (
                 !(substr($arg, 0, 1) === "'" && substr($arg, -1) === "'")
                 && !(substr($arg, 0, 1) === '"' && substr($arg, -1) === '"')
-                && preg_match('#' . implode('|', $hashRegex) . '#is', $arg)
+                && preg_match('#'.implode('|', $hashRegex).'#is', $arg)
             ) {
                 [$hashKey, $hashValue] = explode('=', $arg, 2);
                 $hash[$hashKey] = $this->parseArgument($hashValue);

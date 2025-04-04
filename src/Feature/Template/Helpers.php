@@ -10,28 +10,37 @@ use Noem\State\Middleware\Mesh;
 
 class Helpers extends Mesh
 {
+
     private array $helpers = [];
 
     public function __construct()
     {
         $this->registerHelper('each', function (Invocation $data, callable $next) {
             $element = $data->args[0];
+            if (!isset($data->data[$element])) {
+                yield '';
+
+                return;
+            }
             $innerData = $data->data[$element];
             foreach ($innerData as $thing) {
                 $newData = $data->setData(['this' => $thing]);
-                yield from $next($newData);
+                yield from $data->blockContent($newData);
             }
+            yield from $next($data);
         });
         $this->registerHelper('if', function (Invocation $data, callable $next) {
             if ($data->args[0]) {
                 return yield from $next($data);
             }
+
             return yield '';
         });
         $this->registerHelper('else', function (Invocation $data, callable $next) {
             if (!$data->args[0]) {
                 return yield from $next($data);
             }
+
             return yield '';
         });
 
@@ -40,10 +49,20 @@ class Helpers extends Mesh
             if (!$fragment) {
                 return yield from $next($data);
             }
-            $dir = getcwd();
-            $template = file_get_contents($dir . '/machines/template/' . $fragment);
-            $factory = new TemplateFactory($this);
+            $template = '';
             //TODO Add a chain to register template roots in
+            $dir = getcwd();
+            $maybeFilename = $dir.'/machines/template/'.$fragment;
+
+            if (is_readable($maybeFilename)) {
+                $template = file_get_contents($maybeFilename);
+            } elseif (
+                isset($data->data[$fragment])
+                && is_readable($data->data[$fragment])
+            ) {
+                $template = file_get_contents($data->data[$fragment]);
+            }
+            $factory = new TemplateFactory($this);
             yield from $factory->create($template)($data->data);
         });
 
