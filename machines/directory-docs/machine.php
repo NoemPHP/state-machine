@@ -13,9 +13,8 @@ use Noem\State\Feature\OrthogonalRegions\OrthogonalRegions;
 use Noem\State\Feature\Template\TemplateFeature;
 use Noem\State\RegionBuilder;
 
-require __DIR__.'/../../vendor/autoload.php';
-$template = file_get_contents(__DIR__.'/template.html');
-$yaml = file_get_contents(__DIR__.'/machine.yml');
+require __DIR__ . '/../../vendor/autoload.php';
+$yaml = file_get_contents(__DIR__ . '/machine.yml');
 $helpers = [
     'php' => new PhpEvalHelper(),
 ];
@@ -32,8 +31,8 @@ $region = new RegionBuilder()->enableFeatures(
 while (!$region->isFinal()) {
     $region->trigger(
         (object)[
-            'template' => $template,
-            'outputFile' => __DIR__.'/result.html',
+            'workingDir' => __DIR__ . '/../../src',
+            'template' => file_get_contents(__DIR__ . '/template.md'),
         ]
     );
 }
