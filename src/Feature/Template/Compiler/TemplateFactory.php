@@ -9,7 +9,6 @@ use Noem\State\Middleware\Chain;
 
 class TemplateFactory
 {
-
     /**
      * @var array<Chain>
      */
@@ -149,7 +148,7 @@ class TemplateFactory
         $nodeValue = trim($node->value);
 
         if ($this->findSection($open, $nodeValue) === false) {
-            throw new \RuntimeException('Unknown end block: '.$nodeValue, $node->line);
+            throw new \RuntimeException('Unknown end block: ' . $nodeValue, $node->line);
         }
 
         $i = $this->findSection($open);
@@ -256,7 +255,7 @@ class TemplateFactory
             '([^\s]+)',                      // <any group with no spaces>
         ];
 
-        preg_match_all('#'.implode('|', $regex).'#is', $string, $matches);
+        preg_match_all('#' . implode('|', $regex) . '#is', $string, $matches);
 
         $stringArgs = $matches[0];
         $name = array_shift($stringArgs);
@@ -272,7 +271,7 @@ class TemplateFactory
             if (
                 !(substr($arg, 0, 1) === "'" && substr($arg, -1) === "'")
                 && !(substr($arg, 0, 1) === '"' && substr($arg, -1) === '"')
-                && preg_match('#'.implode('|', $hashRegex).'#is', $arg)
+                && preg_match('#' . implode('|', $hashRegex) . '#is', $arg)
             ) {
                 [$hashKey, $hashValue] = explode('=', $arg, 2);
                 $hash[$hashKey] = $this->parseArgument($hashValue);

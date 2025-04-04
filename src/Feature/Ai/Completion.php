@@ -8,7 +8,6 @@ use Noem\State\Feature\Async\IO\Fetch;
 
 class Completion
 {
-
     private Request $request;
 
     public function __construct(
@@ -47,7 +46,7 @@ class Completion
             'POST',
             [
                 'Content-Type' => 'application/json',
-                'Authorization' => 'Bearer '.$this->request->token,
+                'Authorization' => 'Bearer ' . $this->request->token,
             ],
             json_encode($args)
         )();

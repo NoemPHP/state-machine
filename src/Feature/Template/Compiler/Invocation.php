@@ -8,7 +8,6 @@ use Noem\State\Middleware\Chain;
 
 class Invocation
 {
-
     public function __construct(
         public array|\ArrayAccess $data,
         public array|\ArrayAccess $args,
