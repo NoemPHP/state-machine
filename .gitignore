@@ -3,3 +3,4 @@ vendor/
 .idea/dataSources
 *.lock
 .phpunit.result.cache
+/local/*
