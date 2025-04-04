@@ -53,12 +53,13 @@ class AiFeatureTest extends TestCase
         $async = new AsyncFeature()($this->chainmail);
         $template = new TemplateFeature()($this->chainmail);
         $ai = new AiFeature()($this->chainmail);
-        $this->chainmail->boot();
     }
 
     #[Test]
     public function completion()
     {
+        $this->chainmail->boot();
+
         $region = \Mockery::mock(Region::class);
         $coroutine = function () {
             yield from new Completion('Write an essay about cats')();
@@ -79,6 +80,8 @@ class AiFeatureTest extends TestCase
     #[Test]
     public function template()
     {
+        $this->chainmail->boot();
+
         $region = \Mockery::mock(Region::class);
 
         $factory = new TemplateFactory($this->chainmail->get(Helpers::class));
@@ -93,8 +96,28 @@ class AiFeatureTest extends TestCase
     }
 
     #[Test]
+    public function templateMulti()
+    {
+        $this->chainmail->boot();
+
+        $region = \Mockery::mock(Region::class);
+
+        $factory = new TemplateFactory($this->chainmail->get(Helpers::class));
+        $template = $factory->create('{{#complete max=2}}Say "foo"{{/complete}}{{#complete max=2}}Say "bar"{{/complete}}{{#complete max=2}}Say "baz"{{/complete}}');
+        $generator = $template();
+
+        $buffer = '';
+        foreach ($generator as $chunk) {
+            $buffer .= $chunk;
+        }
+        $this->assertSame('Howdy foo', $buffer);
+    }
+
+    #[Test]
     public function templateBlock()
     {
+        $this->chainmail->boot();
+
         $region = \Mockery::mock(Region::class);
 
         $factory = new TemplateFactory($this->chainmail->get(Helpers::class));
@@ -113,6 +136,8 @@ class AiFeatureTest extends TestCase
 
     #[Test] public function captureHelper()
     {
+        $this->chainmail->boot();
+
         $region = \Mockery::mock(Region::class);
 
         $factory = new TemplateFactory($this->chainmail->get(Helpers::class));
@@ -134,6 +159,8 @@ PROMPT
 
     #[Test] public function captureBlockHelper()
     {
+        $this->chainmail->boot();
+
         $region = \Mockery::mock(Region::class);
 
         $factory = new TemplateFactory($this->chainmail->get(Helpers::class));
