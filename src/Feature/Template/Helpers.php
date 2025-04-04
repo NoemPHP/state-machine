@@ -10,7 +10,6 @@ use Noem\State\Middleware\Mesh;
 
 class Helpers extends Mesh
 {
-
     private array $helpers = [];
 
     public function __construct()
@@ -52,7 +51,7 @@ class Helpers extends Mesh
             $template = '';
             //TODO Add a chain to register template roots in
             $dir = getcwd();
-            $maybeFilename = $dir.'/machines/template/'.$fragment;
+            $maybeFilename = $dir . '/machines/template/' . $fragment;
 
             if (is_readable($maybeFilename)) {
                 $template = file_get_contents($maybeFilename);
