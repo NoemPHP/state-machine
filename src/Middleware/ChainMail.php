@@ -79,6 +79,12 @@ class ChainMail
         return $this;
     }
 
+    /**
+     * @template T
+     * @param class-string<T> $className
+     *
+     * @return T
+     */
     public function get(string $className): mixed
     {
         return $this->services[$className];
