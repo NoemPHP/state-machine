@@ -15,14 +15,14 @@ class RequestBuilder extends Mesh
         $this->data = $data ?? [
             'baseUrl' => 'http://telvanni:7863/v1',
             'token' => 'sk-111111111111111111111111111111111111111111111111',
-//            'model' => 'llama3:8b-text-q4_K_M',
-            'model' => 'qwen2.5-coder:14b-base-q5_K_M',
-//            'model' => 'qwen2.5-coder:14b-instruct-q4_K_M',
+            //'model' => 'llama3:8b-text-q4_K_M',
+            //'model' => 'qwen2.5-coder:14b-base-q5_K_M',
+            'model' => 'qwen2.5-coder:14b-instruct-q4_K_M',
             'prompt' => 'say hello',
             'logprobs' => true,
             'stop' => null,
             'maxTokens' => 2048,
-            'temperature' => 0.4,
+            'temperature' => 0.9,
             'stream' => true,
         ];
         parent::__construct($this->data);

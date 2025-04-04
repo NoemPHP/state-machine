@@ -17,67 +17,81 @@ class AiFeature implements Feature
         $chainMail->supply(fn(): SystemPrompt => new SystemPrompt());
         $chainMail->use(function (Helpers $helpers): void {
             $helpers->registerHelper('complete', function (Invocation $invocation, callable $next) {
-                $private = clone $invocation;
-                $upcoming = $next($private);
+                $request = new RequestBuilder();
 
-                if (!$invocation->isBlock) {
-                    $request = new RequestBuilder()
-                        ->setPrompt($invocation->buffer)
-                        ->setStop($invocation->hash['stop'] ?? '')
-                        ->build();
-                    $generator = new Completion($request)();
+                if (isset($invocation->hash['max'])) {
+                    $request->setMaxTokens((int)$invocation->hash['max']);
+                }
+                if (isset($invocation->hash['stop'])) {
+                    $request->setStop(trim($invocation->hash['stop'], '"\''));
+                }
+                $prompt = '# Instructions';
+                $prompt .= PHP_EOL;
+                if (!$invocation->isBlock()) {
+                    $prompt .= 'Complete the document provided.';
+                    $prompt .= '# Input';
+                    $prompt .= PHP_EOL;
+                    $prompt .= $invocation->getBuffer();
+
+                    $request->setPrompt($prompt);
+                    $generator = new Completion($request->build())();
                     while ($generator->valid()) {
                         $chunk = $generator->current();
                         yield $chunk;
                         $generator->next();
                     }
-                    yield from $upcoming;
+                    yield from $next($invocation);
 
                     return;
                 }
-                $prompt = implode(iterator_to_array($upcoming, false));
-                $request = new RequestBuilder()
-                    ->setPrompt($prompt . PHP_EOL . $invocation->buffer)
-                    ->setStop($invocation->hash['stop'] ?? '')
-                    ->build();
-                yield from new Completion($request)();
+                $prompt .= implode(iterator_to_array($invocation->blockContent(), false));
+                $prompt .= '# Preceding document';
+                $prompt .= PHP_EOL;
+                $prompt .= $invocation->getBuffer();
+                $request->setPrompt($prompt);
+                yield from new Completion($request->build())();
+                yield from $next($invocation);
             });
 
             $helpers->registerHelper('capture', function (Invocation $invocation, callable $next) {
                 $key = $invocation->args[0];
-                $upcoming = $next($invocation);
+
                 $schema = [
                     'type' => 'array',
                     'items' => [
-                        'type' => 'string'
-                    ]
+                        'type' => 'string',
+                    ],
                 ];
-                $prompt = $invocation->buffer;
-                if ($invocation->isBlock) {
-                    $prompt .= PHP_EOL . implode(iterator_to_array($upcoming, false));
+                $prompt = '# Instructions';
+                $prompt .= PHP_EOL;
+                $prompt .= 'Extract data based on the provided input. Always respond in JSON format.';
+                if ($invocation->isBlock()) {
+                    $prompt .= PHP_EOL;
+                    $prompt .= PHP_EOL . implode(iterator_to_array($invocation->blockContent($invocation), false));
+                    $prompt .= PHP_EOL;
                 }
-                $prompt .= PHP_EOL . "Return as JSON";
-
+                $prompt .= '# Input';
+                $prompt .= PHP_EOL;
+                $prompt .= $invocation->getBuffer();
 
                 $request = new RequestBuilder()
                     ->setPrompt($prompt)
-//                        ->setStop($invocation->hash['stop'] ?? '')
-                    ->setResponseFormat(new ResponseFormat(
-                        'json_schema',
-                        [
-                            'name' => 'list',
-                            'schema' => $schema,
-                        ]
-                    ))
+                    //                        ->setStop($invocation->hash['stop'] ?? '')
+                    ->setResponseFormat(
+                        new ResponseFormat(
+                            'json_schema',
+                            [
+                                'name' => 'list',
+                                'schema' => $schema,
+                            ]
+                        )
+                    )
                     ->build();
                 $generator = new Chat($request)();
                 $result = implode(iterator_to_array($generator, false));
                 $decoded = json_decode($result, true);
                 $invocation->data[$key] = $decoded;
-                if (!$invocation->isBlock) {
-                    yield from $upcoming;
-                }
-                return yield '';
+                return yield from $next($invocation);
             });
         });
     }
