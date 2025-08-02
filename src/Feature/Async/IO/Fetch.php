@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Noem\State\Feature\Async\IO;
 
-use Noem\State\Feature\Async\CoroutineScheduler;
-
 readonly class Fetch
 {
     public function __construct(
@@ -36,7 +34,10 @@ readonly class Fetch
             throw new \Exception('Failed to open stream');
         }
 
-        yield from new StreamHandler($resource)();
+        $generator = new StreamHandler($resource)();
+        yield from $generator;
+
+        return $generator->getReturn();
     }
 
     private function compileHeaders(): string

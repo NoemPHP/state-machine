@@ -71,12 +71,12 @@ class CoroutineScheduler
         if (isset($this->queue[$task])) {
             unset($this->queue[$task]);
         }
-        //if (!isset($this->completionCallbacks[$task])) {
-        //    return;
-        //}
-        //foreach ($this->completionCallbacks[$task] as $completionCallback) {
-        //    $completionCallback();
-        //}
+        if (!isset($this->completionCallbacks[$task])) {
+            return;
+        }
+        foreach ($this->completionCallbacks[$task] as $completionCallback) {
+            $completionCallback();
+        }
     }
 
     public function tick(): void
@@ -91,15 +91,17 @@ class CoroutineScheduler
                 continue;
             }
             $this->currentTask = $task;
+
+            if ($task->isFinished()) {
+                $this->cancel($task);
+                continue;
+            }
+
             $yielded = $task->run();
             if ($yielded instanceof Call) {
                 $yielded($task, $this);
             } else {
                 $this->lastResults[$task] = $yielded;
-            }
-
-            if ($task->isFinished()) {
-                $this->cancel($task);
             }
         }
         $this->currentTask = null;

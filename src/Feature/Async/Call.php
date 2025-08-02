@@ -6,6 +6,7 @@ use Closure;
 
 class Call
 {
+
     protected $callback;
 
     public function __construct(callable $callback)
@@ -85,11 +86,12 @@ class Call
     }
 
     /**
-     * @param object|callable():\Generator $generatorFunc
+     * @param callable|\Generator $generatorFunc
+     * @param mixed $buffer
      *
      * @return Call
      */
-    public static function call(callable|\Generator $generatorFunc): Call
+    public static function call(callable|\Generator $generatorFunc, mixed &$buffer = []): Call
     {
         if (is_array($generatorFunc)) {
             throw new \TypeError('we only accept objects');
@@ -97,13 +99,19 @@ class Call
         assert(is_object($generatorFunc));
 
         return new Call(
-            function (Task $task, CoroutineScheduler $scheduler) use ($generatorFunc) {
+            function (Task $task, CoroutineScheduler $scheduler) use ($generatorFunc, &$buffer) {
                 $scheduler->pause($task);
-                $newTask = $scheduler->enqueue(
-                    $generatorFunc instanceof \Generator
-                        ? $generatorFunc
-                        : $generatorFunc()
-                );
+                $generatorFunc = $generatorFunc instanceof \Generator
+                    ? $generatorFunc
+                    : $generatorFunc();
+                $wrapped = function () use ($generatorFunc, &$buffer) {
+                    foreach ($generatorFunc as $item) {
+                        $buffer[] = $item;
+                        yield $item;
+                    }
+                    return $generatorFunc->getReturn();
+                };
+                $newTask = $scheduler->enqueue($wrapped());
                 $task->setSendValue($newTask);
                 $scheduler->onComplete(
                     $newTask,

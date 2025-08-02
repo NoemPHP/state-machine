@@ -17,6 +17,7 @@ use Noem\State\Middleware\Mesh;
  */
 class Ornament
 {
+
     private Mesh $mesh;
 
     private array $dependencies = [];
@@ -52,11 +53,36 @@ class Ornament
     {
         //$this->mesh->memoize($this->shouldMemoize(...));
         $this->mesh->extend(
-            null,
+            $this->trackOffsetExists(...),
             $this->trackOffsetGet(...),
             $this->trackOffsetSet(...),
             $this->trackOffsetUnset(...)
         );
+    }
+    /**
+     * Middleware function to track offsetExists operations on the mesh.
+     *
+     * If the accessed offset matches the defined key, it checks if the resolved value is available.
+     * Otherwise, it delegates to the next middleware in the chain.
+     *
+     * @param mixed $offset The offset being checked for existence.
+     * @param callable $next The next middleware in the chain.
+     *
+     * @return bool True if the offset exists or has been resolved; otherwise, false.
+     */
+    public function trackOffsetExists(mixed $offset, callable $next): bool
+    {
+        if ($offset !== $this->key) {
+            return $next($offset);
+        }
+        if ($this->isResolved) {
+            return true;
+        }
+        if (!$this->isResolving) {
+            $this->startResolution();
+        }
+
+        return $next($offset);
     }
 
     /**
