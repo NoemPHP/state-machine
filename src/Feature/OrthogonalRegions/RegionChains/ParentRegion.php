@@ -14,16 +14,16 @@ class ParentRegion
     {
     }
 
-    public function of(Region $childRegion): ?Region
-    {
-        $list = ($this->connectedRegions)(new Connection($childRegion, false, 0));
-        if (empty($list)) {
-            return null;
-        }
-        if (count($list) > 2) {
-            throw new \RuntimeException('There cannot be more than one parent of a region');
-        }
-
-        return $list[0];
-    }
+    //public function of(Region $childRegion): ?Region
+    //{
+    //    $list = ($this->connectedRegions)(new Connection($childRegion, false, 0));
+    //    if (empty($list)) {
+    //        return null;
+    //    }
+    //    if (count($list) > 2) {
+    //        throw new \RuntimeException('There cannot be more than one parent of a region');
+    //    }
+    //
+    //    return $list[0];
+    //}
 }
