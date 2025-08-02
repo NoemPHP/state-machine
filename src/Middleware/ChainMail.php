@@ -13,6 +13,7 @@ use TypeError;
  */
 class ChainMail
 {
+
     /**
      * @var array Stores dependency providers indexed by their return types.
      */
@@ -27,6 +28,8 @@ class ChainMail
      * @var Chain Manages the boot sequence with middleware linking.
      */
     private Chain $boot;
+
+    private bool $booted = false;
 
     /**
      * Constructs a new ChainMail instance, initializing the services and boot chain.
@@ -57,7 +60,11 @@ class ChainMail
      */
     public function boot(): self
     {
+        if ($this->booted === true) {
+            return $this;
+        }
         $this->boot->call(null);
+        $this->booted = true;
 
         return $this;
     }

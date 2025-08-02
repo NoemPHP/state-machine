@@ -41,15 +41,15 @@ class Region
      * Triggers an action on this region and its sub-regions.
      *
      * @param object $payload Payload containing data related to the triggered action
+     * @param bool $enqueue
      *
      * @return object Returns the modified payload after processing by all regions involved
-     * @throws ChainException
      */
-    public function trigger(object $payload): object
+    public function trigger(object $payload, bool $enqueue = false): object
     {
         $this->dispatched[] = $payload;
 
-        $this->doDispatch();
+        !$enqueue && $this->doDispatch();
 
         return $payload;
     }
@@ -84,6 +84,7 @@ class Region
         /**
          * Transitions are processed in the order they were defined.
          * This means that if multiple transitions have the same trigger, only the first one will be executed.
+         * TODO: This should be executed AFTER the Chain has run, not within its provider
          */
         if (isset($this->transitions[$this->currentState])) {
             foreach ($this->transitions[$this->currentState] as $target => $guards) {
@@ -117,7 +118,7 @@ class Region
         $this->dispatched = [];
         $provider = fn(Params\Action $ctx): string => $this->processTrigger($ctx->payload);
         foreach ($dispatched as $trigger) {
-            $context = new Params\Action($this->currentState, (object)$trigger);
+            $context = new Params\Action($this, (object)$trigger);
             ($this->actionChain)->withProvider($provider)->call($context);
         }
     }

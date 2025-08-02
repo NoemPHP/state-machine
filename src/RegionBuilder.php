@@ -6,19 +6,20 @@ namespace Noem\State;
 
 use ArrayAccess;
 use Noem\State\Chains\ConnectedRegions;
+use Noem\State\Chains\Params\BuildParams;
 use Noem\State\Chains\PrepareInvokable;
 use Noem\State\Feature\Feature;
 use Noem\State\Middleware\ChainMail;
+use Noem\State\Middleware\Mesh;
 
 class RegionBuilder
 {
+
     protected Events $events;
 
     protected array $states = [];
 
     protected array $transitions = [];
-
-    protected array $cascadingContext = [];
 
     protected ?string $initial = null;
 
@@ -155,20 +156,6 @@ class RegionBuilder
     }
 
     /**
-     * Specifies keys that should be inherited through multiple regions
-     *
-     * @param array $keys List of key names to inherit
-     *
-     * @return self This builder instance, allowing chaining
-     */
-    public function inherits(array $keys): self
-    {
-        $this->cascadingContext = $keys;
-
-        return $this;
-    }
-
-    /**
      * Registers action event handlers per state
      *
      * @param string $state Name of the state where the handler should apply
@@ -294,10 +281,13 @@ class RegionBuilder
      *
      * @return Region Newly built Region instance
      */
-    public function build(?bool $skipMiddlewares = false): Region
+    public function build(Mesh|iterable|null $featureArgs = null, ?bool $skipMiddlewares = false): Region
     {
         $this->chainMail->boot();
-        $enhance = $this->chainMail->get(Chains\EnhanceRegionBuilder::class);
+        $enhance = $this
+            ->chainMail
+            ->get(Chains\EnhanceRegionBuilder::class)
+            ->withProvider(fn() => $this);
 
         $provider = function (RegionBuilder $builder) {
             $guardChain = $this->chainMail->get(Chains\Guard::class);
@@ -321,7 +311,7 @@ class RegionBuilder
         };
         $builder = $this;
         if (!$skipMiddlewares) {
-            $builder = $enhance->call($this);
+            $builder = $enhance->call(new BuildParams($this, $featureArgs));
         }
 
         return $this->buildChain->withProvider($provider)->call($builder);
