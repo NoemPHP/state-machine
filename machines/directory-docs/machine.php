@@ -13,26 +13,33 @@ use Noem\State\Feature\OrthogonalRegions\OrthogonalRegions;
 use Noem\State\Feature\Template\TemplateFeature;
 use Noem\State\RegionBuilder;
 
-require __DIR__ . '/../../vendor/autoload.php';
-$yaml = file_get_contents(__DIR__ . '/machine.yml');
+require __DIR__.'/../../vendor/autoload.php';
+$yaml = file_get_contents(__DIR__.'/machine.yml');
 $helpers = [
     'php' => new PhpEvalHelper(),
 ];
 
 $region = new RegionBuilder()->enableFeatures(
-    new RegionLoader()->withYamlSupport($yaml, $helpers),
+    new RegionLoader(),
     new ExtendedState(),
     new TemplateFeature(),
     new AiFeature(),
     new AsyncFeature(),
     new OrthogonalRegions(),
     new JsonSchemaFeature(),
-)->build();
+)->build(
+    [
+        'loader' => [
+            'yaml' => $yaml,
+            'yamlHelpers' => $helpers,
+        ],
+    ]
+);
 while (!$region->isFinal()) {
     $region->trigger(
         (object)[
-            'workingDir' => __DIR__ . '/../../src',
-            'template' => file_get_contents(__DIR__ . '/template.md'),
+            'workingDir' => __DIR__.'/../../src',
+            'template' => file_get_contents(__DIR__.'/template.md'),
         ]
     );
 }

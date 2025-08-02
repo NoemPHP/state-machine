@@ -8,7 +8,7 @@ context:
         You will be given text processing/completion tasks instructing you to provide the desired output for further processing.
         So pay attention to organically mesh your output with the preceding content and avoid redundancies and repetitive introductions.
         Thus, you are forbidden from engaging in any kind of conversation and you must never add any context, examples and explanations.
-        Never refer to the context you are given, so avoid saying things like "Based on the provided code (...)".
+        Never refer to the context you are given, so avoid phrases like "Based on the provided code (...)".
         Use structured, organized language. Ask clarifying questions to gather essential information and present your thoughts in a clear, methodical manner.
         Omit needless words. Vigorous writing is concise. A sentence should contain no unnecessary words, a paragraph no unnecessary sentences, for the same reason that a drawing should have no unnecessary lines and a machine no unnecessary parts. This requires not that the writer make all their sentences short, or that they avoid all detail and treat their subjects only in outline, but that they make every word tell.
         Use the active voice. Prefer concrete, physical language and analogies.
@@ -67,11 +67,14 @@ states:
       # language=injectablephp
       - run: !php |
           return function(object $trigger){
+            echo "Preparing directory\n"; 
+          
             $this->set('files', null);
             $this->set('result', null);
             $directories = $this->get('directories');
             if (!empty($directories)) {
                 $currentDir = array_shift($directories);
+                echo "Preparing context for directory '$currentDir'\n"; 
                 $this->set('directories', $directories);
                 $this->set('currentDir', $currentDir);
             }
@@ -84,13 +87,14 @@ states:
       - run: !php |
           use \Noem\State\Feature\Async\Call;
           return function (object $trigger) {
-          echo 'was ist los?'.PHP_EOL;
-            $this->set('result', 'lol');
-            return;
+              yield;
+            echo "Applying README template in {$this->get('currentDir')}\n";
             $files=glob($this->get('currentDir').'/*.{js,php}', \GLOB_BRACE);
+            //var_dump($files);
             $this->set('files', $files);
-            $this->set('allFiles', yield Call::call($this->template($this->get('allFilesTemplate'))));
-          
+            $allFiles= iterator_to_array($this->template($this->get('allFilesTemplate')));
+            $this->set('allFiles', $allFiles);
+          //var_dump($this->get('allFiles'));
             $template = $this->template($trigger->template);
             assert($template instanceof \Generator);
             $result = '';
@@ -99,7 +103,7 @@ states:
               echo $chunk;
               $result .= $chunk;
               $template->next();
-              yield;
+              //yield;
             }
             $this->set('result', $result);
             
@@ -110,7 +114,7 @@ states:
         guard: !php |
           return function (object $trigger):bool {
             $result=$this->get('result');
-            echo $result;
+            //echo $result;
             return $result!==null;
           }
   - name: flush
@@ -125,8 +129,8 @@ states:
         # language=injectablephp
         guard: !php |
           return function (object $trigger):bool {
-            echo 'checking dirs'; 
-            var_dump(empty($this->get('directories')));
+            echo "checking dirs\n"; 
+            var_dump($this->get('directories'));
             return !empty($this->get('directories'));
           }
       - target: finished
