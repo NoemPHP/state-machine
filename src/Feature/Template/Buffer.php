@@ -6,7 +6,6 @@ namespace Noem\State\Feature\Template;
 
 class Buffer implements \Stringable
 {
-
     private array $chunks = [];
 
     public function add(string $chunk): void

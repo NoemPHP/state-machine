@@ -9,7 +9,6 @@ use Noem\State\RegionBuilder;
 
 class BuildParams extends Mesh
 {
-
     public function __construct(
         public readonly RegionBuilder $builder,
         private ?iterable &$params = [],
