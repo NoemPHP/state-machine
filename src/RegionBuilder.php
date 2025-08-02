@@ -14,7 +14,6 @@ use Noem\State\Middleware\Mesh;
 
 class RegionBuilder
 {
-
     protected Events $events;
 
     protected array $states = [];

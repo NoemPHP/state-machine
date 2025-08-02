@@ -12,7 +12,6 @@ use Noem\State\Middleware\Chain;
  */
 class BoundAccess extends Chain
 {
-
     public function __construct()
     {
         parent::__construct(function (BoundAccessParams $params) {

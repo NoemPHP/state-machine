@@ -18,7 +18,6 @@ use Noem\State\Region;
 
 class ExtendedState implements Feature
 {
-
     public function __invoke(ChainMail $chainMail): void
     {
         $chainMail->supply(fn(): BoundAccess => new BoundAccess());
