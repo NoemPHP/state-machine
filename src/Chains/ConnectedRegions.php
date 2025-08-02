@@ -51,12 +51,12 @@ class ConnectedRegions extends Chain
                         continue;
                     }
 
-                    //if (
-                    //    $context->hasFlag(Connection::RECEIVE_META)
-                    //    && $connection->hasFlag(Connection::RECEIVE_META)
-                    //) {
-                    //    continue;
-                    //}
+                    if (
+                        $context->hasFlag(Connection::RECEIVE_META)
+                        && !$connection->hasFlag(Connection::RECEIVE_META)
+                    ) {
+                        continue;
+                    }
                     /**
                      * TODO implement other flags
                      */

@@ -6,14 +6,17 @@ namespace Noem\State\Chains\Params;
 
 class Action
 {
-    private(set) string $currentState;
+
+    public string $currentState {
+        get {
+            return $this->region->currentState();
+        }
+    }
 
     public object $payload;
 
-
-    public function __construct(string $currentState, object $payload)
+    public function __construct(public readonly \Noem\State\Region $region, object $payload)
     {
-        $this->currentState = $currentState;
         $this->payload = $payload;
     }
 }

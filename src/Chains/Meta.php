@@ -14,6 +14,7 @@ use Noem\State\Middleware\Chain;
 use Noem\State\Middleware\Mesh;
 use Noem\State\Record;
 use Noem\State\Region;
+use Override;
 use SplObjectStorage;
 
 /**
@@ -21,6 +22,7 @@ use SplObjectStorage;
  */
 class Meta extends Chain
 {
+
     /**
      * @var list<Record>
      */
@@ -65,7 +67,7 @@ class Meta extends Chain
                 }
             }
 
-            $metaData->attach($metaParams->region, $mesh);
+            $metaData[$metaParams->region][$metaType] = $mesh;
 
             return $mesh;
         });
@@ -111,6 +113,13 @@ class Meta extends Chain
                 return $metaData[$parentRegion][(string)$metaParams->type];
             }
         );
+    }
+
+    #[Override] public function call(mixed $context): Mesh
+    {
+        assert($context instanceof Params\Meta);
+
+        return parent::call($context);
     }
 
     public function addRecord(Record $record): self
