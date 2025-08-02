@@ -9,7 +9,6 @@ use Symfony\Component\Yaml\Yaml;
 
 readonly class ConvertYaml
 {
-
     public function fromString(string $yaml, array $helpers): array
     {
         $array = Yaml::parse(
