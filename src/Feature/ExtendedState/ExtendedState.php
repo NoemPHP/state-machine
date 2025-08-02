@@ -18,6 +18,7 @@ use Noem\State\Region;
 
 class ExtendedState implements Feature
 {
+
     public function __invoke(ChainMail $chainMail): void
     {
         $chainMail->supply(fn(): BoundAccess => new BoundAccess());
@@ -127,7 +128,13 @@ class ExtendedState implements Feature
                         );
 
                         return $result;
-                        break;
+                    case 'dispatch':
+                        $args = $params->payload;
+                        $trigger = array_shift($args);
+                        $params->region->trigger($trigger, true);
+
+                        return null;
+
                     default:
                         return $next($params);
                 }

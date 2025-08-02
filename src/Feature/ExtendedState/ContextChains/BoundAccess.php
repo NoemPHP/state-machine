@@ -12,10 +12,14 @@ use Noem\State\Middleware\Chain;
  */
 class BoundAccess extends Chain
 {
+
     public function __construct()
     {
         parent::__construct(function (BoundAccessParams $params) {
-            throw new \RuntimeException('bound not found');
+            $type = $params->type === BoundAccessParams::TYPE_METHOD
+                ? 'Method'
+                : 'Property';
+            throw new \RuntimeException("$type '{$params->name}' not found in callback context");
         });
     }
 }
