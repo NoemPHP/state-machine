@@ -11,15 +11,12 @@ use Nette\Schema\Message;
 use Nette\Schema\Processor;
 use Nette\Schema\ValidationException;
 use Noem\State\Connection;
-use Noem\State\Feature\Loader\LoaderChains\Context\LoaderContext;
 use Noem\State\Feature\Loader\LoaderChains\Context\SchemaContext;
 use Noem\State\Feature\Loader\LoaderChains\Schema;
 use Noem\State\Feature\Loader\LoaderChains\TransformArray;
-use Noem\State\Feature\OrthogonalRegions\SuperState;
-use Noem\State\Region;
 use Noem\State\RegionBuilder;
 
-class ArrayLoaderMiddleware
+class ProcessArray
 {
     public function __construct(
         private readonly Schema $schema,
@@ -27,20 +24,19 @@ class ArrayLoaderMiddleware
     ) {
     }
 
-    public function __invoke(LoaderContext $context, callable $next, callable $first): RegionBuilder
+    public function fromData(array $data, RegionBuilder $builder): RegionBuilder
     {
-        $builder = $next($context);
-        assert($builder instanceof RegionBuilder);
         /**
          * If a sub-region is being built, we need a separate builder for it since the current builder is already
          * dedicated to the parent region.
          * However, the middleware configuration needs to be passed on, which is why the new instance must be
          * received from an existing one.
          */
-        if ($context->recursion) {
+        static $recursion;
+        if ($recursion) {
             $builder = $builder->newInstance();
         }
-        $array = (array)$this->transformArray->call($context->data);
+        $array = (array)$this->transformArray->call($data);
 
         $this->assertValidSchema($array);
         [$states, $regions, $transitions, $callbacks] = $this->extractConfig($array['states'] ?? []);
@@ -48,9 +44,12 @@ class ArrayLoaderMiddleware
         $builder->setStates(...$states);
         foreach ($regions as $state => $subRegions) {
             foreach ($subRegions as $region) {
-                $context->data = $region;
-                $context->recursion = true;
-                $subRegion = $first($context)->build(true);
+                $data = $region;
+                $subRegion = $builder->newInstance()->build([
+                    'loader' => [
+                        'array' => $data,
+                    ],
+                ]);
                 $builder->connect(
                     $subRegion,
                     Connection::DYNAMIC
@@ -60,7 +59,6 @@ class ArrayLoaderMiddleware
                     fn(Connection $c) => $c->local->currentState() === $state
                 );
             }
-            $context->recursion = false;
         }
         foreach ($transitions as $state => $stateTransitions) {
             foreach ($stateTransitions as $transition) {
@@ -178,7 +176,15 @@ class ArrayLoaderMiddleware
     {
         $run = $definition['run'];
         if (is_callable($run)) {
-            return $run(...);
+            /**
+             * The clone here is important for some edge cases.
+             * Asynchronous coroutines require a connection between the scheduled coroutine task
+             * and its originating generator function.
+             * If two Regions share the same Closure, this could prevent coroutines from being
+             * enqueued properly.
+             * Hence, we ensure that each callback is unique
+             */
+            return clone $run(...);
         }
         throw new \RuntimeException('Invalid "run" callback');
     }

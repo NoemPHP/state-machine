@@ -22,10 +22,11 @@ use Noem\State\Feature\Template\Helpers;
 use Noem\State\Feature\Template\TemplateFeature;
 use Noem\State\Middleware\ChainMail;
 use Noem\State\Region;
+use Noem\State\Test\Integration\RegionBuilderTestCase;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
-class AiFeatureTest extends TestCase
+class AiFeatureTest extends RegionBuilderTestCase
 {
 
     protected ChainMail $chainmail;
@@ -34,25 +35,13 @@ class AiFeatureTest extends TestCase
 
     public function setUp(): void
     {
-        $this->invokeCallback = new InvokeCallback();
-        $this->chainmail = new ChainMail();
-        $meta = \Mockery::mock(Meta::class);
-        $meta->allows('link')->andReturn($meta);
-
-        $this->chainmail->supply(
-            fn(): InvokeCallback => $this->invokeCallback,
-            fn(): Meta => $meta,
-            fn(): Get => new Get(),
-            fn(): Set => new Set(),
-            fn(): \Noem\State\Chains\ExtendedState => new \Noem\State\Chains\ExtendedState(),
-            fn(): ConnectedRegions=> new ConnectedRegions(),
-            fn(): PrepareInvokable=> new PrepareInvokable(),
-//            fn(): BoundAccess => new B()
+        parent::setUp();
+        $this->builder->enableFeatures(
+            new ExtendedState(),
+            new AsyncFeature(),
+            new TemplateFeature(),
+            new AiFeature(),
         );
-        new ExtendedState()($this->chainmail);
-        $async = new AsyncFeature()($this->chainmail);
-        $template = new TemplateFeature()($this->chainmail);
-        $ai = new AiFeature()($this->chainmail);
     }
 
     #[Test]
@@ -103,7 +92,9 @@ class AiFeatureTest extends TestCase
         $region = \Mockery::mock(Region::class);
 
         $factory = new TemplateFactory($this->chainmail->get(Helpers::class));
-        $template = $factory->create('{{#complete max=2}}Say "foo"{{/complete}}{{#complete max=2}}Say "bar"{{/complete}}{{#complete max=2}}Say "baz"{{/complete}}');
+        $template = $factory->create(
+            '{{#complete max=2}}Say "foo"{{/complete}}{{#complete max=2}}Say "bar"{{/complete}}{{#complete max=2}}Say "baz"{{/complete}}'
+        );
         $generator = $template();
 
         $buffer = '';
@@ -132,7 +123,6 @@ class AiFeatureTest extends TestCase
         }
         $this->assertSame('Howdy foo', $buffer);
     }
-
 
     #[Test] public function captureHelper()
     {

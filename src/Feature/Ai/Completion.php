@@ -32,6 +32,7 @@ class Completion
             'stop' => $this->request->stop,
             'max_tokens' => $this->request->maxTokens,
             'temperature' => $this->request->temperature,
+            'frequency_penalty' => 1.5,
             'suffix' => '',
         ];
 

@@ -13,6 +13,7 @@ use PHPUnit\Framework\TestCase;
 
 class TemplateRendererTest extends TestCase
 {
+
     public function testVariable()
     {
         $factory = new TemplateFactory(new Helpers());
@@ -88,13 +89,11 @@ class TemplateRendererTest extends TestCase
         $factory = new TemplateFactory(new Helpers());
         $template = $factory->create(
             <<<TPL
-Howdy {{#each partners}}
- * {{this}}
-{{/each}}   
+/One{{#each numbers}}/{{this}}{{/each}}
 TPL
         );
         $generator = $template([
-            'partners' => ['John', 'Jack'],
+            'numbers' => ['Two', 'Three'],
         ]);
 
         $buffer = '';
@@ -102,13 +101,7 @@ TPL
             $buffer .= $chunk;
         }
         $this->assertSame(
-            <<<TPL
-Howdy    
- * John
-
- * Jack
-
-TPL,
+            '/One/Two/Three',
             $buffer
         );
     }
@@ -148,6 +141,7 @@ TPL,
             yield 'a';
             yield 'b';
             yield 'c';
+            yield from $invocation->blockContent();
             yield from $next($invocation);
         });
         $factory = new TemplateFactory($helpers);
@@ -168,7 +162,7 @@ TPL,
 
     #[Test] public function eachWithAsyncInnerBlock()
     {
-        $filename = TEST_RESOURCES_DIR . '/content.txt';
+        $filename = TEST_RESOURCES_DIR.'/content.txt';
         $helpers = new Helpers();
         $helpers->registerHelper('custom', function (Invocation $invocation, callable $next) use ($filename) {
             $load = new Load($filename);
@@ -186,7 +180,7 @@ TPL,
             $buffer .= $chunk;
         }
         $this->assertSame(
-            file_get_contents($filename) . file_get_contents($filename),
+            file_get_contents($filename).file_get_contents($filename),
             $buffer
         );
     }
@@ -218,7 +212,7 @@ TPL,
             $buffer .= $chunk;
         }
         $this->assertSame(
-            $title . $title,
+            $title.$title,
             $buffer
         );
     }

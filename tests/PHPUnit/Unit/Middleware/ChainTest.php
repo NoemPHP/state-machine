@@ -10,6 +10,7 @@ use PHPUnit\Framework\TestCase;
 
 class ChainTest extends TestCase
 {
+
     public function testInitialCallWithProvider(): void
     {
         $provider = fn($context) => "Result: $context";
@@ -26,12 +27,14 @@ class ChainTest extends TestCase
 
         $middleware1 = function ($context, $next) use (&$executed) {
             $executed[] = 'middleware1';
-            return $next($context) . ' + middleware1';
+
+            return $next($context).' + middleware1';
         };
 
         $middleware2 = function ($context, $next) use (&$executed) {
             $executed[] = 'middleware2';
-            return $next($context) . ' + middleware2';
+
+            return $next($context).' + middleware2';
         };
 
         $chain = new Chain(fn($c) => "base:$c", [$middleware1, $middleware2]);
@@ -56,6 +59,7 @@ class ChainTest extends TestCase
     {
         $middleware = function (&$context, $next) {
             $context .= '-modified';
+
             return $next($context);
         };
 
@@ -71,6 +75,7 @@ class ChainTest extends TestCase
         $calls = 0;
         $middleware = function ($context, $next) use (&$calls) {
             $calls++;
+
             return $next($context);
         };
 
@@ -90,6 +95,7 @@ class ChainTest extends TestCase
         $calls = 0;
         $middleware = function ($context, $next) use (&$calls) {
             $calls++;
+
             return $next($context);
         };
 
@@ -101,6 +107,116 @@ class ChainTest extends TestCase
         $chain->call('test2');
 
         $this->assertEquals(2, $calls);
+    }
+
+    public function testFirstRestartsWithNewInput(): void
+    {
+        $executed = [];
+
+        $middleware1 = function ($context, $next) use (&$executed) {
+            $executed[] = 'middleware1';
+
+            return $next($context);
+        };
+
+        $middleware2 = function ($context, $next, $first) use (&$executed) {
+            static $recursion;// static variable is used for recursion detection
+
+            $executed[] = 'middleware2';
+
+            if (!$recursion) {
+                $recursion = true;
+
+                // Restart the chain with a new input parameter
+                return $first('new-input');
+            }
+
+            return $next($context);
+        };
+
+        $middleware3 = function ($context, $next) use (&$executed) {
+            $executed[] = 'middleware3';
+            $result = "$context + middleware3";
+
+            return $next($result);
+        };
+
+        $chain = new Chain(
+            fn($c) => "base:$c",
+            [$middleware1, $middleware2, $middleware3],
+            1
+        );
+
+        $result = $chain->call('initial-input');
+
+        // Assert that the chain restarted with the new input parameter
+        $this->assertEquals(
+            [
+                'middleware1',
+                'middleware2',
+                'middleware1',
+                'middleware2',
+                'middleware3',
+            ],
+            $executed
+        );
+        $this->assertEquals('base:new-input + middleware3', $result);
+    }
+
+    public function testFirstRestartsWithNewInputObject(): void
+    {
+        $executed = [];
+
+        $middleware1 = function ($context, $next) use (&$executed) {
+            $executed[] = 'middleware1';
+
+            return $next($context);
+        };
+
+        $middleware2 = function ($context, $next, $first) use (&$executed) {
+            static $recursion; // Static variable is used for recursion detection
+
+            $executed[] = 'middleware2';
+
+            if (!$recursion) {
+                $recursion = true;
+
+                // Restart the chain with a new input parameter (DateTime object)
+                return $first(new \DateTime('now'));
+            }
+
+            return $next($context);
+        };
+
+        $middleware3 = function (\DateTime $context, $next) use (&$executed) {
+            $executed[] = 'middleware3';
+            $result = "{$context->format('Y-m-d H:i:s')} + middleware3";
+
+            return $next($result);
+        };
+
+        $chain = new Chain(
+            fn($c) => "base:$c",
+            [$middleware1, $middleware2, $middleware3],
+            1
+        );
+
+        $initialInput = new \DateTime('now');
+        $result = $chain->call($initialInput);
+
+        // Assert that the chain restarted with the new input parameter
+        $this->assertEquals(
+            [
+                'middleware1',
+                'middleware2',
+                'middleware1',
+                'middleware2',
+                'middleware3',
+            ],
+            $executed
+        );
+        $this->assertStringContainsString('base:', (string)$result);
+        $this->assertStringContainsString('+ middleware3', (string)$result);
     }
 
     public function testMaxRestartsPreventsInfiniteLoops(): void
@@ -122,7 +238,7 @@ class ChainTest extends TestCase
         $chain = new Chain(fn($c) => "base:$c");
 
         $chain = $chain->link(function ($context, $next) {
-            return $next($context) . " + addedMiddleware";
+            return $next($context)." + addedMiddleware";
         });
 
         $result = $chain->call('test');

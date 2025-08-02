@@ -25,11 +25,36 @@ class AiFeature implements Feature
                 if (isset($invocation->hash['stop'])) {
                     $request->setStop(trim($invocation->hash['stop'], '"\''));
                 }
-                $prompt = '# Instructions';
+                $prompt = "# Instruction\n\n";
+                $prompt .= <<<'DOC'
+You are a text completion assistant. Your task is to extend the provided text based on the user's instructions.
+
+Rules:
+1. Return only the extended text, with no wrapping formatting or explanations.
+2. The first character of your response must be the first character of the code.
+3. The last character of your response must be the last character of the code.
+4. Instead of using triple backticks (```) or any other markdown, 
+assume the content will be formatted properly by the surrounding application
+5. Do not use any code block indicators, syntax highlighting markers, or any other formatting characters.
+6. Present the text exactly as it would appear in a plain text editor, 
+preserving all whitespace, indentation, and line breaks.
+7. Maintain the original code structure and only make changes as specified by the user's instructions.
+8. Ensure that the extended text is syntactically and semantically correct for the given text type.
+9. Use consistent indentation and follow inferred style guidelines.
+
+## Context
+
+
+DOC;
+
                 $prompt .= PHP_EOL;
                 if (!$invocation->isBlock()) {
                     $prompt .= 'Complete the document provided.';
-                    $prompt .= '# Input';
+                    $prompt .= PHP_EOL;
+                    $prompt .= PHP_EOL;
+                    $prompt .= 'Input:';
+                    $prompt .= PHP_EOL;
+                    $prompt .= PHP_EOL;
                     $prompt .= PHP_EOL;
                     $prompt .= $invocation->getBuffer();
 
@@ -45,10 +70,21 @@ class AiFeature implements Feature
                     return;
                 }
                 $prompt .= implode(iterator_to_array($invocation->blockContent(), false));
-                $prompt .= '# Preceding document';
-                $prompt .= PHP_EOL;
+                $prompt .= <<<'DOC'
+
+## Document (for completion)
+
+
+DOC;
+                //$prompt .= PHP_EOL;
+                //$prompt .= PHP_EOL;
+                //$prompt .= 'Input:';
+                //$prompt .= PHP_EOL;
+                //$prompt .= PHP_EOL;
+                //$prompt .= PHP_EOL;
                 $prompt .= $invocation->getBuffer();
                 $request->setPrompt($prompt);
+                yield '';
                 yield from new Completion($request->build())();
                 yield from $next($invocation);
             });

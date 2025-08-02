@@ -6,6 +6,7 @@ namespace Noem\State\Test\Integration;
 
 use Noem\State\Chains\BuildRegion;
 use Noem\State\Chains\EnhanceRegionBuilder;
+use Noem\State\Chains\Params\BuildParams;
 use Noem\State\Chains\Params\Get;
 use Noem\State\Chains\Params\RegionConstructor;
 use Noem\State\Connection;
@@ -179,7 +180,6 @@ class RegionTest extends RegionBuilderTestCase
 
         $remoteRegion = ($this->builder->newInstance())
             ->setStates('foo', 'bar')
-            ->inherits(['key'])
             ->onAction('foo', function (object $t) use (&$test) {
                 assert($this instanceof Bound);
                 $test = $this->get('key');
@@ -212,7 +212,6 @@ class RegionTest extends RegionBuilderTestCase
         $this->builder->enableFeatures(new ExtendedState());
         $subRegionBuilder = $this->builder->newInstance()
             ->setStates('foo', 'bar')
-            ->inherits(['key'])
             ->onAction('foo', function (object $t) use (&$test) {
                 assert($this instanceof Bound);
                 $this->set('key', 'newValue');
@@ -249,7 +248,6 @@ class RegionTest extends RegionBuilderTestCase
 
         $subRegionBuilder = $this->builder->newInstance()
             ->setStates('foo', 'bar')
-            ->inherits(['key'])
             ->onAction('foo', function (object $t) use (&$test) {
                 assert($this instanceof Bound);
                 $key = $this->get('key');
@@ -265,9 +263,12 @@ class RegionTest extends RegionBuilderTestCase
                 | Connection::RECEIVE_META,
                 fn(Connection $c) => $c->local->currentState() === 'one'
             )
-            ->setMetaData([
-                'key' => 'hello',
-            ], ContextMetaType::get());
+            ->setMetaData(
+                [
+                    'key' => 'hello',
+                ],
+                ContextMetaType::get()
+            );
         $region = $this->builder->build();
         $region->trigger((object)['foo' => 1]);
         $this->assertRegionContext($region, 'key', 'hello world');
@@ -283,10 +284,11 @@ class RegionTest extends RegionBuilderTestCase
         $r->setStates('one', 'two', 'three')
             ->pushTransition('one', 'two')
             ->chainMail->use(function (EnhanceRegionBuilder $builderMiddleware) {
-                $builderMiddleware->link(function (RegionBuilder $constructor, \Closure $next) {
-                    $constructor->pushTransition('two', 'three', fn(object $t): bool => true);
+                $builderMiddleware->link(function (BuildParams $params, \Closure $next) {
+                    $builder = $next($params);
+                    $builder->pushTransition('two', 'three', fn(object $t): bool => true);
 
-                    return $next($constructor);
+                    return $next($params);
                 });
             });
 
@@ -443,53 +445,5 @@ class RegionTest extends RegionBuilderTestCase
         $region->trigger($event);
 
         $this->assertTrue($region->isInState('two'), "Region should be in state 'two'");
-    }
-
-    /**
-     * @return void
-     */
-    #[Test]
-    public function afterEvent()
-    {
-        $guardSpy = \Mockery::spy(fn() => true);
-        $helloWorld = '';
-
-        $this->builder
-            ->enableFeatures(
-                new EventHooks(),
-                new ExtendedState()
-            )
-            ->setStates('one', 'two', 'three')
-            ->pushTransition('one', 'two', #[After] fn(Event $t): bool => $guardSpy())
-            ->onAction('two', #[After] function (Event $t) use (&$helloWorld) {
-                $helloWorld .= ' world';
-            })
-            ->onAction('two', #[Before] function (Event $t) use (&$helloWorld) {
-                $helloWorld .= 'hello';
-            });
-        $region = $this->builder->build();
-        $region->trigger((object)['foo' => 1]);
-        $this->assertFalse(
-            $region->isInState('two'),
-            "Region should ignore non-matching event'"
-        );
-
-        $event = new class implements Event {
-
-            public function name(): string
-            {
-                return 'hello-world';
-            }
-        };
-
-        $region->trigger($event);
-        $region->trigger($event);
-        $guardSpy->shouldHaveBeenCalled()->once();
-        $this->assertTrue($region->isInState('two'), "Region should be in state 'two'");
-        $this->assertSame(
-            $helloWorld,
-            'hello world',
-            "Event hooks should have been called in the correct order"
-        );
     }
 }

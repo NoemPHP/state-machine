@@ -16,13 +16,16 @@ class RequestBuilder extends Mesh
             'baseUrl' => 'http://telvanni:7863/v1',
             'token' => 'sk-111111111111111111111111111111111111111111111111',
             //'model' => 'llama3:8b-text-q4_K_M',
+            //'model' => 'starcoder2:15b-q4_K_M',
             //'model' => 'qwen2.5-coder:14b-base-q5_K_M',
             'model' => 'qwen2.5-coder:14b-instruct-q4_K_M',
+            //'model' => 'gemma3:12b',
+            //'model' => 'qwen3:14b-q4_K_M',
             'prompt' => 'say hello',
             'logprobs' => true,
             'stop' => null,
             'maxTokens' => 2048,
-            'temperature' => 0.9,
+            'temperature' => 0.6,
             'stream' => true,
         ];
         parent::__construct($this->data);

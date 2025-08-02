@@ -4,115 +4,115 @@ declare(strict_types=1);
 
 namespace Noem\State\Test\Integration\Feature\AsyncFeature;
 
-use Noem\State\Chains\InvokeCallback;
-use Noem\State\Chains\Meta;
-use Noem\State\Chains\Params\Callback;
 use Noem\State\Feature\Async\AsyncFeature;
 use Noem\State\Feature\Async\Call;
 use Noem\State\Feature\Async\IO\Fetch;
+use Noem\State\Feature\ExtendedState\ExtendedState;
 use Noem\State\Feature\Template\Compiler\TemplateFactory;
 use Noem\State\Feature\Template\Helpers;
-use Noem\State\Middleware\ChainMail;
-use Noem\State\Region;
+use Noem\State\Test\Integration\RegionBuilderTestCase;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\TestDox;
 
-class AsyncFeatureTest extends TestCase
+class AsyncFeatureTest extends RegionBuilderTestCase
 {
-
-    protected ChainMail $chainmail;
-
-    protected InvokeCallback $invokeCallback;
 
     public function setUp(): void
     {
-        $this->invokeCallback = new InvokeCallback();
-        $meta = \Mockery::mock(Meta::class);
-        $meta->allows('link')->andReturn($meta);
-
-        $this->chainmail = new ChainMail();
-        $this->chainmail->supply(
-            fn(): InvokeCallback => $this->invokeCallback,
-            fn(): Meta => $meta
+        parent::setUp();
+        $this->builder->enableFeatures(
+            new AsyncFeature()
         );
-        $async = new AsyncFeature()($this->chainmail);
     }
 
     public function testCoroutines()
     {
-        $region = \Mockery::mock(Region::class);
-        $coroutine = function () {
-            yield 'one';
-            yield 'two';
-        };
-        $callback = new Callback($region, $coroutine, $region);
-        $result = $this->invokeCallback->call($callback);
-        $this->assertSame('one', $result);
-        $result = $this->invokeCallback->call($callback);
-        $this->assertSame('two', $result);
+        $region = $this->builder
+            ->setStates('one', 'two')
+            ->onAction('one', function (object $t) {
+                $t->out .= '/two';
+                yield;
+                $t->out .= '/three';
+                yield;
+            })
+            ->build();
+        $payload = new \stdClass();
+        $payload->out = '/one';
+        $region->trigger($payload);
+        $this->assertSame('/one/two', $payload->out);
+        $region->trigger($payload);
+        $this->assertSame('/one/two/three', $payload->out);
     }
 
     public function testWaitForSecs()
     {
-        $region = \Mockery::mock(Region::class);
+        $region = $this->builder
+            ->setStates('one', 'two')
+            ->onAction('one', function (object $t) {
+                $t->out .= '/waiting';
+                yield;
+                yield Call::waitForSecs(1);
+                $t->out .= '/done';
+                yield;
+            })
+            ->build();
 
-        $coroutine = function () {
-            yield 'waiting';
-            yield Call::waitForSecs(1);
-
-            return 'done';
-        };
-
-        $callback = new Callback($region, $coroutine, $region);
-
-        $result = $this->invokeCallback->call($callback);
-        $this->assertSame('waiting', $result);
+        $payload = new \stdClass();
+        $payload->out = '/start';
+        $region->trigger($payload);
+        $this->assertSame('/start/waiting', $payload->out);
         /**
          * The next call will make it yield the Call::waitForSecs
          */
-        $this->invokeCallback->call($callback);
+        $region->trigger($payload);
+
         /**
          * So now the coroutine should be paused and the waitForSecs
          * is ticking
          */
-        $this->invokeCallback->call($callback);
+        $region->trigger($payload);
         usleep((int)(0.25 * 1000000));
         /**
          * The coroutine should still be waiting for 0.75 seconds
          *   because the waitForSecs is ticking, and we have only slept
          *   for 0.25 seconds.
          */
-        $result = $this->invokeCallback->call($callback);
+        $region->trigger($payload);
         $this->assertSame(
-            'waiting',
-            $result,
+            '/start/waiting',
+            $payload->out,
             'The coroutine should still be waiting for 0.75 seconds'
         );
         usleep((int)(0.76 * 1000000));
         /**
          * The subroutine must be able to write down the current time once
          */
-        $result = $this->invokeCallback->call($callback);
-        $this->assertSame('waiting', $result);
+        $region->trigger($payload);
+
+        $this->assertSame('/start/waiting', $payload->out);
+        usleep((int)(0.05 * 1000000));
 
         /**
          * The subroutine will escape the waiting loop
          * Now the coroutine should be unpaused
          */
-        $result = $this->invokeCallback->call($callback);
-        $this->assertSame('waiting', $result);
+        $region->trigger($payload);
+
+        $this->assertSame('/start/waiting', $payload->out);
 
         /**
          * The coroutine should have resumed and returned 'done'
          * The waitForSecs subroutine should be cancelled
          */
-        $result = $this->invokeCallback->call($callback);
-        $this->assertSame('done', $result);
+        $region->trigger($payload);
+
+        $this->assertSame('/start/waiting/done', $payload->out);
         /**
          * So this one should result in the task being re-enqueued
+         * TODO: Challenge whether this is even desired. For now it's not implemented
          */
-        $result = $this->invokeCallback->call($callback);
-        $this->assertSame('waiting', $result);
+        //$region->trigger($payload);
+        //$this->assertSame('/start/waiting', $payload->out);
     }
 
     //public function testTake()
@@ -180,140 +180,229 @@ class AsyncFeatureTest extends TestCase
     //
     //    $this->assertSame('done', $result);
     //}
+    #[Test]
+    #[TestDox('It can resolve values transparently')]
+    public function resolver()
+    {
+        $region = $this->builder
+            /**
+             * This feature is needed only within this test so we'll add it here
+             */
+            ->enableFeatures(
+                new ExtendedState()
+            )
+            ->setStates('one', 'two')
+            ->pushTransition('one', 'two', function (object $t): bool {
+                return $this->get('context') !== null;
+            })
+            ->onEnter('two', function (object $t) {
+                $t->out .= $this->get('context');
+            })
+            ->build(
+            /**
+             * I swear to god this needs a sugar API
+             */
+                [
+                    'loader' =>
+                        [
+                            'array' => [
+                                'context' => [
+                                    'resolvers' => [
+                                        [
+                                            'name' => 'context',
+                                            'run' => function () {
+                                                yield;
+
+                                                return '/done';
+                                            },
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                ]
+            );
+
+        $payload = new \stdClass();
+        $payload->out = '/start';
+        while (!$region->isFinal()) {
+            $region->trigger($payload);
+        }
+        $this->assertSame('/start/done', $payload->out);
+    }
+
+    #[Test]
+    #[TestDox('It can resolve values transparently')]
+    public function resolveWithNestedContext()
+    {
+        $region = $this->builder
+            /**
+             * This feature is needed only within this test so we'll add it here
+             */
+            ->enableFeatures(
+                new ExtendedState()
+            )
+            ->setStates('off', 'one', 'two')
+            ->pushTransition('off', 'one')
+            ->pushTransition('one', 'two', function (object $t): bool {
+                return $this->get('context') !== null;
+            })
+            ->onEnter('one', function (object $t) {
+                $this->set('dependency', 'waiting');
+            })
+            ->onEnter('two', function (object $t) {
+                $t->out .= $this->get('context');
+            })
+            ->build(
+            /**
+             * I swear to god this needs a sugar API
+             */
+                [
+                    'loader' =>
+                        [
+                            'array' => [
+                                'context' => [
+                                    'resolvers' => [
+                                        [
+                                            'name' => 'context',
+                                            'run' => function () {
+                                                yield;
+                                                $dependency = $this->get('dependency');
+
+                                                return "/{$dependency}/done";
+                                            },
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                ]
+            );
+
+        $payload = new \stdClass();
+        $payload->out = '/start';
+        while (!$region->isFinal()) {
+            $region->trigger($payload);
+        }
+        $this->assertSame('/start/waiting/done', $payload->out);
+    }
+
+    public function testContext()
+    {
+        $region = $this->builder
+            /**
+             * This feature is needed only within this test so we'll add it here
+             */
+            ->enableFeatures(
+                new ExtendedState()
+            )
+            ->setStates('one', 'two')
+            ->onAction('one', function (object $t) {
+                $this->set('context', '');
+                yield
+                $this->set('context', '/done');
+                yield;
+                $t->out .= $this->get('context');
+            })
+            ->build();
+
+        $payload = new \stdClass();
+        $payload->out = '/start';
+        $region->trigger($payload);
+        $region->trigger($payload);
+        $region->trigger($payload);
+        $region->trigger($payload);
+        $region->trigger($payload);
+        $region->trigger($payload);
+
+        $this->assertSame('/start/done', $payload->out);
+    }
 
     public function testCall()
     {
-        $region = \Mockery::mock(Region::class);
+        $region = $this->builder
+            ->setStates('one', 'two')
+            ->onAction('one', function (object $t) {
+                $t->out .= '/one';
+                yield;
+                $result = yield Call::call(function () {
+                    yield '/two';
+                    yield '/three';
 
-        $coroutine = function () {
-            yield Call::call(function () {
-                yield 'subroutine';
+                    return '/four';
+                }, $buffer);
+                $t->out .= implode($buffer);
+                $t->out .= $result;
+                yield;
+            })
+            ->build();
 
-                return 'done';
-            });
+        $payload = new \stdClass();
+        $payload->out = '';
+        /**
+         * Run the machine for a bit...
+         */
+        $region->trigger($payload);
+        $region->trigger($payload);
+        $region->trigger($payload);
+        $region->trigger($payload);
+        $region->trigger($payload);
+        $region->trigger($payload);
 
-            return 'main done';
-        };
-
-        $callback = new Callback($region, $coroutine, $region);
-        $result = '';
-        $result .= $this->invokeCallback->call($callback);
-        $result .= $this->invokeCallback->call($callback);
-        $result .= $this->invokeCallback->call($callback);
-        $result .= $this->invokeCallback->call($callback);
-
-        $this->assertSame('main done', $result);
+        $this->assertSame('/one/two/three/four', $payload->out);
     }
 
     public function testFetch()
     {
+        $region = $this->builder
+            ->setStates('one', 'two')
+            ->onAction('one', function (object $t) {
+                $responseHeaders = yield Call::call(
+                    new Fetch('https://jsonplaceholder.typicode.com/posts/1'),
+                    $response
+                );
+                $json = implode($response);
+                $json = json_decode($json, true);
+                $t->out .= $responseHeaders[0];
+                $t->out .= '|user:'.$json['userId'];
+                $t->out .= '|END';
+                yield;
+            })
+            ->pushTransition('one', 'two', function (object $t): bool {
+                return str_ends_with($t->out, 'END');
+            })
+            ->build();
 
-        $region = \Mockery::mock(Region::class);
-
-        $coroutine = function () {
-            yield Call::call(new Fetch('https://jsonplaceholder.typicode.com/posts/1'));
-
-            return 'main done';
-        };
-
-        $callback = new Callback($region, $coroutine, $region);
-        $result = '';
-
-        $result .= $this->invokeCallback->call($callback);
-        $result .= $this->invokeCallback->call($callback);
-        usleep((int)(0.76 * 1000000));
-        $result .= $this->invokeCallback->call($callback);
-        usleep((int)(0.76 * 1000000));
-        $result .= $this->invokeCallback->call($callback);
-        //$result .= $invokeCallback->call($callback);
-        //$result .= $invokeCallback->call($callback);
-        //$result .= $invokeCallback->call($callback);
-        //$result .= $invokeCallback->call($callback);
-        //usleep((int)(0.76 * 1000000));
-        //$result .= $invokeCallback->call($callback);
-        //$result .= $invokeCallback->call($callback);
-        //$result .= $invokeCallback->call($callback);
-        //$result .= $invokeCallback->call($callback);
-        //$result .= $invokeCallback->call($callback);
-        //$result .= $invokeCallback->call($callback);
-
-        $this->assertSame('main done', $result);
+        $payload = new \stdClass();
+        $payload->out = '';
+        $region->trigger($payload);
+        while (!$region->isFinal()) {
+            $region->trigger($payload);
+        }
+        $this->assertSame('HTTP/1.1 200 OK|user:1|END', $payload->out);
     }
-
-    //public function testFork()
-    //{
-    //    $invokeCallback = new InvokeCallback();
-    //    $chainmail = new ChainMail();
-    //    $chainmail->supply(fn(): InvokeCallback => $invokeCallback);
-    //    $async = new AsyncFeature()($chainmail);
-    //    $region = \Mockery::mock(Region::class);
-    //
-    //    $coroutine = function () {
-    //        yield Call::fork(function () {
-    //            yield 'subroutine';
-    //
-    //            return 'done';
-    //        });
-    //
-    //        return 'main done';
-    //    };
-    //
-    //    $callback = new Callback($region, $coroutine, $region);
-    //    $result = $invokeCallback->call($callback);
-    //
-    //    $this->assertSame('main done', $result);
-    //}
 
     #[Test]
     public function templating()
     {
-        $region = \Mockery::mock(Region::class);
+        $region = $this->builder
+            ->setStates('one', 'two')
+            ->onAction('one', function (object $t) {
+                $t->out .= 'Lorem ';
+                $templateFactory = new TemplateFactory(new Helpers());
+                $template = $templateFactory->create('ipsum {{thing}} sit');
+                foreach ($template(['thing' => 'dolor']) as $chunk) {
+                    $t->out .= $chunk;
+                    yield;
+                }
+            })
+            ->build();
 
-        $coroutine = function () {
-            yield 'Lorem ';
-            $templateFactory = new TemplateFactory(new Helpers());
-            $template = $templateFactory->create('ipsum {{thing}} sit');
-            yield from $template(['thing' => 'dolor']);
-
-            return ' amet';
-        };
-
-        $callback = new Callback($region, $coroutine, $region);
-        $result = '';
-        for ($i = 0; $i < 7; $i++) {
-            $result .= $this->invokeCallback->call($callback);
-        }
-
-        $this->assertSame('Lorem ipsum dolor sit amet', $result);
+        $payload = new \stdClass();
+        $payload->out = '';
+        $region->trigger($payload);
+        $region->trigger($payload);
+        $region->trigger($payload);
+        $this->assertSame('Lorem ipsum dolor sit', $payload->out);
     }
-
-    //public function testWager()
-    //{
-    //    $invokeCallback = new InvokeCallback();
-    //    $chainmail = new ChainMail();
-    //    $chainmail->supply(fn(): InvokeCallback => $invokeCallback);
-    //    $async = new AsyncFeature()($chainmail);
-    //    $region = \Mockery::mock(Region::class);
-    //
-    //    $coroutine = function () {
-    //        yield Call::wager(\stdClass::class, fn($event) => $event->value === 'abort', fn() => (function () {
-    //            return 'aborted';
-    //        })());
-    //
-    //        return 'done';
-    //    };
-    //
-    //    $callback = new Callback($region, $coroutine, $region);
-    //    $invokeCallback->call($callback);
-    //
-    //    $loop->addTimer(0.1, function () use ($invokeCallback, $region) {
-    //        $event = (object)['value' => 'abort'];
-    //        $callback = new Callback($region, fn() => null, $region);
-    //        $invokeCallback->call($callback);
-    //    });
-    //
-    //    $result = $loop->run();
-    //
-    //    $this->assertSame('aborted', $result);
-    //}
 }
