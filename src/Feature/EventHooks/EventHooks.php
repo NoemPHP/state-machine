@@ -33,7 +33,7 @@ class EventHooks implements Feature
             InvokeCallback $invokeCallback,
         ): void {
             /**
-             * This is the action middleware that wraps around the actual action execution.
+             * This middleware wraps around the actual action execution.
              *   It creates two new events: one "Before" event and one "After" event.
              *   These events are then dispatched before and after the actual action.
              *   For those special events, the middleware is restarted so they pass through the entire chain
