@@ -6,7 +6,9 @@ namespace Noem\State\Feature\JsonSchema;
 
 use Nette\Schema\Elements\Structure;
 use Nette\Schema\Expect;
+use Noem\State\Chains\EnhanceRegionBuilder;
 use Noem\State\Chains\Meta;
+use Noem\State\Chains\Params\BuildParams;
 use Noem\State\Feature\ExtendedState\ContextMetaType;
 use Noem\State\Feature\Feature;
 use Noem\State\Feature\Loader\LoaderChains\Context\SchemaContext;
@@ -16,12 +18,13 @@ use Noem\State\RegionBuilder;
 
 class JsonSchemaFeature implements Feature
 {
+
     public function __invoke(ChainMail $chainMail): void
     {
         $chainMail->supply()->use(
             function (
-                ?LoaderChains\Schema $schema,
-                ?LoaderChains\Loader $loader
+                EnhanceRegionBuilder $enhanceRegionBuilder,
+                ?LoaderChains\Schema $schema
             ) {
                 /**
                  * Extend the region schema to support the 'regions' item within a state config
@@ -54,8 +57,11 @@ class JsonSchemaFeature implements Feature
                 /**
                  * Setup schema defaults through the builder chains
                  */
-                $loader?->link(function (LoaderChains\Context\LoaderContext $context, callable $next) {
-                    $data = $context->data;
+                $enhanceRegionBuilder?->link(function (BuildParams $context, callable $next) {
+                    if (!isset($context['loader']['array'])) {
+                        return $next($context);
+                    }
+                    $data = $context['loader']['array'];
                     if (!isset($data['context']['schema'])) {
                         return $next($context);
                     }
