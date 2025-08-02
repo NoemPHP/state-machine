@@ -33,13 +33,13 @@ class TemplateFeature implements Feature
                 }
                 switch ($params->name) {
                     case 'template':
-                        $medaData = $meta->call(new Params\Meta($params->region, ContextMetaType::get()));
+                        $metaData = $meta->call(new Params\Meta($params->region, ContextMetaType::get()));
                         $args = $params->payload;
                         $key = array_shift($args);
                         $template = $templateFactory->create($key);
 
-                        return (function () use ($template, $medaData) {
-                            $generator = $template($medaData);
+                        return (function () use ($template, $metaData) {
+                            $generator = $template($metaData);
                             $result = '';
                             while ($generator->valid()) {
                                 $chunk = $generator->current();

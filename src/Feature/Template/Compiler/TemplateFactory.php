@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Noem\State\Feature\Template\Compiler;
 
+use Noem\State\Feature\Template\Buffer;
 use Noem\State\Feature\Template\Helpers;
 use Noem\State\Middleware\Chain;
 
@@ -92,12 +93,13 @@ class TemplateFactory
             throw new \RuntimeException("template still open");
         }
 
-        return function (array|\ArrayAccess|null $context = []) {
-            $invocation = new Invocation($context, [], [], $this);
+        return function (array|\ArrayAccess|null $context = []): \Generator {
+            $buffer = new Buffer();
+            $invocation = new Invocation($context, [], [], $buffer);
             $iterator = $this->blockChains->top()->call($invocation);
             while ($iterator->valid()) {
                 $chunk = $iterator->current();
-                $this->buffer .= $chunk;
+                $buffer->add($chunk);
                 yield $chunk;
                 $iterator->next();
             }

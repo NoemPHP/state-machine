@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace Noem\State\Feature\Template\Compiler;
 
+use Noem\State\Feature\Template\Buffer;
 use Noem\State\Middleware\Chain;
 
 class Invocation
 {
+
     public function __construct(
         public array|\ArrayAccess $data,
         public array|\ArrayAccess $args,
         public array|\ArrayAccess $hash,
-        public TemplateFactory $templateFactory,
+        public readonly Buffer $buffer,
         public ?Chain $blockContent = null,
     ) {
         $foo = 1;
@@ -53,7 +55,7 @@ class Invocation
 
     public function getBuffer(): string
     {
-        return $this->templateFactory->getBuffer();
+        return (string)$this->buffer;
     }
 
     public function blockContent(?Invocation $invocation = null): \Generator
