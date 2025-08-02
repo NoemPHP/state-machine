@@ -6,17 +6,25 @@ namespace Noem\State\Feature\Loader\Helper;
 
 class PhpEvalHelper
 {
+
     public function __invoke(string $content): mixed
     {
+        // Set a custom error handler to convert PHP errors to exceptions
+        set_error_handler(function (int $errno, string $errstr, string $errfile, int $errline): bool {
+            throw new \ErrorException($errstr, 0, $errno, $errfile, $errline);
+        });
         try {
-            return eval($content . ';');
+            return eval($content.';');
         } catch (\Throwable $exception) {
             throw new \RuntimeException(
-                $exception->getMessage() . PHP_EOL .
+                $exception->getMessage().PHP_EOL.
                 $this->createFragmentForException($content, $exception),
                 0,
                 $exception
             );
+        } finally {
+            // Restore the original error handler to avoid side effects
+            restore_error_handler();
         }
     }
 
