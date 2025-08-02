@@ -6,7 +6,6 @@ use Closure;
 
 class Call
 {
-
     protected $callback;
 
     public function __construct(callable $callback)

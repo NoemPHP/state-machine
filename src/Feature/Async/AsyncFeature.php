@@ -23,7 +23,6 @@ use Noem\State\RegionBuilder;
 
 class AsyncFeature implements Feature
 {
-
     private \SplObjectStorage $coroutinesByRegion;
 
     /**

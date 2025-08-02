@@ -6,7 +6,6 @@ namespace Noem\State\Feature\Async\IO;
 
 class StreamHandler
 {
-
     /**
      * @var resource
      */
