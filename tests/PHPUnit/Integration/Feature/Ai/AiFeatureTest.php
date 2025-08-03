@@ -63,7 +63,7 @@ class AiFeatureTest extends RegionBuilderTestCase
         $startTime = microtime(true);
 
         while ((microtime(true) - $startTime) < 3) {
-            $result .= $this->invokeCallback->call($callback);
+            $result .= $this->chainmail()->get(InvokeCallback::class)->call($callback);
         }
         $this->assertSame('lol', $result);
     }
