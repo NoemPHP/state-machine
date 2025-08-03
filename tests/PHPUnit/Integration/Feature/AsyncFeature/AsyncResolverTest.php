@@ -35,17 +35,18 @@ class AsyncResolverTest extends TestCase
         $this->connectedRegions = new Chains\ConnectedRegions();
         $this->meta = new Chains\Meta($this->connectedRegions);
         $this->chainmail = new ChainMail();
+        $this->resolve = new Resolvers();
         $this->chainmail->supply(
             fn(): Chains\InvokeCallback => $this->invokeCallback,
             fn(): Chains\Meta => $this->meta,
             fn(): Chains\Get => new Chains\Get(),
             fn(): Chains\Set => new Chains\Set(),
             fn(): Chains\ExtendedState => new Chains\ExtendedState(),
-            fn(): Chains\ConnectedRegions => new Chains\ConnectedRegions()
+            fn(): Chains\ConnectedRegions => new Chains\ConnectedRegions(),
+            fn(): Resolvers => $this->resolve
         );
         new ExtendedState()($this->chainmail);
         $async = new AsyncFeature()($this->chainmail);
-        $this->resolve = $this->chainmail->use(fn(Resolvers $r) => $r);
     }
 
     #[Test]

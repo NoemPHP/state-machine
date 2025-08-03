@@ -47,9 +47,11 @@ class AiFeatureTest extends RegionBuilderTestCase
     #[Test]
     public function completion()
     {
-        $this->chainmail->boot();
+        $region = $this
+            ->builder
+            ->setStates('foo', 'bar')
+            ->build();
 
-        $region = \Mockery::mock(Region::class);
         $coroutine = function () {
             yield from new Completion('Write an essay about cats')();
 
@@ -69,9 +71,10 @@ class AiFeatureTest extends RegionBuilderTestCase
     #[Test]
     public function template()
     {
-        $this->chainmail->boot();
-
-        $region = \Mockery::mock(Region::class);
+        $region = $this
+            ->builder
+            ->setStates('foo', 'bar')
+            ->build();
 
         $factory = new TemplateFactory($this->chainmail->get(Helpers::class));
         $template = $factory->create('A haiku about cats and birds: {{complete}}');
@@ -87,9 +90,10 @@ class AiFeatureTest extends RegionBuilderTestCase
     #[Test]
     public function templateMulti()
     {
-        $this->chainmail->boot();
-
-        $region = \Mockery::mock(Region::class);
+        $region = $this
+            ->builder
+            ->setStates('foo', 'bar')
+            ->build();
 
         $factory = new TemplateFactory($this->chainmail->get(Helpers::class));
         $template = $factory->create(
@@ -107,9 +111,10 @@ class AiFeatureTest extends RegionBuilderTestCase
     #[Test]
     public function templateBlock()
     {
-        $this->chainmail->boot();
-
-        $region = \Mockery::mock(Region::class);
+        $region = $this
+            ->builder
+            ->setStates('foo', 'bar')
+            ->build();
 
         $factory = new TemplateFactory($this->chainmail->get(Helpers::class));
         $template = $factory->create(
@@ -126,9 +131,10 @@ class AiFeatureTest extends RegionBuilderTestCase
 
     #[Test] public function captureHelper()
     {
-        $this->chainmail->boot();
-
-        $region = \Mockery::mock(Region::class);
+        $region = $this
+            ->builder
+            ->setStates('foo', 'bar')
+            ->build();
 
         $factory = new TemplateFactory($this->chainmail->get(Helpers::class));
         $template = $factory->create(
@@ -149,9 +155,10 @@ PROMPT
 
     #[Test] public function captureBlockHelper()
     {
-        $this->chainmail->boot();
-
-        $region = \Mockery::mock(Region::class);
+        $region = $this
+            ->builder
+            ->setStates('foo', 'bar')
+            ->build();
 
         $factory = new TemplateFactory($this->chainmail->get(Helpers::class));
         $template = $factory->create(

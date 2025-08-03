@@ -8,6 +8,7 @@ use Noem\State\Chains\Meta;
 use Noem\State\Chains\Params;
 use Noem\State\Feature\ExtendedState\ContextMetaType;
 use Noem\State\Feature\ExtendedState\ExtendedState;
+use Noem\State\Middleware\ChainMail;
 use Noem\State\Region;
 use Noem\State\RegionBuilder;
 use PHPUnit\Framework\TestCase;
@@ -58,6 +59,18 @@ abstract class RegionBuilderTestCase extends TestCase
         string $message = ''
     ): void {
         $this->assertContext($region, $key, $state, $assumed, $message);
+    }
+
+    protected function chainmail(): ChainMail
+    {
+        $fetcher = function () {
+            /**
+             * @var RegionBuilder $this
+             */
+            return $this->chainMail;
+        };
+
+        return $fetcher->call($this->builder);
     }
 }
 
