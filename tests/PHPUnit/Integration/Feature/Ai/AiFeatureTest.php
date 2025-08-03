@@ -76,7 +76,7 @@ class AiFeatureTest extends RegionBuilderTestCase
             ->setStates('foo', 'bar')
             ->build();
 
-        $factory = new TemplateFactory($this->chainmail->get(Helpers::class));
+        $factory = new TemplateFactory($this->chainmail()->get(Helpers::class));
         $template = $factory->create('A haiku about cats and birds: {{complete}}');
         $generator = $template();
 
@@ -95,7 +95,7 @@ class AiFeatureTest extends RegionBuilderTestCase
             ->setStates('foo', 'bar')
             ->build();
 
-        $factory = new TemplateFactory($this->chainmail->get(Helpers::class));
+        $factory = new TemplateFactory($this->chainmail()->get(Helpers::class));
         $template = $factory->create(
             '{{#complete max=2}}Say "foo"{{/complete}}{{#complete max=2}}Say "bar"{{/complete}}{{#complete max=2}}Say "baz"{{/complete}}'
         );
@@ -116,7 +116,7 @@ class AiFeatureTest extends RegionBuilderTestCase
             ->setStates('foo', 'bar')
             ->build();
 
-        $factory = new TemplateFactory($this->chainmail->get(Helpers::class));
+        $factory = new TemplateFactory($this->chainmail()->get(Helpers::class));
         $template = $factory->create(
             '{{#complete}}A haiku about cats and birds: {{/complete}}'
         );
@@ -136,7 +136,7 @@ class AiFeatureTest extends RegionBuilderTestCase
             ->setStates('foo', 'bar')
             ->build();
 
-        $factory = new TemplateFactory($this->chainmail->get(Helpers::class));
+        $factory = new TemplateFactory($this->chainmail()->get(Helpers::class));
         $template = $factory->create(
             <<<'PROMPT'
 Create a list containing only the words "cat", "dog", "bird"!{{capture list}}
@@ -160,7 +160,7 @@ PROMPT
             ->setStates('foo', 'bar')
             ->build();
 
-        $factory = new TemplateFactory($this->chainmail->get(Helpers::class));
+        $factory = new TemplateFactory($this->chainmail()->get(Helpers::class));
         $template = $factory->create(
             <<<'PROMPT'
 {{#capture list}}Create a list containing only the words "cat", "dog", "bird"!{{/capture}}
