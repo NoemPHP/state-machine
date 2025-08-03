@@ -13,7 +13,6 @@ use TypeError;
  */
 class ChainMail
 {
-
     /**
      * @var array Stores dependency providers indexed by their return types.
      */

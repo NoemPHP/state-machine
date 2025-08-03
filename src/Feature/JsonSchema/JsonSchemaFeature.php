@@ -18,7 +18,6 @@ use Noem\State\RegionBuilder;
 
 class JsonSchemaFeature implements Feature
 {
-
     public function __invoke(ChainMail $chainMail): void
     {
         $chainMail->supply()->use(

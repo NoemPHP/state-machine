@@ -6,7 +6,6 @@ namespace Noem\State\Chains\Params;
 
 class Action
 {
-
     public string $currentState {
         get {
             return $this->region->currentState();

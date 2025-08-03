@@ -29,7 +29,6 @@ use Noem\State\Util\ParameterDeriver;
  */
 class RegionLoader implements Feature
 {
-
     public function __invoke(ChainMail $chainMail): void
     {
         $chainMail
@@ -211,8 +210,7 @@ class RegionLoader implements Feature
                                                     $connection = new Connection(
                                                         $region,
                                                         $subRegion,
-                                                        $flags
-                                                        ,
+                                                        $flags,
                                                         function (Connection $c) use (
                                                             $stateName,
                                                             $guard,

@@ -6,7 +6,6 @@ namespace Noem\State\Feature\Loader\Helper;
 
 class PhpEvalHelper
 {
-
     public function __invoke(string $content): mixed
     {
         // Set a custom error handler to convert PHP errors to exceptions
@@ -14,10 +13,10 @@ class PhpEvalHelper
             throw new \ErrorException($errstr, 0, $errno, $errfile, $errline);
         });
         try {
-            return eval($content.';');
+            return eval($content . ';');
         } catch (\Throwable $exception) {
             throw new \RuntimeException(
-                $exception->getMessage().PHP_EOL.
+                $exception->getMessage() . PHP_EOL .
                 $this->createFragmentForException($content, $exception),
                 0,
                 $exception
