@@ -9,7 +9,7 @@ use Nette\Schema\Expect;
 use Noem\State\Chains;
 use Noem\State\Feature\Feature;
 use Noem\State\Feature\Loader\LoaderChains;
-use Noem\State\Feature\Loader\LoaderChains\Context\SchemaContext;
+use Noem\State\Feature\Loader\LoaderChains\Params\SchemaContext;
 use Noem\State\Feature\OrthogonalRegions\RegionChains\ParentRegion;
 use Noem\State\Middleware\ChainMail;
 

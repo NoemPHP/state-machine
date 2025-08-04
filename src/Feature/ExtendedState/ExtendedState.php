@@ -7,14 +7,12 @@ namespace Noem\State\Feature\ExtendedState;
 use Nette\Schema\Expect;
 use Noem\State\Chains;
 use Noem\State\Chains\Params;
-use Noem\State\Chains\Params\Connection;
 use Noem\State\Feature\ExtendedState\ContextChains\BoundAccess;
 use Noem\State\Feature\ExtendedState\ContextChains\Params\BoundAccessParams;
 use Noem\State\Feature\Feature;
-use Noem\State\Feature\Loader\LoaderChains\Context\SchemaContext;
+use Noem\State\Feature\Loader\LoaderChains\Params\SchemaContext;
 use Noem\State\Middleware\ChainMail;
 use Noem\State\Feature\Loader\LoaderChains;
-use Noem\State\Region;
 
 class ExtendedState implements Feature
 {

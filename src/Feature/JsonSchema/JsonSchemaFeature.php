@@ -11,7 +11,7 @@ use Noem\State\Chains\Meta;
 use Noem\State\Chains\Params\BuildParams;
 use Noem\State\Feature\ExtendedState\ContextMetaType;
 use Noem\State\Feature\Feature;
-use Noem\State\Feature\Loader\LoaderChains\Context\SchemaContext;
+use Noem\State\Feature\Loader\LoaderChains\Params\SchemaContext;
 use Noem\State\Middleware\ChainMail;
 use Noem\State\Feature\Loader\LoaderChains;
 use Noem\State\RegionBuilder;

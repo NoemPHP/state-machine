@@ -14,8 +14,9 @@ use Noem\State\Feature\Loader\LoaderChains;
 use Noem\State\Feature\Async\AsyncChains\Params as AsyncParams;
 use Noem\State\Feature\ExtendedState\ContextMetaType;
 use Noem\State\Feature\Feature;
-use Noem\State\Feature\Loader\LoaderChains\Context\SchemaContext;
+use Noem\State\Feature\Loader\LoaderChains\Params\SchemaContext;
 use Noem\State\Feature\Loader\RegionLoader;
+use Noem\State\Middleware\ChainException;
 use Noem\State\Middleware\ChainMail;
 use Noem\State\Middleware\Mesh;
 use Noem\State\Region;
@@ -39,6 +40,9 @@ class AsyncFeature implements Feature
         $this->callbackTaskMap = new \WeakMap();
     }
 
+    /**
+     * @throws ChainException
+     */
     public function __invoke(ChainMail $chainMail): void
     {
         $chainMail->supply(
