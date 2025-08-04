@@ -9,7 +9,6 @@ use Noem\State\Feature\Loader\RegionSpawnRecord;
 
 class SpawnRegionParams
 {
-
     public function __construct(
         public readonly RegionSpawnRecord $record,
         public readonly Action $action

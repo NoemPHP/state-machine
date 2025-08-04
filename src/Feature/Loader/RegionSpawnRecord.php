@@ -9,7 +9,6 @@ use Noem\State\Region;
 
 class RegionSpawnRecord
 {
-
     public function __construct(
         public readonly Region $parentRegion,
         public readonly string $parentState,

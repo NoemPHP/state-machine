@@ -6,7 +6,6 @@ namespace Noem\State\Feature\Loader;
 
 class RegionSpawnRegistry
 {
-
     private(set) array $records = [];
 
     public function addRecord(RegionSpawnRecord $record)
