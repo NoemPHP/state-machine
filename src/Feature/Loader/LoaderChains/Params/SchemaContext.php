@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Noem\State\Feature\Loader\LoaderChains\Context;
+namespace Noem\State\Feature\Loader\LoaderChains\Params;
 
 use Nette\Schema\Elements\Structure;
 use Nette\Schema\Schema;

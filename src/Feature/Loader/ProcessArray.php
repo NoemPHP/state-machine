@@ -11,7 +11,7 @@ use Nette\Schema\Message;
 use Nette\Schema\Processor;
 use Nette\Schema\ValidationException;
 use Noem\State\Connection;
-use Noem\State\Feature\Loader\LoaderChains\Context\SchemaContext;
+use Noem\State\Feature\Loader\LoaderChains\Params\SchemaContext;
 use Noem\State\Feature\Loader\LoaderChains\Schema;
 use Noem\State\Feature\Loader\LoaderChains\TransformArray;
 use Noem\State\RegionBuilder;
