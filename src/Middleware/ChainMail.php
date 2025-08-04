@@ -13,6 +13,7 @@ use TypeError;
  */
 class ChainMail
 {
+
     /**
      * @var array Stores dependency providers indexed by their return types.
      */
@@ -70,17 +71,24 @@ class ChainMail
 
     /**
      * Adds a middleware callback to the boot chain.
+     * If already booted, if resolves the callback immediately
      *
      * @param callable $callback The middleware callback to add.
      *
      * @return self The current ChainMail instance for method chaining.
+     * @throws ChainException
      */
     public function use(callable $callback): self
     {
-        $this->boot->link(function ($nothing, callable $next) use ($callback) {
-            $this->invoke($callback);
-            $next($nothing);
-        });
+        if (!$this->booted) {
+            $this->boot->link(function ($nothing, callable $next) use ($callback) {
+                $this->invoke($callback);
+                $next($nothing);
+            });
+
+            return $this;
+        }
+        $this->invoke($callback);
 
         return $this;
     }
