@@ -16,7 +16,6 @@ use Noem\State\Util\ParameterDeriver;
  */
 class SpawnRegion extends Chain
 {
-
     public function __construct(
         private readonly ConnectedRegions $connectedRegions
     ) {
