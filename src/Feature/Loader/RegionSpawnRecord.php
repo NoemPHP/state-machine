@@ -10,7 +10,6 @@ use Noem\State\Region;
 
 class RegionSpawnRecord
 {
-
     /**
      * @param Region $parentRegion
      * @param string $parentState
