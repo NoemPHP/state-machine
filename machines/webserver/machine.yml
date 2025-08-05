@@ -139,7 +139,7 @@ states:
                       . "Content-Type: text/html\r\n"
                       . "Date: " . gmdate('r') . "\r\n"
                       . "\r\n";
-                        $this->set('resourceId', get_resource_id($client));
+                      $this->set('resourceId', get_resource_id($client));
                       @fwrite($client, $response);
                       $template = $this->template($this->get('bodyTemplate'));
                       assert($template instanceof \Generator);

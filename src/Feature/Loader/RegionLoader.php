@@ -16,6 +16,7 @@ use Noem\State\Feature\Loader\LoaderChains\TransformArray;
 use Noem\State\Middleware\Chain;
 use Noem\State\Middleware\ChainException;
 use Noem\State\Middleware\ChainMail;
+use Noem\State\Region;
 use Noem\State\RegionBuilder;
 use Noem\State\Util\ParameterDeriver;
 
@@ -40,10 +41,7 @@ class RegionLoader implements Feature
             ->supply(
                 fn(): LoaderChains\Schema => new LoaderChains\Schema(),
                 fn(): LoaderChains\TransformArray => new LoaderChains\TransformArray(),
-                fn(RegionBuilder $b, ConnectedRegions $c): LoaderChains\SpawnRegion => new LoaderChains\SpawnRegion(
-                    $b,
-                    $c
-                ),
+                fn(ConnectedRegions $c): LoaderChains\SpawnRegion => new LoaderChains\SpawnRegion($c),
                 fn(): RegionSpawnRegistry => new RegionSpawnRegistry(),
             )
             ->use($this->convertYaml(...))
@@ -150,44 +148,21 @@ class RegionLoader implements Feature
                     }
                     foreach ($state['spawn'] as $spawnerDefinition) {
                         $stateName = $state['name'];
+                        [
+                            'guard' => $guard,
+                            'region' => $subRegionDefinition,
+                        ] = $spawnerDefinition;
                         $builder->addStep(
-                            function (
-                                RegionBuilder $builder,
-                                callable $next
-                            ) use (
+                            self::regionSpawnStep(
                                 $stateName,
-                                $spawnerDefinition,
-                                $spawnRegistry,
-                            ) {
-                                $region = $next($builder);
-
-                                [
-                                    'guard' => $guard,
-                                    'region' => $subRegionDefinition,
-                                ] = $spawnerDefinition;
-
-                                $defaultSharing = [
-                                    'meta' => true,
-                                ];
-                                $shared = $spawnerDefinition['shared'] ?? [];
-                                $shared = array_merge($defaultSharing, $shared);
-                                $flags = Connection::DYNAMIC
-                                    | Connection::RECEIVE_EVENTS
-                                    | Connection::RECEIVE_ACTIONS;
-                                if ($shared['meta']) {
-                                    $flags = $flags | Connection::RECEIVE_META;
-                                }
-                                $spawnRecord = new RegionSpawnRecord(
-                                    $region,
-                                    $stateName,
-                                    $subRegionDefinition,
-                                    $guard,
-                                    $flags
-                                );
-                                $spawnRegistry->addRecord($spawnRecord);
-
-                                return $region;
-                            }
+                                fn() => $builder->newInstance()->build([
+                                    'loader' => [
+                                        'array' => $subRegionDefinition,
+                                    ],
+                                ]),
+                                $guard,
+                                $spawnRegistry
+                            )
                         );
                     }
                 }
@@ -195,6 +170,48 @@ class RegionLoader implements Feature
                 return $builder;
             }
         );
+    }
+
+    public static function regionSpawnStep(
+        string $stateName,
+        callable $regionFactory,
+        callable $guard,
+        RegionSpawnRegistry $spawnRegistry
+    ): \Closure {
+        return function (
+            RegionBuilder $builder,
+            callable $next
+        ) use (
+            $stateName,
+            $regionFactory,
+            $guard,
+            $spawnRegistry
+        ) {
+            $region = $next($builder);
+
+            $defaultSharing = [
+                'meta' => true,
+            ];
+            $shared = $spawnerDefinition['shared'] ?? [];
+            $shared = array_merge($defaultSharing, $shared);
+            $flags = Connection::DYNAMIC
+                | Connection::RECEIVE_EVENTS
+                | Connection::RECEIVE_ACTIONS;
+            if ($shared['meta']) {
+                $flags = $flags | Connection::RECEIVE_META;
+            }
+
+            $spawnRecord = new RegionSpawnRecord(
+                $region,
+                $stateName,
+                $regionFactory,
+                $guard,
+                $flags
+            );
+            $spawnRegistry->addRecord($spawnRecord);
+
+            return $region;
+        };
     }
 
     public function spawnRegionsOnActions(

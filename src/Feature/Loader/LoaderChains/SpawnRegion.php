@@ -9,7 +9,6 @@ use Noem\State\Connection;
 use Noem\State\Feature\Loader\LoaderChains\Params\SpawnRegionParams;
 use Noem\State\Middleware\Chain;
 use Noem\State\Region;
-use Noem\State\RegionBuilder;
 use Noem\State\Util\ParameterDeriver;
 
 /**
@@ -19,7 +18,6 @@ class SpawnRegion extends Chain
 {
 
     public function __construct(
-        private readonly RegionBuilder $builder,
         private readonly ConnectedRegions $connectedRegions
     ) {
         parent::__construct($this->provider(...));
@@ -45,13 +43,9 @@ class SpawnRegion extends Chain
              */
             return null;
         }
-        $subRegion = $this->builder->newInstance()->build([
-            'loader' => [
-                'array' => $params->record->definition,
-            ],
-        ]);
-        $currentState = $params->record->parentState;
 
+        $currentState = $params->record->parentState;
+        $subRegion = ($params->record->regionFactory)();
         /**
          * Create a Connection with a predicate that ties
          * the newly spawned region to its parent region/state

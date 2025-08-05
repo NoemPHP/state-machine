@@ -11,6 +11,7 @@ use Noem\State\Feature\JsonSchema\JsonSchemaFeature;
 use Noem\State\Feature\Loader\Helper\ContainerGetHelper;
 use Noem\State\Feature\Loader\Helper\PhpEvalHelper;
 use Noem\State\Feature\Loader\RegionLoader;
+use Noem\State\Feature\Loader\RegionSpawnRegistry;
 use Noem\State\Feature\OrthogonalRegions\OrthogonalRegions;
 use Noem\State\Middleware\ChainException;
 use Noem\State\Test\Integration\RegionBuilderTestCase;
@@ -22,38 +23,9 @@ use Psr\Container\NotFoundExceptionInterface;
 class LoaderTest extends RegionBuilderTestCase
 {
 
-    /**
-     * @return void
-     * @throws ChainException
-     */
-    #[Test]
-    #[TestDox('It creates a working state machine from a yaml string')]
-    public function basicYaml()
+    public function setUp(): void
     {
-        // language=yaml
-        $yaml = <<<'YAML'
-states:
-  - name: one
-    transitions:
-      - target: two
-        # language=injectablephp
-        guard: !php |
-          return function(object $trigger): bool{
-            return true;
-          };
-  - name: two
-    onEnter:
-      - run: !get onEnterTwo
-YAML;
-        $spy = \Mockery::spy(fn() => true);
-        $helpers = [
-            'php' => new PhpEvalHelper(),
-            'get' => new ContainerGetHelper($this->createContainer([
-                'onEnterTwo' => function (object $t) use ($spy) {
-                    $spy();
-                },
-            ])),
-        ];
+        parent::setUp();
         $this->builder->enableFeatures(
             new RegionLoader(),
             new ExtendedState(),
@@ -61,18 +33,58 @@ YAML;
             new AsyncFeature(),
             new JsonSchemaFeature()
         );
-        $region = $this->builder->build([
-            'loader' => [
-                'yaml' => $yaml,
-                'yamlHelpers' => $helpers,
-            ],
-        ]);
-        $this->assertRegionContext($region, 'html', null);
-        while (!$region->isFinal()) {
-            $region->trigger((object)['foo' => 'bar']);
-        }
+    }
 
-        $spy->shouldHaveBeenCalled()->once();
+    /**
+     * @return void
+     * @throws ChainException
+     */
+    #[Test]
+    #[TestDox('It spawns a sub-state machine based on a defined trigger')]
+    public function spawnSubMachine()
+    {
+        $this->builder->chainMail->use(function (
+            RegionSpawnRegistry $spawnRegistry
+        ) {
+            $guard = function (object $trigger): bool {
+                return true;
+            };
+            $this->builder->addStep(
+                RegionLoader::regionSpawnStep(
+                    'off',
+                    fn() => $this
+                        ->builder
+                        ->newInstance()
+                        ->setStates('checking', 'check_complete')
+                        ->pushTransition(
+                            'checking',
+                            'check_complete',
+                            function (object $t): bool {
+                                return $t->count >= 4;
+                            }
+                        )
+                        ->build(),
+                    $guard,
+                    $spawnRegistry
+                )
+            );
+        });
+        $region = $this
+            ->builder
+            ->setStates('off', 'on')
+            ->pushTransition('off', 'on')
+            ->build();
+        $this->assertRegionContext($region, 'html', null);
+        $counter = 0;
+        while (!$region->isFinal() && $counter < 12) {
+            $region->trigger((object)['count' => $counter]);
+            $counter++;
+        }
+        $this->assertSame(
+            5,
+            $counter,
+            'Machine should have taken 5 ticks to finish'
+        );
     }
 
     /**
@@ -81,7 +93,7 @@ YAML;
      */
     #[Test]
     #[TestDox('It spawns a working sub-machine')]
-    public function spawnSubMachine()
+    public function spawnSubMachineFromYaml()
     {
         // language=yaml
         $yaml = <<<'YAML'
@@ -138,13 +150,7 @@ YAML;
                 },
             ])),
         ];
-        $this->builder->enableFeatures(
-            new RegionLoader(),
-            new ExtendedState(),
-            new OrthogonalRegions(),
-            new AsyncFeature(),
-            new JsonSchemaFeature()
-        );
+
         $region = $this->builder->build([
             'loader' => [
                 'yaml' => $yaml,
@@ -158,6 +164,52 @@ YAML;
 
         $spy->shouldHaveBeenCalled()->once();
         $subSpy->shouldHaveBeenCalled()->once();
+    }
+
+    /**
+     * @return void
+     * @throws ChainException
+     */
+    #[Test]
+    #[TestDox('It creates a working state machine from a yaml string')]
+    public function basicYaml()
+    {
+        // language=yaml
+        $yaml = <<<'YAML'
+states:
+  - name: one
+    transitions:
+      - target: two
+        # language=injectablephp
+        guard: !php |
+          return function(object $trigger): bool{
+            return true;
+          };
+  - name: two
+    onEnter:
+      - run: !get onEnterTwo
+YAML;
+        $spy = \Mockery::spy(fn() => true);
+        $helpers = [
+            'php' => new PhpEvalHelper(),
+            'get' => new ContainerGetHelper($this->createContainer([
+                'onEnterTwo' => function (object $t) use ($spy) {
+                    $spy();
+                },
+            ])),
+        ];
+        $region = $this->builder->build([
+            'loader' => [
+                'yaml' => $yaml,
+                'yamlHelpers' => $helpers,
+            ],
+        ]);
+        $this->assertRegionContext($region, 'html', null);
+        while (!$region->isFinal()) {
+            $region->trigger((object)['foo' => 'bar']);
+        }
+
+        $spy->shouldHaveBeenCalled()->once();
     }
 
     /**
@@ -234,13 +286,6 @@ YAML;
                 },
             ])),
         ];
-        $this->builder->enableFeatures(
-            new RegionLoader(),
-            new ExtendedState(),
-            new OrthogonalRegions(),
-            new AsyncFeature(),
-            new JsonSchemaFeature()
-        );
         $region = $this->builder->build([
             'loader' => [
                 'yaml' => $yaml,
