@@ -8,6 +8,7 @@ use Noem\State\Chains\DispatchAction;
 use Noem\State\Chains\EnhanceRegionBuilder;
 use Noem\State\Chains\Params;
 use Noem\State\Connection;
+use Noem\State\Connection as C;
 use Noem\State\Feature\Feature;
 use Noem\State\Feature\Loader\LoaderChains\Params\SchemaContext;
 use Noem\State\Feature\Loader\LoaderChains\Params\SpawnRegionParams;
@@ -31,6 +32,7 @@ use Noem\State\Util\ParameterDeriver;
  */
 class RegionLoader implements Feature
 {
+
     /**
      * @throws ChainException
      */
@@ -125,15 +127,12 @@ class RegionLoader implements Feature
      * Enhance the RegionBuilder to handle spawning new regions based on schema definitions.
      */
     public function processSpawnerSchema(
-        EnhanceRegionBuilder $builderEnhancer,
-        RegionSpawnRegistry $spawnRegistry
+        EnhanceRegionBuilder $builderEnhancer
     ): void {
         $builderEnhancer->link(
             function (
                 Params\BuildParams $context,
                 callable $next
-            ) use (
-                $spawnRegistry,
             ) {
                 $builder = $next($context);
                 assert($builder instanceof RegionBuilder);
@@ -151,6 +150,17 @@ class RegionLoader implements Feature
                             'guard' => $guard,
                             'region' => $subRegionDefinition,
                         ] = $spawnerDefinition;
+                        $defaultSharing = [
+                            'meta' => true,
+                        ];
+                        $shared = $spawnerDefinition['shared'] ?? [];
+                        $shared = array_merge($defaultSharing, $shared);
+                        $flags = Connection::DYNAMIC
+                            | Connection::RECEIVE_EVENTS
+                            | Connection::RECEIVE_ACTIONS;
+                        if ($shared['meta']) {
+                            $flags = $flags | Connection::RECEIVE_META;
+                        }
                         $builder->addStep(
                             self::regionSpawnStep(
                                 $stateName,
@@ -160,7 +170,7 @@ class RegionLoader implements Feature
                                     ],
                                 ]),
                                 $guard,
-                                $spawnRegistry
+                                $flags
                             )
                         );
                     }
@@ -175,7 +185,7 @@ class RegionLoader implements Feature
         string $stateName,
         callable $regionFactory,
         callable $guard,
-        RegionSpawnRegistry $spawnRegistry
+        ?int $connectionFlags = C::DYNAMIC | C::RECEIVE_EVENTS | C::RECEIVE_ACTIONS
     ): \Closure {
         return function (
             RegionBuilder $builder,
@@ -184,28 +194,17 @@ class RegionLoader implements Feature
             $stateName,
             $regionFactory,
             $guard,
-            $spawnRegistry
+            $connectionFlags
         ) {
+            $spawnRegistry = $builder->chainMail->invoke(fn(RegionSpawnRegistry $r) => $r);
             $region = $next($builder);
-
-            $defaultSharing = [
-                'meta' => true,
-            ];
-            $shared = $spawnerDefinition['shared'] ?? [];
-            $shared = array_merge($defaultSharing, $shared);
-            $flags = Connection::DYNAMIC
-                | Connection::RECEIVE_EVENTS
-                | Connection::RECEIVE_ACTIONS;
-            if ($shared['meta']) {
-                $flags = $flags | Connection::RECEIVE_META;
-            }
 
             $spawnRecord = new RegionSpawnRecord(
                 $region,
                 $stateName,
                 $regionFactory,
                 $guard,
-                $flags
+                $connectionFlags
             );
             $spawnRegistry->addRecord($spawnRecord);
 

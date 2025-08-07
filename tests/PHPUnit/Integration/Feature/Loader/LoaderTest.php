@@ -47,7 +47,14 @@ class LoaderTest extends RegionBuilderTestCase
             RegionSpawnRegistry $spawnRegistry
         ) {
             $guard = function (object $trigger): bool {
-                return true;
+                static $spawned;
+                if (!$spawned) {
+                    $spawned = true;
+
+                    return true;
+                }
+
+                return false;
             };
             $this->builder->addStep(
                 RegionLoader::regionSpawnStep(
@@ -63,6 +70,9 @@ class LoaderTest extends RegionBuilderTestCase
                                 return $t->count >= 4;
                             }
                         )
+                        ->onEnter('check_complete', function (object $t) {
+                            $this->get('foo');
+                        })
                         ->build(),
                     $guard,
                     $spawnRegistry
@@ -77,6 +87,61 @@ class LoaderTest extends RegionBuilderTestCase
         $this->assertRegionContext($region, 'html', null);
         $counter = 0;
         while (!$region->isFinal() && $counter < 12) {
+            $region->trigger((object)['count' => $counter]);
+            $counter++;
+        }
+        $this->assertSame(
+            5,
+            $counter,
+            'Machine should have taken 5 ticks to finish'
+        );
+    }
+
+    #[Test]
+    #[TestDox('It spawns a sub-state machine based on a defined trigger')]
+    public function spawnMultipleSubMachines()
+    {
+        $guard = function (object $t): bool {
+            return $t->count === 0 || $t->count === 9;
+        };
+        $this->builder->addStep(
+            RegionLoader::regionSpawnStep(
+                'off',
+                fn() => $this
+                    ->builder
+                    ->newInstance()
+                    ->setStates('off', 'checking', 'check_complete')
+                    ->pushTransition('off', 'checking')
+                    ->pushTransition(
+                        'checking',
+                        'check_complete',
+                        function (object $t): bool {
+                            $count = $this->get('count');
+
+                            return $count >= 10;
+                        }
+                    )
+                    ->onEnter('checking', function (object $t) {
+                        $count = (int)$this->get('count');
+
+                        $this->set('count', 0);
+                    })
+                    ->onAction('checking', function (object $t) {
+                        $count = (int)$this->get('count');
+                        $this->set('count', $count + 1);
+                    })
+                    ->build(),
+                $guard
+            )
+        );
+        $region = $this
+            ->builder
+            ->setStates('off', 'on')
+            ->pushTransition('off', 'on')
+            ->build();
+        $this->assertRegionContext($region, 'html', null);
+        $counter = 0;
+        while (!$region->isFinal() && $counter < 99) {
             $region->trigger((object)['count' => $counter]);
             $counter++;
         }

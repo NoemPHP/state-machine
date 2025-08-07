@@ -124,7 +124,7 @@ class Mesh implements ArrayAccess, Iterator
     public function extendWith(array|ArrayAccess &$extension): void
     {
         $this->offsetExistsChain->link(function (mixed $offset, callable $next) use (&$extension): bool {
-            return $next($offset) || isset($extension[$offset]);
+            return isset($extension[$offset]) || $next($offset);
         });
 
         $this->offsetGetChain->link(function (mixed $offset, callable $next) use (&$extension): mixed {
