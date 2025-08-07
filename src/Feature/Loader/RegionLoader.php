@@ -32,7 +32,6 @@ use Noem\State\Util\ParameterDeriver;
  */
 class RegionLoader implements Feature
 {
-
     /**
      * @throws ChainException
      */
