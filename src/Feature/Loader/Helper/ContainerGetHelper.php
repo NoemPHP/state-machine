@@ -8,7 +8,6 @@ use Noem\State\Feature\Loader\Container;
 
 readonly class ContainerGetHelper
 {
-
     private Container $container;
 
     public function __construct(?iterable $container = [])
