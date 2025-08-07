@@ -4,22 +4,20 @@ declare(strict_types=1);
 
 namespace Noem\State\Feature\Loader\Helper;
 
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\ContainerInterface;
-use Psr\Container\NotFoundExceptionInterface;
+use Noem\State\Feature\Loader\Container;
 
 readonly class ContainerGetHelper
 {
-    public function __construct(private ContainerInterface $container)
+
+    private Container $container;
+
+    public function __construct(?iterable $container = [])
     {
+        $this->container = new Container($container);
     }
 
-    /**
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
-     */
     public function __invoke(string $content): mixed
     {
-        return $this->container?->get($content);
+        return $this->container->offsetGet($content);
     }
 }

@@ -40,6 +40,7 @@ class RegionLoader implements Feature
     {
         $chainMail
             ->supply(
+                fn(): Container => new Container(),
                 fn(): LoaderChains\Schema => new LoaderChains\Schema(),
                 fn(): LoaderChains\TransformArray => new LoaderChains\TransformArray(),
                 fn(ConnectedRegions $c): LoaderChains\SpawnRegion => new LoaderChains\SpawnRegion($c),

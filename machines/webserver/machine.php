@@ -52,6 +52,7 @@ class ServerConnection
 $yaml = file_get_contents(__DIR__.'/machine.yml');
 $helpers = [
     'php' => new PhpEvalHelper(),
+    'get' => new ContainerGetHelper(include_once __DIR__.'/src/container.php'),
 ];
 
 $region = new RegionBuilder()->enableFeatures(
