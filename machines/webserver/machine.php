@@ -18,32 +18,26 @@ require __DIR__.'/../../vendor/autoload.php';
 class ServerConnection
 {
 
-    public function __construct(public readonly mixed $client)
+
+    public readonly string $method;
+
+    public readonly string $uri;
+
+    public readonly string $protocol;
+
+    public function __construct(public readonly mixed $client, public readonly string $request)
     {
-        $request_line = '';
-        $buffer = '';
-        $line_length = 0;
+        // Parse HTTP request
+        $lines = explode("\r\n", $request);
+        $requestLine = $lines[0];
+        $parts = explode(' ', $requestLine);
 
-        // Read the request line
-        while ($line_length < 1024 && ($line = fgets($client, 1024))) {
-            $request_line .= $line;
-            if (strpos($line, "\r\n") !== false) {
-                break; // Stop after the first line
-            }
+        if (count($parts) < 3) {
+            return;
         }
-
-        // Extract the request line
-        $request_line = explode(" ", $request_line, 3);
-        if (count($request_line) < 3) {
-            return false; // Invalid request line
-        }
-
-        $method = $request_line[0];
-        $url = $request_line[1];
-        $http_version = $request_line[2];
-
-        // Extract the path from the URL
-        $path = parse_url($url, PHP_URL_PATH);
+        $this->method = $parts[0];
+        $this->uri = $parts[1];
+        $this->protocol = $parts[2];
     }
 }
 

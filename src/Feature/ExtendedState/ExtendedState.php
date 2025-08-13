@@ -41,8 +41,10 @@ class ExtendedState implements Feature
 
             $getChain->link(
                 function (Params\Get $get, callable $next) use ($getChain, $meta) {
+                    $regionId = spl_object_id($get->region);
                     $metaParams = new Params\Meta($get->region, ContextMetaType::get());
                     $data = $meta->call($metaParams);
+                    $objectId = spl_object_id($meta);
                     if (isset($data[$get->key])) {
                         return $data[$get->key];
                     }

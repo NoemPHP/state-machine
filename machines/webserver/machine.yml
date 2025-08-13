@@ -89,70 +89,14 @@ states:
                 - run: !get request.action.processing
               transitions:
                 - target: close
-                  # language=injectablephp
-                  guard: !php |
-                    return function(object $trigger): bool{
-                      $close = $this->get('close');
-                      return $close === true;
-                    }
+                  guard: !get transition.guard.processing.close
             - name: close
               onEnter:
                 - run: !get request.onEnter.close
     onEnter:
-      # language=injectablephp
-      - run: !php |
-          return function(object $trigger){
-            // Set up the socket server on port 8080
-            $ctx = stream_context_create([
-              'socket' => [
-                'backlog' => 511,  // Configure the kernel backlog size
-                'so_reuseport' => true,  // Allow reconnection to a recently closed port
-              ]
-            ]);
-            // Create a TCP/IP socket
-            $server = stream_socket_server(
-              "tcp://0.0.0.0:8080", 
-              $errno, 
-              $errstr, 
-              STREAM_SERVER_BIND | STREAM_SERVER_LISTEN, $ctx
-            );
-            
-            if (!$server) {
-              die("Server creation failed: $errstr ($errno)");
-            }
-            
-            stream_set_blocking($server,0);
-            
-            echo "Listening on port 8080...\n";
-            
-            $this->set('server', $server);
-          }
-
+      - run: !get server.starting.onEnter
     action:
-      # language=injectablephp
-      - run: !php |
-          use \Noem\State\Feature\Async\Call;
-          return function(object $trigger){
-            $server = $this->get('server');
-          
-            // Set the server socket to non-blocking mode
-            echo "Accepting connections...\n";
-            yield;
-            while(true){
-                $read  = array( $server );
-                $array = array();
-            
-                if ( stream_select( $read, $array, $array, 0 )) {
-                  $client = stream_socket_accept( $server, 0, $peerName );
-                  //var_dump(stream_get_meta_data($client));
-                  //var_dump(stream_socket_get_name($client, true));
-                  //echo "PeerName: $peerName\n";
-                  $this->dispatch(new ServerConnection($client));
-                } else {
-                  yield;
-                }
-            }
-          }
+      - run: !get server.starting.accept
   #    transitions:
   #      - target: lol
 
