@@ -12,6 +12,7 @@ use Throwable;
 
 class Region
 {
+
     private string $currentState;
 
     /**
@@ -33,8 +34,7 @@ class Region
         $this->currentState = $initial;
         $this->actionChain->link(function (Params\Action $context, callable $next): string {
             return $next($context);
-        });
-        ;
+        });;
     }
 
     /**
@@ -65,6 +65,9 @@ class Region
      */
     protected function processTrigger(object $payload): string
     {
+        if ($this->isFinal()) {
+            return $this->currentState;
+        }
         /**
          * Process connected regions first.
          * This allows for nested states and transitions.
