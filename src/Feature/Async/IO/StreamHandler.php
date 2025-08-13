@@ -6,6 +6,7 @@ namespace Noem\State\Feature\Async\IO;
 
 class StreamHandler
 {
+
     /**
      * @var resource
      */
@@ -24,6 +25,16 @@ class StreamHandler
      */
     public function __invoke(): \Generator
     {
+        while (($c = fgetc($this->resource)) !== false) {
+            $metaData = stream_get_meta_data($this->resource);
+            if ($metaData['timed_out']) {
+                fclose($this->resource);
+                throw new \Exception('Read timed out');
+            }
+            yield $c;
+        }
+        return $metaData['wrapper_data'] ?? null;
+
         do {
             $chunk = fread($this->resource, 1024);
             $metaData = stream_get_meta_data($this->resource);
