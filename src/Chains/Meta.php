@@ -22,6 +22,7 @@ use SplObjectStorage;
  */
 class Meta extends Chain
 {
+
     /**
      * @var list<Record>
      */
@@ -35,15 +36,15 @@ class Meta extends Chain
         $metaData = new SplObjectStorage();
 
         parent::__construct(function (Params\Meta $metaParams) use ($metaData): Mesh {
+            $regionId = spl_object_id($metaParams->region);
             if (!$metaData->contains($metaParams->region)) {
                 $metaData->attach($metaParams->region, new MetaData());
             }
             $metaType = (string)$metaParams->type;
-            if (
-                $metaData->contains($metaParams->region)
-                && $metaData[$metaParams->region]->offsetExists($metaType)
-            ) {
-                return $metaData->offsetGet($metaParams->region)->offsetGet($metaType);
+            $meta = $metaData->offsetGet($metaParams->region);
+            $metaId = spl_object_id($meta);
+            if ($meta->offsetExists($metaType)) {
+                return $meta->offsetGet($metaType);
             }
             $validRecords = array_filter(
                 $this->records,
@@ -54,7 +55,7 @@ class Meta extends Chain
             );
             if (count($validRecords) === 0) {
                 $mesh = new Mesh();
-                $metaData[$metaParams->region][$metaType] = $mesh;
+                $meta[$metaType] = $mesh;
 
                 return $mesh;
             }
@@ -66,7 +67,7 @@ class Meta extends Chain
                 }
             }
 
-            $metaData[$metaParams->region][$metaType] = $mesh;
+            $meta[$metaType] = $mesh;
 
             return $mesh;
         });
@@ -101,10 +102,12 @@ class Meta extends Chain
                  * and either child or parent has not been queried yet,
                  * we connect the Mesh for the current Region
                  * to the Mesh of the parent Region
+                 * TODO It must be possible to unhook temporary (spawned) MRegions
                  */
                 if (!$metaData->contains($parentRegion) || !$metaData->contains($metaParams->region)) {
                     $parentMetaParams = new Params\Meta($parentRegion, ContextMetaType::get());
                     $parent = $first($parentMetaParams);
+                    assert($parent instanceof Mesh);
                     $child = $next($metaParams);
                     $parent->extendwith($child);
                 }
