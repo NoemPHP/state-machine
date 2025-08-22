@@ -19,13 +19,15 @@ function bootstrap()
         $this->set('diary', [
             'I have just left Hobbiton with Sam, Merry and Pippin.'
         ]);
-        $this->set('diaryEveryKm', 4);
-        $this->set('distanceSinceLastDiaryEntry', 3.9);
+        $this->set('distanceSinceLastDiaryEntry', 1.9);
+        $this->set('distanceSinceLastSettingUpdate', 3.9);
         $this->set('kilometresAhead', 0);
         $this->set('stepsPerKm', 2000);
         $this->set('stepsTotal', 0);
         $this->set('totalDistanceWalked', 0);
         $this->set('stepsInRoute', 0);
+        $this->set('lastDestination', ''); // Initialize lastDestination
+        $this->set('currentSetting', ''); // Initialize currentSetting
     };
 }
 
@@ -44,60 +46,64 @@ function takeStep()
         // Update distanceSinceLastDiaryEntry
         $distanceSinceLastEntry = $this->get('distanceSinceLastDiaryEntry');
         $distanceCoveredThisStep = 1 / $this->get(
-            'stepsPerKm'
-        ); // Assuming each step covers 1 km divided by steps per km
+                'stepsPerKm'
+            ); // Assuming each step covers 1 km divided by steps per km
         $this->set('distanceSinceLastDiaryEntry', $distanceSinceLastEntry + $distanceCoveredThisStep);
         $this->set('remainingDistanceToDestination', $remainingDistance);
         $this->set('totalDistanceWalked', $totalDistanceWalked);
+
+        // Update distanceSinceLastSettingUpdate
+        $distanceSinceLastSettingUpdate = $this->get('distanceSinceLastSettingUpdate');
+        $this->set('distanceSinceLastSettingUpdate', $distanceSinceLastSettingUpdate + $distanceCoveredThisStep);
     };
 }
 
-function writeDiary()
+function writeDiary(int $everyKm)
 {
-    return function (object $t): Generator {
+    return function (object $t) use ($everyKm): Generator {
         $diary = $this->get('diary');
-        $diaryEveryKm = $this->get('diaryEveryKm');
         $distanceSinceLastEntry = $this->get('distanceSinceLastDiaryEntry');
         $currentDiaryFragment = implode(PHP_EOL, array_slice($diary, -10));
         $this->set('currentDiaryFragment', $currentDiaryFragment);
         // Check if we have reached the threshold for writing a diary entry
-        if ($distanceSinceLastEntry >= $diaryEveryKm) {
+        if ($distanceSinceLastEntry >= $everyKm) {
+            echo PHP_EOL;
+            echo "---------------------DIARY--------------------------";
+            echo PHP_EOL;
+            echo PHP_EOL;
+
             $template = $this->template(
                 <<<'EOF'
 {{#complete temperature=0.8}}
-<task>
-We are following Frodo's travels through middle earth as part of a self-improvement fitness game.
-Every couple of kilometres, Frodo is writing a diary entry about his journey.
-While adhering to canon events and lore, aim to focus on health and fitness topics.
-Examples include in-universe cooking recipes and mentions of physical activities that resemble workout sessions.
-<journey>
-This information is internal and allows you to assess where Frodo currently is.
-In the reality of the adventure and the story we are telling, Frodo does not know about the actual distances.
-Therefore, you MUST NOT let Frodo mention these numbers and units. 
-You may refer to the time passed and allude to the distance travelled in "day marches".
-Since writing the last diary entry, Frodo has walked {{distanceSinceLastDiaryEntry}}km.
-Frodo still has {{remainingDistanceToDestination}}km ahead of him on the {{kilometresAhead}}km travel to the next destination: {{destination}}. 
-In total, Frodo has walked {{totalDistanceWalked}}km so far.
-</journey>
-These are the past entries of Frodo's journey and serve as your long-term memory.
-<diary lastEntries="10">
-{{ currentDiaryFragment }}
-</diary>
-<instruction>
-  Write a brief 1-paragraph diary entry from the perspective of Frodo.
-  Consider how many days might have passed since the last entry and present a date at the beginning of your entry.
-  Reflect on what events are taking place at this precise moment in the books.
-  What would have happened in the time since the last entries.
-  Who is accompanying you currently? 
-  What have been important events and discussions among your peers?
-  These are the things Frodo will write about.
-  Focus on flow/continuity and avoid establishing/repeating things 
-  that have been adressed in previous diary entries already.
-  Pay attention to immersion and lore-friendliness. 
-  Avoid repetitive journal entries and sprinkle in humour, drama, companionship and adventure depending on the context.
-  Each new entry should have at least one unique memorable story to tell.
-</instruction>
-</task>
+    We are following Frodo's travels through middle earth as part of a self-improvement fitness game.
+    Every couple of kilometres, Frodo is writing a diary entry about his journey.
+    While adhering to canon events and lore, aim to focus on health and fitness topics.
+    Examples include in-universe cooking recipes and mentions of physical activities that resemble workout sessions.
+## Current segment
+    This information is internal and allows you to assess where Frodo currently is.
+    In the reality of the adventure and the story we are telling, Frodo does not know about the actual distances.
+    Therefore, you MUST NOT let Frodo mention these numbers and units. 
+    You may refer to the time passed and allude to the distance travelled in "day marches".
+    Since writing the last diary entry, Frodo has walked {{distanceSinceLastDiaryEntry}}km.
+    Frodo still has {{remainingDistanceToDestination}}km ahead of him on the {{kilometresAhead}}km travel to the next destination: {{destination}}. 
+    In total, Frodo has walked {{totalDistanceWalked}}km so far.
+
+## Diary (last 10 entries)
+    {{ currentDiaryFragment }}
+
+## Instructions
+    Write a brief 1-paragraph diary entry from the perspective of Frodo.
+    Consider how many days might have passed since the last entry and present a date at the beginning of your entry.
+    Reflect on what events are taking place at this precise moment in the books.
+    What would have happened in the time since the last entries.
+    Who is accompanying you currently? 
+    What have been important events and discussions among your peers?
+    These are the things Frodo will write about.
+    Focus on flow/continuity and avoid establishing/repeating things 
+    that have been adressed in previous diary entries already.
+    Pay attention to immersion and lore-friendliness. 
+    Avoid repetitive journal entries and sprinkle in humour, drama, companionship and adventure depending on the context.
+    Each new entry should have at least one unique memorable story to tell.
 {{/complete}}
 EOF
             );
@@ -105,8 +111,8 @@ EOF
             $result = '';
             while ($template->valid()) {
                 $chunk = $template->current();
-                echo $chunk;
                 $result .= $chunk;
+                echo $chunk;
                 $template->next();
                 yield;
             }
@@ -120,6 +126,53 @@ EOF
             echo "----------------------------------------------------";
             echo PHP_EOL;
         }
+    };
+}
+
+function assessSetting(int $everyKm)
+{
+    return function (object $t) use ($everyKm): Generator {
+        $distanceSinceLastSettingUpdate = $this->get('distanceSinceLastSettingUpdate');
+        // Check if we have reached the threshold for a setting update
+        if ($distanceSinceLastSettingUpdate >= $everyKm) {
+            echo PHP_EOL;
+            echo "--------------------SETTING-------------------------";
+            echo PHP_EOL;
+            echo PHP_EOL;
+            $template = $this->template(
+                <<<'EOF'
+{{#complete temperature=0.8}}
+    You are a *Lord of the Rings* expert tasked with faithfully assessing Frodo's current location and company based on the available information.
+    Adhere strictly to the lore and accuracy of *The Lord of the Rings*.
+    Do not invent details or events not present in the books.
+## Diary (last 10 entries)
+    {{ currentDiaryFragment }}
+
+## Instructions
+    Frodo is currently {{distanceSinceLastEntry}}km from his last diary entry.
+    His destination is {{destination}}, which is still {{kilometresAhead}}km away.
+    Based on this information, describe the likely terrain, weather, and overall situation Frodo finds himself in.
+    Specify his companions and make note of any changes that occurred.
+    Be as precise and lore-accurate as possible, drawing on your profound knowledge of Middle-earth.
+    However, be EXTREMELY brief and concise. Your output will be fed directly into the context of another LLM.
+{{/complete}}
+EOF
+            );
+            assert($template instanceof \Generator);
+            $result = '';
+            while ($template->valid()) {
+                $chunk = $template->current();
+                $result .= $chunk;
+                echo $chunk;
+                $template->next();
+                yield;
+            }
+            $this->set('currentSetting', $result);
+            $this->set('distanceSinceLastSettingUpdate', 0);
+            echo PHP_EOL;
+            echo "----------------------------------------------------";
+            echo PHP_EOL;
+        };
     };
 }
 
@@ -149,7 +202,10 @@ function isDestinationReached(): callable
 function hasReachedDestination(): callable
 {
     return function (object $t): void {
-        echo 'FRODO WAS HERE LOLZ' . PHP_EOL;
+        $this->set('lastDestination', $this->get('destination'));
+        $diary = $this->get('diary');
+        $diary[] = 'I have have reached the destination ' . $this->get('destination');
+        $this->set('diary', $diary);
     };
 }
 
