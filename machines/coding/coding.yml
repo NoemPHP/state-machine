@@ -1,0 +1,28 @@
+states:
+  - name: off
+    transitions:
+      # Run tests first thing when the application starts
+      - target: run_tests
+  - name: run_tests
+    onEnter:
+      - run: !get onEnter.run_tests
+    transitions:
+      # If the tests pass, proceed to the goodbye state.
+      - target: goodbye
+        guard: !get transition.guard.run_tests.goodbye
+      # If the tests fail, investigate the issue and then re-run them. This is a loop.
+      - target: investigate
+        guard: !get transition.guard.run_tests.investigate
+  - name: investigate
+    onEnter:
+      - run: !get onEnter.investigate
+    transitions:
+      - target: run_tests
+        guard: !get transition.guard.investigate.run_tests
+  - name: goodbye
+    onEnter:
+      - run: !get onEnter.goodbye
+    transitions:
+      - target: final
+        guard: !get transition.guard.goodbye.final
+  - name: final
