@@ -8,5 +8,4 @@ use Noem\State\Middleware\Mesh;
 
 class Container extends Mesh
 {
-
 }
