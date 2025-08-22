@@ -116,7 +116,9 @@ EOF
             $this->set('diary', $diary);
             $this->set('distanceSinceLastDiaryEntry', 0);
 
-            echo "Diary entry written: " . $result . PHP_EOL;
+            echo PHP_EOL;
+            echo "----------------------------------------------------";
+            echo PHP_EOL;
         }
     };
 }
