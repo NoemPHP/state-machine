@@ -1,0 +1,7 @@
+name: middleware
+group: chain
+description: It a provides a way to create, extend and invoke arbitrary middleware chains
+acceptanceCriteria:
+  - A portable chain object can be created for further manipulation by consumers
+test: |
+  vendor/bin/phpunit --group {{group}}
