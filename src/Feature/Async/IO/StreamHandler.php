@@ -33,6 +33,7 @@ class StreamHandler
             }
             yield $c;
         }
+        $metaData = stream_get_meta_data($this->resource);
         return $metaData['wrapper_data'] ?? null;
 
         do {

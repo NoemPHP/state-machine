@@ -6,6 +6,7 @@ namespace Noem\State\Feature\Async\IO;
 
 class Load
 {
+
     public function __construct(private string $filePath)
     {
     }
@@ -19,6 +20,10 @@ class Load
         if ($resource === false) {
             throw new \Exception('Failed to open file');
         }
-        yield from new StreamHandler($resource)();
+        try {
+            yield from new StreamHandler($resource)();
+        } finally {
+            fclose($resource);
+        }
     }
 }

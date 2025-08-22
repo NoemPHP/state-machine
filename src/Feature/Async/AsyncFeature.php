@@ -126,6 +126,9 @@ class AsyncFeature implements Feature
     ): void {
         $schema?->link(function (SchemaContext $context, callable $next) {
             $contextSchema = $context->getCustomSchema('context');
+            if (!$contextSchema) {
+                return $next($context);
+            }
             assert($contextSchema instanceof Structure);
             $contextSchema = $contextSchema->extend([
                 'resolvers' => Expect::listOf(
