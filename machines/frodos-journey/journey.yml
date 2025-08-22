@@ -1,0 +1,131 @@
+states:
+  - name: preparing
+    transitions:
+      - target: adventuring
+
+  - name: adventuring
+    onEnter:
+      # Like, literally
+      - run: !php return bootstrap()
+    action:
+      - run: !php return takeStep()
+      - run: !php return writeDiary()
+    regions:
+      - states:
+          # 1️⃣ Hobbiton (Shire) → Brandywine Bridge (≈ 70 km)
+          - name: hobbiton
+            transitions:
+              - target: hobbiton|brandywine
+          - name: hobbiton|brandywine
+            onEnter:
+              - run: !php return setDistanceToDestination(70, 'brandywine')
+            transitions:
+              - target: brandwine
+                guard: !php return isDestinationReached()
+          - name: brandwine
+            onEnter:
+              - run: !php return hasReachedDestination()
+
+          # 2️⃣ Brandywine Bridge → Bree (≈ 10 km)
+          - name: brandwine|bree
+            onEnter:
+              - run: !php return setDistanceToDestination(10, 'bree')
+            transitions:
+              - target: bree
+                guard: !php return isDestinationReached()
+          - name: bree
+            onEnter:
+              - run: !php return hasReachedDestination()
+
+          # 3️⃣ Bree → Rivendell (≈ 160 km)
+          - name: bree|rivendell
+            onEnter:
+              - run: !php return setDistanceToDestination(160, 'rivendell')
+            transitions:
+              - target: rivendell
+                guard: !php return isDestinationReached()
+          - name: rivendell
+            onEnter:
+              - run: !php return hasReachedDestination()
+
+          # 4️⃣ Rivendell → Moria (≈ 200 km)
+          - name: rivendell|moria
+            onEnter:
+              - run: !php return setDistanceToDestination(200, 'moria')
+            transitions:
+              - target: moria
+                guard: !php return isDestinationReached()
+          - name: moria
+            onEnter:
+              - run: !php return hasReachedDestination()
+
+          # 5️⃣ Moria → Lothlórien (≈ 230 km)
+          - name: moria|lothlorien
+            onEnter:
+              - run: !php return setDistanceToDestination(230, 'lothlorien')
+            transitions:
+              - target: lothlorien
+                guard: !php return isDestinationReached()
+          - name: lothlorien
+            onEnter:
+              - run: !php return hasReachedDestination()
+
+          # 6️⃣ Lothlórien → Dead Marshes (≈ 45 km)
+          - name: lothlorien|deadmarshes
+            onEnter:
+              - run: !php return setDistanceToDestination(45, 'deadmarshes')
+            transitions:
+              - target: deadmarshes
+                guard: !php return isDestinationReached()
+          - name: deadmarshes
+            onEnter:
+              - run: !php return hasReachedDestination()
+
+          # 7️⃣ Dead Marshes → Osgiliath (≈ 180 km)
+          - name: deadmarshes|osgiliath
+            onEnter:
+              - run: !php return setDistanceToDestination(180, 'osgiliath')
+            transitions:
+              - target: osgiliath
+                guard: !php return isDestinationReached()
+          - name: osgiliath
+            onEnter:
+              - run: !php return hasReachedDestination()
+
+          # 8️⃣ Osgiliath → Minas Tirith (≈ 90 km)
+          - name: osgiliath|minas_tirith
+            onEnter:
+              - run: !php return setDistanceToDestination(90, 'minas_tirith')
+            transitions:
+              - target: minas_tirith
+                guard: !php return isDestinationReached()
+          - name: minas_tirith
+            onEnter:
+              - run: !php return hasReachedDestination()
+
+          # 9️⃣ Minas Tirith → The Black Gate (≈ 60 km)
+          - name: minas_tirith|blackgate
+            onEnter:
+              - run: !php return setDistanceToDestination(60, 'blackgate')
+            transitions:
+              - target: blackgate
+                guard: !php return isDestinationReached()
+          - name: blackgate
+            onEnter:
+              - run: !php return hasReachedDestination()
+
+          # 🔟 The Black Gate → Mount Doom (≈ 130 km)
+          - name: blackgate|mountdoom
+            onEnter:
+              - run: !php return setDistanceToDestination(130, 'mountdoom')
+            transitions:
+              - target: mountdoom
+                guard: !php return isDestinationReached()
+          - name: mountdoom
+            onEnter:
+              - run: !php return hasReachedDestination()
+
+    transitions:
+      - target: finish
+
+  - name: finish
