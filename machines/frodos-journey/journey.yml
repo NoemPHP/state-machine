@@ -12,7 +12,7 @@ states:
       - run: !php return writeDiary()
     regions:
       - states:
-          # 1️⃣ Hobbiton (Shire) → Brandywine Bridge (≈ 70 km)
+          # 1️⃣ Hobbiton (Shire) → Brandywine Bridge (≈70km)
           - name: hobbiton
             transitions:
               - target: hobbiton|brandywine
@@ -26,7 +26,7 @@ states:
             onEnter:
               - run: !php return hasReachedDestination()
 
-          # 2️⃣ Brandywine Bridge → Bree (≈ 10 km)
+          # 2️⃣ Brandywine Bridge → Bree (≈10km)
           - name: brandwine|bree
             onEnter:
               - run: !php return setDistanceToDestination(10, 'bree')
@@ -37,7 +37,7 @@ states:
             onEnter:
               - run: !php return hasReachedDestination()
 
-          # 3️⃣ Bree → Rivendell (≈ 160 km)
+          # 3️⃣ Bree → Rivendell (≈160km)
           - name: bree|rivendell
             onEnter:
               - run: !php return setDistanceToDestination(160, 'rivendell')
@@ -48,7 +48,7 @@ states:
             onEnter:
               - run: !php return hasReachedDestination()
 
-          # 4️⃣ Rivendell → Moria (≈ 200 km)
+          # 4️⃣ Rivendell → Moria (≈200km)
           - name: rivendell|moria
             onEnter:
               - run: !php return setDistanceToDestination(200, 'moria')
@@ -59,7 +59,7 @@ states:
             onEnter:
               - run: !php return hasReachedDestination()
 
-          # 5️⃣ Moria → Lothlórien (≈ 230 km)
+          # 5️⃣ Moria → Lothlórien (≈230km)
           - name: moria|lothlorien
             onEnter:
               - run: !php return setDistanceToDestination(230, 'lothlorien')
@@ -70,7 +70,7 @@ states:
             onEnter:
               - run: !php return hasReachedDestination()
 
-          # 6️⃣ Lothlórien → Dead Marshes (≈ 45 km)
+          # 6️⃣ Lothlórien → Dead Marshes (≈45km)
           - name: lothlorien|deadmarshes
             onEnter:
               - run: !php return setDistanceToDestination(45, 'deadmarshes')
@@ -81,7 +81,7 @@ states:
             onEnter:
               - run: !php return hasReachedDestination()
 
-          # 7️⃣ Dead Marshes → Osgiliath (≈ 180 km)
+          # 7️⃣ Dead Marshes → Osgiliath (≈180km)
           - name: deadmarshes|osgiliath
             onEnter:
               - run: !php return setDistanceToDestination(180, 'osgiliath')
@@ -92,7 +92,7 @@ states:
             onEnter:
               - run: !php return hasReachedDestination()
 
-          # 8️⃣ Osgiliath → Minas Tirith (≈ 90 km)
+          # 8️⃣ Osgiliath → MinasTirith (≈90km)
           - name: osgiliath|minas_tirith
             onEnter:
               - run: !php return setDistanceToDestination(90, 'minas_tirith')
@@ -103,7 +103,7 @@ states:
             onEnter:
               - run: !php return hasReachedDestination()
 
-          # 9️⃣ Minas Tirith → The Black Gate (≈ 60 km)
+          # 9️⃣ MinasTirith → The Black Gate (≈60km)
           - name: minas_tirith|blackgate
             onEnter:
               - run: !php return setDistanceToDestination(60, 'blackgate')
@@ -114,7 +114,7 @@ states:
             onEnter:
               - run: !php return hasReachedDestination()
 
-          # 🔟 The Black Gate → Mount Doom (≈ 130 km)
+          # 🔟 The Black Gate → MountDoom (≈130km)
           - name: blackgate|mountdoom
             onEnter:
               - run: !php return setDistanceToDestination(130, 'mountdoom')
