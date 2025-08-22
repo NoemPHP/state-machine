@@ -10,7 +10,6 @@ use Noem\State\RegionBuilder;
 
 abstract class Machine
 {
-
     /**
      * @return Feature[]
      */

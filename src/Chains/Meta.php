@@ -22,7 +22,6 @@ use SplObjectStorage;
  */
 class Meta extends Chain
 {
-
     /**
      * @var list<Record>
      */
