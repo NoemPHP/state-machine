@@ -12,7 +12,6 @@ use Throwable;
 
 class Region
 {
-
     private string $currentState;
 
     /**
@@ -34,7 +33,8 @@ class Region
         $this->currentState = $initial;
         $this->actionChain->link(function (Params\Action $context, callable $next): string {
             return $next($context);
-        });;
+        });
+        ;
     }
 
     /**

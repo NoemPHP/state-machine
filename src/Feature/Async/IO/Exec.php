@@ -9,7 +9,6 @@ use SplFileObject;
 
 class Exec
 {
-
     private int $pid = 0;
 
     private string $tempFilePath;
