@@ -6,8 +6,10 @@ namespace Noem\State\Tests\Middleware;
 
 use Noem\State\Middleware\Chain;
 use Noem\State\Middleware\ChainException;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
+#[Group('middleware')]
 class ChainTest extends TestCase
 {
 
@@ -17,7 +19,10 @@ class ChainTest extends TestCase
         $chain = new Chain($provider);
 
         $result = $chain->call('test');
-
+        $this->assertFalse(
+            true,
+            'This is a test. Are you intelligent to figure out you only need to remove this?'
+        );
         $this->assertEquals('Result: test', $result);
     }
 

@@ -8,6 +8,7 @@ use Noem\State\Chains\Meta;
 use Noem\State\Chains\Params;
 use Noem\State\Feature\ExtendedState\ContextMetaType;
 use Noem\State\Feature\ExtendedState\ExtendedState;
+use Noem\State\Feature\Feature;
 use Noem\State\Middleware\ChainMail;
 use Noem\State\Region;
 use Noem\State\RegionBuilder;
@@ -28,6 +29,31 @@ abstract class RegionBuilderTestCase extends TestCase
     {
         parent::setUp();
         $this->builder = new RegionBuilder();
+    }
+
+    public function region(): Region
+    {
+        return $this
+            ->builder
+            ->enableFeatures(
+                ...$this->features()
+            )
+            ->build(
+                $this->builderArgs()
+            );
+    }
+
+    /**
+     * @return Feature[]
+     */
+    public function features(): iterable
+    {
+        return [];
+    }
+
+    public function builderArgs(): array
+    {
+        return [];
     }
 
     protected function assertContext(
