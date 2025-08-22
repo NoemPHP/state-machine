@@ -15,7 +15,7 @@ require __DIR__ . '/../../vendor/autoload.php';
 function bootstrap()
 {
     return function (object $t): void {
-        $this->set('destination', 'UNKNOWN_DESTINATION');
+        $this->set('destination', 'hobbiton');
         $this->set('diary', [
             'I have just left Hobbiton with Sam, Merry and Pippin.'
         ]);
@@ -26,7 +26,7 @@ function bootstrap()
         $this->set('stepsTotal', 0);
         $this->set('totalDistanceWalked', 0);
         $this->set('stepsInRoute', 0);
-        $this->set('lastDestination', ''); // Initialize lastDestination
+        $this->set('lastDestination', 'hobbiton'); // Initialize lastDestination
         $this->set('currentSetting', ''); // Initialize currentSetting
     };
 }
@@ -79,15 +79,8 @@ function writeDiary(int $everyKm)
     Every couple of kilometres, Frodo is writing a diary entry about his journey.
     While adhering to canon events and lore, aim to focus on health and fitness topics.
     Examples include in-universe cooking recipes and mentions of physical activities that resemble workout sessions.
-## Current segment
-    This information is internal and allows you to assess where Frodo currently is.
-    In the reality of the adventure and the story we are telling, Frodo does not know about the actual distances.
-    Therefore, you MUST NOT let Frodo mention these numbers and units. 
-    You may refer to the time passed and allude to the distance travelled in "day marches".
-    Since writing the last diary entry, Frodo has walked {{distanceSinceLastDiaryEntry}}km.
-    Frodo still has {{remainingDistanceToDestination}}km ahead of him on the {{kilometresAhead}}km travel to the next destination: {{destination}}. 
-    In total, Frodo has walked {{totalDistanceWalked}}km so far.
-
+## Current Setting
+    {{currentSetting}}
 ## Diary (last 10 entries)
     {{ currentDiaryFragment }}
 
@@ -100,7 +93,7 @@ function writeDiary(int $everyKm)
     What have been important events and discussions among your peers?
     These are the things Frodo will write about.
     Focus on flow/continuity and avoid establishing/repeating things 
-    that have been adressed in previous diary entries already.
+    that have been addressed in previous diary entries already.
     Pay attention to immersion and lore-friendliness. 
     Avoid repetitive journal entries and sprinkle in humour, drama, companionship and adventure depending on the context.
     Each new entry should have at least one unique memorable story to tell.
@@ -144,16 +137,23 @@ function assessSetting(int $everyKm)
 {{#complete temperature=0.8}}
     You are a *Lord of the Rings* expert tasked with faithfully assessing Frodo's current location and company based on the available information.
     Adhere strictly to the lore and accuracy of *The Lord of the Rings*.
+    You are an arbiter of the plot and responsible to setting things in motion.
     Do not invent details or events not present in the books.
 ## Diary (last 10 entries)
     {{ currentDiaryFragment }}
+## Previous Setting Assessment
+{{currentSetting}}
 
 ## Instructions
-    Frodo is currently {{distanceSinceLastEntry}}km from his last diary entry.
-    His destination is {{destination}}, which is still {{kilometresAhead}}km away.
-    Based on this information, describe the likely terrain, weather, and overall situation Frodo finds himself in.
-    Specify his companions and make note of any changes that occurred.
+    Frodo is currently traveling from {{lastDestination}} to {{destination}}.
+    He is {{distanceSinceLastDiaryEntry}}km from his last diary entry.
+    His destination is still {{kilometresAhead}}km away.
+    Based on this information, describe the likely companions, terrain, weather, mood, and overall situation Frodo finds himself in.
+    Focus the the CURRENT situation, avoid leaking details about future events not known to Frodo.
+    Take note of any changes compared to the last assessment.
+    Specify major story events that have taken place since the last assessment.
     Be as precise and lore-accurate as possible, drawing on your profound knowledge of Middle-earth.
+    Summarize the travel so far, translating distances to day marches..
     However, be EXTREMELY brief and concise. Your output will be fed directly into the context of another LLM.
 {{/complete}}
 EOF
