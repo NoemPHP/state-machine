@@ -8,7 +8,9 @@ states:
       # Like, literally
       - run: !php return bootstrap()
     action:
+      # Process the next step(s) and calculate distance traveled
       - run: !php return takeStep()
+      # Let's have Frodo write a diary entry every other day or so
       - run: !php return writeDiary()
     regions:
       - states:
@@ -25,6 +27,8 @@ states:
           - name: brandwine
             onEnter:
               - run: !php return hasReachedDestination()
+            transitions:
+              - target: brandwine|bree
 
           # 2️⃣ Brandywine Bridge → Bree (≈10km)
           - name: brandwine|bree
@@ -36,7 +40,8 @@ states:
           - name: bree
             onEnter:
               - run: !php return hasReachedDestination()
-
+            transitions:
+              - target: bree|rivendell
           # 3️⃣ Bree → Rivendell (≈160km)
           - name: bree|rivendell
             onEnter:
@@ -47,7 +52,8 @@ states:
           - name: rivendell
             onEnter:
               - run: !php return hasReachedDestination()
-
+            transitions:
+              - target: rivendell|moria
           # 4️⃣ Rivendell → Moria (≈200km)
           - name: rivendell|moria
             onEnter:
@@ -58,7 +64,8 @@ states:
           - name: moria
             onEnter:
               - run: !php return hasReachedDestination()
-
+            transitions:
+              - target: moria|lothlorien
           # 5️⃣ Moria → Lothlórien (≈230km)
           - name: moria|lothlorien
             onEnter:
@@ -69,7 +76,8 @@ states:
           - name: lothlorien
             onEnter:
               - run: !php return hasReachedDestination()
-
+            transitions:
+              - target: lothlorien|deadmarshes
           # 6️⃣ Lothlórien → Dead Marshes (≈45km)
           - name: lothlorien|deadmarshes
             onEnter:
@@ -80,7 +88,8 @@ states:
           - name: deadmarshes
             onEnter:
               - run: !php return hasReachedDestination()
-
+            transitions:
+              - target: deadmarshes|osgiliath
           # 7️⃣ Dead Marshes → Osgiliath (≈180km)
           - name: deadmarshes|osgiliath
             onEnter:
@@ -91,7 +100,8 @@ states:
           - name: osgiliath
             onEnter:
               - run: !php return hasReachedDestination()
-
+            transitions:
+              - target: osgiliath|minas_tirith
           # 8️⃣ Osgiliath → MinasTirith (≈90km)
           - name: osgiliath|minas_tirith
             onEnter:
@@ -102,7 +112,8 @@ states:
           - name: minas_tirith
             onEnter:
               - run: !php return hasReachedDestination()
-
+            transitions:
+              - target: minas_tirith|blackgate
           # 9️⃣ MinasTirith → The Black Gate (≈60km)
           - name: minas_tirith|blackgate
             onEnter:
@@ -113,7 +124,8 @@ states:
           - name: blackgate
             onEnter:
               - run: !php return hasReachedDestination()
-
+            transitions:
+              - target: blackgate|mountdoom
           # 🔟 The Black Gate → MountDoom (≈130km)
           - name: blackgate|mountdoom
             onEnter:
