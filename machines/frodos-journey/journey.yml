@@ -11,9 +11,9 @@ states:
       # Process the next step(s) and calculate distance traveled
       - run: !php return takeStep()
       # Let's have Frodo write a diary entry every other day or so
-      - run: !php return writeDiary(12)
+      #- run: !php return writeDiary(12)
       # Have some sort of narrator voice dictate the current situation of Frodo in a lore-accurate manner
-      - run: !php return assessSetting(12)
+      #- run: !php return assessSetting(12)
     regions:
       - states:
           # 1️⃣ Hobbiton (Shire) → Brandywine Bridge (≈70km)
