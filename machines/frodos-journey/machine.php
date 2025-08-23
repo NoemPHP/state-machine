@@ -21,7 +21,7 @@ function bootstrap()
         ]);
         $this->set('distanceSinceLastDiaryEntry', 1.9);
         $this->set('distanceSinceLastSettingUpdate', 3.9);
-        $this->set('kilometresAhead', 0);
+        $this->set('kilometresAhead', PHP_INT_MAX);
         $this->set('stepsPerKm', 2000);
         $this->set('stepsTotal', 0);
         $this->set('totalDistanceWalked', 0);
@@ -66,7 +66,7 @@ function writeDiary(int $everyKm)
         $currentDiaryFragment = implode(PHP_EOL, array_slice($diary, -10));
         $this->set('currentDiaryFragment', $currentDiaryFragment);
         // Check if we have reached the threshold for writing a diary entry
-        if ($distanceSinceLastEntry >= $everyKm) {
+        if ($distanceSinceLastEntry > $everyKm) {
             echo PHP_EOL;
             echo "---------------------DIARY--------------------------";
             echo PHP_EOL;
@@ -127,7 +127,7 @@ function assessSetting(int $everyKm)
     return function (object $t) use ($everyKm): Generator {
         $distanceSinceLastSettingUpdate = $this->get('distanceSinceLastSettingUpdate');
         // Check if we have reached the threshold for a setting update
-        if ($distanceSinceLastSettingUpdate >= $everyKm) {
+        if ($distanceSinceLastSettingUpdate > $everyKm) {
             echo PHP_EOL;
             echo "--------------------SETTING-------------------------";
             echo PHP_EOL;
@@ -195,7 +195,7 @@ function isDestinationReached(): callable
         $requiredSteps = $kilometresAhead * $stepsPerKm;
 
         // Return true if the steps taken are sufficient
-        return $stepsInRoute >= $requiredSteps;
+        return $stepsInRoute > $requiredSteps;
     };
 }
 
@@ -203,6 +203,19 @@ function hasReachedDestination(): callable
 {
     return function (object $t): void {
         $this->set('lastDestination', $this->get('destination'));
+        $this->set('kilometresAhead', PHP_INT_MAX);
+        $this->get('stepsInRoute', 0);
+
+        $message = 'I have have reached the destination ' . $this->get('destination');
+
+        echo PHP_EOL;
+        echo "----------------NEW DESTINATION---------------------";
+        echo PHP_EOL;
+        echo PHP_EOL;
+        echo $message;
+        echo PHP_EOL;
+        echo "----------------------------------------------------";
+        echo PHP_EOL;
         $diary = $this->get('diary');
         $diary[] = 'I have have reached the destination ' . $this->get('destination');
         $this->set('diary', $diary);
