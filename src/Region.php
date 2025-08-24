@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Noem\State;
 
 use Noem\State\Chains\Params;
-use Noem\State\Chains\Params\Connection;
 use Noem\State\Middleware\ChainException;
 use ReflectionException;
 use Throwable;
@@ -134,7 +133,7 @@ class Region
     private function connections(): array
     {
         return $this->connectionsChain->call(
-            new Connection($this)
+            new Params\Connection($this)
         );
     }
 

@@ -6,11 +6,14 @@ namespace Noem\State;
 
 use ArrayAccess;
 use Noem\State\Chains\ConnectedRegions;
+use Noem\State\Chains\Params\Action;
 use Noem\State\Chains\Params\BuildParams;
 use Noem\State\Chains\PrepareInvokable;
 use Noem\State\Feature\Feature;
 use Noem\State\Middleware\ChainMail;
 use Noem\State\Middleware\Mesh;
+use Noem\State\Chains\Params;
+
 
 class RegionBuilder
 {
@@ -118,10 +121,11 @@ class RegionBuilder
      * @return $this
      */
     public function connect(
-        Region $remoteRegion,
-        int $flags = 0,
+        Region    $remoteRegion,
+        int       $flags = 0,
         ?callable $predicate = null
-    ): self {
+    ): self
+    {
         $this->buildChain->link(
             function (RegionBuilder $builder, callable $next) use ($remoteRegion, $flags, $predicate) {
                 $connectedRegions = $this->chainMail->get(ConnectedRegions::class);
@@ -224,10 +228,11 @@ class RegionBuilder
      */
     public function setMetaData(
         array|ArrayAccess $data,
-        MetaType $type,
-        int $flags = 0,
-        ?callable $predicate = null
-    ): self {
+        MetaType          $type,
+        int               $flags = 0,
+        ?callable         $predicate = null
+    ): self
+    {
         $this->buildChain->link(
             function (RegionBuilder $regionBuilder, callable $next) use ($data, $type, $flags, $predicate) {
                 $region = $next($regionBuilder);
@@ -296,7 +301,7 @@ class RegionBuilder
             $events = $this->chainMail->get(Events::class);
             $this->assertValidConfig();
 
-            return new Region(
+            $region = new Region(
                 states: $builder->states,
                 transitions: $builder->transitions,
                 events: $events,
@@ -307,6 +312,49 @@ class RegionBuilder
                 connectionsChain: $connectionsChain,
                 path: $path
             );
+
+            $actionChain->link(function (Action $action, callable $next) use (
+                $region,
+                $events,
+                $guardChain
+            ) {
+
+                $state = $next($action);
+                if ($region !== $action->region) {
+                    return $state;
+                }
+                /**
+                 * Transitions are processed in the order they were defined.
+                 * This means that if multiple transitions have the same trigger, only the first one will be executed.
+                 * TODO: This should be executed AFTER the Chain has run, not within its provider
+                 */
+                if (isset($this->transitions[$action->currentState])) {
+                    foreach ($this->transitions[$action->currentState] as $target => $guards) {
+                        foreach ($guards as $guard) {
+                            /**
+                             * Execute the middleware chain to determine whether a transition is enabled
+                             */
+                            $context = new Params\Guard($region, $action->currentState, $target, $guard, $action->payload);
+                            $enabled = $guardChain->call($context);
+
+                            if (!$enabled) {
+                                continue;
+
+                            }
+                            $this->doTransition($target, $action->payload);
+                            $this->events->onExitState($region, $action->currentState, $action->payload);
+                            $this->currentState = $to;
+                            foreach ($this->connections() as $region) {
+                                $region->onEnterParent($trigger);
+                            }
+                            $this->events->onEnterState($this, $to, $trigger);
+                            return $target;
+                        }
+                    }
+                }
+            });
+
+            return $region;
         };
         $builder = $this;
         if (!$skipMiddlewares) {
