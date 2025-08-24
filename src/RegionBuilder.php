@@ -14,7 +14,6 @@ use Noem\State\Middleware\ChainMail;
 use Noem\State\Middleware\Mesh;
 use Noem\State\Chains\Params;
 
-
 class RegionBuilder
 {
     protected Events $events;
@@ -121,11 +120,10 @@ class RegionBuilder
      * @return $this
      */
     public function connect(
-        Region    $remoteRegion,
-        int       $flags = 0,
+        Region $remoteRegion,
+        int $flags = 0,
         ?callable $predicate = null
-    ): self
-    {
+    ): self {
         $this->buildChain->link(
             function (RegionBuilder $builder, callable $next) use ($remoteRegion, $flags, $predicate) {
                 $connectedRegions = $this->chainMail->get(ConnectedRegions::class);
@@ -228,11 +226,10 @@ class RegionBuilder
      */
     public function setMetaData(
         array|ArrayAccess $data,
-        MetaType          $type,
-        int               $flags = 0,
-        ?callable         $predicate = null
-    ): self
-    {
+        MetaType $type,
+        int $flags = 0,
+        ?callable $predicate = null
+    ): self {
         $this->buildChain->link(
             function (RegionBuilder $regionBuilder, callable $next) use ($data, $type, $flags, $predicate) {
                 $region = $next($regionBuilder);
@@ -313,7 +310,10 @@ class RegionBuilder
                 path: $path
             );
 
-            $actionChain->link(function (Action $action, callable $next) use (
+            $actionChain->link(function (
+                Action $action,
+                callable $next
+            ) use (
                 $region,
                 $events,
                 $guardChain
@@ -339,7 +339,6 @@ class RegionBuilder
 
                             if (!$enabled) {
                                 continue;
-
                             }
                             $this->doTransition($target, $action->payload);
                             $this->events->onExitState($region, $action->currentState, $action->payload);
