@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Noem\State\Chains;
+namespace Noem\State\Feature\Transitions\Chains;
 
-use Noem\State\Chains\Params;
+use Noem\State\Chains\InvokeCallback;
 use Noem\State\Chains\Params\Callback;
+use Noem\State\Chains\PrepareInvokable;
 use Noem\State\Middleware\Chain;
 use Noem\State\Util\ParameterDeriver;
 
@@ -33,7 +34,7 @@ class Guard extends Chain
                          Guards must return bool"
                 );
             }
-            $callbackContext = new Params\Callback($ctx->region, $ctx->handler, $ctx->trigger);
+            $callbackContext = new Callback($ctx->region, $ctx->handler, $ctx->trigger);
             $invokable = $prepareInvokable->call($callbackContext);
             $context = new Callback($ctx->region, $invokable, $ctx->trigger);
 

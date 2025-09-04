@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Noem\State\Chains\Params;
+namespace Noem\State\Feature\Transitions\Chains\Params;
 
 class Guard
 {
