@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Noem\State\Feature\NamedEvents;
 
 use Noem\State\Chains\Params\Callback;
-use Noem\State\Chains\Params;
-use Noem\State\Chains;
 use Noem\State\Chains\ValidateCallback;
 use Noem\State\Feature\Feature;
+use Noem\State\Feature\Transitions\Chains;
+use Noem\State\Feature\Transitions\Chains\Params;
 use Noem\State\Middleware\ChainMail;
 use Noem\State\Util\ParameterDeriver;
 use ReflectionException;
@@ -17,37 +17,12 @@ class NamedEvents implements Feature
 {
     public function __invoke(ChainMail $chainMail): void
     {
-        $chainMail->use(function (
-            Chains\Guard $transitionMiddleware,
+        $chainMail->use(
+            $this->adjustTransitionGuardBehaviour(...)
+        )->use(function (
+            Chains\Guard     $transitionMiddleware,
             ValidateCallback $eventMiddleware,
         ): void {
-            $transitionMiddleware->link(
-                function (Params\Guard $context, callable $next, callable $first): bool {
-                    $result = $next($context);
-                    if (!$result) {
-                        /**
-                         * Any matched named event is predicated on a matched event type.
-                         * In other words, it does not sound plausible that we can resolve a named event
-                         * if $next() === null
-                         */
-                        return false;
-                    }
-
-                    /**
-                     * Check if a named event is subscribed to via name attribute
-                     */
-                    $eventName = $this->getEventName($context->handler);
-                    if (
-                        $eventName !== null
-                        && $context->trigger instanceof Event
-                        && $context->trigger->name() !== $eventName
-                    ) {
-                        return false;
-                    }
-
-                    return true;
-                }
-            );
 
             $eventMiddleware->link(
                 function (Callback $context, callable $next, callable $first): ?callable {
@@ -77,6 +52,40 @@ class NamedEvents implements Feature
                 }
             );
         });
+    }
+
+    private function adjustTransitionGuardBehaviour(
+        ?Chains\Guard $guard
+    )
+    {
+        $guard?->link(
+            function (Params\Guard $context, callable $next, callable $first): bool {
+                $result = $next($context);
+                if (!$result) {
+                    /**
+                     * Any matched named event is predicated on a matched event type.
+                     * In other words, it does not sound plausible that we can resolve a named event
+                     * if $next() === null
+                     */
+                    return false;
+                }
+
+                /**
+                 * Check if a named event is subscribed to via name attribute
+                 */
+                $eventName = $this->getEventName($context->handler);
+                if (
+                    $eventName !== null
+                    && $context->trigger instanceof Event
+                    && $context->trigger->name() !== $eventName
+                ) {
+                    return false;
+                }
+
+                return true;
+            }
+        );
+
     }
 
     /**
