@@ -20,7 +20,7 @@ class NamedEvents implements Feature
         $chainMail->use(
             $this->adjustTransitionGuardBehaviour(...)
         )->use(function (
-            Chains\Guard     $transitionMiddleware,
+            Chains\Guard $transitionMiddleware,
             ValidateCallback $eventMiddleware,
         ): void {
 
@@ -56,8 +56,7 @@ class NamedEvents implements Feature
 
     private function adjustTransitionGuardBehaviour(
         ?Chains\Guard $guard
-    )
-    {
+    ) {
         $guard?->link(
             function (Params\Guard $context, callable $next, callable $first): bool {
                 $result = $next($context);
@@ -85,7 +84,6 @@ class NamedEvents implements Feature
                 return true;
             }
         );
-
     }
 
     /**

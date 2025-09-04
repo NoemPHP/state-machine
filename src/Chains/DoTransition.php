@@ -17,9 +17,8 @@ class DoTransition extends Chain
 {
     public function __construct(
         private readonly ConnectedRegions $connectedRegions,
-        private readonly Events           $events,
-    )
-    {
+        private readonly Events $events,
+    ) {
         parent::__construct($this->doTransition(...));
     }
 

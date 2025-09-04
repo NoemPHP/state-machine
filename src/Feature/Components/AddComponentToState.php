@@ -8,7 +8,6 @@ use Noem\State\RegionBuilder;
 
 class AddComponentToState implements BuildStep
 {
-
     public function callback(RegionBuilder $builder, callable $next, callable $first): Region
     {
         // TODO: Implement callback() method.

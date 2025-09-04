@@ -19,12 +19,10 @@ class AddTransition implements BuildStep
      *
      */
     public function __construct(
-        private readonly string    $from,
-        private readonly string    $to,
+        private readonly string $from,
+        private readonly string $to,
         private readonly ?\Closure $guard = null
-    )
-    {
-
+    ) {
     }
 
     public function callback(RegionBuilder $builder, callable $next, callable $first): Region

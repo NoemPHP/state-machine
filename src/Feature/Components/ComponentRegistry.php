@@ -31,7 +31,6 @@ class ComponentRegistry
 
     public function __construct(private readonly InvokeCallback $invokeCallback)
     {
-
     }
 
     public function registerComponent(string $name, array $initialData, callable $system)
@@ -50,7 +49,6 @@ class ComponentRegistry
 
     public function addComponentToState(Region $region, string $state, string $componentName)
     {
-
     }
 
 

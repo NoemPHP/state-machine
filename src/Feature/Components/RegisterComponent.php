@@ -8,7 +8,6 @@ use Noem\State\RegionBuilder;
 
 class RegisterComponent implements BuildStep
 {
-
     public function callback(RegionBuilder $builder, callable $next, callable $first): Region
     {
         $region = $next($builder);

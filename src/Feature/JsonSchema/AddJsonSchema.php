@@ -12,7 +12,6 @@ class AddJsonSchema implements BuildStep
 {
     public function __construct(private readonly array $schema)
     {
-
     }
 
     public function callback(RegionBuilder $builder, callable $next, callable $first): Region

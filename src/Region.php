@@ -17,14 +17,13 @@ class Region
     private array $dispatched = [];
 
     public function __construct(
-        private readonly Events                  $events,
-        string                                   $initial,
-        private readonly string                  $final,
-        private readonly Chains\DispatchAction   $actionChain,
-        private readonly Chains\DoTransition     $transitionChain,
-        private readonly Chains\Path             $path,
-    )
-    {
+        private readonly Events $events,
+        string $initial,
+        private readonly string $final,
+        private readonly Chains\DispatchAction $actionChain,
+        private readonly Chains\DoTransition $transitionChain,
+        private readonly Chains\Path $path,
+    ) {
         $this->currentState = $initial;
     }
 

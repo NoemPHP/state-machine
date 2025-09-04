@@ -21,7 +21,6 @@ use Noem\State\Middleware\ChainMail;
  */
 class TransitionsFeature implements Feature
 {
-
     /**
      * @throws ChainException
      */
@@ -30,8 +29,7 @@ class TransitionsFeature implements Feature
         $chainMail->supply(
             fn(ConnectedRegions $c, Events $e): DoTransition => new DoTransition($c, $e),
             fn(InvokeCallback $i, PrepareInvokable $p): Guard => new Guard($i, $p),
-            fn(): TransitionRegistry => new TransitionRegistry,
-
+            fn(): TransitionRegistry => new TransitionRegistry(),
         );
         $chainMail->use($this->checkAvailableTransitionsAfterActionDispatch(...));
     }
@@ -45,12 +43,11 @@ class TransitionsFeature implements Feature
      * @return void
      */
     private function checkAvailableTransitionsAfterActionDispatch(
-        DispatchAction     $dispatchAction,
-        ConnectedRegions   $connectedRegions,
+        DispatchAction $dispatchAction,
+        ConnectedRegions $connectedRegions,
         TransitionRegistry $transitionRegistry,
-        Chains\Guard       $guardChain
-    )
-    {
+        Chains\Guard $guardChain
+    ) {
         $dispatchAction->link(function (Action $action, callable $next) use ($transitionRegistry, $guardChain, $connectedRegions) {
             $currentState = $action->currentState;
             $newState = $next($action);
