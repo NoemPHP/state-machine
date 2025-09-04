@@ -6,5 +6,4 @@ use Noem\State\MetaType;
 
 class ComponentsMetaType extends MetaType
 {
-
 }

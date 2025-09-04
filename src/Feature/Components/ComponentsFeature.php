@@ -18,7 +18,6 @@ use Noem\State\Middleware\ChainMail;
  */
 class ComponentsFeature implements Feature
 {
-
     public function __invoke(ChainMail $chainMail): void
     {
         $chainMail
@@ -56,9 +55,8 @@ class ComponentsFeature implements Feature
      */
     private function setupComponentSystems(
         DispatchAction $dispatchAction,
-        Meta           $meta
-    )
-    {
+        Meta $meta
+    ) {
         $dispatchAction->link(function (Action $action, callable $next) use ($meta) {
             $components = $meta->call(new \Noem\State\Chains\Params\Meta($action->region, ComponentsMetaType::get()));
         });

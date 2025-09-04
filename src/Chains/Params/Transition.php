@@ -16,10 +16,9 @@ class Transition
 
     public function __construct(
         public readonly \Noem\State\Region $region,
-        object                             $payload,
-        public readonly string             $previousState
-    )
-    {
+        object $payload,
+        public readonly string $previousState
+    ) {
         $this->payload = $payload;
     }
 }

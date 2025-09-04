@@ -15,9 +15,8 @@ class DispatchAction extends Chain
 {
     public function __construct(
         private readonly ConnectedRegions $connectedRegions,
-        private readonly Events           $events,
-    )
-    {
+        private readonly Events $events,
+    ) {
         parent::__construct($this->onAction(...));
     }
 
@@ -40,7 +39,6 @@ class DispatchAction extends Chain
         $this->events->onAction($action->region, $action->currentState, $action->payload);
 
         return $action->currentState;
-
     }
 
     private function connections(Region $region)
