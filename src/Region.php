@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace Noem\State;
 
 use Noem\State\Chains\Params;
-use Noem\State\Middleware\ChainException;
-use ReflectionException;
 use Throwable;
 
 class Region
@@ -19,21 +17,15 @@ class Region
     private array $dispatched = [];
 
     public function __construct(
-        private readonly array $states,
-        private readonly array $transitions,
-        private readonly Events $events,
-        string $initial,
-        private readonly string $final,
-        private readonly Chains\DispatchAction $actionChain,
-        private readonly Chains\Guard $guardChain,
-        private readonly Chains\ConnectedRegions $connectionsChain,
-        private readonly Chains\Path $path,
-    ) {
+        private readonly Events                  $events,
+        string                                   $initial,
+        private readonly string                  $final,
+        private readonly Chains\DispatchAction   $actionChain,
+        private readonly Chains\DoTransition     $transitionChain,
+        private readonly Chains\Path             $path,
+    )
+    {
         $this->currentState = $initial;
-        $this->actionChain->link(function (Params\Action $context, callable $next): string {
-            return $next($context);
-        });
-        ;
     }
 
     /**
@@ -54,62 +46,6 @@ class Region
     }
 
     /**
-     * Carries out all actions relevant to the current trigger while maintaining a stack of nested regions
-     *
-     * @param object $payload
-     *
-     * @return string The state the Region should be in after processing
-     * @throws ReflectionException
-     * @throws Throwable
-     */
-    protected function processTrigger(object $payload): string
-    {
-        if ($this->isFinal()) {
-            return $this->currentState;
-        }
-        /**
-         * Process connected regions first.
-         * This allows for nested states and transitions.
-         */
-        foreach ($connections = $this->connections() as $region) {
-            $region->processTrigger($payload);
-        }
-
-        $this->events->onAction($this, $this->currentState, $payload);
-        /**
-         * We cannot transition away before all connected regions have finished
-         * //TODO Are there connection types that should not behave like this?
-         */
-        if (array_any($connections, fn($region) => !$region->isFinal())) {
-            return $this->currentState;
-        }
-        /**
-         * Transitions are processed in the order they were defined.
-         * This means that if multiple transitions have the same trigger, only the first one will be executed.
-         * TODO: This should be executed AFTER the Chain has run, not within its provider
-         */
-        if (isset($this->transitions[$this->currentState])) {
-            foreach ($this->transitions[$this->currentState] as $target => $guards) {
-                foreach ($guards as $guard) {
-                    /**
-                     * Execute the middleware chain to determine whether a transition is enabled
-                     */
-                    $context = new Params\Guard($this, $this->currentState, $target, $guard, $payload);
-                    $enabled = $this->guardChain->call($context);
-
-                    if ($enabled) {
-                        $this->doTransition($target, $payload);
-
-                        return $target;
-                    }
-                }
-            }
-        }
-
-        return $this->currentState;
-    }
-
-    /**
      */
     private function doDispatch(): void
     {
@@ -118,52 +54,38 @@ class Region
          */
         $dispatched = [...$this->dispatched];
         $this->dispatched = [];
-        $provider = fn(Params\Action $ctx): string => $this->processTrigger($ctx->payload);
         foreach ($dispatched as $trigger) {
             $context = new Params\Action($this, (object)$trigger);
-            ($this->actionChain)->withProvider($provider)->call($context);
+            $newState = ($this->actionChain)->call($context);
+            /**
+             * The action has produced a new state.
+             * Carry out the transition
+             */
+            if ($newState !== $this->currentState) {
+                $previousState = $this->currentState;
+                $this->currentState = $newState;
+                $transition = new Params\Transition(
+                    $this,
+                    (object)$trigger,
+                    $previousState
+                );
+                $result = $this->transitionChain->call($transition);
+                //TODO we may want to update the state only when we get true here?
+            }
         }
     }
 
     /**
-     * Retrieves a list of regions associated with the current state.
-     *
-     * @return Region[] Array of current regions
+     * TODO should this not rather be a chain obtained from the builder chainmail?
+     * @return string
      */
-    private function connections(): array
-    {
-        return $this->connectionsChain->call(
-            new Params\Connection($this)
-        );
-    }
-
     public function path(): string
     {
         return $this->path->call($this);
     }
 
     /**
-     * Transition to another state based on the defined transitions.
-     *
-     * @param string $to Target state to transition to
-     * @param object $trigger
-     *
-     * @return void
-     * @throws Throwable
-     */
-    private function doTransition(
-        string $to,
-        object $trigger,
-    ): void {
-        $this->events->onExitState($this, $this->currentState, $trigger);
-        $this->currentState = $to;
-        foreach ($this->connections() as $region) {
-            $region->onEnterParent($trigger);
-        }
-        $this->events->onEnterState($this, $to, $trigger);
-    }
-
-    /**
+     * TODO This must go. Regions should not have a concept of parenting as part of their API
      * @throws Throwable
      */
     public function onEnterParent(object $trigger): void
@@ -175,10 +97,10 @@ class Region
         $this->doDispatch();
     }
 
-    public function onDispatch(object $trigger): void
-    {
-        $this->dispatched[] = $trigger;
-    }
+//    public function onDispatch(object $trigger): void
+//    {
+//        $this->dispatched[] = $trigger;
+//    }
 
     /**
      * Determines if we have reached the end or final state.

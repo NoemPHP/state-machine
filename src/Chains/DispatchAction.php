@@ -14,8 +14,8 @@ use Noem\State\Region;
 class DispatchAction extends Chain
 {
     public function __construct(
-        private ConnectedRegions $connectedRegions,
-        private readonly Events  $events,
+        private readonly ConnectedRegions $connectedRegions,
+        private readonly Events           $events,
     )
     {
         parent::__construct($this->onAction(...));
@@ -24,11 +24,9 @@ class DispatchAction extends Chain
     /**
      * @throws \Throwable
      */
-    private function onAction(Action $action)
+    private function onAction(Action $action): string
     {
-        if ($action->region->isFinal()) {
-            return $action->currentState;
-        }
+
 
         /**
          * Process connected regions first.
@@ -40,15 +38,9 @@ class DispatchAction extends Chain
         }
 
         $this->events->onAction($action->region, $action->currentState, $action->payload);
-        /**
-         * We cannot transition away before all connected regions have finished
-         * //TODO Are there connection types that should not behave like this?
-         */
-        if (array_any($connections, fn($region) => !$region->isFinal())) {
-            return $action->currentState;
-        }
 
-        //TODO somehow the transition handling needs to be part of the chain
+        return $action->currentState;
+
     }
 
     private function connections(Region $region)

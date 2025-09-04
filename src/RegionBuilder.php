@@ -6,13 +6,12 @@ namespace Noem\State;
 
 use ArrayAccess;
 use Noem\State\Chains\ConnectedRegions;
-use Noem\State\Chains\Params\Action;
+use Noem\State\Chains\DoTransition;
 use Noem\State\Chains\Params\BuildParams;
-use Noem\State\Chains\PrepareInvokable;
 use Noem\State\Feature\Feature;
+use Noem\State\Feature\Transitions\TransitionsFeature;
 use Noem\State\Middleware\ChainMail;
 use Noem\State\Middleware\Mesh;
-use Noem\State\Chains\Params;
 
 
 class RegionBuilder
@@ -42,8 +41,7 @@ class RegionBuilder
             $chainMail->supply(
                 fn(): RegionBuilder => $this,
                 fn(): Chains\EnhanceRegionBuilder => new Chains\EnhanceRegionBuilder(),
-                fn(): Chains\DispatchAction => new Chains\DispatchAction(),
-                fn(Chains\InvokeCallback $i, PrepareInvokable $p): Chains\Guard => new Chains\Guard($i, $p),
+                fn(ConnectedRegions $c, Events $e): Chains\DispatchAction => new Chains\DispatchAction($c, $e),
                 fn(): Chains\ValidateCallback => new Chains\ValidateCallback(),
                 fn(): Chains\PrepareInvokable => new Chains\PrepareInvokable(),
                 fn(): Chains\InvokeCallback => new Chains\InvokeCallback(),
@@ -59,12 +57,24 @@ class RegionBuilder
         $this->chainMail = $chainMail;
         $this->meta = $this->chainMail->get(Chains\Meta::class);
         $this->buildChain = new Chains\BuildRegion();
+        /**
+         * Making transitions optional is not fully thought through yet.
+         * So while it is maintained "externally" mainly for separation of concerns,
+         * it is still core functionality
+         */
+        $this->enableFeatures(new TransitionsFeature());
     }
 
-    public function addStep(callable $callback): self
+    private function addStep(callable $callback): self
     {
         $this->buildChain->link($callback);
 
+        return $this;
+    }
+
+    public function addBuildStep(BuildStep $step): self
+    {
+        $this->addStep($step->callback(...));
         return $this;
     }
 
@@ -138,22 +148,6 @@ class RegionBuilder
                 return $region;
             }
         );
-
-        return $this;
-    }
-
-    /**
-     * Pushes a transition from one state to another based on provided guard condition.
-     *
-     * @param string $from State that triggers this transition
-     * @param string $to Target state after successful transition
-     * @param ?\Closure $guard Guard callback returning true or false. Optional, allow by default
-     *
-     * @return self This builder instance, allowing chaining
-     */
-    public function pushTransition(string $from, string $to, ?\Closure $guard = null): self
-    {
-        $this->transitions[$from][$to][] = $guard ?? fn(object $t): bool => true;
 
         return $this;
     }
@@ -294,65 +288,20 @@ class RegionBuilder
             ->withProvider(fn() => $this);
 
         $provider = function (RegionBuilder $builder) {
-            $guardChain = $this->chainMail->get(Chains\Guard::class);
             $actionChain = $this->chainMail->get(Chains\DispatchAction::class);
-            $connectionsChain = $this->chainMail->get(Chains\ConnectedRegions::class);
+            $transitionChain = $this->chainMail->get(DoTransition::class);
             $path = $this->chainMail->get(Chains\Path::class);
             $events = $this->chainMail->get(Events::class);
             $this->assertValidConfig();
 
             $region = new Region(
-                states: $builder->states,
-                transitions: $builder->transitions,
+                transitionChain: $transitionChain,
                 events: $events,
                 initial: $builder->initial ?? current($builder->states),
                 final: $builder->final ?? end($builder->states),
                 actionChain: $actionChain,
-                guardChain: $guardChain,
-                connectionsChain: $connectionsChain,
                 path: $path
             );
-
-            $actionChain->link(function (Action $action, callable $next) use (
-                $region,
-                $events,
-                $guardChain
-            ) {
-
-                $state = $next($action);
-                if ($region !== $action->region) {
-                    return $state;
-                }
-                /**
-                 * Transitions are processed in the order they were defined.
-                 * This means that if multiple transitions have the same trigger, only the first one will be executed.
-                 * TODO: This should be executed AFTER the Chain has run, not within its provider
-                 */
-                if (isset($this->transitions[$action->currentState])) {
-                    foreach ($this->transitions[$action->currentState] as $target => $guards) {
-                        foreach ($guards as $guard) {
-                            /**
-                             * Execute the middleware chain to determine whether a transition is enabled
-                             */
-                            $context = new Params\Guard($region, $action->currentState, $target, $guard, $action->payload);
-                            $enabled = $guardChain->call($context);
-
-                            if (!$enabled) {
-                                continue;
-
-                            }
-                            $this->doTransition($target, $action->payload);
-                            $this->events->onExitState($region, $action->currentState, $action->payload);
-                            $this->currentState = $to;
-                            foreach ($this->connections() as $region) {
-                                $region->onEnterParent($trigger);
-                            }
-                            $this->events->onEnterState($this, $to, $trigger);
-                            return $target;
-                        }
-                    }
-                }
-            });
 
             return $region;
         };
