@@ -7,12 +7,7 @@ namespace Noem\State\Test\Integration;
 use Noem\State\Chains\BuildRegion;
 use Noem\State\Chains\EnhanceRegionBuilder;
 use Noem\State\Chains\Params\BuildParams;
-use Noem\State\Chains\Params\Get;
-use Noem\State\Chains\Params\RegionConstructor;
 use Noem\State\Connection;
-use Noem\State\Feature\EventHooks\EventHooks;
-use Noem\State\Feature\EventHooks\Hook\After;
-use Noem\State\Feature\EventHooks\Hook\Before;
 use Noem\State\Feature\ExtendedState\Bound;
 use Noem\State\Feature\ExtendedState\ContextMetaType;
 use Noem\State\Feature\ExtendedState\ExtendedState;
@@ -20,6 +15,7 @@ use Noem\State\Feature\NamedEvents\Event;
 use Noem\State\Feature\NamedEvents\Name;
 use Noem\State\Feature\NamedEvents\NamedEvents;
 use Noem\State\Feature\OrthogonalRegions\OrthogonalRegions;
+use Noem\State\Feature\Transitions\AddTransition;
 use Noem\State\Middleware\ChainException;
 use Noem\State\RegionBuilder;
 use PHPUnit\Framework\Attributes\Test;
@@ -44,7 +40,9 @@ class RegionTest extends RegionBuilderTestCase
             ->onExit('one', fn(object $t) => $exitSpy())
             ->onEnter('two', fn(object $t) => $enterSpy())
             ->markInitial('one')
-            ->pushTransition('one', 'two', fn(object $t): bool => $guardSpy())
+            ->addBuildStep(
+                new AddTransition('one', 'two', fn(object $t): bool => $guardSpy()),
+            )
             ->build();
 
         $r->trigger((object)['foo' => 1]);
@@ -71,13 +69,13 @@ class RegionTest extends RegionBuilderTestCase
             )
             ->setStates('one', 'two')
             ->markInitial('one')
-            ->pushTransition(
-                'one',
-                'two',
-                fn(object $t): bool => true
+            ->addBuildStep(
+                new AddTransition('one', 'two', fn(object $t): bool => true)
             )
             ->connect(
-                $r->newInstance()->setStates('foo', 'bar')
+                $r
+                    ->newInstance()
+                    ->setStates('foo', 'bar')
                     ->onAction('foo', function (object $t) use ($handler) {
                         $handler();
                     })->markFinal('foo')->build(),
@@ -251,7 +249,7 @@ class RegionTest extends RegionBuilderTestCase
             ->onAction('foo', function (object $t) use (&$test) {
                 assert($this instanceof Bound);
                 $key = $this->get('key');
-                $this->set('key', $key.' world');
+                $this->set('key', $key . ' world');
             });
         $subRegion = $subRegionBuilder->build();
         $this->builder->setStates('one', 'two')
@@ -282,11 +280,12 @@ class RegionTest extends RegionBuilderTestCase
     {
         $r = new RegionBuilder();
         $r->setStates('one', 'two', 'three')
-            ->pushTransition('one', 'two')
+            ->addBuildStep(new AddTransition('one', 'two'))
             ->chainMail->use(function (EnhanceRegionBuilder $builderMiddleware) {
                 $builderMiddleware->link(function (BuildParams $params, \Closure $next) {
                     $builder = $next($params);
-                    $builder->pushTransition('two', 'three', fn(object $t): bool => true);
+                    assert($builder instanceof RegionBuilder);
+                    $builder->addBuildStep(new AddTransition('two', 'three', fn(object $t): bool => true));
 
                     return $next($params);
                 });
@@ -337,11 +336,11 @@ class RegionTest extends RegionBuilderTestCase
         $r->chainMail->use($middleware);
         $subRegion = $r->newInstance()
             ->setStates('2_foo', '2_bar')
-            ->pushTransition('2_foo', '2_bar');
+            ->addBuildStep(new AddTransition('2_foo', '2_bar'));
         $subRegion = $subRegion->build();
 
         $r->setStates('1_one', '1_two')
-            ->pushTransition('1_one', '1_two')
+            ->addBuildStep(new AddTransition('1_one', '1_two'))
             ->connect(
                 $subRegion,
                 Connection::DYNAMIC
@@ -405,8 +404,8 @@ class RegionTest extends RegionBuilderTestCase
         );
         $r = new RegionBuilder();
         $r->setStates('one', 'two', 'three')
-            ->pushTransition('one', 'two')
-            ->pushTransition('two', 'three')
+            ->addBuildStep(new AddTransition('one', 'two'))
+            ->addBuildStep(new AddTransition('two', 'three'))
             ->onEnter('two', function (object $trigger) {
                 /** @noinspection PhpUndefinedMethodInspection */
                 $this->dispatch((object)['hello' => 'world']);
@@ -427,8 +426,8 @@ class RegionTest extends RegionBuilderTestCase
         $r = new RegionBuilder();
         $namedEventsFeature = new NamedEvents();
         $r->enableFeatures($namedEventsFeature)->setStates('one', 'two', 'three')
-            ->pushTransition('one', 'two', fn(#[Name('hello-world')] Event $t): bool => $guardSpy())
-            ->pushTransition('two', 'three', fn(#[Name('ignore-me')] Event $t): bool => $guardSpy());
+            ->addBuildStep(new AddTransition('one', 'two', fn(#[Name('hello-world')] Event $t): bool => $guardSpy()))
+            ->addBuildStep(new AddTransition('two', 'three', fn(#[Name('ignore-me')] Event $t): bool => $guardSpy()));
         $region = $r->build();
         $region->trigger((object)['foo' => 1]);
         $this->assertFalse($region->isInState('two'), "Region should ignore non-matching event'");
