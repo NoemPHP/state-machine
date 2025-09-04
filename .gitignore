@@ -4,3 +4,5 @@ vendor/
 *.lock
 .phpunit.result.cache
 /local/*
+.aider*
+.env
