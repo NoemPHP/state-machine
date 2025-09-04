@@ -26,7 +26,7 @@ class JsonSchemaFeature implements Feature
                 ?LoaderChains\Schema $schema
             ) {
                 /**
-                 * Extend the region schema to support the 'regions' item within a state config
+                 * Extend the context schema to recognize the 'schema' entry
                  */
                 $schema?->link(function (SchemaContext $context, callable $next) {
                     $contextSchema = $context->getCustomSchema('context');
@@ -67,16 +67,7 @@ class JsonSchemaFeature implements Feature
                     $schema = $data['context']['schema'];
                     $builder = $next($context);
                     assert($builder instanceof RegionBuilder);
-                    $builder->addStep(function (RegionBuilder $builder, callable $next) use ($schema) {
-                        $meta = $builder->chainMail->get(Meta::class);
-                        $region = $next($builder);
-                        $metadata = $meta->call(new \Noem\State\Chains\Params\Meta($region, ContextMetaType::get()));
-                        foreach ($schema as $type) {
-                            $metadata[$type['name']] = $type['default'] ?? null;
-                        }
-
-                        return $region;
-                    });
+                    $builder->addBuildStep(new AddJsonSchema($schema));
 
                     return $builder;
                 });
