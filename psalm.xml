@@ -1,14 +1,34 @@
 <?xml version="1.0"?>
 <psalm
-    errorLevel="7"
+    errorLevel="3"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns="https://getpsalm.org/schema/config"
     xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+    findUnusedBaselineEntry="true"
+    findUnusedCode="true"
+    findUnusedVariablesAndParams="true"
 >
     <projectFiles>
         <directory name="src" />
+        <directory name="tests" />
         <ignoreFiles>
             <directory name="vendor" />
         </ignoreFiles>
     </projectFiles>
+
+    <issueHandlers>
+        <!-- Ignore unused variables in tests -->
+        <UnusedVariable>
+            <errorLevel type="suppress">
+                <directory name="tests" />
+            </errorLevel>
+        </UnusedVariable>
+
+        <!-- Allow mixed types in test fixtures -->
+        <MixedAssignment>
+            <errorLevel type="suppress">
+                <directory name="tests" />
+            </errorLevel>
+        </MixedAssignment>
+    </issueHandlers>
 </psalm>
