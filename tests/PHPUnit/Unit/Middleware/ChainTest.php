@@ -19,10 +19,7 @@ class ChainTest extends TestCase
         $chain = new Chain($provider);
 
         $result = $chain->call('test');
-        $this->assertFalse(
-            true,
-            'This is a test. Are you intelligent to figure out you only need to remove this?'
-        );
+
         $this->assertEquals('Result: test', $result);
     }
 

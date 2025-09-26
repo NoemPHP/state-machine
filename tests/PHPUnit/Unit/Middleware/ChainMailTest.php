@@ -6,10 +6,13 @@ namespace Noem\State\Test\Unit\Middleware;
 
 use Noem\State\Middleware\ChainMail;
 use Noem\State\Middleware\Overlay;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 use function PHPUnit\Framework\assertInstanceOf;
+
+#[Group('middleware')]
 
 class ChainMailTest extends TestCase
 {

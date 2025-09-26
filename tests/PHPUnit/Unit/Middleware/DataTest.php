@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Noem\State\Test\Unit\Middleware;
 
 use Noem\State\Middleware\Mesh;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
+
+#[Group('middleware')]
 
 class DataTest extends TestCase
 {
