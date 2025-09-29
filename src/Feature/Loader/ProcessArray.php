@@ -14,6 +14,7 @@ use Noem\State\Connection;
 use Noem\State\Feature\Loader\LoaderChains\Params\SchemaContext;
 use Noem\State\Feature\Loader\LoaderChains\Schema;
 use Noem\State\Feature\Loader\LoaderChains\TransformArray;
+use Noem\State\Feature\Transitions\AddTransition;
 use Noem\State\RegionBuilder;
 
 class ProcessArray
@@ -62,7 +63,7 @@ class ProcessArray
         }
         foreach ($transitions as $state => $stateTransitions) {
             foreach ($stateTransitions as $transition) {
-                $builder->pushTransition($state, $transition['target'], $this->createTransitionGuard($transition));
+                $builder->addBuildStep(new AddTransition($state, $transition['target'], $this->createTransitionGuard($transition)));
             }
         }
         foreach ($callbacks['onEnter'] as $state => $stateCallbacks) {
