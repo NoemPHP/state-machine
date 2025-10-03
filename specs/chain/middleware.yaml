@@ -188,7 +188,3 @@ features:
         
       - acceptanceCriteria: Return type enforcement for factory callables
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/TypeSafety/ReturnTypeEnforcementTest.php
-
-# Legacy test command for backward compatibility
-test: |
-  vendor/bin/phpunit --group middleware
