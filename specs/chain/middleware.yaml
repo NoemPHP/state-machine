@@ -1,7 +1,194 @@
 name: middleware
 group: chain
-description: It a provides a way to create, extend and invoke arbitrary middleware chains
-acceptanceCriteria:
-  - A portable chain object can be created with a basic provider
+description: A comprehensive middleware system providing portable chain objects, dependency injection container (ChainMail), and flexible array-like data structures (Mesh) for creating, extending and invoking arbitrary middleware chains
+
+features:
+  - name: chain
+    description: Core chain functionality with middleware execution, memoization, and restart logic
+    specs:
+      - acceptanceCriteria: A portable chain object can be created with a basic provider
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Chain/PortableChainCreationTest.php
+        
+      - acceptanceCriteria: A chain supports linking multiple middleware functions in sequence
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Chain/LinkMultipleMiddlewareTest.php
+        
+      - acceptanceCriteria: Middleware executes in reverse order (last linked executes first)
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Chain/MiddlewareExecutionOrderTest.php
+        
+      - acceptanceCriteria: A chain can be created without a provider and one can be added later using withProvider()
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Chain/WithProviderCreatesNewChainTest.php
+        
+      - acceptanceCriteria: withProvider() creates a new Chain instance without modifying the original
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Chain/WithProviderImmutabilityTest.php
+        
+      - acceptanceCriteria: Middleware can modify the context passed through the chain
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Chain/MiddlewareModifiesContextTest.php
+        
+      - acceptanceCriteria: Middleware can short-circuit execution by not calling next()
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Chain/MiddlewareShortCircuitTest.php
+        
+      - acceptanceCriteria: Chain supports memoization to cache results for identical inputs
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Chain/MemoizationCachesResultsTest.php
+        
+      - acceptanceCriteria: Memoization uses strict equality (===) by default but accepts custom equality checks
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Chain/MemoizationEqualityTest.php
+        
+      - acceptanceCriteria: Chain prevents infinite loops through configurable restart limits (default 1)
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Chain/MaxRestartsPreventsInfiniteLoopsTest.php
+        
+      - acceptanceCriteria: Chain provides a 'first' parameter to middleware allowing restart with new input
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Chain/FirstRestartsWithNewInputTest.php
+        
+      - acceptanceCriteria: ChainException is thrown when restart limits are exceeded
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Chain/ChainExceptionOnRestartLimitTest.php
+        
+      - acceptanceCriteria: Multiple middleware can be passed to constructor as an array
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Chain/MiddlewareArrayConstructorTest.php
+        
+      - acceptanceCriteria: Middleware can be linked with prepend option to add at the beginning
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Chain/PrependMiddlewareTest.php
+        
+      - acceptanceCriteria: Chain properly handles both scalar and object contexts
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Chain/HandlesScalarAndObjectContextsTest.php
+
+  - name: chainmail
+    description: Dependency injection container with overlay pattern, lazy service resolution, and middleware boot sequence
+    specs:
+      - acceptanceCriteria: ChainMail provides dependency injection container functionality
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/ChainMail/DependencyInjectionTest.php
+        
+      - acceptanceCriteria: ChainMail supports supplying callable factories with return type declarations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/ChainMail/CallableFactoriesTest.php
+        
+      - acceptanceCriteria: ChainMail automatically resolves dependencies based on parameter types
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/ChainMail/AutoResolveDependenciesTest.php
+        
+      - acceptanceCriteria: ChainMail supports overlay pattern with #[Overlay] attribute for decorating services
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/ChainMail/OverlayPatternTest.php
+        
+      - acceptanceCriteria: ChainMail supports middleware boot sequence through use() method
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/ChainMail/MiddlewareBootSequenceTest.php
+        
+      - acceptanceCriteria: ChainMail can be booted multiple times safely (idempotent)
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/ChainMail/IdempotentBootTest.php
+        
+      - acceptanceCriteria: ChainMail supports lazy service resolution (services created on first access)
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/ChainMail/LazyServiceResolutionTest.php
+        
+      - acceptanceCriteria: ChainMail automatically injects dependencies into callable parameters
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/ChainMail/AutoInjectParametersTest.php
+        
+      - acceptanceCriteria: ChainMail supports nullable parameters when service is not available
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/ChainMail/NullableParametersTest.php
+        
+      - acceptanceCriteria: ChainMail provides get() method for explicit service retrieval
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/ChainMail/ServiceRetrievalTest.php
+        
+      - acceptanceCriteria: ChainMail throws ChainException for missing required services
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/ChainMail/MissingServicesTest.php
+        
+      - acceptanceCriteria: ChainMail supports reflection-based parameter type resolution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/ChainMail/AutoResolveDependenciesTest.php
+        
+      - acceptanceCriteria: ChainMail validates that factory callables have return type declarations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/ChainMail/ReturnTypeValidationTest.php
+
+  - name: mesh
+    description: Flexible array-like data structure implementing ArrayAccess and Iterator with middleware support
+    specs:
+      - acceptanceCriteria: Mesh implements ArrayAccess interface for array-like access
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Mesh/ArrayAccessTest.php
+        
+      - acceptanceCriteria: Mesh implements Iterator interface for foreach loops
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Mesh/IteratorImplementationTest.php
+        
+      - acceptanceCriteria: Mesh supports offsetExists, offsetGet, offsetSet, offsetUnset operations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Mesh/OffsetOperationsTest.php
+        
+      - acceptanceCriteria: Mesh supports array-style assignment without explicit keys (auto-increment)
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Mesh/AutoIncrementTest.php
+        
+      - acceptanceCriteria: Mesh supports extending with other arrays or ArrayAccess objects
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Mesh/ExtendWithTest.php
+        
+      - acceptanceCriteria: Mesh allows middleware-style extensions for all array operations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Mesh/MiddlewareExtensionsTest.php
+        
+      - acceptanceCriteria: Mesh supports memoization for get operations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Mesh/MemoizationTest.php
+        
+      - acceptanceCriteria: Mesh supports custom equality checks for memoization
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Mesh/CustomEqualityTest.php
+        
+      - acceptanceCriteria: Mesh provides getArrayCopy() method for array conversion
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Mesh/ArrayCopyTest.php
+        
+      - acceptanceCriteria: Mesh supports middleware chains for each array operation (get, set, exists, unset)
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Mesh/OperationChainsTest.php
+        
+      - acceptanceCriteria: Mesh properly handles iterator methods current(), next(), key(), valid(), rewind()
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Mesh/IteratorMethodsTest.php
+
+  - name: error-handling
+    description: Error handling and edge case management across all middleware components
+    specs:
+      - acceptanceCriteria: ChainException extends standard Exception
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Chain/ChainExceptionOnRestartLimitTest.php
+        
+      - acceptanceCriteria: Chain handles reflection errors gracefully
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/ErrorHandling/ReflectionErrorTest.php
+        
+      - acceptanceCriteria: ChainMail validates callable signatures before registration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/ChainMail/ReturnTypeValidationTest.php
+        
+      - acceptanceCriteria: Missing dependencies throw descriptive error messages
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/ChainMail/MissingServicesTest.php
+        
+      - acceptanceCriteria: Invalid middleware configurations are caught early
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/ErrorHandling/InvalidConfigTest.php
+        
+      - acceptanceCriteria: Chain restart tracking prevents infinite recursion
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Chain/MaxRestartsPreventsInfiniteLoopsTest.php
+        
+      - acceptanceCriteria: Proper handling of null and undefined values in contexts
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/ErrorHandling/NullContextTest.php
+
+  - name: performance
+    description: Performance optimizations including lazy loading, memoization, and efficient resource usage
+    specs:
+      - acceptanceCriteria: Services are created lazily (only when first accessed)
+        test: vendor/bin/phpunit --filter "ChainMailTest::memo"
+        
+      - acceptanceCriteria: Memoization prevents repeated calculations
+        test: vendor/bin/phpunit --filter "ChainTest::testMemoizationCachesResults"
+        
+      - acceptanceCriteria: Chain reuses compiled middleware stack for multiple calls
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Performance/MiddlewareReuseTest.php
+        
+      - acceptanceCriteria: Mesh supports efficient array operations through middleware
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Performance/MeshPerformanceTest.php
+        
+      - acceptanceCriteria: Chain supports configurable restart limits to prevent performance issues
+        test: vendor/bin/phpunit --filter "ChainTest::testMaxRestartsPreventsInfiniteLoops"
+
+  - name: type-safety
+    description: Type safety enforcement with PHP 8.4+ generics and strict type declarations
+    specs:
+      - acceptanceCriteria: Chain is generic over Context (C) and Return (R) types
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/TypeSafety/ChainGenericsTest.php
+        
+      - acceptanceCriteria: ChainInterface supports generic type parameters
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/TypeSafety/ChainInterfaceTest.php
+        
+      - acceptanceCriteria: Mesh supports generic Key (TKey) and Value (TValue) types
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/TypeSafety/MeshGenericsTest.php
+        
+      - acceptanceCriteria: Proper PHP 8.4+ type declarations throughout
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/TypeSafety/TypeDeclarationsTest.php
+        
+      - acceptanceCriteria: Return type enforcement for factory callables
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/TypeSafety/ReturnTypeEnforcementTest.php
+
+# Legacy test command for backward compatibility
 test: |
   vendor/bin/phpunit --group middleware

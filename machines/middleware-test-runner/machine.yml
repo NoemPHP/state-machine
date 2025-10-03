@@ -1,0 +1,39 @@
+states:
+  # Initial state - prepare the test environment
+  - name: preparing
+    action:
+      - run: !php return initializeTestRunner()
+    transitions:
+      - target: running_tests
+        guard: !php return function(object $t): bool { return true; }
+
+  # Main test execution loop
+  - name: running_tests
+    action:
+      - run: !php return runAllTests()
+    transitions:
+      - target: stopping
+        guard: !php return shouldStopExecution()
+      - target: final_summary
+        guard: !php return allTestsComplete()
+
+  # Stopped due to stop-on-failure flag
+  - name: stopping
+    onEnter:
+      - run: !php return outputTestSummary()
+    transitions:
+      - target: complete
+
+  # Final summary - determines if we passed or failed
+  - name: final_summary
+    action:
+      - run: !php return determineFinalOutcome()
+    transitions:
+      - target: complete
+        guard: !php return function(object $t): bool { return true; }
+
+  # Final state
+  - name: complete
+
+initial: preparing
+final: complete
