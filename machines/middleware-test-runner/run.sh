@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Unified Test Runner Script
-# Usage: ./run.sh [options]
+# Usage: ./run.sh --spec=<path> [options]
 
 set -e
 
@@ -12,23 +12,24 @@ for arg in "$@"; do
         --help)
             echo "Unified Test Runner"
             echo ""
-            echo "Usage: ./run.sh [options]"
+            echo "Usage: ./run.sh --spec=<path> [options]"
+            echo ""
+            echo "Required:"
+            echo "  --spec=<path>         Path to spec YAML file (required)"
             echo ""
             echo "Options:"
-            echo "  --spec=<path>         Path to spec YAML file (default: specs/chain/middleware.yaml)"
-            echo "  --group=<n>           Run only specific feature group"
+            echo "  --group=<name>        Run only specific feature group"
             echo "  --stop-on-failure     Stop execution on first failure"
             echo "  --quiet, -q           Suppress output except for errors (quiet mode)"
             echo "  --verbose, -v         Show detailed output including test outputs"
             echo "  --help                Show this help message"
             echo ""
             echo "Examples:"
-            echo "  ./run.sh                                    # Run all tests"
-            echo "  ./run.sh --group=chain                      # Run only chain tests"
-            echo "  ./run.sh --stop-on-failure                  # Stop on first failure"
-            echo "  ./run.sh --quiet                            # Show only errors"
-            echo "  ./run.sh --verbose                          # Show detailed output"
-            echo "  ./run.sh --spec=specs/myspec.yaml           # Use custom spec file"
+            echo "  ./run.sh --spec=specs/core/region.yaml"
+            echo "  ./run.sh --spec=specs/chain/middleware.yaml --quiet"
+            echo "  ./run.sh --spec=specs/core/region.yaml --group=state-management"
+            echo "  ./run.sh --spec=specs/core/region.yaml --stop-on-failure"
+            echo "  ./run.sh --spec=specs/core/region.yaml --verbose"
             exit 0
             ;;
         *)

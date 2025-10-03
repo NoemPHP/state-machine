@@ -14,35 +14,32 @@ A state machine-based test runner for executing acceptance criteria tests define
 
 ### Basic Usage
 ```bash
-# Run all tests in the default spec file
-ddev exec machines/middleware-test-runner/run.sh
+# Run tests (--spec parameter is required)
+ddev exec machines/middleware-test-runner/run.sh --spec=specs/core/region.yaml
 
 # Or directly via PHP
-ddev exec php machines/middleware-test-runner/machine.php
+ddev exec php machines/middleware-test-runner/machine.php --spec=specs/core/region.yaml
 ```
 
 ### Command Line Options
 
 ```bash
 # Show only errors (quiet mode)
-ddev exec machines/middleware-test-runner/run.sh --quiet
-ddev exec machines/middleware-test-runner/run.sh -q
+ddev exec machines/middleware-test-runner/run.sh --spec=specs/chain/middleware.yaml --quiet
+ddev exec machines/middleware-test-runner/run.sh --spec=specs/chain/middleware.yaml -q
 
 # Show detailed output including test outputs (verbose mode)
-ddev exec machines/middleware-test-runner/run.sh --verbose
-ddev exec machines/middleware-test-runner/run.sh -v
+ddev exec machines/middleware-test-runner/run.sh --spec=specs/core/region.yaml --verbose
+ddev exec machines/middleware-test-runner/run.sh --spec=specs/core/region.yaml -v
 
 # Stop on first failure
-ddev exec machines/middleware-test-runner/run.sh --stop-on-failure
-
-# Run tests from a specific spec file
-ddev exec machines/middleware-test-runner/run.sh --spec=specs/myspec.yaml
+ddev exec machines/middleware-test-runner/run.sh --spec=specs/core/region.yaml --stop-on-failure
 
 # Run only a specific feature group
-ddev exec machines/middleware-test-runner/run.sh --group=chain
+ddev exec machines/middleware-test-runner/run.sh --spec=specs/chain/middleware.yaml --group=chain
 
 # Combine options
-ddev exec machines/middleware-test-runner/run.sh --quiet --stop-on-failure
+ddev exec machines/middleware-test-runner/run.sh --spec=specs/core/region.yaml --quiet --stop-on-failure
 ```
 
 ### Help

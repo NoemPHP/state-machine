@@ -18,7 +18,7 @@ require __DIR__ . '/../../vendor/autoload.php';
 function parseArguments(array $argv): array
 {
     $options = [
-        'specPath' => __DIR__ . '/../../specs/chain/middleware.yaml',
+        'specPath' => null,
         'stopOnFailure' => false,
         'group' => null,
         'quiet' => false,
@@ -41,6 +41,20 @@ function parseArguments(array $argv): array
             $options['verbose'] = true;
             $options['quiet'] = false;
         }
+    }
+    
+    // Validate required parameters
+    if ($options['specPath'] === null) {
+        echo "❌ ERROR: --spec parameter is required\n";
+        echo "\n";
+        echo "Usage: machines/middleware-test-runner/run.sh --spec=<path> [options]\n";
+        echo "\n";
+        echo "Examples:\n";
+        echo "  machines/middleware-test-runner/run.sh --spec=specs/core/region.yaml\n";
+        echo "  machines/middleware-test-runner/run.sh --spec=specs/chain/middleware.yaml --quiet\n";
+        echo "\n";
+        echo "Run with --help for more options.\n";
+        exit(1);
     }
     
     return $options;
