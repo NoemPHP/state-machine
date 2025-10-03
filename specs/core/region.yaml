@@ -1,0 +1,94 @@
+name: region
+group: core
+description: The Region class is the runtime engine for state machines, managing state transitions, event dispatching, and lifecycle callbacks through a chain-based architecture
+
+features:
+  - name: state-management
+    description: Core state tracking and querying functionality
+    specs:
+      - acceptanceCriteria: A region tracks its current state
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/CurrentStateTrackingTest.php
+        
+      - acceptanceCriteria: A region can check if it is in a specific state
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/StateCheckTest.php
+        
+      - acceptanceCriteria: A region can detect when it has reached the final state
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/FinalStateDetectionTest.php
+        
+  - name: event-triggering
+    description: Event triggering with immediate and queued dispatch modes
+    specs:
+      - acceptanceCriteria: A region can trigger events with immediate dispatch
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/ImmediateEventDispatchTest.php
+        
+      - acceptanceCriteria: A region can enqueue events for later dispatch
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/EnqueueEventsTest.php
+        
+      - acceptanceCriteria: Multiple events can be triggered and queued
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/MultipleEventQueuingTest.php
+        
+  - name: event-dispatching
+    description: Processing queued events through action and transition chains
+    specs:
+      - acceptanceCriteria: Dispatching processes all queued events in order
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/ProcessQueuedEventsTest.php
+        
+      - acceptanceCriteria: Dispatching clears the event queue to prevent infinite loops
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/EventQueueClearingTest.php
+        
+      - acceptanceCriteria: Events triggered during dispatch are queued for next cycle
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/NestedEventDispatchTest.php
+        
+  - name: action-chain-integration
+    description: Integration with the action chain for state-based event handling
+    specs:
+      - acceptanceCriteria: Action chain is invoked for each dispatched event
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/ActionChainInvocationTest.php
+        
+      - acceptanceCriteria: Action chain receives region and trigger payload
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/ActionChainContextTest.php
+        
+      - acceptanceCriteria: Action chain can return same or different state
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/ActionChainStateReturnTest.php
+        
+  - name: transition-chain-integration
+    description: Integration with the transition chain for state changes
+    specs:
+      - acceptanceCriteria: Transition chain is invoked when state changes
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/TransitionChainInvocationTest.php
+        
+      - acceptanceCriteria: Transition chain receives previous and current state
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/TransitionChainContextTest.php
+        
+      - acceptanceCriteria: Transition chain is not invoked when state remains unchanged
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/NoTransitionOnSameStateTest.php
+        
+  - name: event-lifecycle
+    description: State transition lifecycle events and callbacks
+    specs:
+      - acceptanceCriteria: onEnterParent triggers state entry callbacks
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/OnEnterParentCallbackTest.php
+        
+      - acceptanceCriteria: Entry callbacks can trigger additional events
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/EntryCascadingEventsTest.php
+        
+      - acceptanceCriteria: Cascading events are processed immediately after entry
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/ImmediateCascadeProcessingTest.php
+        
+  - name: path-generation
+    description: Hierarchical path representation for state machines
+    specs:
+      - acceptanceCriteria: Region provides path through path chain
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/PathGenerationTest.php
+        
+  - name: integration
+    description: Full integration scenarios combining multiple features
+    specs:
+      - acceptanceCriteria: Basic state transition with guards and callbacks executes correctly
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Core/Region/BasicTransitionIntegrationTest.php
+        
+      - acceptanceCriteria: Multiple transitions in sequence execute in order
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Core/Region/SequentialTransitionsTest.php
+        
+      - acceptanceCriteria: Event queueing and batch processing works correctly
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Core/Region/QueuedEventBatchTest.php
