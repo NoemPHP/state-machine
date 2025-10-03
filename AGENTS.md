@@ -39,6 +39,9 @@ ddev exec composer psalm
 # Execute state machine examples
 ddev exec php machines/frodos-journey/machine.php
 ddev exec php machines/webserver/machine.php
+
+# Run test runner for acceptance criteria
+ddev exec machines/middleware-test-runner/run.sh --quiet  # Show only errors
 ```
 
 ## Testing & Quality
@@ -54,6 +57,9 @@ ddev exec composer test:watch
 
 # Run specific test
 ddev exec phpunit --filter "TestClassName"
+
+# Run acceptance criteria test suite
+ddev exec machines/middleware-test-runner/run.sh
 ```
 
 ### Code Quality
@@ -142,10 +148,15 @@ final: final_state
 - **webserver/**: HTTP server state machine with connection spawning
 - **coding/**: Development workflow state machine
 - **directory-docs/**: Documentation generation example
+- **middleware-test-runner/**: Acceptance criteria test runner
 
 ### `tests/`
 - **PHPUnit/**: Unit and integration tests
 - **resources/**: Test fixtures and data
+
+### `specs/`
+- **chain/**: YAML specifications for acceptance criteria
+  - **middleware.yaml**: Comprehensive middleware system acceptance tests
 
 ## Common Patterns
 
@@ -191,6 +202,41 @@ $middleware = function(RegionBuilder $builder, \Closure $next) {
 $builder->pushMiddleware($middleware);
 ```
 
+## Test Runner System
+
+### Overview
+The project includes a state machine-based test runner (`machines/middleware-test-runner/`) for executing acceptance criteria defined in YAML specifications.
+
+### Usage
+```bash
+# Run all tests
+ddev exec machines/middleware-test-runner/run.sh
+
+# Quiet mode (errors only)
+ddev exec machines/middleware-test-runner/run.sh --quiet
+
+# Verbose mode (with output)
+ddev exec machines/middleware-test-runner/run.sh --verbose
+
+# Stop on first failure
+ddev exec machines/middleware-test-runner/run.sh --stop-on-failure
+
+# Run specific feature group
+ddev exec machines/middleware-test-runner/run.sh --group=chain
+```
+
+### Test Specification Format
+Tests are defined in YAML files under `specs/`:
+```yaml
+name: test_suite_name
+features:
+  - name: feature_name
+    description: Feature description
+    specs:
+      - acceptanceCriteria: What should be tested
+        test: command to execute test
+```
+
 ## Dependencies & External Integrations
 
 ### Required Dependencies
@@ -225,3 +271,17 @@ ddev exec composer quality      # Run all quality checks (CI)
 - Feature classes in `src/Feature/{FeatureName}/`
 - Tests mirror source structure in `tests/PHPUnit/`
 - Examples in `machines/{example-name}/`
+- Test specifications in `specs/{category}/`
+
+## Common Issues & Solutions
+
+### State Machine Looping
+- Ensure guards are mutually exclusive
+- Check that state transitions properly update context
+- Use simple state machine designs when possible
+- Avoid complex nested transitions
+
+### Test Runner Issues
+- If tests repeat: Check state machine transitions
+- For hanging tests: Use `--stop-on-failure` flag
+- Missing test files: Verify paths relative to project root
