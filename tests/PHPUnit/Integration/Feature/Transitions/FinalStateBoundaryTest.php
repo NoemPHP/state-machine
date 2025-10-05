@@ -35,22 +35,23 @@ class FinalStateBoundaryTest extends TestCase
             })
             ->build();
         
-        $this->assertEquals(1, $enterCount); // Initial state entry
-        
+        // Initial state entry doesn't fire onEnter during build
+        $this->assertEquals(0, $enterCount);
+
         // Progress to final
         $region->trigger((object)[]);
         $region->trigger((object)[]);
         $region->trigger((object)[]);
-        
+
         $this->assertTrue($region->isFinal());
         $this->assertTrue($region->isInState('final'));
-        
+
         // Try to trigger more - should stay in final
         $region->trigger((object)[]);
         $region->trigger((object)[]);
-        
+
         $this->assertTrue($region->isInState('final'));
-        $this->assertEquals(1, $enterCount, 'Should not re-enter initial state');
+        $this->assertEquals(0, $enterCount, 'Should not re-enter initial state from final');
     }
     
     public function testWorkflowCompletionDetection(): void

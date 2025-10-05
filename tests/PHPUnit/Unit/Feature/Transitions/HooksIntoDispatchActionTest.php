@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Noem\State\Tests\Unit\Feature\Transitions;
 
-use Noem\State\Chains\DispatchAction;
+use Noem\State\Feature\Transitions\AddTransition;
 use Noem\State\Feature\Transitions\TransitionsFeature;
-use Noem\State\Middleware\ChainMail;
 use Noem\State\RegionBuilder;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
+use stdClass;
 
 /**
  * Acceptance Criterion: TransitionsFeature hooks into DispatchAction chain
@@ -18,37 +18,76 @@ use PHPUnit\Framework\TestCase;
 #[Group('feature-registration')]
 class HooksIntoDispatchActionTest extends TestCase
 {
-    public function testHooksIntoDispatchActionChain(): void
+    public function testTransitionsAreAutomaticallyCheckedAfterActionDispatch(): void
     {
-        // Create a builder which will initialize the DispatchAction chain
-        $builder = new RegionBuilder();
-        $chainMail = $builder->chainMail;
+        // Build a region with TransitionsFeature enabled
+        $actionExecuted = false;
         
-        // Get the DispatchAction chain before feature is applied
-        $dispatchActionBefore = $chainMail->get(DispatchAction::class);
+        $region = (new RegionBuilder())
+            ->enableFeatures(new TransitionsFeature())
+            ->setStates('idle', 'working', 'done')
+            ->addBuildStep(new AddTransition('idle', 'working'))
+            ->addBuildStep(new AddTransition('working', 'done'))
+            ->onAction('idle', function (object $trigger) use (&$actionExecuted) {
+                $actionExecuted = true;
+            })
+            ->build();
         
-        // Apply the feature
-        $feature = new TransitionsFeature();
-        $feature($chainMail);
+        $this->assertTrue($region->isInState('idle'));
         
-        // Get the DispatchAction chain after feature is applied
-        $dispatchActionAfter = $chainMail->get(DispatchAction::class);
+        // Trigger an action - the feature should hook into DispatchAction
+        // and automatically check for transitions after the action executes
+        $region->trigger(new stdClass());
         
-        // The feature should have linked middleware into the chain
-        // Since we can't directly inspect the chain's middleware, 
-        // we verify the chain instance is the same (it modifies in place)
-        $this->assertSame($dispatchActionBefore, $dispatchActionAfter);
+        // Verify the action was executed
+        $this->assertTrue($actionExecuted, 'Action handler should have been called');
+        
+        // Verify automatic transition occurred due to DispatchAction hook
+        $this->assertTrue($region->isInState('working'), 'Should automatically transition from idle to working');
     }
     
-    public function testFeatureModifiesExistingDispatchAction(): void
+    public function testAutomaticTransitionEvaluationWithGuards(): void
     {
-        $builder = new RegionBuilder();
-        $feature = new TransitionsFeature();
+        $trigger = new stdClass();
+        $trigger->shouldTransition = false;
         
-        // Feature should work with existing ChainMail setup
-        $feature($builder->chainMail);
+        $region = (new RegionBuilder())
+            ->enableFeatures(new TransitionsFeature())
+            ->setStates('start', 'end')
+            ->addBuildStep(new AddTransition(
+                'start',
+                'end',
+                fn(object $t): bool => $t->shouldTransition
+            ))
+            ->build();
         
-        // Should not throw and services should be accessible
-        $this->assertTrue(true);
+        // First trigger with guard returning false
+        $region->trigger($trigger);
+        $this->assertTrue($region->isInState('start'), 'Should not transition when guard is false');
+        
+        // Second trigger with guard returning true
+        $trigger->shouldTransition = true;
+        $region->trigger($trigger);
+        $this->assertTrue($region->isInState('end'), 'Should transition when guard becomes true');
+    }
+    
+    public function testDispatchActionHookEnablesTransitionsWithoutExplicitHandlers(): void
+    {
+        // Even without action handlers, the DispatchAction hook should enable transitions
+        $region = (new RegionBuilder())
+            ->enableFeatures(new TransitionsFeature())
+            ->setStates('a', 'b', 'c')
+            ->addBuildStep(new AddTransition('a', 'b'))
+            ->addBuildStep(new AddTransition('b', 'c'))
+            ->build();
+        
+        $this->assertTrue($region->isInState('a'));
+        
+        // Trigger causes DispatchAction to run, which hooks the transition check
+        $region->trigger(new stdClass());
+        $this->assertTrue($region->isInState('b'), 'First automatic transition');
+        
+        $region->trigger(new stdClass());
+        $this->assertTrue($region->isInState('c'), 'Second automatic transition');
     }
 }

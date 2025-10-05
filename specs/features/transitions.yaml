@@ -142,38 +142,38 @@ features:
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/DoTransition/FiresOnEnterStateTest.php
 
       - acceptanceCriteria: DoTransition calls onEnterParent on connected regions
-        intent: Propagates transition events to child regions in hierarchical structures by calling onEnterParent on all connected regions, enabling parent-child state coordination
+        intent: Propagates transition events to child regions in hierarchical structures by calling onEnterParent on all connected regions after exit but before enter events, enabling parent-child state coordination
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/DoTransition/CallsOnEnterParentTest.php
 
-      - acceptanceCriteria: DoTransition receives Transition context parameter
-        intent: Provides complete transition information through Transition context object containing region, previousState, currentState, and payload for lifecycle event handlers
+      - acceptanceCriteria: DoTransition chain receives Transition context parameter
+        intent: Ensures DoTransition middleware chain receives Params\Transition context containing region, previousState, currentState, and payload, enabling chain middleware to access complete transition information
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/DoTransition/ReceivesTransitionContextTest.php
 
-      - acceptanceCriteria: DoTransition executes as middleware chain
-        intent: Enables extensibility through middleware pattern by implementing DoTransition as Chain, allowing features to intercept and augment transition execution logic
+      - acceptanceCriteria: DoTransition implements Chain interface
+        intent: Enables extensibility through middleware pattern by implementing DoTransition as Chain, allowing features to intercept and augment transition execution logic via link() method
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/DoTransition/ExecutesAsChainTest.php
 
   - name: guard-context
-    description: Guard parameter context and data access
+    description: Guard chain internal context parameter construction and access
     specs:
-      - acceptanceCriteria: Guard receives region instance in context
-        intent: Provides guards with region access through Guard context object, enabling state inspection and metadata access for complex conditional logic
+      - acceptanceCriteria: Guard chain receives context with region instance
+        intent: Ensures Guard middleware chain receives Params\Guard context containing region reference, enabling chain middleware to access region state and metadata for validation and logging
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/GuardContext/ReceivesRegionTest.php
         
-      - acceptanceCriteria: Guard receives origin state in context
-        intent: Provides guards with source state information through Guard context, enabling transition-aware conditions that depend on where transition originates
+      - acceptanceCriteria: Guard chain receives context with origin state
+        intent: Ensures Params\Guard context contains origin state string, enabling chain middleware to implement origin-aware guard augmentation and transition logging
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/GuardContext/ReceivesOriginTest.php
         
-      - acceptanceCriteria: Guard receives target state in context
-        intent: Provides guards with destination state information through Guard context, enabling transition-aware conditions that depend on where transition leads
+      - acceptanceCriteria: Guard chain receives context with target state
+        intent: Ensures Params\Guard context contains target state string, enabling chain middleware to implement target-aware validation and state dependency checking
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/GuardContext/ReceivesTargetTest.php
         
-      - acceptanceCriteria: Guard receives trigger payload in context
-        intent: Provides guards with event data through Guard context payload property, enabling data-driven transitions that evaluate trigger object properties
+      - acceptanceCriteria: Guard chain receives context with trigger payload
+        intent: Ensures Params\Guard context contains trigger object, enabling PrepareInvokable and InvokeCallback chains to properly bind trigger to guard callable parameter
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/GuardContext/ReceivesTriggerTest.php
         
-      - acceptanceCriteria: Guard receives handler callable in context
-        intent: Provides PrepareInvokable chain with original handler through Guard context, enabling callback transformation and binding before execution
+      - acceptanceCriteria: Guard chain receives context with handler callable
+        intent: Ensures Params\Guard context contains raw guard callable, enabling PrepareInvokable chain to transform and bind the handler before InvokeCallback executes it
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/GuardContext/ReceivesHandlerTest.php
 
   - name: integration

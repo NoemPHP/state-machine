@@ -26,7 +26,7 @@ class FiresOnEnterStateTest extends TestCase
         $region = (new RegionBuilder())
             ->enableFeatures(new TransitionsFeature())
             ->setStates('start', 'end')
-            ->onEnter('end', function () use (&$enterFired) {
+            ->onEnter('end', function (object $t) use (&$enterFired) {
                 $enterFired = true;
             })
             ->addBuildStep(new AddTransition('start', 'end'))

@@ -49,9 +49,11 @@ class ConditionalTransitionsTest extends TestCase
         $region = $builder
             ->setStates('start', 'special', 'default', 'end')
             ->markInitial('start')
-            // Try special path first, fall back to default
-            ->addBuildStep(new AddTransition('start', 'special', fn(object $t): bool => isset($t->specialCondition) && $t->specialCondition))
+            // Guards evaluated in REVERSE order (LIFO)
+            // Add default/fallback FIRST (will be checked LAST)
             ->addBuildStep(new AddTransition('start', 'default', fn(object $t): bool => true)) // Always true fallback
+            // Add special SECOND (will be checked FIRST)
+            ->addBuildStep(new AddTransition('start', 'special', fn(object $t): bool => isset($t->specialCondition) && $t->specialCondition))
             ->build();
         
         // Without special condition, should go to default

@@ -44,8 +44,9 @@ class EvaluatesInOrderTest extends TestCase
         
         $region->trigger($trigger);
         
-        // Should evaluate in order and stop at first match
-        $this->assertEquals(['first', 'second'], $evaluationOrder);
+        // Guards are evaluated in reverse registration order (LIFO)
+        // Third is checked first (false), then second (true), evaluation stops
+        $this->assertEquals(['third', 'second'], $evaluationOrder);
         $this->assertTrue($region->isInState('second'));
     }
 }

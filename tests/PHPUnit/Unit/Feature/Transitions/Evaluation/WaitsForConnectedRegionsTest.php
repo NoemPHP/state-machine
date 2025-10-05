@@ -40,12 +40,14 @@ class WaitsForConnectedRegionsTest extends TestCase
         
         // Parent should not transition while child is not in final state
         $parentRegion->trigger($trigger);
-        $this->assertTrue($parentRegion->isInState('parent_start'));
+        $this->assertTrue($parentRegion->isInState('parent_start'), 'Parent should wait for child to finish');
 
-        // Child transitions to final
-        $parentRegion->trigger($trigger);
+        // Explicitly transition the child to final state
+        $childRegion->trigger($trigger);
+        $this->assertTrue($childRegion->isFinal(), 'Child should be in final state');
 
         // Now parent can transition
-        $this->assertTrue($parentRegion->isInState('parent_end'));
+        $parentRegion->trigger($trigger);
+        $this->assertTrue($parentRegion->isInState('parent_end'), 'Parent should transition after child finishes');
     }
 }

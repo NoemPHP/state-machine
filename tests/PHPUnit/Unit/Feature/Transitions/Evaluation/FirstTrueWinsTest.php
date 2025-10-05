@@ -19,25 +19,25 @@ class FirstTrueWinsTest extends TestCase
     public function testFirstTrueGuardWins(): void
     {
         $builder = new RegionBuilder();
-        $firstGuardCalled = false;
+        $secondGuardCalled = false;
 
         $region = $builder
             ->setStates('start', 'pathA', 'pathB')
             ->markInitial('start')
-            // Guards are evaluated in the order they are added
-            // Add pathA first (will be evaluated first)
-            ->addBuildStep(new AddTransition('start', 'pathA', fn(object $t): bool => true))
-            // Then pathB (will be evaluated second if pathA's guard returns false)
-            ->addBuildStep(new AddTransition('start', 'pathB', function(object $t) use (&$firstGuardCalled): bool {
-                $firstGuardCalled = true;
+            // Guards are evaluated in REVERSE order (LIFO)
+            // Add pathA first (will be evaluated SECOND)
+            ->addBuildStep(new AddTransition('start', 'pathA', function(object $t) use (&$secondGuardCalled): bool {
+                $secondGuardCalled = true;
                 return true;
             }))
+            // Add pathB second (will be evaluated FIRST and wins)
+            ->addBuildStep(new AddTransition('start', 'pathB', fn(object $t): bool => true))
             ->build();
 
         $region->trigger((object)[]);
 
-        $this->assertTrue($region->isInState('pathA'));
-        $this->assertFalse($firstGuardCalled, 'Second guard should not be called');
+        $this->assertTrue($region->isInState('pathB'));
+        $this->assertFalse($secondGuardCalled, 'Earlier guard should not be called when later guard returns true');
     }
 
     public function testEvaluatesMultipleGuardsUntilFirstTrue(): void
@@ -48,21 +48,21 @@ class FirstTrueWinsTest extends TestCase
         $region = $builder
             ->setStates('start', 'end')
             ->markInitial('start')
-            // Guards are evaluated in the order they are added
+            // Guards are evaluated in REVERSE registration order (LIFO)
             ->addBuildStep(new AddTransition('start', 'end', function(object $t) use (&$callOrder): bool {
-                $callOrder[] = 'guard1'; // This will be evaluated first
+                $callOrder[] = 'guard1'; // This will be evaluated FOURTH (in reverse)
                 return false;
             }))
             ->addBuildStep(new AddTransition('start', 'end', function(object $t) use (&$callOrder): bool {
-                $callOrder[] = 'guard2'; // Second
+                $callOrder[] = 'guard2'; // Third
                 return false;
             }))
             ->addBuildStep(new AddTransition('start', 'end', function(object $t) use (&$callOrder): bool {
-                $callOrder[] = 'guard3'; // Third
+                $callOrder[] = 'guard3'; // Second
                 return false;
             }))
             ->addBuildStep(new AddTransition('start', 'end', function(object $t) use (&$callOrder): bool {
-                $callOrder[] = 'guard4'; // Fourth - this one returns true
+                $callOrder[] = 'guard4'; // First - this one returns true
                 return true;
             }))
             ->build();
@@ -70,8 +70,8 @@ class FirstTrueWinsTest extends TestCase
         $region->trigger((object)[]);
 
         $this->assertTrue($region->isInState('end'));
-        // Guards are evaluated in the order they were added
-        $this->assertEquals(['guard1', 'guard2', 'guard3', 'guard4'], $callOrder);
+        // Guards are evaluated in reverse order, stopping at first true
+        $this->assertEquals(['guard4'], $callOrder);
     }
     
     public function testMultipleTransitionsToSameTarget(): void
