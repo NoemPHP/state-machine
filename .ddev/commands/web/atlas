@@ -1,0 +1,124 @@
+#!/bin/bash
+
+## Description: Map the entire spec territory - run all spec tests across every region
+## Usage: atlas [options]
+## Example: "ddev atlas" or "ddev atlas --quiet" or "ddev atlas --stop-on-failure"
+## Flags: [{"Name":"quiet","Shorthand":"q","Usage":"Suppress output except for errors"},{"Name":"verbose","Shorthand":"v","Usage":"Show detailed output including test outputs"},{"Name":"stop-on-failure","Usage":"Stop execution on first failure"}]
+
+set -e
+
+# Color codes for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Parse command line options to pass through to test runner
+OPTIONS=""
+STOP_ON_FAILURE=false
+
+for arg in "$@"; do
+    case $arg in
+        --stop-on-failure)
+            STOP_ON_FAILURE=true
+            OPTIONS="$OPTIONS $arg"
+            ;;
+        *)
+            OPTIONS="$OPTIONS $arg"
+            ;;
+    esac
+done
+
+echo -e "${BLUE}╔══════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${BLUE}║${NC}  ${GREEN}Atlas: Mapping All Spec Regions${NC}                          ${BLUE}║${NC}"
+echo -e "${BLUE}╚══════════════════════════════════════════════════════════════╝${NC}"
+echo ""
+
+# Find all spec files recursively in the specs directory
+SPEC_FILES=$(find /var/www/html/specs -type f -name "*.yaml" | sort)
+
+if [ -z "$SPEC_FILES" ]; then
+    echo -e "${RED}❌ Error: No spec files found in specs/ directory${NC}"
+    exit 1
+fi
+
+# Count total spec files
+TOTAL_SPECS=$(echo "$SPEC_FILES" | wc -l)
+CURRENT=0
+FAILED_SPECS=()
+PASSED_SPECS=()
+
+echo -e "${BLUE}Found ${TOTAL_SPECS} spec file(s) to test${NC}"
+echo ""
+
+# Run test runner for each spec file
+for SPEC_FILE in $SPEC_FILES; do
+    CURRENT=$((CURRENT + 1))
+    # Get relative path for display
+    RELATIVE_PATH=${SPEC_FILE#/var/www/html/}
+    
+    echo -e "${BLUE}[${CURRENT}/${TOTAL_SPECS}]${NC} Testing: ${YELLOW}${RELATIVE_PATH}${NC}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    
+    # Run the test runner for this spec file
+    if /var/www/html/machines/middleware-test-runner/run.sh --spec="$SPEC_FILE" $OPTIONS; then
+        PASSED_SPECS+=("$RELATIVE_PATH")
+        echo -e "${GREEN}✓ Passed${NC}"
+    else
+        FAILED_SPECS+=("$RELATIVE_PATH")
+        echo -e "${RED}✗ Failed${NC}"
+        
+        # If stop-on-failure is enabled, exit immediately
+        if [ "$STOP_ON_FAILURE" = true ]; then
+            echo ""
+            echo -e "${RED}╔══════════════════════════════════════════════════════════════╗${NC}"
+            echo -e "${RED}║${NC}  ${RED}Stopping on first failure (--stop-on-failure)${NC}           ${RED}║${NC}"
+            echo -e "${RED}╚══════════════════════════════════════════════════════════════╝${NC}"
+            echo ""
+            echo -e "${YELLOW}Failed spec:${NC} ${RELATIVE_PATH}"
+            exit 1
+        fi
+    fi
+    
+    echo ""
+done
+
+# Print summary
+echo -e "${BLUE}╔══════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${BLUE}║${NC}  ${GREEN}Atlas Summary${NC}                                  ${BLUE}║${NC}"
+echo -e "${BLUE}╚══════════════════════════════════════════════════════════════╝${NC}"
+echo ""
+echo -e "Total specs tested: ${TOTAL_SPECS}"
+echo -e "${GREEN}Passed: ${#PASSED_SPECS[@]}${NC}"
+echo -e "${RED}Failed: ${#FAILED_SPECS[@]}${NC}"
+echo ""
+
+# List passed specs if verbose or if there are failures
+if [ ${#FAILED_SPECS[@]} -gt 0 ] || [[ "$OPTIONS" == *"--verbose"* ]] || [[ "$OPTIONS" == *"-v"* ]]; then
+    if [ ${#PASSED_SPECS[@]} -gt 0 ]; then
+        echo -e "${GREEN}✓ Passed specs:${NC}"
+        for spec in "${PASSED_SPECS[@]}"; do
+            echo -e "  ${GREEN}✓${NC} $spec"
+        done
+        echo ""
+    fi
+fi
+
+# List failed specs
+if [ ${#FAILED_SPECS[@]} -gt 0 ]; then
+    echo -e "${RED}✗ Failed specs:${NC}"
+    for spec in "${FAILED_SPECS[@]}"; do
+        echo -e "  ${RED}✗${NC} $spec"
+    done
+    echo ""
+    echo -e "${YELLOW}⚠️  Run individual specs with:${NC}"
+    echo -e "   ${BLUE}ddev exec machines/middleware-test-runner/run.sh --spec=<path>${NC}"
+    echo ""
+    exit 1
+fi
+
+echo -e "${GREEN}╔══════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║${NC}  ${GREEN}✓ Atlas complete - all regions verified!${NC}                           ${GREEN}║${NC}"
+echo -e "${GREEN}╚══════════════════════════════════════════════════════════════╝${NC}"
+exit 0

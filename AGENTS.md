@@ -1,731 +1,474 @@
-# Noem State Machine
-
-Noem State Machine is a sophisticated PHP library implementing event-based finite state machines with support for hierarchical and parallel states, middleware, and extensive feature system.
-
-## Project Architecture
-
-### Core Components
-- **`src/Region.php`** - Main state machine runtime engine
-- **`src/RegionBuilder.php`** - Fluent API for building state machines
-- **`src/Feature/`** - Modular feature system (AI, Async, Templates, etc.)
-- **`src/Chains/`** - Chain of responsibility pattern for extensible processing
-- **`machines/`** - Example state machine implementations
-
-### Key Concepts
-- **Regions**: Horizontal sets of states that can be hierarchical or parallel
-- **Guards**: Predicates that enable/disable transitions
-- **Actions**: Event handlers that execute business logic
-- **Extended State**: Context data scoped to states or regions
-- **Middleware**: Reusable modifications applied during machine construction
-
-## Development Environment
-
-### Prerequisites
-- PHP 8.4+
-- DDEV (development is done using DDEV containers)
-- Composer
-
-### Setup Commands
-```bash
-# All commands must be prefixed with 'ddev exec' to run inside the container
-ddev exec composer install
-ddev exec composer test
-ddev exec composer cs:check
-ddev exec composer psalm
-```
-
-### Running Examples
-```bash
-# Execute state machine examples
-ddev exec php machines/frodos-journey/machine.php
-ddev exec php machines/webserver/machine.php
-
-# Run test runner for acceptance criteria
-ddev exec machines/middleware-test-runner/run.sh --spec=specs/core/region.yaml --quiet  # Show only errors
-```
-
-## Testing & Quality
-
-### Spec-Driven Development Approach
-
-The project follows a **specification-driven development** methodology designed for **AI-assisted code maintenance**. Specs serve as **guardrails** that ensure consistent code quality and architecture across multiple AI agent sessions.
-
-#### Philosophy: Test-Driven Development for the AI Era
-
-**The Problem**: Large codebases maintained by AI agents can drift in quality and architecture without proper guardrails. Traditional TDD assumes human developers write tests, but AI agents can assist with both specification and implementation.
-
-**The Solution: Specs as Source of Truth**
-- **Specs before code**: All feature work begins with spec planning
-- **Agents test iteratively**: Agents must validate against specs during implementation
-- **One spec = One test class**: Each acceptance criterion gets its own dedicated test class
-- **Living documentation**: YAML specs serve as executable contract between agent sessions
-- **Guaranteed consistency**: Code is always up to spec, architecture remains coherent
-
-#### AI Agent Workflow
-
-**🚨 CRITICAL**: AI agents MUST NOT write implementation code without following this workflow:
-
-##### 1. Feature Planning Stage (MANDATORY)
-Before making ANY code changes, agents must:
-
-```bash
-# Review existing specs for the component
-cat specs/[group]/[component].yaml
-
-# Identify related specs that might be affected
-grep -r "keyword" specs/
-
-# Check existing tests
-ddev exec vendor/bin/phpunit tests/PHPUnit/[Unit|Integration]/[Component]
-```
-
-**Planning Tasks**:
-- ✅ Review existing acceptance criteria for the component
-- ✅ Identify specs that will be modified or removed
-- ✅ Detect conflicts and overlaps with existing specs
-- ✅ Design new acceptance criteria based on user request
-- ✅ Update YAML spec file(s) with changes
-- ✅ Get user approval before proceeding to implementation
-
-**Output**: Updated YAML spec file(s) with clear change summary
-
-##### 2. Test Creation Stage
-After spec approval:
-- Create/modify test classes for new/changed acceptance criteria
-- Follow one-spec-one-test-class pattern
-- Ensure test names match acceptance criteria exactly
-- Run tests to verify they fail appropriately (red phase)
-
-##### 3. Implementation Stage with Iterative Validation
-**🚨 CRITICAL**: Agents must test against specs continuously during implementation:
-
-```bash
-# After each significant code change, validate:
-ddev exec vendor/bin/phpunit tests/PHPUnit/Unit/[Component]/[SpecificTest.php]
-
-# Check for regressions in related specs:
-ddev exec vendor/bin/phpunit --group [component]
-
-# Full spec validation:
-ddev exec machines/middleware-test-runner/run.sh --spec=specs/[group]/[component].yaml
-```
-
-**Implementation Loop**:
-1. Make focused code change
-2. Run affected spec tests
-3. If tests fail: **fix code** (not tests - specs are the contract!)
-4. If tests pass: proceed to next change
-5. Repeat until all specs pass
-
-##### 4. Final Validation
-Before marking work complete:
-```bash
-# Run all component tests
-ddev exec vendor/bin/phpunit tests/PHPUnit/[Unit|Integration]/[Component]
-
-# Run full quality checks
-ddev exec composer quality
-
-# Validate spec file integrity
-ddev exec machines/middleware-test-runner/run.sh --spec=specs/[group]/[component].yaml
-```
-
-#### Benefits for AI Agent Maintenance
-- **Session consistency**: New agent sessions can resume work by reading specs
-- **Architecture preservation**: Specs encode design decisions that agents must respect
-- **Quality guarantee**: Code cannot drift from spec without failing tests
-- **Conflict prevention**: Spec planning phase catches overlaps before implementation
-- **Refactoring safety**: Specs define behavior contract, internals can be refactored freely
-- **Multi-agent collaboration**: Specs provide common understanding across agents
-- **Traceability**: Direct mapping between specs and implementation
-- **Documentation**: Specs double as technical documentation
-
-#### Directory Structure
-```
-specs/
-├── core/
-│   └── region.yaml          # Specs for core Region runtime
-├── chain/
-│   └── middleware.yaml      # Specs for middleware system
-└── [feature]/
-    └── [component].yaml
-
-tests/PHPUnit/
-├── Unit/
-│   ├── Core/
-│   │   └── Region/          # One test class per spec
-│   │       ├── CurrentStateTrackingTest.php
-│   │       ├── StateCheckTest.php
-│   │       └── ...
-│   └── Middleware/
-│       ├── Chain/
-│       ├── ChainMail/
-│       └── Mesh/
-└── Integration/
-    └── Core/
-        └── Region/          # Integration scenarios
-```
-
-#### YAML Spec Format
-```yaml
-name: component_name
-group: category
-description: High-level description of the component
-
-features:
-  - name: feature_name
-    description: What this feature does
-    specs:
-      - acceptanceCriteria: Clear, testable statement of expected behavior
-        test: vendor/bin/phpunit path/to/SpecificTest.php
-```
-
-#### Test Class Conventions
-```php
-/**
- * Acceptance Criterion: [Exact text from YAML spec]
- */
-#[Group('component')]
-#[Group('feature')]
-class DescriptiveAcceptanceCriterionTest extends TestCase
-{
-    public function testSpecificBehavior(): void
-    {
-        // Arrange - Set up the test scenario
-        // Act - Execute the behavior
-        // Assert - Verify the acceptance criterion
-    }
-}
-```
-
-#### Spec Conflict Detection and Resolution
-
-When planning feature changes, agents must identify and resolve spec conflicts:
-
-**Types of Conflicts**:
-1. **Duplicate acceptance criteria**: Two specs testing the same behavior
-2. **Contradictory specs**: Specs requiring mutually exclusive behaviors
-3. **Overlapping concerns**: Specs testing related but distinct behaviors that could interfere
-4. **Missing dependencies**: New spec requires behavior not yet specified
-5. **Obsolete specs**: Existing specs that become invalid with new changes
-
-
-**Resolution Strategies**:
-- **Merge**: Combine overlapping specs into one comprehensive spec
-- **Refine**: Make specs more specific to eliminate overlap
-- **Deprecate**: Remove obsolete specs and their tests
-- **Split**: Break overly broad specs into focused ones
-- **Reorder**: Change spec organization to clarify relationships
-
-**Example Planning Output**:
-```markdown
-## Feature Planning: Add async event processing
-
-### Affected Specs
-- specs/core/region.yaml
-  - Modified: "Events triggered during dispatch are queued for next cycle"
-    - Reason: Now supports both sync and async queuing
-    - Changes: Add async parameter to acceptance criteria
-  - Added: "Async events can be processed in separate execution context"
-    - New test: AsyncEventProcessingTest.php
-  - Conflict Detected: Overlaps with "Dispatching processes all queued events in order"
-    - Resolution: Refine async spec to clarify it maintains order within async context
-
-### New Tests Required
-- tests/PHPUnit/Unit/Core/Region/AsyncEventProcessingTest.php
-- tests/PHPUnit/Integration/Core/Region/AsyncEventOrderingTest.php
-
-### Tests to Modify
-- tests/PHPUnit/Unit/Core/Region/NestedEventDispatchTest.php
-  - Add async scenario test case
-
-### Tests to Remove
-- None
-
-### Approval Requested
-Please review conflict resolution for event ordering before proceeding.
-```
-
-#### Benefits
-- **Traceability**: Direct mapping between specs and implementation
-- **Maintainability**: Easy to locate and update specific behavior tests
-- **Clarity**: New team members can understand what's tested at a glance
-- **Documentation**: Specs double as technical documentation
-- **Refactoring confidence**: Granular tests make it safe to refactor internals
-
-#### Running Specs
-```bash
-# Run all tests for a component
-ddev exec phpunit tests/PHPUnit/Unit/Core/Region
-
-# Run specific feature group
-ddev exec phpunit --group state-management
-
-# Run acceptance test suite (specific spec)
-ddev exec machines/middleware-test-runner/run.sh --spec=specs/core/region.yaml
-
-# Run specific spec file
-ddev exec machines/middleware-test-runner/run.sh --spec=specs/core/region.yaml
-```
-
-#### Creating New Specs: Best Practices
-
-When creating specs for a new component or feature:
-
-**1. Analyze the Component**
-```bash
-# Review the source code
-cat src/[Component].php
-
-# Check existing usage patterns
-grep -r "new [Component]" src/ machines/
-
-# Review existing tests (if any)
-ls tests/PHPUnit/**/[Component]*
-```
-
-**2. Extract Behaviors**
-- Read the source code to understand public API
-- Identify distinct, testable behaviors
-- Look for edge cases and error conditions
-- Consider lifecycle and state management
-- Note dependencies and chain interactions
-
-**3. Group Logically**
-Organize specs into coherent feature groups:
-- **Core behavior**: Basic functionality (state management, CRUD operations)
-- **Integration**: How component interacts with others
-- **Error handling**: Edge cases, validation, exceptions
-- **Performance**: Caching, lazy loading, optimization
-- **Lifecycle**: Initialization, cleanup, callbacks
-
-**4. Write Atomic Acceptance Criteria**
-Each spec should be:
-- ✅ **Atomic**: Tests one specific behavior
-- ✅ **Clear**: Unambiguous statement of expected behavior
-- ✅ **Testable**: Can be verified with code
-- ✅ **Independent**: Not dependent on other specs
-- ✅ **Complete**: Fully describes the behavior
-
-**Good Examples**:
-```yaml
-- acceptanceCriteria: A region tracks its current state
-- acceptanceCriteria: Action chain receives region and trigger payload
-- acceptanceCriteria: Transition chain is not invoked when state remains unchanged
-```
-
-**Bad Examples**:
-```yaml
-- acceptanceCriteria: Region works correctly  # Too vague
-- acceptanceCriteria: Events are processed and transitions happen  # Not atomic
-- acceptanceCriteria: Should handle edge cases  # Not specific
-```
-
-**5. Name Test Classes Descriptively**
-Test class names should directly reflect acceptance criteria:
-- "A region tracks its current state" → `CurrentStateTrackingTest`
-- "Action chain receives region and trigger payload" → `ActionChainContextTest`
-- "Memoization uses strict equality by default" → `MemoizationEqualityTest`
-
-**6. Maintain Spec Hygiene**
-As codebase evolves:
-- Remove specs for deprecated functionality immediately
-- Update specs when behavior changes (don't just update tests!)
-- Consolidate duplicate or overlapping specs
-- Keep spec file organized and well-commented
-- Ensure every spec has a corresponding test class
-
-#### Spec Maintenance Workflow
-
-When modifying existing code:
-
-```bash
-# 1. Identify affected specs
-grep -r "[method/class name]" specs/
-
-# 2. Review current spec file
-cat specs/[group]/[component].yaml
-
-# 3. Plan spec changes
-# - Which specs need updates?
-# - Which specs are now obsolete?
-# - What new specs are needed?
-
-# 4. Update spec file BEFORE changing code
-vim specs/[group]/[component].yaml
-
-# 5. Update/create test classes to match specs
-# 6. Run tests (they should fail if behavior changing)
-# 7. Update implementation
-# 8. Iterate until all specs pass
-```
-
-**Spec File Maintenance Checklist**:
-- [ ] All acceptance criteria are current and accurate
-- [ ] No duplicate or overlapping specs
-- [ ] All specs have corresponding test classes
-- [ ] All test classes have corresponding specs
-- [ ] Spec groups are logically organized
-- [ ] Test paths in YAML are correct and up-to-date
-- [ ] Legacy test command (if present) still works
-
-### Test Execution
-```bash
-# Run all tests
-ddev exec composer test
-ddev exec phpunit
-
-# Watch tests (auto-rerun on changes)
-ddev exec composer test:watch
-
-# Run specific test
-ddev exec phpunit --filter "TestClassName"
-
-# Run acceptance criteria test suite (--spec required)
-ddev exec machines/middleware-test-runner/run.sh --spec=specs/[group]/[component].yaml
-```
-
-### Agent Decision Tree: When to Create/Update Specs
-
-**Scenario: User requests new feature**
-1. ✅ Check if component spec exists
-2. ✅ If yes: Add acceptance criteria to existing spec file
-3. ✅ If no: Create new spec file with all acceptance criteria
-4. ✅ Create corresponding test classes
-5. ✅ Implement feature iteratively with test validation
-6. ✅ Never implement without specs!
-
-**Scenario: User reports bug**
-1. ✅ Identify which spec should have caught the bug
-2. ✅ If spec exists but test is inadequate: Strengthen test
-3. ✅ If spec missing: Add acceptance criterion for the fix
-4. ✅ Update test to catch the bug (red phase)
-5. ✅ Fix implementation (green phase)
-6. ✅ Every bug fix must result in a new or strengthened spec
-
-**Scenario: User requests refactoring**
-1. ✅ Review specs for the component
-2. ✅ Specs define the contract - they should NOT change
-3. ✅ Run all specs before refactoring (establish baseline)
-4. ✅ Refactor implementation
-5. ✅ Run specs continuously during refactoring
-6. ✅ All specs must still pass after refactoring
-7. ✅ If specs fail: Fix code, not specs (specs are the contract!)
-
-**Scenario: User requests API change**
-1. ✅ This is a breaking change - plan carefully
-2. ✅ Identify ALL affected specs across entire codebase
-3. ✅ Update specs to reflect new API
-4. ✅ Update test classes
-5. ✅ Update implementation
-6. ✅ Check for ripple effects in dependent components
-
-**Scenario: Specs conflict with user request**
-1. ✅ Explain the conflict to user clearly
-2. ✅ Show which specs would be violated
-3. ✅ Propose alternatives that maintain specs
-4. ✅ If user insists: Get explicit approval to modify specs
-5. ✅ Document the architectural decision
-6. ✅ Never silently violate specs!
-
-**Scenario: Found code without specs**
-1. ✅ DO NOT modify the code yet!
-2. ✅ Create specs by analyzing current behavior
-3. ✅ Create test classes for new specs
-4. ✅ Run tests to verify they pass (document current behavior)
-5. ✅ Now you can safely modify the code
-6. ✅ All code must have specs before modification
-
-**Scenario: Starting new agent session**
-1. ✅ Read AGENTS.md to understand workflow
-2. ✅ Review all spec files in `specs/` directory
-3. ✅ Understand the architecture from specs
-4. ✅ Check recent spec changes in git history
-5. ✅ Run full test suite to establish baseline
-6. ✅ Ask user for context before making changes
-
-### Code Quality
-```bash
-# Check code style
-ddev exec composer cs:check
-
-# Fix code style
-ddev exec composer cs:fix
-
-# Static analysis
-ddev exec composer psalm
-
-# Run all quality checks
-ddev exec composer quality
-```
-
-### Quick Reference for AI Agents
-
-#### 🚨 Cardinal Rules
-1. **NEVER write implementation code without specs**
+[comment]:# (AGENTS.MD MAINTENANCE GUIDE FOR AI AGENTS)
+[comment]:# (Purpose: This file is the primary onboarding and reference document for AI agents working on the Noem State Machine codebase.)
+[comment]:# (Target: AI agents starting new sessions or looking up specific implementation details.)
+[comment]:# (Philosophy: Information density over verbosity. Critical info first. Examples over prose. Tables over paragraphs.)
+[comment]:# (Current length: ~350 lines. Keep under 400 lines. If adding content, remove something of equal size.)
+
+[comment]:# (STRUCTURE: 3-Layer Information Architecture)
+[comment]:# (Layer 1 [Lines 1-120]: ESSENTIALS - What agents need in first 60 seconds)
+[comment]:# (  - Cardinal Rules, Quick Workflow, Essential Commands, Common Errors)
+[comment]:# (  - This section should NEVER exceed 120 lines)
+[comment]:# (  - Add new essentials only if they're needed in >50% of sessions)
+[comment]:# (Layer 2 [Lines 121-280]: CORE CONCEPTS - Methodology and architecture)
+[comment]:# (  - Spec-driven development workflow, project architecture, code conventions)
+[comment]:# (  - Balance theory with practice - every concept needs an example)
+[comment]:# (Layer 3 [Lines 281-end]: REFERENCE - Lookup information)
+[comment]:# (  - Directory structure, commands, checklists, examples)
+[comment]:# (  - Organized for quick scanning, heavy use of tables)
+
+[comment]:# (STYLE GUIDELINES:)
+[comment]:# (1. Use tables for: commands, decisions, comparisons, checklists)
+[comment]:# (2. Use code blocks for: examples, patterns, actual code)
+[comment]:# (3. Use lists for: steps, requirements, options)
+[comment]:# (4. Avoid: long paragraphs, motivational content, redundant explanations)
+[comment]:# (5. Every technical detail must have ✅/❌ example showing correct/incorrect usage)
+[comment]:# (6. Emoji sparingly: 🚨 for critical, ✅ for correct, ❌ for wrong, 📋 for checklists)
+
+[comment]:# (MAINTENANCE PRINCIPLES:)
+[comment]:# (- When adding: Remove equal amount of less-critical content or consolidate)
+[comment]:# (- When updating: Update ALL related occurrences - no redundancy)
+[comment]:# (- When fixing: Add to "Common Errors" table, not scattered through doc)
+[comment]:# (- Keep command examples DRY - reference table, don't repeat)
+[comment]:# (- Archive removed content to AGENTS_ARCHIVE.md if might be useful later)
+
+# Noem State Machine - AI Agent Guide
+
+Event-based finite state machines with hierarchical states, middleware, and feature system.
+
+---
+
+[comment]:# (=== LAYER 1: ESSENTIALS - Critical information for immediate use ===)
+[comment]:# (This section must be scannable in 60 seconds. Dense, actionable, no fluff.)
+
+## 🚨 START HERE: Essential Rules
+
+1. **NEVER write code without specs first**
 2. **NEVER modify specs without user approval**
 3. **ALWAYS test iteratively during implementation**
 4. **SPECS ARE THE CONTRACT** - fix code, not specs when tests fail
 5. **ONE SPEC = ONE TEST CLASS** - maintain 1:1 mapping
 
-#### 🔄 Typical Workflow
+## Quick Workflow
+
 ```
-User Request → Feature Planning → Spec Updates (get approval) → 
-Test Creation (red) → Implementation (iterative) → All Specs Pass (green) → Done
+User Request → Plan Specs (get approval) → Create Tests (red) → Implement (iterate + test) → All Pass (green) → Done
 ```
 
-#### 📋 Pre-Implementation Checklist
-- [ ] Read relevant spec file(s)
-- [ ] Identify affected/related specs
-- [ ] Plan spec changes (add/modify/remove)
-- [ ] Get user approval for spec changes
-- [ ] Create/update test classes
-- [ ] Tests fail appropriately (red phase)
+## Essential Commands
 
-#### ⚙️ During Implementation
-- [ ] Make small, focused changes
-- [ ] Run affected spec tests after each change
-- [ ] Fix code if tests fail (not specs!)
-- [ ] Check for regressions in related specs
-- [ ] Commit when specs pass
+| Task                    | Command                                                                                  | When to Use            |
+|-------------------------|------------------------------------------------------------------------------------------|------------------------|
+| Run single test         | `ddev exec vendor/bin/phpunit tests/PHPUnit/Unit/[Component]/[Test].php`                 | After each code change |
+| Run spec suite          | `ddev exec machines/middleware-test-runner/run.sh --spec=specs/[group]/[component].yaml` | Before completion      |
+| Atlas (full regression) | **`ddev atlas`**                                                                         | After completion       |
+| Full quality check      | `ddev exec composer quality`                                                             | Before commit          |
 
-#### ✅ Before Completing Task
-- [ ] All component specs pass
-- [ ] No regressions in other specs
-- [ ] Code quality checks pass
-- [ ] Specs updated and documented
-- [ ] Test paths in YAML are correct
+**Note**: All commands must be prefixed with `ddev exec` to run inside containers.
 
-#### 🔍 Common Commands
+[comment]:# (Common Errors table: Add new errors here, not scattered in text. Format: Error | Cause | Solution)
+[comment]:# (Keep to most frequent errors only - if error occurs <5% of sessions, it doesn't belong here)
+
+## Common Errors & Solutions
+
+| Error                                 | Cause                                          | Solution                                                 |
+|---------------------------------------|------------------------------------------------|----------------------------------------------------------|
+| `Service 'X' not found`               | ChainMail service not registered or wrong type | Use proper return type in factory: `fn(): MyType => ...` |
+| `Required Parameter 0 not declared`   | Guard function missing trigger param           | Add parameter: `fn(object $trigger): bool => true`       |
+| `Undefined constant MetaType::Region` | Wrong MetaType usage                           | Use `ContextMetaType::get()` instead                     |
+| Tests fail after "working" change     | Specs define the contract                      | Fix your code, not the tests                             |
+
+---
+
+[comment]:# (=== LAYER 2: CORE CONCEPTS - Methodology and implementation patterns ===)
+[comment]:# (Balance: Each concept should have theory + practical example + common pitfall)
+[comment]:# (Target audience: Agent planning implementation, needs to understand "why" and "how")
+
+## Spec-Driven Development
+
+**Philosophy**: Specs are executable contracts that prevent architectural drift across AI agent sessions. They define *what* the code must do; implementation is *how* it does it.
+
+[comment]:# (4-Stage Workflow: Keep this concise. Each stage = purpose + key commands + deliverable)
+[comment]:# (If workflow changes, update both here and "Quick Workflow" diagram in Layer 1)
+
+### The 4-Stage Workflow
+
+#### 1. Feature Planning (MANDATORY before coding)
 ```bash
-# Review specs
+# Review existing specs
 cat specs/[group]/[component].yaml
-grep -r "keyword" specs/
+grep -r "[related-concept]" specs/
 
-# Run tests
-ddev exec vendor/bin/phpunit tests/PHPUnit/Unit/[Component]/[Test].php
-ddev exec vendor/bin/phpunit --group [component]
-ddev exec machines/middleware-test-runner/run.sh --spec=specs/[group]/[component].yaml
-
-# Quality
-ddev exec composer quality
-ddev exec composer test:watch
+# Plan changes
+# - Which specs are affected?
+# - Any conflicts or overlaps?
+# - What new specs are needed?
 ```
 
-#### 💡 When in Doubt
-1. Ask user for clarification
-2. Review existing specs for patterns
-3. Check similar components for precedent
-4. Err on the side of more specs, not fewer
-5. Make specs granular and focused
+**Deliverable**: Updated YAML spec file + change summary → **GET USER APPROVAL**
 
-## Code Conventions
+#### 2. Test Creation
+- Create test class per new/modified spec
+- Name class after acceptance criterion (e.g., `CurrentStateTrackingTest`)
+- Run tests - they should fail (red phase)
 
-### PHP Standards
-- **PHP 8.4+ features**: Use typed properties, union types, match expressions
-- **PSR-4 autoloading**: `Noem\State\` namespace maps to `src/`
-- **Strict types**: Always use `declare(strict_types=1);`
-- **Return types**: Always declare return types on methods
-
-### State Machine Patterns
-```php
-// Use RegionBuilder for fluent API construction
-$region = (new RegionBuilder())
-    ->setStates('initial', 'processing', 'final')
-    ->markInitial('initial')
-    ->markFinal('final')
-    ->pushTransition('initial', 'processing', fn(object $trigger): bool => true)
-    ->onEnter('processing', function(object $trigger) {
-        // Entry callback logic
-    })
-    ->build();
-
-// Guards should return boolean
-->pushTransition('from', 'to', fn(object $trigger): bool => $trigger->isValid)
-
-// Actions can return generators for async operations
-->onAction('state', function(object $trigger): Generator {
-    yield from $this->processAsync($trigger);
-})
-```
-
-### YAML Configuration Format
-```yaml
-states:
-  - name: state_name
-    transitions:
-      - target: next_state
-        guard: !php return function($trigger): bool { return true; }
-    onEnter:
-      - run: !php return callbackFunction()
-    action:
-      - run: !php return actionFunction()
-    regions:
-      - states: [nested_states]
-initial: initial_state
-final: final_state
-```
-
-### Feature System
-- Features extend `Noem\State\Feature\Feature`
-- Implement `register(RegionBuilder $builder): void` method
-- Use dependency injection through ChainMail container
-- Features can require other features via `RequiresFeature` trait
-
-## Key Directories
-
-### `src/`
-- **Core classes**: Region, RegionBuilder, Events, Connection
-- **Feature/**: Modular feature implementations
-  - **Ai/**: AI integration and templating
-  - **Async/**: Asynchronous operation support
-  - **ExtendedState/**: Context management
-  - **Loader/**: YAML/configuration loading
-  - **OrthogonalRegions/**: Parallel state support
-- **Chains/**: Processing chain implementations
-- **Middleware/**: Middleware system components
-
-### `machines/`
-- **frodos-journey/**: Complex example with AI integration and distance tracking
-- **webserver/**: HTTP server state machine with connection spawning
-- **coding/**: Development workflow state machine
-- **directory-docs/**: Documentation generation example
-- **middleware-test-runner/**: Acceptance criteria test runner
-
-### `tests/`
-- **PHPUnit/**: Unit and integration tests
-- **resources/**: Test fixtures and data
-
-### `specs/`
-- **chain/**: YAML specifications for acceptance criteria
-  - **middleware.yaml**: Comprehensive middleware system acceptance tests
-
-## Common Patterns
-
-### Creating State Machines
-1. **Simple Linear Flow**:
-   ```php
-   $builder = new RegionBuilder();
-   $builder->setStates('start', 'middle', 'end')
-           ->pushTransition('start', 'middle')
-           ->pushTransition('middle', 'end');
-   ```
-
-2. **With Guards and Actions**:
-   ```php
-   ->pushTransition('from', 'to', fn($trigger): bool => $trigger->condition)
-   ->onEnter('state', fn($trigger) => $this->handleEntry($trigger))
-   ```
-
-3. **Loading from YAML**:
-   ```php
-   $loader = new RegionLoader();
-   $builder = $loader->fromYaml($yamlContent);
-   ```
-
-### Working with Features
-```php
-$region = (new RegionBuilder())
-    ->pushFeature(new ExtendedState())
-    ->pushFeature(new TemplateFeature())
-    ->pushFeature(new AiFeature())
-    // ... configure states and transitions
-    ->build();
-```
-
-### Middleware Usage
-```php
-$middleware = function(RegionBuilder $builder, \Closure $next) {
-    // Modify builder before construction
-    $builder->eachState(fn($state) => $builder->onEnter($state, $callback));
-    return $next($builder);
-};
-
-$builder->pushMiddleware($middleware);
-```
-
-## Test Runner System
-
-### Overview
-The project includes a state machine-based test runner (`machines/middleware-test-runner/`) for executing acceptance criteria defined in YAML specifications.
-
-**Note:** The `--spec` parameter is required. The test runner no longer has a default spec file fallback.
-
-### Usage
+#### 3. Implementation (Iterative)
 ```bash
-# Run tests (--spec parameter is required)
-ddev exec machines/middleware-test-runner/run.sh --spec=specs/core/region.yaml
-
-# Quiet mode (errors only)
-ddev exec machines/middleware-test-runner/run.sh --spec=specs/chain/middleware.yaml --quiet
-
-# Verbose mode (with output)
-ddev exec machines/middleware-test-runner/run.sh --spec=specs/core/region.yaml --verbose
-
-# Stop on first failure
-ddev exec machines/middleware-test-runner/run.sh --spec=specs/core/region.yaml --stop-on-failure
-
-# Run specific feature group
-ddev exec machines/middleware-test-runner/run.sh --spec=specs/chain/middleware.yaml --group=chain
+# Loop until done:
+1. Make small code change
+2. ddev exec vendor/bin/phpunit [affected test]
+3. If fail: fix CODE (not test)
+4. If pass: continue
 ```
 
-### Test Specification Format
-Tests are defined in YAML files under `specs/`:
+#### 4. Final Validation
+```bash
+ddev atlas                    # Map all specs (full regression)
+ddev exec composer quality    # Code quality checks
+```
+
+[comment]:# (Decision Matrix: Table format for quick lookup. Each row = complete decision path.)
+[comment]:# (If adding scenarios: common scenarios only, not edge cases. Keep to 6-8 rows max.)
+
+### Decision Matrix
+
+| Scenario | Action Steps | Key Principle |
+|----------|--------------|---------------|
+| **New feature** | Check if spec exists → Add/create specs → Approve → Test → Implement | No code without specs |
+| **Bug report** | Find/add missing spec → Test (red) → Fix → Test (green) | Every bug = new/improved spec |
+| **Refactoring** | Run all specs (baseline) → Refactor → Specs must still pass | Specs = behavior contract |
+| **API change** | Find ALL affected specs → Update specs → Approve → Implement | Breaking change needs approval |
+| **Spec conflict** | Explain conflict → Propose alternatives → Get approval | Never silently violate specs |
+
+[comment]:# (Spec Format: Show minimal working example. For full details, agents should read actual spec files.)
+[comment]:# (Keep examples generic - don't show specific component examples that might become outdated)
+
+### Spec Format & Conventions
+
+**YAML Structure:**
 ```yaml
-name: test_suite_name
+name: component_name
+group: category
 features:
   - name: feature_name
-    description: Feature description
     specs:
-      - acceptanceCriteria: What should be tested
-        test: command to execute test
+      - acceptanceCriteria: Clear, testable behavior statement
+        test: vendor/bin/phpunit path/to/Test.php
 ```
 
-## Dependencies & External Integrations
+**Test Class Template:**
+```php
+/**
+ * Acceptance Criterion: [Exact text from YAML]
+ */
+#[Group('component')]
+#[Group('feature')]
+class DescriptiveTest extends TestCase
+{
+    public function testBehavior(): void
+    {
+        // Arrange → Act → Assert
+    }
+}
+```
 
-### Required Dependencies
-- **symfony/yaml**: YAML configuration parsing
-- **nette/schema**: Configuration validation
-- **psr/container**: Dependency injection interface
+**Directory Structure:**
+```
+specs/[group]/[component].yaml → tests/PHPUnit/Unit/[Group]/[Component]/[SpecificBehavior]Test.php
+```
 
-### AI Features
-- Uses template system with `{{#complete}}` directives for AI completion
-- Integrates with various AI providers through template feature
-- Supports streaming responses via PHP generators
+---
 
-### Testing Dependencies
-- **phpunit/phpunit**: Testing framework
-- **mockery/mockery**: Mocking library
-- **spatie/phpunit-watcher**: Test watching
+[comment]:# (Project Architecture: High-level overview with inline patterns. Not exhaustive - just enough to navigate.)
+[comment]:# (Keep Core Components table current - add new components if they become core to >30% of work)
 
-## Build & Deployment
+## Project Architecture
+
+### Core Components & Patterns
+
+| Component | Purpose | Key Pattern |
+|-----------|---------|-------------|
+| `Region.php` | State machine runtime | Triggers transition via guards |
+| `RegionBuilder.php` | Fluent API for construction | Chainable methods, builds Region |
+| `Feature/` | Modular features | Invoke ChainMail to register services |
+| `Chains/` | Processing pipelines | Chain of responsibility pattern |
+| `Middleware/ChainMail` | DI container | Type-based service registration |
+
+### Key Concepts
+
+- **Region**: Set of states (can be hierarchical or parallel)
+- **Guard**: Predicate enabling transitions: `fn(object $trigger): bool`
+- **Action**: Event handler executing business logic
+- **Extended State**: Context data scoped to states/regions
+- **Middleware**: Builder modifications via ChainMail
+
+[comment]:# (Code Conventions: Show pattern with inline example. Every convention needs a code sample.)
+[comment]:# (Update when PHP version changes or new patterns become standard)
+
+### Code Conventions
+
+**PHP Standards:**
+```php
+declare(strict_types=1);  // Always required
+namespace Noem\State\...;  // PSR-4 autoloading
+
+// Use PHP 8.4 features
+public function process(User|Admin $actor): Result { ... }
+```
+
+**State Machine Pattern:**
+```php
+use Noem\State\Feature\Transitions\AddTransition;
+use Noem\State\Feature\Transitions\TransitionsFeature;
+
+$region = (new RegionBuilder())
+    ->enableFeatures(new TransitionsFeature())
+    ->setStates('idle', 'processing', 'done')
+    ->markInitial('idle')
+    ->markFinal('done')
+    ->addBuildStep(new AddTransition('idle', 'processing', fn(object $t): bool => $t->ready))
+    ->onEnter('processing', fn(object $t) => $this->startWork($t))
+    ->build();
+```
+
+**Feature System:**
+```php
+// Features modify ChainMail during registration
+class MyFeature implements Feature {
+    public function __invoke(ChainMail $chainMail): void {
+        $chainMail->supply(fn(): MyService => new MyService());
+        $chainMail->use(fn(RegionBuilder $b, callable $next) => $next($b));
+    }
+}
+```
+
+[comment]:# (Critical Implementation Details: These are the "gotchas" that cause repeated issues.)
+[comment]:# (Format: Concept → ✅ Correct example → ❌ Wrong example with error message)
+[comment]:# (Add new details here when agents make the same mistake 3+ times)
+[comment]:# (Each detail should also appear in "Common Errors" table in Layer 1)
+
+### Critical Implementation Details
+
+**ChainMail Service Registration:**
+```php
+// ✅ Correct: Return type = service key
+$chainMail->supply(fn(): MyService => new MyService());
+$service = $chainMail->get(MyService::class);
+
+// ❌ Wrong: Generic return type
+$chainMail->supply(fn(): object => new MyService()); // Won't find service
+
+// RegionBuilder behavior:
+new RegionBuilder()           // Creates & configures default ChainMail
+new RegionBuilder($chainMail) // Uses provided ChainMail as-is
+```
+
+**MetaType Usage:**
+```php
+// ✅ Correct: Use concrete implementations
+use Noem\State\Feature\ExtendedState\ContextMetaType;
+$builder->setMetaData($data, ContextMetaType::get());
+
+// ❌ Wrong: These don't exist
+MetaType::Region  // No such constant
+MetaType::State   // No such constant
+```
+
+**Guard Signatures:**
+```php
+// ✅ Correct: Must accept trigger
+fn(object $trigger): bool => $trigger->isValid
+
+// ❌ Wrong: Missing required parameter
+fn(): bool => true  // Error: "Required Parameter 0 not declared"
+```
+
+---
+
+[comment]:# (=== LAYER 3: REFERENCE - Quick lookup information ===)
+[comment]:# (Purpose: Quick scanning for specific details during implementation)
+[comment]:# (Format: Heavily favor tables, code blocks, and lists over prose)
+[comment]:# (Maintenance: Keep directory structure current. Update dependencies when composer.json changes.)
+
+## Reference
+
+### Directory Structure
+
+[comment]:# (Directory structure: Update when major directories added/removed. Don't list every subdirectory.)
+[comment]:# (Focus on directories agents interact with most frequently)
+
+```
+src/
+├── Region.php, RegionBuilder.php          # Core
+├── Feature/                                # Modular features
+│   ├── Ai/, Async/, ExtendedState/
+│   ├── Loader/, OrthogonalRegions/
+│   └── Transitions/, Template/
+├── Chains/                                 # Processing chains
+└── Middleware/                             # ChainMail, Chain, Mesh
+
+machines/                                   # Examples
+├── frodos-journey/                         # AI + distance tracking
+├── webserver/                              # HTTP server FSM
+└── middleware-test-runner/                 # Spec test runner
+
+specs/                                      # Acceptance criteria
+├── core/                                   # Core components (Region, RegionBuilder)
+├── chain/                                  # Middleware system
+└── features/                               # Feature specs
+    └── transitions.yaml                    # TransitionsFeature spec
+
+tests/PHPUnit/
+├── Unit/
+│   ├── Core/[Component]/[Behavior]Test.php    # Core unit tests
+│   ├── Feature/[Feature]/[Behavior]Test.php   # Feature unit tests
+│   └── Middleware/[Component]/[Behavior]Test.php
+└── Integration/                               # Integration scenarios
+    ├── Core/Region/                           # Core integration tests
+    └── Feature/[Feature]/                     # Feature integration tests
+```
+
+### TransitionsFeature Spec Organization
+
+The TransitionsFeature spec (`specs/features/transitions.yaml`) is organized into 10 feature groups:
+
+| Group | Purpose | Test Location |
+|-------|---------|---------------|
+| `feature-registration` | Service registration in ChainMail | `tests/PHPUnit/Unit/Feature/Transitions/` |
+| `transition-registry` | Transition storage & retrieval | `tests/PHPUnit/Unit/Feature/Transitions/Registry/` |
+| `add-transition-buildstep` | Developer API for adding transitions | `tests/PHPUnit/Unit/Feature/Transitions/AddTransition/` |
+| `guard-validation` | Guard predicate validation | `tests/PHPUnit/Unit/Feature/Transitions/Guard/` |
+| `transition-evaluation` | Automatic transition checking logic | `tests/PHPUnit/Unit/Feature/Transitions/Evaluation/` |
+| `transition-execution` | DoTransition chain & lifecycle | `tests/PHPUnit/Unit/Feature/Transitions/DoTransition/` |
+| `guard-context` | Guard parameter context | `tests/PHPUnit/Unit/Feature/Transitions/GuardContext/` |
+| `integration` | Full feature integration tests | `tests/PHPUnit/Integration/Feature/Transitions/` |
+| `error-handling` | Error handling & validation | `tests/PHPUnit/Unit/Feature/Transitions/ErrorHandling/` |
+| `edge-cases` | Edge cases & boundary conditions | `tests/PHPUnit/Unit/Feature/Transitions/EdgeCases/` |
+
+**Key TransitionsFeature Behaviors:**
+- Enabled by default in RegionBuilder (core functionality)
+- Checks transitions after each action dispatch
+- Skips automatic transitions when state changes imperatively
+- Prevents transitions from final states
+- Waits for connected regions to finish (hierarchical states)
+- First-match-wins guard evaluation
+- Guards must accept trigger parameter and return bool
+- Default guard is always-true when none specified
+
+[comment]:# (Dependencies table: Keep current with composer.json. Only list runtime dependencies, not dev-only.)
+
+### Dependencies
+
+| Package | Purpose |
+|---------|---------|
+| `symfony/yaml` | YAML parsing |
+| `nette/schema` | Config validation |
+| `psr/container` | DI interface |
+| `phpunit/phpunit` | Testing |
+
+[comment]:# (Checklists: Keep focused on before-completion validation. Don't duplicate workflow steps.)
+
+### Spec File Maintenance Checklist
+
+Before closing any task:
+- [ ] All acceptance criteria current and accurate
+- [ ] No duplicate or overlapping specs
+- [ ] Every spec has corresponding test class
+- [ ] Every test class has corresponding spec
+- [ ] Test paths in YAML are correct
+- [ ] All tests pass
+
+[comment]:# (Test Runner Flags: Don't repeat basic usage from Layer 1. Show advanced options only.)
+
+### Test Runner Flags
+
+```bash
+ddev exec machines/middleware-test-runner/run.sh --spec=specs/core/region.yaml \
+  [--quiet]              # Show only errors
+  [--verbose]            # Show full output
+  [--stop-on-failure]    # Stop on first fail
+  [--group=feature]      # Run specific group
+```
+
+[comment]:# (Composer Scripts: Keep in sync with composer.json scripts section)
 
 ### Composer Scripts
-```bash
-# Development workflow
-ddev exec composer quality:fix  # Fix code style and run quality checks
-ddev exec composer test:watch   # Watch tests during development
 
-# CI/CD pipeline
-ddev exec composer quality      # Run all quality checks (CI)
+```bash
+ddev exec composer test              # Run all tests
+ddev exec composer test:watch        # Watch mode
+ddev exec composer cs:check          # Check code style
+ddev exec composer cs:fix            # Fix code style
+ddev exec composer psalm             # Static analysis
+ddev exec composer quality           # All quality checks
+ddev exec composer quality:fix       # Fix + quality
 ```
 
-### File Structure Conventions
-- One class per file following PSR-4
-- Feature classes in `src/Feature/{FeatureName}/`
-- Tests mirror source structure in `tests/PHPUnit/`
-- Examples in `machines/{example-name}/`
-- Test specifications in `specs/{category}/`
+### DDEV Custom Commands
 
-## Common Issues & Solutions
+```bash
+ddev atlas                           # Map all spec regions (full regression)
+ddev atlas --quiet                   # Quiet mode (errors only)
+ddev atlas --verbose                 # Verbose output
+ddev atlas --stop-on-failure         # Stop at first failure
+```
 
-### State Machine Looping
-- Ensure guards are mutually exclusive
-- Check that state transitions properly update context
-- Use simple state machine designs when possible
-- Avoid complex nested transitions
+**Atlas**: Automatically discovers all `.yaml` files in `specs/` directory (recursive). New spec files are automatically included - no configuration needed.
 
-### Test Runner Issues
-- If tests repeat: Check state machine transitions
-- For hanging tests: Use `--stop-on-failure` flag
-- Missing test files: Verify paths relative to project root
+[comment]:# (State Machine Examples: Show common patterns. Keep examples simple and generic.)
+[comment]:# (Don't show complex real-world examples - point to machines/ directory instead)
+
+### State Machine Examples
+
+**Simple Flow:**
+```php
+use Noem\State\Feature\Transitions\AddTransition;
+use Noem\State\Feature\Transitions\TransitionsFeature;
+
+$builder = new RegionBuilder();
+$builder->enableFeatures(new TransitionsFeature())
+        ->setStates('start', 'middle', 'end')
+        ->addBuildStep(new AddTransition('start', 'middle'))
+        ->addBuildStep(new AddTransition('middle', 'end'));
+$region = $builder->build();
+```
+
+**With Features:**
+```php
+use Noem\State\Feature\ExtendedState\ExtendedState;
+use Noem\State\Feature\Template\TemplateFeature;
+
+$region = (new RegionBuilder())
+    ->enableFeatures(new ExtendedState(), new TemplateFeature())
+    ->setStates('idle', 'working')
+    ->build();
+```
+
+**Loading from YAML:**
+```php
+use Noem\State\Feature\Loader\RegionLoader;
+
+$loader = new RegionLoader();
+$builder = $loader->fromYaml($yamlContent);
+$region = $builder->build();
+```
+
+---
+
+[comment]:# (Session Start/Stuck sections: Action-oriented guidance for specific situations)
+[comment]:# (Keep these brief - detailed process is in Layer 2)
+
+## When Starting a New Session
+
+1. Read this guide (you just did! ✅)
+2. Review relevant spec files: `cat specs/[group]/[component].yaml`
+3. Check git log for recent spec changes
+4. Run baseline: `ddev atlas` or `ddev exec composer test`
+5. Ask user for context before making changes
+
+## When Stuck
+
+1. **Ask user for clarification** - don't guess
+2. Review existing specs for similar patterns
+3. Check `machines/` for usage examples
+4. Review related test classes for implementation patterns
+5. When in doubt: **more granular specs > fewer broad specs**
