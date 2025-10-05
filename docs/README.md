@@ -50,12 +50,16 @@ This trivial example shows how a product may move through various states during 
 
 require 'vendor/autoload.php';
 
+use Noem\State\Feature\Transitions\AddTransition;
+use Noem\State\Feature\Transitions\TransitionsFeature;
 use Noem\State\RegionBuilder;
 
 $orderId = 12345;
 
 // Define the state machine
 $region = (new RegionBuilder())
+    // Enable the transitions feature
+    ->enableFeatures(new TransitionsFeature())
     // State configuration
     ->setStates('Checkout', 'Pending', 'Processing', 'Shipped', 'Delivered')
     ->markInitial('Checkout')
@@ -66,10 +70,10 @@ $region = (new RegionBuilder())
 
     // Transitions
     // In a real application, these inspect the $trigger and allow/deny the transition based on it
-    ->pushTransition(from: 'Checkout', to: 'Pending', guard: fn(object $trigger): bool => true)
-    ->pushTransition(from: 'Pending', to: 'Processing', guard: fn(object $trigger): bool => true)
-    ->pushTransition(from: 'Processing', to: 'Shipped', guard: fn(object $trigger): bool => true)
-    ->pushTransition(from: 'Shipped', to: 'Delivered', guard: fn(object $trigger): bool => true)
+    ->addBuildStep(new AddTransition(from: 'Checkout', to: 'Pending', guard: fn(object $trigger): bool => true))
+    ->addBuildStep(new AddTransition(from: 'Pending', to: 'Processing', guard: fn(object $trigger): bool => true))
+    ->addBuildStep(new AddTransition(from: 'Processing', to: 'Shipped', guard: fn(object $trigger): bool => true))
+    ->addBuildStep(new AddTransition(from: 'Shipped', to: 'Delivered', guard: fn(object $trigger): bool => true))
 
     // Entry events
     ->onEnter(state: 'Pending', callback: function (object $trigger) {
@@ -108,9 +112,13 @@ within a state machine, making it convenient for implementing stateful behavior 
 
 declare(strict_types=1);
 
+use Noem\State\Feature\Transitions\AddTransition;
+use Noem\State\Feature\Transitions\TransitionsFeature;
 use Noem\State\RegionBuilder;
 
 $r = (new RegionBuilder())
+        // Enable the transitions feature
+        ->enableFeatures(new TransitionsFeature())
         // Define all possible states
         ->setStates('off', 'starting', 'on', 'error')
         // if not called, will default to the first entry
@@ -119,13 +127,13 @@ $r = (new RegionBuilder())
         ->markFinal('error')
         // Define a transition from one state to another
         // <FROM> <TO> <PREDICATE>
-        ->pushTransition('off', 'starting', fn(object $trigger):bool => true)
+        ->addBuildStep(new AddTransition('off', 'starting', fn(object $trigger):bool => true))
         // no predicate means always true 
-        ->pushTransition('starting', 'on') 
-        ->pushTransition('on', 'error', function(\Throwable $exception){
+        ->addBuildStep(new AddTransition('starting', 'on'))
+        ->addBuildStep(new AddTransition('on', 'error', function(\Throwable $exception){
             echo 'Error: '. $exception->getMessage();
             return true;
-        })
+        }))
         // Add a callback that runs whenever the specified state is entered
         ->onEnter('starting', function(object $trigger){
             echo 'Starting application';
@@ -161,11 +169,12 @@ This means you can -for example- only allow a transition when an Exception occur
 
 ```php
 $r = new RegionBuilder();
-$r->setStates('on', 'running', 'error')
-    ->pushTransition('on', 'error', function(\Throwable $exception){
+$r->enableFeatures(new TransitionsFeature())
+    ->setStates('on', 'running', 'error')
+    ->addBuildStep(new AddTransition('on', 'error', function(\Throwable $exception){
         echo 'Error: '. $exception->getMessage();
         return true;
-    })
+    }))
 ;
 ```
 
@@ -174,8 +183,9 @@ and greatly helps serializing application state. The syntax is a little more com
 
 ```php
 $r = new RegionBuilder();
-$r->setStates('one', 'two', 'three')
-    ->pushTransition('one', 'two', fn(#[Name('hello-world')] Event $event): bool => true)
+$r->enableFeatures(new TransitionsFeature())
+    ->setStates('one', 'two', 'three')
+    ->addBuildStep(new AddTransition('one', 'two', fn(#[Name('hello-world')] Event $event): bool => true))
 ;
 ```
 Here, the `Name` attribute works in tandem with the internal `Event` interface that mandates a name.
@@ -261,8 +271,9 @@ $middleware = function (RegionBuilder $builder, \Closure $next) use (&$logs) {
 };
 
 $region = (new RegionBuilder())
+    ->enableFeatures(new TransitionsFeature())
     ->setStates('foo', 'bar')
-    ->pushTransition('foo', 'bar')
+    ->addBuildStep(new AddTransition('foo', 'bar'))
     ->pushMiddleware($middleware)
     ->build();
 ```

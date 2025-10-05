@@ -10,6 +10,8 @@ use Noem\State\Feature\Async\IO\Fetch;
 use Noem\State\Feature\ExtendedState\ExtendedState;
 use Noem\State\Feature\Template\Compiler\TemplateFactory;
 use Noem\State\Feature\Template\Helpers;
+use Noem\State\Feature\Transitions\AddTransition;
+use Noem\State\Feature\Transitions\TransitionsFeature;
 use Noem\State\Test\Integration\RegionBuilderTestCase;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\TestDox;
@@ -21,7 +23,8 @@ class AsyncFeatureTest extends RegionBuilderTestCase
     {
         parent::setUp();
         $this->builder->enableFeatures(
-            new AsyncFeature()
+            new AsyncFeature(),
+            new TransitionsFeature()
         );
     }
 
@@ -192,9 +195,9 @@ class AsyncFeatureTest extends RegionBuilderTestCase
                 new ExtendedState()
             )
             ->setStates('one', 'two')
-            ->pushTransition('one', 'two', function (object $t): bool {
+            ->addBuildStep(new AddTransition('one', 'two', function (object $t): bool {
                 return $this->get('context') !== null;
-            })
+            }))
             ->onEnter('two', function (object $t) {
                 $t->out .= $this->get('context');
             })
@@ -243,10 +246,10 @@ class AsyncFeatureTest extends RegionBuilderTestCase
                 new ExtendedState()
             )
             ->setStates('off', 'one', 'two')
-            ->pushTransition('off', 'one')
-            ->pushTransition('one', 'two', function (object $t): bool {
+            ->addBuildStep(new AddTransition('off', 'one'))
+            ->addBuildStep(new AddTransition('one', 'two', function (object $t): bool {
                 return $this->get('context') !== null;
-            })
+            }))
             ->onEnter('one', function (object $t) {
                 $this->set('dependency', 'waiting');
             })
@@ -368,9 +371,9 @@ class AsyncFeatureTest extends RegionBuilderTestCase
                 $t->out .= '|END';
                 yield;
             })
-            ->pushTransition('one', 'two', function (object $t): bool {
+            ->addBuildStep(new AddTransition('one', 'two', function (object $t): bool {
                 return str_ends_with($t->out, 'END');
-            })
+            }))
             ->build();
 
         $payload = new \stdClass();

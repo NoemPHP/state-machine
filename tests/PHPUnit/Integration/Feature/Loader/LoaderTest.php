@@ -13,6 +13,8 @@ use Noem\State\Feature\Loader\Helper\PhpEvalHelper;
 use Noem\State\Feature\Loader\RegionLoader;
 use Noem\State\Feature\Loader\RegionSpawnRegistry;
 use Noem\State\Feature\OrthogonalRegions\OrthogonalRegions;
+use Noem\State\Feature\Transitions\AddTransition;
+use Noem\State\Feature\Transitions\TransitionsFeature;
 use Noem\State\Middleware\ChainException;
 use Noem\State\Test\Integration\RegionBuilderTestCase;
 use PHPUnit\Framework\Attributes\Test;
@@ -31,7 +33,8 @@ class LoaderTest extends RegionBuilderTestCase
             new ExtendedState(),
             new OrthogonalRegions(),
             new AsyncFeature(),
-            new JsonSchemaFeature()
+            new JsonSchemaFeature(),
+            new TransitionsFeature()
         );
     }
 
@@ -63,13 +66,13 @@ class LoaderTest extends RegionBuilderTestCase
                         ->builder
                         ->newInstance()
                         ->setStates('checking', 'check_complete')
-                        ->pushTransition(
+                        ->addBuildStep(new AddTransition(
                             'checking',
                             'check_complete',
                             function (object $t): bool {
                                 return $t->count >= 4;
                             }
-                        )
+                        ))
                         ->onEnter('check_complete', function (object $t) {
                             $this->get('foo');
                         })
@@ -82,7 +85,7 @@ class LoaderTest extends RegionBuilderTestCase
         $region = $this
             ->builder
             ->setStates('off', 'on')
-            ->pushTransition('off', 'on')
+            ->addBuildStep(new AddTransition('off', 'on'))
             ->build();
         $this->assertRegionContext($region, 'html', null);
         $counter = 0;
@@ -111,8 +114,8 @@ class LoaderTest extends RegionBuilderTestCase
                     ->builder
                     ->newInstance()
                     ->setStates('off', 'checking', 'check_complete')
-                    ->pushTransition('off', 'checking')
-                    ->pushTransition(
+                    ->addBuildStep(new AddTransition('off', 'checking'))
+                    ->addBuildStep(new AddTransition(
                         'checking',
                         'check_complete',
                         function (object $t): bool {
@@ -120,7 +123,7 @@ class LoaderTest extends RegionBuilderTestCase
 
                             return $count >= 10;
                         }
-                    )
+                    ))
                     ->onEnter('checking', function (object $t) {
                         $count = (int)$this->get('count');
 
@@ -137,7 +140,7 @@ class LoaderTest extends RegionBuilderTestCase
         $region = $this
             ->builder
             ->setStates('off', 'on')
-            ->pushTransition('off', 'on')
+            ->addBuildStep(new AddTransition('off', 'on'))
             ->build();
         $this->assertRegionContext($region, 'html', null);
         $counter = 0;

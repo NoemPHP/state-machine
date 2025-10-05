@@ -9,6 +9,7 @@ use Noem\State\Feature\EventHooks\Hook\After;
 use Noem\State\Feature\EventHooks\Hook\Before;
 use Noem\State\Feature\ExtendedState\ExtendedState;
 use Noem\State\Feature\NamedEvents\Event;
+use Noem\State\Feature\Transitions\AddTransition;
 use Noem\State\Test\Integration\RegionBuilderTestCase;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\TestDox;
@@ -98,7 +99,7 @@ class EventHooksTest extends RegionBuilderTestCase
             /**
              * We register a transition caused by an After event hook
              */
-            ->pushTransition('one', 'two', #[After] fn(Event $t): bool => $guardSpy())
+            ->addBuildStep(new AddTransition('one', 'two', #[After] fn(Event $t): bool => $guardSpy()))
             ->onAction('two', #[After] function (Event $t) use (&$actual) {
                 $actual .= '/after';
             })
