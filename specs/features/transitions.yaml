@@ -1,0 +1,250 @@
+name: transitions
+group: features
+description: The TransitionsFeature provides automatic state transitions based on guard predicates, enabling declarative state machine behavior where transitions occur conditionally without imperative state changes
+
+features:
+  - name: feature-registration
+    description: Feature initialization and service registration in ChainMail
+    specs:
+      - acceptanceCriteria: TransitionsFeature registers DoTransition chain in ChainMail
+        intent: Provides the transition execution mechanism through DoTransition chain registration, enabling the actual state change logic including entry/exit event firing and connected region handling
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/RegistersDoTransitionTest.php
+        
+      - acceptanceCriteria: TransitionsFeature registers Guard chain in ChainMail
+        intent: Provides guard evaluation mechanism through Guard chain registration, enabling type-safe validation of guard predicates with proper parameter compatibility checking and return type enforcement
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/RegistersGuardChainTest.php
+        
+      - acceptanceCriteria: TransitionsFeature registers TransitionRegistry in ChainMail
+        intent: Provides centralized transition storage through TransitionRegistry registration, enabling per-region transition management and guard lookup during transition evaluation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/RegistersTransitionRegistryTest.php
+        
+      - acceptanceCriteria: TransitionsFeature hooks into DispatchAction chain
+        intent: Integrates transition checking after action dispatch by linking into DispatchAction chain, enabling automatic transition evaluation after each action execution without explicit trigger calls
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/HooksIntoDispatchActionTest.php
+
+  - name: transition-registry
+    description: Storing and retrieving transitions per region
+    specs:
+      - acceptanceCriteria: TransitionRegistry stores transitions per region using SplObjectStorage
+        intent: Maintains isolated transition configurations per region instance through SplObjectStorage, preventing cross-region transition pollution and enabling multiple independent state machines
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/Registry/StoresPerRegionTest.php
+        
+      - acceptanceCriteria: TransitionRegistry organizes transitions by source state
+        intent: Enables efficient transition lookup by organizing transitions with source state as primary key, optimizing guard evaluation for current state without scanning unrelated transitions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/Registry/OrganizesBySourceStateTest.php
+        
+      - acceptanceCriteria: TransitionRegistry stores multiple guards per transition
+        intent: Supports multiple conditions for same state transition by allowing multiple guard predicates, enabling first-match-wins evaluation where the first returning true triggers the transition
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/Registry/MultipleGuardsPerTransitionTest.php
+        
+      - acceptanceCriteria: TransitionRegistry provides default true guard when none specified
+        intent: Simplifies unconditional transitions by automatically providing always-true guard when none specified, reducing boilerplate for guaranteed state changes
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/Registry/DefaultTrueGuardTest.php
+        
+      - acceptanceCriteria: TransitionRegistry retrieves all transitions for a given state
+        intent: Enables complete transition evaluation by returning all possible target states with their guards for current state, supporting multiple transition paths and conditional branching
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/Registry/RetrievesTransitionsForStateTest.php
+
+  - name: add-transition-buildstep
+    description: Developer-facing API for adding transitions during build phase
+    specs:
+      - acceptanceCriteria: AddTransition implements BuildStep interface
+        intent: Integrates with RegionBuilder build pipeline through BuildStep interface, enabling transition registration during region construction phase with proper middleware chain integration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/AddTransition/ImplementsBuildStepTest.php
+        
+      - acceptanceCriteria: AddTransition accepts from state, to state, and optional guard
+        intent: Provides clear API for transition definition through constructor parameters, enabling explicit source-target specification with optional conditional guard predicate
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/AddTransition/ConstructorParametersTest.php
+        
+      - acceptanceCriteria: AddTransition registers transition in TransitionRegistry during build
+        intent: Persists transition configuration by registering with TransitionRegistry during build callback execution, ensuring transitions are available for evaluation during runtime
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/AddTransition/RegistersInRegistryTest.php
+        
+      - acceptanceCriteria: AddTransition retrieves TransitionRegistry from builder's ChainMail
+        intent: Accesses shared TransitionRegistry through dependency injection from ChainMail, ensuring transitions are registered in the correct registry instance for the building region
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/AddTransition/RetrievesRegistryFromChainMailTest.php
+        
+      - acceptanceCriteria: AddTransition passes built region to TransitionRegistry
+        intent: Associates transitions with correct region instance by passing built region from build callback, enabling per-region transition isolation and lookup
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/AddTransition/PassesBuiltRegionTest.php
+
+  - name: guard-validation
+    description: Guard predicate validation and execution
+    specs:
+      - acceptanceCriteria: Guard chain validates callback parameter compatibility with trigger
+        intent: Ensures type safety by validating guard signature accepts trigger parameter type, preventing runtime type errors and enabling PSR-14 style event filtering
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/Guard/ValidatesParameterCompatibilityTest.php
+        
+      - acceptanceCriteria: Guard chain requires bool return type
+        intent: Enforces guard contract by requiring explicit bool return type declaration, preventing ambiguous truthiness and ensuring clear transition conditions with descriptive error on violation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/Guard/RequiresBoolReturnTypeTest.php
+        
+      - acceptanceCriteria: Guard chain throws RuntimeException for invalid return type
+        intent: Provides clear error feedback when guard has wrong return type through descriptive RuntimeException including transition context, enabling rapid debugging of configuration errors
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/Guard/ThrowsOnInvalidReturnTypeTest.php
+        
+      - acceptanceCriteria: Guard chain returns false when trigger type incompatible
+        intent: Implements PSR-14 style filtering by returning false for incompatible trigger types without throwing, enabling type-based guard selection and multiple guard evaluation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/Guard/ReturnsFalseOnIncompatibleTriggerTest.php
+        
+      - acceptanceCriteria: Guard chain uses PrepareInvokable for callback preparation
+        intent: Enables context binding and callback transformation through PrepareInvokable chain integration, supporting extended state access and advanced callback preparation patterns
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/Guard/UsesPrepareInvokableTest.php
+        
+      - acceptanceCriteria: Guard chain uses InvokeCallback for actual execution
+        intent: Delegates callback execution to InvokeCallback chain for consistent invocation handling, ensuring guards execute with same context binding and error handling as other callbacks
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/Guard/UsesInvokeCallbackTest.php
+
+  - name: transition-evaluation
+    description: Automatic transition checking and guard evaluation after action dispatch
+    specs:
+      - acceptanceCriteria: Transitions are checked after each action dispatch
+        intent: Enables reactive state changes by evaluating transitions after every action completes, supporting declarative workflows where state advances automatically based on conditions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/Evaluation/ChecksAfterActionTest.php
+
+      - acceptanceCriteria: No transition occurs when state changed imperatively
+        intent: Respects explicit state changes from action handlers by skipping automatic transitions when action returns different state, preventing double transitions and honoring imperative control
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/Evaluation/SkipsOnImperativeChangeTest.php
+
+      - acceptanceCriteria: No transition occurs when region is in final state
+        intent: Prevents transitions from final states by checking isFinal() before evaluation, ensuring terminal states remain stable and state machine completion is preserved
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/Evaluation/SkipsOnFinalStateTest.php
+
+      - acceptanceCriteria: No transition occurs when connected regions not finished
+        intent: Enforces synchronization in hierarchical state machines by waiting for all connected regions to reach final state, preventing premature parent transitions and maintaining state consistency
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/Evaluation/WaitsForConnectedRegionsTest.php
+
+      - acceptanceCriteria: Guards are evaluated in registration order
+        intent: Provides predictable transition selection through ordered guard evaluation, enabling priority-based transitions where first matching guard wins for deterministic behavior
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/Evaluation/EvaluatesInOrderTest.php
+
+      - acceptanceCriteria: First guard returning true triggers transition
+        intent: Implements first-match-wins semantics by stopping evaluation at first true guard, optimizing performance and enabling fallback patterns with increasingly permissive guards
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/Evaluation/FirstTrueWinsTest.php
+
+      - acceptanceCriteria: Target state is returned when transition enabled
+        intent: Communicates successful transition by returning target state string to DispatchAction chain, enabling state change propagation through middleware pipeline
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/Evaluation/ReturnsTargetStateTest.php
+
+      - acceptanceCriteria: Current state is returned when no transition enabled
+        intent: Maintains state stability by returning current state when no guards match, preventing accidental state changes and supporting conditional transition patterns
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/Evaluation/ReturnsCurrentStateTest.php
+
+  - name: transition-execution
+    description: DoTransition chain execution and lifecycle events
+    specs:
+      - acceptanceCriteria: DoTransition fires onExitState event before transition
+        intent: Enables cleanup logic by firing exit event with previous state before transition completes, supporting resource deallocation and state-specific teardown operations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/DoTransition/FiresOnExitStateTest.php
+
+      - acceptanceCriteria: DoTransition fires onEnterState event after transition
+        intent: Enables initialization logic by firing enter event with new state after transition completes, supporting resource allocation and state-specific setup operations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/DoTransition/FiresOnEnterStateTest.php
+
+      - acceptanceCriteria: DoTransition calls onEnterParent on connected regions
+        intent: Propagates transition events to child regions in hierarchical structures by calling onEnterParent on all connected regions, enabling parent-child state coordination
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/DoTransition/CallsOnEnterParentTest.php
+
+      - acceptanceCriteria: DoTransition receives Transition context parameter
+        intent: Provides complete transition information through Transition context object containing region, previousState, currentState, and payload for lifecycle event handlers
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/DoTransition/ReceivesTransitionContextTest.php
+
+      - acceptanceCriteria: DoTransition executes as middleware chain
+        intent: Enables extensibility through middleware pattern by implementing DoTransition as Chain, allowing features to intercept and augment transition execution logic
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/DoTransition/ExecutesAsChainTest.php
+
+  - name: guard-context
+    description: Guard parameter context and data access
+    specs:
+      - acceptanceCriteria: Guard receives region instance in context
+        intent: Provides guards with region access through Guard context object, enabling state inspection and metadata access for complex conditional logic
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/GuardContext/ReceivesRegionTest.php
+        
+      - acceptanceCriteria: Guard receives origin state in context
+        intent: Provides guards with source state information through Guard context, enabling transition-aware conditions that depend on where transition originates
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/GuardContext/ReceivesOriginTest.php
+        
+      - acceptanceCriteria: Guard receives target state in context
+        intent: Provides guards with destination state information through Guard context, enabling transition-aware conditions that depend on where transition leads
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/GuardContext/ReceivesTargetTest.php
+        
+      - acceptanceCriteria: Guard receives trigger payload in context
+        intent: Provides guards with event data through Guard context payload property, enabling data-driven transitions that evaluate trigger object properties
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/GuardContext/ReceivesTriggerTest.php
+        
+      - acceptanceCriteria: Guard receives handler callable in context
+        intent: Provides PrepareInvokable chain with original handler through Guard context, enabling callback transformation and binding before execution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/GuardContext/ReceivesHandlerTest.php
+
+  - name: integration
+    description: Full integration scenarios with multiple features
+    specs:
+      - acceptanceCriteria: Basic state transition with guards and callbacks executes correctly
+        intent: Validates complete transition workflow including guard evaluation and lifecycle callbacks, ensuring all components integrate properly for simple state changes
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Core/Region/BasicTransitionIntegrationTest.php
+        
+      - acceptanceCriteria: Multiple transitions in sequence execute in order
+        intent: Confirms sequential state changes maintain correct order and callback execution, supporting multi-step workflows with proper state progression
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Core/Region/SequentialTransitionsTest.php
+        
+      - acceptanceCriteria: Conditional transitions with multiple guards work correctly
+        intent: Verifies first-match-wins guard evaluation with multiple conditional paths, enabling branching workflows based on runtime conditions
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Transitions/ConditionalTransitionsTest.php
+        
+      - acceptanceCriteria: Transitions respect final state boundaries
+        intent: Ensures state machine stops processing transitions when reaching final state, preventing unintended state changes after workflow completion
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Transitions/FinalStateBoundaryTest.php
+        
+      - acceptanceCriteria: Transitions work with hierarchical regions
+        intent: Validates parent-child transition coordination including onEnterParent propagation and connected region synchronization for nested state machines
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Transitions/HierarchicalRegionsTest.php
+        
+      - acceptanceCriteria: Transitions work with extended state access in guards
+        intent: Confirms guards can access extended state data through $this->get() binding, enabling stateful transition conditions based on accumulated context
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Transitions/ExtendedStateAccessTest.php
+        
+      - acceptanceCriteria: Transitions work with named events
+        intent: Verifies transitions can use #[Name] attribute for type-based and name-based event filtering, enabling string-based event definitions alongside object triggers
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Transitions/NamedEventsTest.php
+
+  - name: error-handling
+    description: Error handling and validation
+    specs:
+      - acceptanceCriteria: Missing trigger parameter in guard throws descriptive error
+        intent: Catches configuration errors by throwing descriptive error when guard lacks required trigger parameter, providing clear feedback about signature requirements
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/ErrorHandling/MissingTriggerParameterTest.php
+        
+      - acceptanceCriteria: Invalid guard return type throws RuntimeException with context
+        intent: Provides detailed error information when guard has wrong return type through RuntimeException including origin, target, and handler details for rapid debugging
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/ErrorHandling/InvalidReturnTypeTest.php
+        
+      - acceptanceCriteria: Transition to undefined state is handled gracefully
+        intent: Prevents invalid state transitions by validating target state exists, either throwing descriptive error or silently failing based on configuration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/ErrorHandling/UndefinedTargetStateTest.php
+        
+      - acceptanceCriteria: Guard exceptions are propagated with context
+        intent: Preserves exception stack traces when guards throw by propagating exceptions with transition context, enabling proper error handling and debugging
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/ErrorHandling/GuardExceptionPropagationTest.php
+
+  - name: edge-cases
+    description: Edge cases and boundary conditions
+    specs:
+      - acceptanceCriteria: Self-transitions are supported
+        intent: Allows transitions from state to itself with proper lifecycle events, enabling state re-entry patterns and refresh operations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/EdgeCases/SelfTransitionTest.php
+        
+      - acceptanceCriteria: Multiple guards to same target state work correctly
+        intent: Supports multiple conditional paths to same destination by allowing different guards for same transition, enabling OR logic in transition conditions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/EdgeCases/MultipleGuardsSameTargetTest.php
+        
+      - acceptanceCriteria: Transitions with null guard default to always true
+        intent: Simplifies unconditional transitions by treating null guard as always-allow, reducing boilerplate for guaranteed state changes
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/EdgeCases/NullGuardDefaultsTest.php
+        
+      - acceptanceCriteria: Empty transition registry returns empty array
+        intent: Handles uninitialized state gracefully by returning empty array when no transitions registered for state, preventing errors and enabling lazy configuration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/EdgeCases/EmptyRegistryTest.php
+        
+      - acceptanceCriteria: Transition evaluation with no matching guards maintains state
+        intent: Preserves current state when all guards return false, ensuring state stability and supporting conditional workflow patterns with fallback states
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/EdgeCases/NoMatchingGuardsTest.php
