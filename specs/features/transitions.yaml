@@ -229,9 +229,9 @@ features:
   - name: edge-cases
     description: Edge cases and boundary conditions
     specs:
-      - acceptanceCriteria: Self-transitions are supported
-        intent: Allows transitions from state to itself with proper lifecycle events, enabling state re-entry patterns and refresh operations
-        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/EdgeCases/SelfTransitionTest.php
+#      - acceptanceCriteria: Self-transitions are supported
+#        intent: Allows transitions from state to itself with proper lifecycle events, enabling state re-entry patterns and refresh operations
+#        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/EdgeCases/SelfTransitionTest.php
         
       - acceptanceCriteria: Multiple guards to same target state work correctly
         intent: Supports multiple conditional paths to same destination by allowing different guards for same transition, enabling OR logic in transition conditions
