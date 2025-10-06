@@ -93,6 +93,10 @@ features:
         intent: Ensures entry-triggered events execute synchronously within the same lifecycle, maintaining predictable state progression during transitions
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/ImmediateCascadeProcessingTest.php
         
+      - acceptanceCriteria: Region fires onEnter callback when entering initial state during construction
+        intent: Ensures initialization logic executes for the starting state by triggering onEnter callbacks during region instantiation, enabling consistent state setup regardless of whether states are entered via transition or initial construction
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/InitialStateBootstrapTest.php
+        
   - name: path-generation
     description: Hierarchical path representation for state machines
     specs:

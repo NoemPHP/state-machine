@@ -307,7 +307,14 @@ class RegionBuilder
             $builder = $enhance->call(new BuildParams($this, $featureArgs));
         }
 
-        return $this->buildChain->withProvider($provider)->call($builder);
+        $region = $this->buildChain->withProvider($provider)->call($builder);
+        
+        // Fire onEnter callback for initial state after all handlers are registered
+        //TODO This should be done on the first trigger, not after building
+        $events = $this->chainMail->get(Events::class);
+        $events->onEnterState($region, $region->currentState(), new \stdClass());
+        
+        return $region;
     }
 
     protected function assertValidConfig(): void
