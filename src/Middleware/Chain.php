@@ -28,6 +28,16 @@ class Chain implements ChainInterface
     private $currentChain;
 
     /**
+     * @var array<string, callable> $middlewareRegistry
+     */
+    private array $middlewareRegistry = [];
+
+    /**
+     * @var int $middlewareCounter
+     */
+    private int $middlewareCounter = 0;
+
+    /**
      * @param ?callable( C $context, $next, callable $first): R $provider
      * @param list<callable( C $context, callable(C $c ): R $next, callable(C $c ): R $first): R> $middlewares
      * @param int|null $maxRestarts
@@ -50,10 +60,16 @@ class Chain implements ChainInterface
      * @param callable( C $context, callable(C $c ): R $next, callable(C $c ): R $first): R $callback
      * @param bool $prepend Whether to prepend or append the middleware
      *
-     * @return $this
+     * @return callable
      */
-    #[Override] public function link(callable $callback, bool $prepend = false): self
+    #[Override] public function link(callable $callback, bool $prepend = false): callable
     {
+        // Generate a unique ID for this middleware
+        $id = 'middleware_' . ++$this->middlewareCounter;
+
+        // Register the middleware
+        $this->middlewareRegistry[$id] = $callback;
+
         if ($prepend) {
             array_unshift($this->middlewares, $callback);
         } else {
@@ -61,7 +77,19 @@ class Chain implements ChainInterface
         }
         $this->currentChain = null;
 
-        return $this;
+        // Return a deregister function
+        return function() use ($id, $callback) {
+            if (isset($this->middlewareRegistry[$id])) {
+                unset($this->middlewareRegistry[$id]);
+
+                // Remove from middlewares array
+                $this->middlewares = array_filter($this->middlewares, function($middleware) use ($callback) {
+                    return $middleware !== $callback;
+                });
+
+                $this->currentChain = null;
+            }
+        };
     }
 
     /**

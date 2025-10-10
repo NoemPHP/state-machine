@@ -81,6 +81,12 @@ features:
         intent: Ensures universal applicability by supporting both primitive values and complex objects as context, enabling chains to process diverse data types from simple strings to rich domain objects
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Chain/HandlesScalarAndObjectContextsTest.php
 
+      - acceptanceCriteria: Middleware registration returns a function to de-register them later on
+        criticality: contract
+        intent: |
+          Enables one-shot middlewares and gives long-running modular applications more control over the application lifecycle than immutable static chains.
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Middleware/Chain/LinkReturnsDeregisterTest.php
+
   - name: chainmail
     description: Dependency injection container with overlay pattern, lazy service resolution, and middleware boot sequence
     specs:

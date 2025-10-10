@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Noem\State;
 
 use Noem\State\Chains\Params;
+use Noem\State\Chains\Params\Action;
 use Throwable;
 
 class Region
@@ -16,15 +17,34 @@ class Region
      */
     private array $dispatched = [];
 
+    /**
+     * Tracks whether the initial state's onEnter callback has been fired
+     */
+    private bool $initialStateEntered = false;
+
+
     public function __construct(
-        private readonly Events $events,
-        string $initial,
-        private readonly string $final,
+        private readonly Events                $events,
+        string                                 $initial,
+        private readonly string                $final,
         private readonly Chains\DispatchAction $actionChain,
-        private readonly Chains\DoTransition $transitionChain,
-        private readonly Chains\Path $path,
-    ) {
+        private readonly Chains\DoTransition   $transitionChain,
+        private readonly Chains\Path           $path,
+    )
+    {
         $this->currentState = $initial;
+        /**
+         * Register a self-destructing one-shot middleware.
+         * It takes care of ensuring onEnter is called on the first dispatch in
+         * the Region's lifetime.
+         */
+        $onFirstDispatch = $this->actionChain->link(
+            function (Action $action, callable $next) use(&$onFirstDispatch){
+                $this->events->onEnterState($this, $this->currentState, $action->payload);
+                $onFirstDispatch();
+                return $next($action);
+            }
+        );
     }
 
     /**
@@ -96,10 +116,6 @@ class Region
         $this->doDispatch();
     }
 
-//    public function onDispatch(object $trigger): void
-//    {
-//        $this->dispatched[] = $trigger;
-//    }
 
     /**
      * Determines if we have reached the end or final state.

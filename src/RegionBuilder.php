@@ -309,10 +309,8 @@ class RegionBuilder
 
         $region = $this->buildChain->withProvider($provider)->call($builder);
         
-        // Fire onEnter callback for initial state after all handlers are registered
-        //TODO This should be done on the first trigger, not after building
-        $events = $this->chainMail->get(Events::class);
-        $events->onEnterState($region, $region->currentState(), new \stdClass());
+        // Initial state's onEnter should be called on first trigger, not during build
+        // This ensures consistent lifecycle: all state entries (including initial) go through the same pathway
         
         return $region;
     }
