@@ -176,6 +176,45 @@ class DescriptiveTest extends TestCase
 specs/[group]/[component].yaml → tests/PHPUnit/Unit/[Group]/[Component]/[SpecificBehavior]Test.php
 ```
 
+### Spec Criticality Levels
+
+Every spec includes a `criticality` field classifying its importance:
+
+| Level | Breaking Impact | Use For | Examples |
+|-------|----------------|---------|----------|
+| **contract** | HIGH - Major version | Public API, behavioral guarantees users depend on | `Region.trigger()`, `Guard signature`, `ChainMail.get()` |
+| **constraint** | MEDIUM - May cause bugs | Critical internal behavior, safety mechanisms | Execution order, validation, immutability |
+| **detail** | LOW - Can change freely | Implementation choices, optimizations | Lazy loading, default conventions, strict equality |
+
+**Criticality in YAML:**
+```yaml
+specs:
+  - acceptanceCriteria: A region tracks its current state
+    criticality: contract  # Public API - users depend on this
+    intent: Provides runtime visibility into state
+    test: vendor/bin/phpunit tests/.../CurrentStateTrackingTest.php
+    
+  - acceptanceCriteria: Transition chain is not invoked when state unchanged
+    criticality: constraint  # Internal correctness requirement
+    intent: Optimizes performance and prevents unnecessary processing
+    test: vendor/bin/phpunit tests/.../NoTransitionOnSameStateTest.php
+    
+  - acceptanceCriteria: Built region uses first state as initial when none marked
+    criticality: detail  # Default convention - could change
+    intent: Provides sensible default behavior
+    test: vendor/bin/phpunit tests/.../DefaultInitialStateTest.php
+```
+
+**Usage Guidelines:**
+- **contract**: Changes require user approval + major version bump. Maximize test coverage.
+- **constraint**: Changes need careful review. Breaking = subtle bugs or security issues.
+- **detail**: Can evolve freely as long as contract holds. Focus on implementation quality.
+
+**Current Distribution** (97 total specs):
+- contract: 60 (62%) - Most specs define public API
+- constraint: 25 (26%) - Internal correctness & safety
+- detail: 12 (12%) - Performance & defaults
+
 ---
 
 [comment]:# (Project Architecture: High-level overview with inline patterns. Not exhaustive - just enough to navigate.)
@@ -371,6 +410,7 @@ The TransitionsFeature spec (`specs/features/transitions.yaml`) is organized int
 
 Before closing any task:
 - [ ] All acceptance criteria current and accurate
+- [ ] Every spec has a `criticality` field (contract/constraint/detail)
 - [ ] No duplicate or overlapping specs
 - [ ] Every spec has corresponding test class
 - [ ] Every test class has corresponding spec

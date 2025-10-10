@@ -7,26 +7,32 @@ features:
     description: Core state definition and configuration functionality
     specs:
       - acceptanceCriteria: A builder can define states using setStates with variadic parameters
+        criticality: contract
         intent: Provides convenient bulk state definition through variadic syntax, simplifying initial state machine configuration
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/SetStatesTest.php
         
       - acceptanceCriteria: A builder can add individual states using addState
+        criticality: contract
         intent: Enables incremental state definition for dynamic or conditional state machine construction
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/AddStateTest.php
         
       - acceptanceCriteria: A builder can mark a state as initial using markInitial
+        criticality: contract
         intent: Explicitly designates the starting state, overriding the default first-state convention
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/MarkInitialTest.php
         
       - acceptanceCriteria: A builder can mark a state as final using markFinal
+        criticality: contract
         intent: Explicitly designates the terminal state, overriding the default last-state convention
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/MarkFinalTest.php
         
       - acceptanceCriteria: Built region uses first state as initial when none is marked
+        criticality: detail
         intent: Provides sensible default behavior, reducing boilerplate for simple state machines
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/DefaultInitialStateTest.php
         
       - acceptanceCriteria: Built region uses last state as final when none is marked
+        criticality: detail
         intent: Provides sensible default terminal state, reducing configuration for linear workflows
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/DefaultFinalStateTest.php
 
@@ -34,18 +40,22 @@ features:
     description: Feature system integration and registration
     specs:
       - acceptanceCriteria: A builder can register features using enableFeatures
+        criticality: contract
         intent: Activates modular functionality extensions, enabling features to configure the DI container and middleware chains
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/EnableFeaturesTest.php
         
       - acceptanceCriteria: enableFeatures accepts multiple features as variadic parameters
+        criticality: contract
         intent: Simplifies multi-feature registration through variadic syntax, reducing method call overhead
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/EnableMultipleFeaturesTest.php
         
       - acceptanceCriteria: Features are invoked with the builder's ChainMail instance
+        criticality: constraint
         intent: Provides features with DI container access, allowing service registration and middleware configuration during setup
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/FeatureInvocationTest.php
         
       - acceptanceCriteria: Features registered via enableFeatures are available in built region
+        criticality: constraint
         intent: Ensures feature-provided services and middleware are accessible in the constructed region, completing feature integration
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/FeatureAvailabilityTest.php
 
@@ -53,22 +63,27 @@ features:
     description: Registering lifecycle callbacks and action handlers
     specs:
       - acceptanceCriteria: A builder can register action handlers using onAction
+        criticality: contract
         intent: Registers state-specific event handlers, enabling custom business logic execution when events occur in particular states
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/OnActionRegistrationTest.php
         
       - acceptanceCriteria: A builder can register enter handlers using onEnter
+        criticality: contract
         intent: Registers state entry callbacks, enabling initialization and setup logic when transitioning into states
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/OnEnterRegistrationTest.php
         
       - acceptanceCriteria: A builder can register exit handlers using onExit
+        criticality: contract
         intent: Registers state exit callbacks, enabling cleanup and teardown logic when transitioning out of states
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/OnExitRegistrationTest.php
         
       - acceptanceCriteria: Event handlers are executed through the build chain
+        criticality: constraint
         intent: Ensures handlers integrate with middleware chain, allowing handler behavior to be modified by features and middleware
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/EventHandlerChainIntegrationTest.php
         
       - acceptanceCriteria: Multiple handlers can be registered for the same state and event type
+        criticality: contract
         intent: Supports composition of multiple handlers, enabling modular and reusable event handling logic
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/MultipleHandlersSameStateTest.php
 
@@ -76,18 +91,22 @@ features:
     description: Region and state metadata configuration
     specs:
       - acceptanceCriteria: A builder can set metadata using setMetaData with array or ArrayAccess
+        criticality: contract
         intent: Attaches arbitrary metadata to regions or states, enabling data-driven configuration and runtime introspection
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/SetMetaDataTest.php
         
       - acceptanceCriteria: setMetaData requires a MetaType parameter to categorize metadata
+        criticality: contract
         intent: Organizes metadata by type, preventing namespace collisions and enabling type-specific metadata handling
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/MetaTypeRequiredTest.php
         
       - acceptanceCriteria: setMetaData supports optional flags parameter for configuration
+        criticality: contract
         intent: Provides fine-grained control over metadata behavior through configuration flags
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/MetaDataFlagsTest.php
         
       - acceptanceCriteria: setMetaData supports optional predicate for conditional metadata
+        criticality: contract
         intent: Enables dynamic metadata attachment based on runtime conditions, supporting context-aware configuration
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/ConditionalMetaDataTest.php
 
@@ -95,18 +114,22 @@ features:
     description: Custom build middleware and step management
     specs:
       - acceptanceCriteria: A builder can add custom build steps using addBuildStep with BuildStep interface
+        criticality: contract
         intent: Enables extensible build pipeline through custom middleware, allowing features to modify construction process
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/AddBuildStepTest.php
         
       - acceptanceCriteria: Build steps are executed in order during the build process
+        criticality: constraint
         intent: Ensures predictable build pipeline execution, supporting ordered construction transformations
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/BuildStepExecutionTest.php
         
       - acceptanceCriteria: Build step callbacks receive builder, next, and first parameters
+        criticality: contract
         intent: Provides middleware pattern for build steps, enabling composition and restart capabilities during construction
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/BuildStepCallbacksTest.php
         
       - acceptanceCriteria: Build steps can modify the region during construction
+        criticality: constraint
         intent: Allows dynamic region customization during build phase, supporting conditional and computed configurations
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/BuildStepModificationTest.php
 
@@ -114,18 +137,22 @@ features:
     description: Hierarchical and parallel region connections
     specs:
       - acceptanceCriteria: A builder can connect to remote regions using connect method
+        criticality: contract
         intent: Establishes hierarchical or parallel region relationships, enabling composite state machine structures
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/ConnectRegionTest.php
         
       - acceptanceCriteria: connect accepts optional flags parameter for connection configuration
+        criticality: contract
         intent: Provides fine-grained control over connection behavior through configuration flags
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/ConnectionFlagsTest.php
         
       - acceptanceCriteria: connect accepts optional predicate for conditional connections
+        criticality: contract
         intent: Enables dynamic region connections based on runtime conditions, supporting context-aware hierarchies
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/ConnectionPredicateTest.php
         
       - acceptanceCriteria: Connections are registered with the ConnectedRegions chain during build
+        criticality: constraint
         intent: Ensures connections integrate with middleware chain, allowing connection behavior to be extended by features
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/ConnectionRegistrationTest.php
 
@@ -133,26 +160,32 @@ features:
     description: Builder instantiation, cloning, and region construction
     specs:
       - acceptanceCriteria: A builder can be instantiated with default ChainMail instance
+        criticality: contract
         intent: Provides zero-configuration construction, simplifying basic state machine creation
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/DefaultConstructorTest.php
         
       - acceptanceCriteria: A builder can be instantiated with custom ChainMail instance
+        criticality: contract
         intent: Enables pre-configured DI containers, supporting shared service registration across builders
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/CustomChainMailConstructorTest.php
         
       - acceptanceCriteria: newInstance creates a new builder sharing the same ChainMail configuration
+        criticality: contract
         intent: Facilitates builder cloning for creating related state machines with shared services and middleware
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/NewInstanceTest.php
         
       - acceptanceCriteria: build creates a Region instance from builder configuration
+        criticality: contract
         intent: Constructs the final state machine, executing build pipeline and instantiating the runtime region
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/BuildTest.php
         
       - acceptanceCriteria: build accepts optional Mesh or iterable for feature arguments
+        criticality: contract
         intent: Provides dynamic feature configuration during build, enabling parameterized feature initialization
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/BuildWithFeatureArgsTest.php
         
       - acceptanceCriteria: build accepts optional skipMiddlewares flag to bypass EnhanceRegionBuilder chain
+        criticality: detail
         intent: Allows bypassing middleware for performance or testing, providing direct region construction
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/SkipMiddlewaresTest.php
 
@@ -160,18 +193,22 @@ features:
     description: Dependency injection container integration
     specs:
       - acceptanceCriteria: Builder exposes ChainMail instance through public property with asymmetric visibility
+        criticality: contract
         intent: Provides direct access to the DI container through a publicly readable property while preventing external modification, enabling advanced service registration and middleware configuration outside the builder's fluent API
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/ChainMailAccessTest.php
         
       - acceptanceCriteria: ChainMail is booted automatically when building region
+        criticality: constraint
         intent: Ensures all registered DI services and middleware are fully initialized before region construction begins, guaranteeing complete dependency resolution and proper middleware chain setup
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/ChainMailBootTest.php
         
       - acceptanceCriteria: Builder constructor registers default service providers in ChainMail
+        criticality: constraint
         intent: Establishes comprehensive core infrastructure by automatically registering essential chains and services (EnhanceRegionBuilder, DispatchAction, validation chains, connection chains, state management chains, and Events), providing a complete operational foundation for basic state machine functionality
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/DefaultServicesTest.php
         
       - acceptanceCriteria: Builder integrates with EnhanceRegionBuilder chain for middleware processing
+        criticality: constraint
         intent: Enables features and middleware to intercept and transform the builder before region construction through the EnhanceRegionBuilder chain, supporting advanced customization, validation, and dynamic configuration modifications
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/EnhanceBuilderIntegrationTest.php
 
@@ -179,10 +216,12 @@ features:
     description: Configuration validation and error handling
     specs:
       - acceptanceCriteria: Builder throws RuntimeException when building with empty states array
+        criticality: constraint
         intent: Prevents construction of invalid state machines by enforcing that every region must have at least one defined state, catching configuration errors early with clear error messages
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/EmptyStatesValidationTest.php
         
       - acceptanceCriteria: Builder validates configuration in assertValidConfig during build
+        criticality: constraint
         intent: Ensures configuration consistency and correctness through a centralized validation checkpoint executed during build, catching structural and logical configuration errors before region instantiation
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/ConfigValidationTest.php
 
@@ -190,9 +229,11 @@ features:
     description: Method chaining and fluent interface pattern
     specs:
       - acceptanceCriteria: All configuration methods return self for method chaining
+        criticality: contract
         intent: Implements the fluent interface pattern by returning self from all configuration methods, enabling readable and expressive state machine construction through continuous method chaining
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/FluentInterfaceTest.php
         
       - acceptanceCriteria: Builder methods can be chained in any logical order
+        criticality: contract
         intent: Provides maximum flexibility in builder configuration by allowing order-independent method chaining, enabling developers to organize code logically without artificial ordering constraints while maintaining correct final state
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/MethodChainingOrderTest.php

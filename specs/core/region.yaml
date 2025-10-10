@@ -7,14 +7,17 @@ features:
     description: Core state tracking and querying functionality
     specs:
       - acceptanceCriteria: A region tracks its current state
+        criticality: contract
         intent: Provides runtime visibility into the state machine's current state, enabling conditional logic and state-dependent behavior
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/CurrentStateTrackingTest.php
         
       - acceptanceCriteria: A region can check if it is in a specific state
+        criticality: contract
         intent: Enables conditional logic based on specific states, allowing consumers to guard operations and validate preconditions
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/StateCheckTest.php
         
       - acceptanceCriteria: A region can detect when it has reached the final state
+        criticality: contract
         intent: Signals workflow completion, enabling cleanup and final processing
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/FinalStateDetectionTest.php
         
@@ -22,14 +25,17 @@ features:
     description: Event triggering with immediate and queued dispatch modes
     specs:
       - acceptanceCriteria: A region can trigger events with immediate dispatch
+        criticality: contract
         intent: Processes events synchronously as they occur, ensuring immediate state updates and action execution
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/ImmediateEventDispatchTest.php
         
       - acceptanceCriteria: A region can enqueue events for later dispatch
+        criticality: contract
         intent: Defers event processing to enable batched operations and prevent cascading side effects during transitions
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/EnqueueEventsTest.php
         
       - acceptanceCriteria: Multiple events can be triggered and queued
+        criticality: contract
         intent: Allows accumulating multiple events for efficient batch processing and controlled execution order
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/MultipleEventQueuingTest.php
         
@@ -93,8 +99,9 @@ features:
         intent: Ensures entry-triggered events execute synchronously within the same lifecycle, maintaining predictable state progression during transitions
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/ImmediateCascadeProcessingTest.php
         
-      - acceptanceCriteria: Region fires onEnter callback when entering initial state during construction
-        intent: Ensures initialization logic executes for the starting state by triggering onEnter callbacks during region instantiation, enabling consistent state setup regardless of whether states are entered via transition or initial construction
+      - acceptanceCriteria: Region fires onEnter callback for initial state on first trigger dispatch
+        criticality: contract
+        intent: Ensures initialization logic executes consistently - the initial state's onEnter fires when the first event is dispatched (not during construction), treating initial state entry the same as any other state transition for consistent lifecycle behavior
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/InitialStateBootstrapTest.php
         
   - name: path-generation
