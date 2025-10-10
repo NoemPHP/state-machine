@@ -23,6 +23,8 @@ class ImmediateEventDispatchTest extends TestCase
     {
         $events = \Mockery::mock(Events::class);
         $actionChain = \Mockery::mock(DispatchAction::class);
+        $actionChain->shouldReceive('link');
+
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
 
@@ -49,10 +51,12 @@ class ImmediateEventDispatchTest extends TestCase
     {
         $events = \Mockery::mock(Events::class);
         $actionChain = \Mockery::mock(DispatchAction::class);
+        $actionChain->shouldReceive('link');
+
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
 
-        $actionChain->shouldReceive('call')
+          $actionChain->shouldReceive('call')
             ->once()
             ->andReturn('initial');
 
@@ -76,6 +80,8 @@ class ImmediateEventDispatchTest extends TestCase
     {
         $events = \Mockery::mock(Events::class);
         $actionChain = \Mockery::mock(DispatchAction::class);
+        $actionChain->shouldReceive('link');
+
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
 

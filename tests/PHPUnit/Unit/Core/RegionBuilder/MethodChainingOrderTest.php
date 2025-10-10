@@ -54,10 +54,10 @@ class MethodChainingOrderTest extends TestCase
     public function testEventHandlersCanBeRegisteredInAnyOrder(): void
     {
         $builder = new RegionBuilder();
-        $builder->onAction('idle', fn() => null)
+        $builder->onAction('idle', fn(object $t) => null)
                 ->setStates('idle', 'processing')
-                ->onEnter('processing', fn() => null)
-                ->onExit('idle', fn() => null);
+                ->onEnter('processing', fn(object $t) => null)
+                ->onExit('idle', fn(object $t) => null);
         
         $region = $builder->build();
         $this->assertInstanceOf(Region::class, $region);
@@ -113,12 +113,12 @@ class MethodChainingOrderTest extends TestCase
         $builder->setStates('parent')
                 ->markInitial('parent')
                 ->addBuildStep($step)
-                ->onAction('parent', fn() => null)
+                ->onAction('parent', fn(object $t) => null)
                 ->setMetaData(['data' => 'test'], ContextMetaType::get())
-                ->onEnter('parent', fn() => null)
+                ->onEnter('parent', fn(object $t) => null)
                 ->connect($childRegion)
                 ->markFinal('parent')
-                ->onExit('parent', fn() => null);
+                ->onExit('parent', fn(object $t) => null);
         
         $region = $builder->build();
         $this->assertInstanceOf(Region::class, $region);

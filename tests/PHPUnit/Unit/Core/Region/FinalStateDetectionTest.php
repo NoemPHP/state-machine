@@ -53,6 +53,7 @@ class FinalStateDetectionTest extends TestCase
     {
         $events = \Mockery::mock(Events::class);
         $actionChain = \Mockery::mock(DispatchAction::class);
+        $actionChain->shouldReceive('link');
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
 

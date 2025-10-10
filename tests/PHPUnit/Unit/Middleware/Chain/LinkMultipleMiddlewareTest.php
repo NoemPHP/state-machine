@@ -21,8 +21,8 @@ class LinkMultipleMiddlewareTest extends TestCase
         $middleware2 = fn($context, $next) => $next($context) . ' + m2';
 
         $chain = new Chain(fn($c) => "base:$c");
-        $chain = $chain->link($middleware1);
-        $chain = $chain->link($middleware2);
+        $chain->link($middleware1);
+        $chain->link($middleware2);
 
         $result = $chain->call('test');
 
@@ -31,28 +31,20 @@ class LinkMultipleMiddlewareTest extends TestCase
         $this->assertStringContainsString('+ m2', $result);
     }
 
-    public function testLinkReturnSameChainInstance(): void
-    {
-        $original = new Chain(fn($c) => $c);
-        $linked = $original->link(fn($c, $next) => $next($c));
-
-        $this->assertSame($original, $linked);
-    }
-
     public function testMultipleLinkedMiddlewareExecute(): void
     {
         $executionOrder = [];
 
         $chain = new Chain(fn($c) => $c);
-        $chain = $chain->link(function ($c, $next) use (&$executionOrder) {
+        $chain->link(function ($c, $next) use (&$executionOrder) {
             $executionOrder[] = 'first';
             return $next($c);
         });
-        $chain = $chain->link(function ($c, $next) use (&$executionOrder) {
+        $chain->link(function ($c, $next) use (&$executionOrder) {
             $executionOrder[] = 'second';
             return $next($c);
         });
-        $chain = $chain->link(function ($c, $next) use (&$executionOrder) {
+        $chain->link(function ($c, $next) use (&$executionOrder) {
             $executionOrder[] = 'third';
             return $next($c);
         });

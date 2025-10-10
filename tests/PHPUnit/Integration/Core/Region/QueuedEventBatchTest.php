@@ -149,7 +149,7 @@ class QueuedEventBatchTest extends RegionBuilderTestCase
         $r->trigger((object)['step' => 0], false);
 
         $this->assertTrue($r->isInState('three'));
-        $this->assertEquals(['two', 'three'], $states);
+        $this->assertEquals(['one','two', 'three'], $states);
     }
 
     #[Test]

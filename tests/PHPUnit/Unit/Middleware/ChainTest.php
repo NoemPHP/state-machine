@@ -36,13 +36,13 @@ class ChainTest extends TestCase
         $middleware1 = function ($context, $next) use (&$executed) {
             $executed[] = 'middleware1';
 
-            return $next($context).' + middleware1';
+            return $next($context) . ' + middleware1';
         };
 
         $middleware2 = function ($context, $next) use (&$executed) {
             $executed[] = 'middleware2';
 
-            return $next($context).' + middleware2';
+            return $next($context) . ' + middleware2';
         };
 
         $chain = new Chain(fn($c) => "base:$c", [$middleware1, $middleware2]);
@@ -98,9 +98,9 @@ class ChainTest extends TestCase
             return $next($context);
         };
 
-        $chain = new Chain(fn($c) => "output:$c")
-            ->link($middleware)
-            ->memoize();
+        $chain = new Chain(fn($c) => "output:$c");
+        $chain->link($middleware);
+        $chain->memoize();
 
         $result1 = $chain->call('memo-test');
         $result2 = $chain->call('memo-test');
@@ -121,9 +121,9 @@ class ChainTest extends TestCase
             return $next($context);
         };
 
-        $chain = new Chain(fn($c) => "output:$c")
-            ->link($middleware)
-            ->memoize();
+        $chain = new Chain(fn($c) => "output:$c");
+        $chain->link($middleware);
+        $chain->memoize();
 
         $chain->call('test1');
         $chain->call('test2');
@@ -274,8 +274,8 @@ class ChainTest extends TestCase
     {
         $chain = new Chain(fn($c) => "base:$c");
 
-        $chain = $chain->link(function ($context, $next) {
-            return $next($context)." + addedMiddleware";
+        $chain->link(function ($context, $next) {
+            return $next($context) . " + addedMiddleware";
         });
 
         $result = $chain->call('test');
@@ -290,7 +290,7 @@ class ChainTest extends TestCase
     {
         $chain = new Chain(fn($c) => "base:$c");
 
-        $chain = $chain->link(function ($context, $next) {
+        $chain->link(function ($context, $next) {
             return "short-circuited";
         });
 
@@ -306,9 +306,9 @@ class ChainTest extends TestCase
     {
         $chain = new Chain();
         $chainWithProvider = $chain->withProvider(fn($c) => "Result: $c");
-        
+
         $result = $chainWithProvider->call('test');
-        
+
         $this->assertEquals('Result: test', $result);
     }
 
@@ -333,7 +333,7 @@ class ChainTest extends TestCase
         // Test with scalar context
         $scalarChain = new Chain(fn($c) => "scalar:$c");
         $this->assertEquals('scalar:test', $scalarChain->call('test'));
-        
+
         // Test with object context
         $objectChain = new Chain(fn(\DateTime $c) => "date:" . $c->format('Y-m-d'));
         $date = new \DateTime('2024-01-01');

@@ -29,12 +29,16 @@ class ChainInterfaceTest extends TestCase
 
         $this->assertInstanceOf(ChainInterface::class, $chain);
 
-        $newChain = $chain->link(function ($context, $next) {
+        $deregisterFunction = $chain->link(function ($context, $next) {
             return $next($context);
         });
 
-        $this->assertInstanceOf(ChainInterface::class, $newChain);
-        $this->assertSame($chain, $newChain); // link returns same instance
+        // Verify that link returns a callable function for deregistration
+        $this->assertIsCallable($deregisterFunction);
+
+        // Verify that the chain still works after linking
+        $result = $chain->call('test');
+        $this->assertEquals('test', $result);
     }
 
     public function testChainInterfaceCall(): void

@@ -39,7 +39,6 @@ class CurrentStateTrackingTest extends TestCase
     public function testCurrentStateRemainsConsistent(): void
     {
         $region = $this->createRegion('myState', 'finalState');
-
         $state1 = $region->currentState();
         $state2 = $region->currentState();
 
@@ -50,6 +49,7 @@ class CurrentStateTrackingTest extends TestCase
     {
         $events = \Mockery::mock(Events::class);
         $actionChain = \Mockery::mock(DispatchAction::class);
+        $actionChain->shouldReceive('link');
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
 

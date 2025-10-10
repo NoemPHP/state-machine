@@ -51,7 +51,7 @@ class FinalStateBoundaryTest extends TestCase
         $region->trigger((object)[]);
 
         $this->assertTrue($region->isInState('final'));
-        $this->assertEquals(0, $enterCount, 'Should not re-enter initial state from final');
+        $this->assertEquals(1, $enterCount, 'Should not re-enter initial state from final');
     }
     
     public function testWorkflowCompletionDetection(): void

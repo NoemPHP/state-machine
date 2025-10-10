@@ -30,7 +30,7 @@ class PrependMiddlewareTest extends TestCase
         };
 
         $chain = new Chain(fn($c) => $c, [$first]);
-        $chain = $chain->link($prepended, true);
+        $chain->link($prepended, true);
 
         $chain->call('test');
 
@@ -48,12 +48,12 @@ class PrependMiddlewareTest extends TestCase
 
         $chain = new Chain(fn($c) => $c, [$base]);
 
-        $chain = $chain->link(function ($c, $next) use (&$order) {
+        $chain->link(function ($c, $next) use (&$order) {
             $order[] = 'prepend1';
             return $next($c);
         }, true);
 
-        $chain = $chain->link(function ($c, $next) use (&$order) {
+        $chain->link(function ($c, $next) use (&$order) {
             $order[] = 'prepend2';
             return $next($c);
         }, true);
@@ -70,12 +70,12 @@ class PrependMiddlewareTest extends TestCase
 
         $chain = new Chain(fn($c) => $c);
 
-        $chain = $chain->link(function ($c, $next) use (&$order) {
+        $chain->link(function ($c, $next) use (&$order) {
             $order[] = 'linked';
             return $next($c);
         });
 
-        $chain = $chain->link(function ($c, $next) use (&$order) {
+        $chain->link(function ($c, $next) use (&$order) {
             $order[] = 'prepended';
             return $next($c);
         }, true);
