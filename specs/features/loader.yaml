@@ -1,0 +1,858 @@
+name: loader
+group: features
+features:
+  - name: feature-registration
+    specs:
+      - acceptanceCriteria: RegionLoader registers required services in ChainMail
+        criticality: contract
+        intent: Ensures all necessary services are available for the loader feature to function
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/ServiceRegistrationTest.php
+      
+      - acceptanceCriteria: RegionLoader registers Container as a service
+        criticality: contract
+        intent: Provides service storage capability to the loader
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/ContainerRegistrationTest.php
+      
+      - acceptanceCriteria: RegionLoader registers Schema chain as a service
+        criticality: contract
+        intent: Makes schema processing chain available for configuration validation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SchemaChainRegistrationTest.php
+      
+      - acceptanceCriteria: RegionLoader registers TransformArray chain as a service
+        criticality: contract
+        intent: Makes array transformation chain available for pre-processing configuration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/TransformArrayChainRegistrationTest.php
+      
+      - acceptanceCriteria: RegionLoader registers SpawnRegion chain as a service
+        criticality: contract
+        intent: Makes region spawning chain available for dynamic sub-region creation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnRegionChainRegistrationTest.php
+      
+      - acceptanceCriteria: RegionLoader registers RegionSpawnRegistry as a service
+        criticality: contract
+        intent: Provides registry for tracking spawn configurations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnRegistryRegistrationTest.php
+
+  - name: yaml-conversion
+    specs:
+      - acceptanceCriteria: ConvertYaml parses valid YAML string into array
+        criticality: contract
+        intent: Enables loading state machine configuration from YAML format
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/YamlParsingTest.php
+      
+      - acceptanceCriteria: ConvertYaml processes custom YAML tags using helpers
+        criticality: contract
+        intent: Allows dynamic content generation in YAML using tagged values
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/YamlHelperProcessingTest.php
+      
+      - acceptanceCriteria: ConvertYaml recursively processes nested arrays with TaggedValue instances
+        criticality: constraint
+        intent: Ensures helpers work at any depth in configuration structure
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/RecursiveHelperProcessingTest.php
+      
+      - acceptanceCriteria: ConvertYaml throws RuntimeException for undefined helper
+        criticality: constraint
+        intent: Provides clear error feedback when using unknown helper tags
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/UndefinedHelperErrorTest.php
+      
+      - acceptanceCriteria: ConvertYaml supports YAML custom tag parsing via Symfony component
+        criticality: detail
+        intent: Uses standard YAML parsing with PARSE_CUSTOM_TAGS flag
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/YamlCustomTagsTest.php
+
+  - name: yaml-helpers
+    specs:
+      - acceptanceCriteria: PhpEvalHelper evaluates PHP code and returns result
+        criticality: contract
+        intent: Allows embedding PHP expressions in YAML configuration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/PhpEvalHelperTest.php
+      
+      - acceptanceCriteria: PhpEvalHelper converts PHP errors to ErrorException
+        criticality: constraint
+        intent: Ensures all PHP evaluation errors are catchable exceptions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/PhpEvalErrorHandlingTest.php
+      
+      - acceptanceCriteria: PhpEvalHelper includes code fragment in exception message
+        criticality: detail
+        intent: Improves debugging by showing context around error location
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/PhpEvalErrorFragmentTest.php
+      
+      - acceptanceCriteria: PhpEvalHelper restores error handler after evaluation
+        criticality: constraint
+        intent: Prevents side effects in error handling after evaluation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/PhpEvalErrorHandlerRestorationTest.php
+      
+      - acceptanceCriteria: ContainerGetHelper retrieves values from container by key
+        criticality: contract
+        intent: Enables dependency injection in YAML configuration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/ContainerGetHelperTest.php
+      
+      - acceptanceCriteria: ContainerGetHelper initializes with empty container when none provided
+        criticality: detail
+        intent: Provides sensible default for helper usage
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/ContainerGetHelperDefaultTest.php
+
+  - name: array-processing
+    specs:
+      - acceptanceCriteria: ProcessArray validates configuration against schema
+        criticality: contract
+        intent: Ensures configuration structure is correct before processing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SchemaValidationTest.php
+      
+      - acceptanceCriteria: ProcessArray throws RuntimeException with validation details for invalid schema
+        criticality: constraint
+        intent: Provides clear feedback about configuration errors
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/ValidationErrorMessageTest.php
+      
+      - acceptanceCriteria: ProcessArray extracts states from configuration
+        criticality: contract
+        intent: Identifies all state definitions for region building
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/StateExtractionTest.php
+      
+      - acceptanceCriteria: ProcessArray extracts nested regions from configuration
+        criticality: contract
+        intent: Supports hierarchical state machine structures
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/NestedRegionExtractionTest.php
+      
+      - acceptanceCriteria: ProcessArray extracts transitions from configuration
+        criticality: contract
+        intent: Identifies all transition definitions for state changes
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/TransitionExtractionTest.php
+      
+      - acceptanceCriteria: ProcessArray extracts onEnter callbacks from configuration
+        criticality: contract
+        intent: Identifies entry actions for states
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/OnEnterExtractionTest.php
+      
+      - acceptanceCriteria: ProcessArray extracts onExit callbacks from configuration
+        criticality: contract
+        intent: Identifies exit actions for states
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/OnExitExtractionTest.php
+      
+      - acceptanceCriteria: ProcessArray extracts action callbacks from configuration
+        criticality: contract
+        intent: Identifies action handlers for states
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/ActionExtractionTest.php
+      
+      - acceptanceCriteria: ProcessArray applies states to RegionBuilder
+        criticality: contract
+        intent: Configures builder with extracted state definitions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/StateApplicationTest.php
+      
+      - acceptanceCriteria: ProcessArray creates and connects nested regions with proper flags
+        criticality: contract
+        intent: Establishes hierarchical region structure with event propagation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/NestedRegionConnectionTest.php
+      
+      - acceptanceCriteria: ProcessArray adds transitions using AddTransition build step
+        criticality: contract
+        intent: Configures region transitions from extracted definitions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/TransitionApplicationTest.php
+      
+      - acceptanceCriteria: ProcessArray registers onEnter callbacks with builder
+        criticality: contract
+        intent: Configures state entry actions from extracted callbacks
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/OnEnterRegistrationTest.php
+      
+      - acceptanceCriteria: ProcessArray registers onExit callbacks with builder
+        criticality: contract
+        intent: Configures state exit actions from extracted callbacks
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/OnExitRegistrationTest.php
+      
+      - acceptanceCriteria: ProcessArray registers action callbacks with builder
+        criticality: contract
+        intent: Configures state action handlers from extracted callbacks
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/ActionRegistrationTest.php
+      
+      - acceptanceCriteria: ProcessArray marks initial state when specified in configuration
+        criticality: contract
+        intent: Sets starting state for region
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/InitialStateMarkingTest.php
+      
+      - acceptanceCriteria: ProcessArray marks final state when specified in configuration
+        criticality: contract
+        intent: Sets terminating state for region
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/FinalStateMarkingTest.php
+      
+      - acceptanceCriteria: ProcessArray sets inherits property when specified in configuration
+        criticality: contract
+        intent: Supports state template inheritance
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/InheritsPropertyTest.php
+      
+      - acceptanceCriteria: ProcessArray sets factory when specified in configuration
+        criticality: contract
+        intent: Allows custom region instantiation logic
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/FactorySettingTest.php
+      
+      - acceptanceCriteria: ProcessArray creates new builder instance for nested regions
+        criticality: constraint
+        intent: Isolates sub-region configuration from parent builder
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/NestedBuilderIsolationTest.php
+      
+      - acceptanceCriteria: ProcessArray clones callback closures for uniqueness
+        criticality: constraint
+        intent: Prevents coroutine connection issues between shared regions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/CallbackCloningTest.php
+
+  - name: guard-and-callback-creation
+    specs:
+      - acceptanceCriteria: ProcessArray creates default always-true guard when none specified
+        criticality: detail
+        intent: Provides convenient default for unconditional transitions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/DefaultGuardCreationTest.php
+      
+      - acceptanceCriteria: ProcessArray creates guard closure from callable definition
+        criticality: contract
+        intent: Converts configuration guard into executable predicate
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/GuardClosureCreationTest.php
+      
+      - acceptanceCriteria: ProcessArray throws RuntimeException for invalid guard callback
+        criticality: constraint
+        intent: Validates guard configuration at build time
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/InvalidGuardErrorTest.php
+      
+      - acceptanceCriteria: ProcessArray creates state callback closure from run definition
+        criticality: contract
+        intent: Converts configuration callback into executable action
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/StateCallbackCreationTest.php
+      
+      - acceptanceCriteria: ProcessArray throws RuntimeException for invalid run callback
+        criticality: constraint
+        intent: Validates callback configuration at build time
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/InvalidCallbackErrorTest.php
+      
+      - acceptanceCriteria: ProcessArray creates factory closure from callable definition
+        criticality: contract
+        intent: Converts configuration factory into executable function
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/FactoryClosureCreationTest.php
+      
+      - acceptanceCriteria: ProcessArray throws RuntimeException for invalid factory
+        criticality: constraint
+        intent: Validates factory configuration at build time
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/InvalidFactoryErrorTest.php
+
+  - name: builder-integration
+    specs:
+      - acceptanceCriteria: RegionLoader intercepts build process when loader args present
+        criticality: contract
+        intent: Enables YAML/array-based region construction
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/BuilderInterceptionTest.php
+      
+      - acceptanceCriteria: RegionLoader passes through build when no loader args present
+        criticality: constraint
+        intent: Allows normal builder operation without loader configuration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/BuilderPassthroughTest.php
+      
+      - acceptanceCriteria: RegionLoader loads YAML from file path when yaml arg is readable file
+        criticality: contract
+        intent: Supports loading configuration from external files
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/FilePathLoadingTest.php
+      
+      - acceptanceCriteria: RegionLoader treats yaml arg as string when not a readable file
+        criticality: contract
+        intent: Supports inline YAML configuration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/InlineYamlLoadingTest.php
+      
+      - acceptanceCriteria: RegionLoader converts yaml to array before processing
+        criticality: constraint
+        intent: Normalizes configuration format for downstream processing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/YamlToArrayConversionTest.php
+      
+      - acceptanceCriteria: RegionLoader processes array configuration through ProcessArray
+        criticality: contract
+        intent: Applies array configuration to builder
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/ArrayProcessingTest.php
+      
+      - acceptanceCriteria: RegionLoader uses yamlHelpers when converting YAML
+        criticality: contract
+        intent: Enables custom tag processing in YAML
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/YamlHelpersUsageTest.php
+      
+      - acceptanceCriteria: RegionLoader uses empty helpers array when yamlHelpers not provided
+        criticality: detail
+        intent: Allows YAML loading without custom helpers
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/DefaultHelpersTest.php
+
+  - name: spawn-schema-extension
+    specs:
+      - acceptanceCriteria: RegionLoader extends state schema with spawn property
+        criticality: contract
+        intent: Enables declarative sub-region spawning in configuration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnSchemaExtensionTest.php
+      
+      - acceptanceCriteria: Spawn schema accepts guard property
+        criticality: contract
+        intent: Allows conditional spawning based on trigger evaluation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnGuardSchemaTest.php
+      
+      - acceptanceCriteria: Spawn schema accepts region property as array
+        criticality: contract
+        intent: Defines configuration for spawned sub-region
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnRegionSchemaTest.php
+      
+      - acceptanceCriteria: Spawn schema accepts shared property as array
+        criticality: contract
+        intent: Configures data sharing between parent and spawned region
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnSharedSchemaTest.php
+      
+
+      - acceptanceCriteria: State schema is extended with spawn list
+        criticality: constraint
+        intent: Updates schema object to include spawn definitions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/StateSchemaSpawnExtensionTest.php
+
+  - name: spawn-processing
+    specs:
+      - acceptanceCriteria: RegionLoader processes spawn definitions from state configuration
+        criticality: contract
+        intent: Creates spawn records for dynamic sub-region creation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnDefinitionProcessingTest.php
+      
+      - acceptanceCriteria: RegionLoader skips states without spawn definitions
+        criticality: constraint
+        intent: Avoids unnecessary processing for non-spawning states
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnSkippingTest.php
+      
+      - acceptanceCriteria: RegionLoader creates region spawn step for each spawn definition
+        criticality: contract
+        intent: Registers spawning logic with region builder
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnStepCreationTest.php
+      
+      - acceptanceCriteria: RegionLoader uses guard from spawn definition
+        criticality: contract
+        intent: Applies conditional logic to spawn decision
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnGuardUsageTest.php
+      
+      - acceptanceCriteria: RegionLoader creates sub-region from region definition
+        criticality: contract
+        intent: Instantiates configured sub-region for spawning
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SubRegionCreationTest.php
+      
+      - acceptanceCriteria: RegionLoader merges spawn shared config with default sharing
+        criticality: detail
+        intent: Combines user config with sensible defaults for data sharing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnSharedMergingTest.php
+      
+      - acceptanceCriteria: RegionLoader sets default meta sharing to true
+        criticality: detail
+        intent: Enables metadata propagation to spawned regions by default
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/DefaultMetaSharingTest.php
+      
+      - acceptanceCriteria: RegionLoader applies DYNAMIC, RECEIVE_EVENTS, and RECEIVE_ACTIONS flags by default
+        criticality: detail
+        intent: Configures spawned region with standard event handling
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/DefaultConnectionFlagsTest.php
+      
+      - acceptanceCriteria: RegionLoader includes RECEIVE_META flag when meta sharing enabled
+        criticality: constraint
+        intent: Ensures metadata flows to spawned region when configured
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/MetaFlagApplicationTest.php
+      
+      - acceptanceCriteria: RegionLoader creates new builder instance for sub-region
+        criticality: constraint
+        intent: Isolates sub-region builder from parent configuration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SubRegionBuilderIsolationTest.php
+
+  - name: spawn-step-execution
+    specs:
+      - acceptanceCriteria: regionSpawnStep returns closure accepting builder and next
+        criticality: contract
+        intent: Provides middleware-compatible build step interface
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnStepInterfaceTest.php
+      
+      - acceptanceCriteria: regionSpawnStep retrieves RegionSpawnRegistry from ChainMail
+        criticality: constraint
+        intent: Accesses registry service for spawn record storage
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnStepRegistryRetrievalTest.php
+      
+      - acceptanceCriteria: regionSpawnStep calls next to build region
+        criticality: constraint
+        intent: Continues builder chain to complete region construction
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnStepContinuationTest.php
+      
+      - acceptanceCriteria: regionSpawnStep creates RegionSpawnRecord with provided parameters
+        criticality: contract
+        intent: Encapsulates spawn configuration for later execution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnRecordCreationTest.php
+      
+      - acceptanceCriteria: regionSpawnStep adds spawn record to registry
+        criticality: contract
+        intent: Registers spawn configuration for action-based triggering
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnRecordRegistrationTest.php
+      
+      - acceptanceCriteria: regionSpawnStep returns built region
+        criticality: constraint
+        intent: Provides region for further configuration or use
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnStepReturnTest.php
+
+  - name: spawn-execution
+    specs:
+      - acceptanceCriteria: RegionLoader checks spawn registry on every action dispatch
+        criticality: contract
+        intent: Evaluates spawn conditions whenever actions occur
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnCheckOnActionTest.php
+      
+      - acceptanceCriteria: SpawnRegion checks parameter compatibility with trigger payload
+        criticality: constraint
+        intent: Ensures guard can be called with current trigger type
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnParameterCompatibilityTest.php
+      
+      - acceptanceCriteria: SpawnRegion returns null when parameter incompatible
+        criticality: constraint
+        intent: Skips spawning when guard signature doesn't match trigger
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnParameterIncompatibilityTest.php
+      
+      - acceptanceCriteria: SpawnRegion evaluates guard predicate with trigger payload
+        criticality: contract
+        intent: Determines whether to spawn sub-region based on trigger
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnGuardEvaluationTest.php
+      
+      - acceptanceCriteria: SpawnRegion returns null when guard returns false
+        criticality: constraint
+        intent: Prevents spawning when guard condition not met
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnGuardFalseTest.php
+      
+      - acceptanceCriteria: SpawnRegion invokes region factory when guard returns true
+        criticality: contract
+        intent: Creates sub-region instance when spawn condition met
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnFactoryInvocationTest.php
+      
+      - acceptanceCriteria: SpawnRegion creates Connection with parent region and sub-region
+        criticality: contract
+        intent: Establishes communication link between regions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnConnectionCreationTest.php
+      
+      - acceptanceCriteria: SpawnRegion uses connection flags from spawn record
+        criticality: contract
+        intent: Applies configured event propagation settings
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnConnectionFlagsTest.php
+      
+      - acceptanceCriteria: SpawnRegion creates connection predicate tied to parent state
+        criticality: contract
+        intent: Activates connection only when parent is in spawning state
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnConnectionPredicateTest.php
+      
+      - acceptanceCriteria: SpawnRegion adds connection to ConnectedRegions
+        criticality: contract
+        intent: Registers connection for event routing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnConnectionRegistrationTest.php
+      
+      - acceptanceCriteria: SpawnRegion returns spawned region
+        criticality: constraint
+        intent: Provides spawned region reference for further processing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnRegionReturnTest.php
+
+  - name: spawn-registry
+    specs:
+      - acceptanceCriteria: RegionSpawnRegistry initializes with empty records array
+        criticality: detail
+        intent: Starts with no spawn configurations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnRegistryInitializationTest.php
+      
+      - acceptanceCriteria: RegionSpawnRegistry addRecord stores spawn record
+        criticality: contract
+        intent: Accumulates spawn configurations for processing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnRegistryAddRecordTest.php
+      
+      - acceptanceCriteria: RegionSpawnRegistry records property is private(set)
+        criticality: detail
+        intent: Provides read access while controlling write access
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnRegistryAccessTest.php
+
+  - name: spawn-record
+    specs:
+      - acceptanceCriteria: RegionSpawnRecord stores parent region reference
+        criticality: contract
+        intent: Identifies region that will spawn sub-regions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnRecordParentRegionTest.php
+      
+      - acceptanceCriteria: RegionSpawnRecord stores parent state name
+        criticality: contract
+        intent: Identifies state that triggers spawning
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnRecordParentStateTest.php
+      
+      - acceptanceCriteria: RegionSpawnRecord stores region factory closure
+        criticality: contract
+        intent: Provides sub-region instantiation logic
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnRecordFactoryTest.php
+      
+      - acceptanceCriteria: RegionSpawnRecord stores guard closure
+        criticality: contract
+        intent: Provides spawn condition evaluation logic
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnRecordGuardTest.php
+      
+      - acceptanceCriteria: RegionSpawnRecord stores connection flags
+        criticality: contract
+        intent: Defines event propagation configuration for spawned region
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnRecordConnectionFlagsTest.php
+      
+      - acceptanceCriteria: RegionSpawnRecord uses default connection flags when not provided
+        criticality: detail
+        intent: Applies standard configuration for most use cases
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnRecordDefaultFlagsTest.php
+
+  - name: machine-abstraction
+    specs:
+      - acceptanceCriteria: Machine features method returns array with RegionLoader
+        criticality: detail
+        intent: Provides default feature set for YAML-based machines
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/MachineDefaultFeaturesTest.php
+      
+      - acceptanceCriteria: Machine builderArgs method includes loader configuration
+        criticality: contract
+        intent: Provides YAML and helpers to RegionLoader
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/MachineBuilderArgsTest.php
+      
+      - acceptanceCriteria: Machine yamlHelpers method returns php and get helpers
+        criticality: detail
+        intent: Provides standard helper set for YAML processing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/MachineYamlHelpersTest.php
+      
+      - acceptanceCriteria: Machine container method returns empty iterable by default
+        criticality: detail
+        intent: Allows override for custom container values
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/MachineDefaultContainerTest.php
+      
+      - acceptanceCriteria: Machine execute method runs region until final state
+        criticality: contract
+        intent: Provides convenient execution pattern for machines
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/MachineExecuteTest.php
+      
+      - acceptanceCriteria: Machine execute method accepts optional region parameter
+        criticality: detail
+        intent: Allows execution of externally built regions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/MachineExecuteWithRegionTest.php
+      
+      - acceptanceCriteria: Machine execute method uses region method result when no region provided
+        criticality: detail
+        intent: Falls back to machine's own region construction
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/MachineExecuteDefaultRegionTest.php
+      
+      - acceptanceCriteria: Machine execute method returns last trigger result
+        criticality: contract
+        intent: Provides final execution outcome
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/MachineExecuteReturnTest.php
+      
+      - acceptanceCriteria: Machine run static method builds region with machine features and args
+        criticality: contract
+        intent: Provides convenient one-line machine execution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/MachineRunTest.php
+      
+      - acceptanceCriteria: Machine run method executes until final state and returns last result
+        criticality: contract
+        intent: Combines building and execution in single method
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/MachineRunCompleteTest.php
+      
+      - acceptanceCriteria: Machine yaml method is abstract
+        criticality: contract
+        intent: Requires subclasses to provide YAML configuration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/MachineYamlAbstractTest.php
+      
+      - acceptanceCriteria: Machine trigger method is abstract
+        criticality: contract
+        intent: Requires subclasses to provide trigger logic
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/MachineTriggerAbstractTest.php
+
+  - name: container
+    specs:
+      - acceptanceCriteria: Container extends Mesh
+        criticality: detail
+        intent: Inherits service storage functionality from Mesh
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/ContainerExtendsTest.php
+
+  - name: loader-chains
+    specs:
+      - acceptanceCriteria: Schema chain has unlimited restarts
+        criticality: detail
+        intent: Allows schema extensions to restart processing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SchemaUnlimitedRestartsTest.php
+      
+      - acceptanceCriteria: TransformArray chain passes through array by default
+        criticality: detail
+        intent: Provides identity transformation when no middleware registered
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/TransformArrayDefaultTest.php
+      
+      - acceptanceCriteria: SpawnRegion chain requires ConnectedRegions dependency
+        criticality: constraint
+        intent: Ensures connection registry available for spawning
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnRegionDependencyTest.php
+      
+      - acceptanceCriteria: SpawnRegion chain uses provider method for spawn logic
+        criticality: detail
+        intent: Implements spawn evaluation in dedicated method
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnRegionProviderTest.php
+
+  - name: schema-context
+    specs:
+      - acceptanceCriteria: SchemaContext stores callback schema
+        criticality: contract
+        intent: Defines schema for callback definitions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SchemaContextCallbackTest.php
+      
+      - acceptanceCriteria: SchemaContext stores action structure
+        criticality: contract
+        intent: Defines schema for action definitions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SchemaContextActionTest.php
+      
+      - acceptanceCriteria: SchemaContext stores state structure
+        criticality: contract
+        intent: Defines schema for state definitions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SchemaContextStateTest.php
+      
+      - acceptanceCriteria: SchemaContext stores region structure
+        criticality: contract
+        intent: Defines schema for region definitions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SchemaContextRegionTest.php
+      
+      - acceptanceCriteria: SchemaContext addCustomSchema stores custom type by name
+        criticality: contract
+        intent: Allows feature extensions to add custom schema elements
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SchemaContextAddCustomTest.php
+      
+      - acceptanceCriteria: SchemaContext getCustomSchema retrieves custom type by name
+        criticality: contract
+        intent: Provides access to registered custom schema elements
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SchemaContextGetCustomTest.php
+      
+      - acceptanceCriteria: SchemaContext getCustomSchema returns null for unknown name
+        criticality: constraint
+        intent: Handles missing custom types gracefully
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SchemaContextGetCustomNullTest.php
+
+  - name: holon-bootstrapping
+    description: Self-contained machine bootstrapping (Holon) with integrated container and event loop
+    specs:
+      - acceptanceCriteria: Holon loads machine from YAML string
+        criticality: contract
+        intent: Enables inline YAML machine definitions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/YamlStringLoadingTest.php
+
+      - acceptanceCriteria: Holon loads machine from file path
+        criticality: contract
+        intent: Supports external YAML configuration files
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/YamlFileLoadingTest.php
+
+      - acceptanceCriteria: Holon returns Region instance by default
+        criticality: contract
+        intent: Provides standard region for manual control
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/RegionReturnTest.php
+
+      - acceptanceCriteria: Phase 1 parses YAML and extracts machine configuration
+        criticality: contract
+        intent: Isolates configuration parsing from execution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/PhaseOneParsingTest.php
+
+      - acceptanceCriteria: Phase 2 builds region with features and container
+        criticality: contract
+        intent: Constructs working machine from parsed configuration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/PhaseTwoBuildingTest.php
+
+      - acceptanceCriteria: Parsed configuration includes machine, states, and regions sections
+        criticality: constraint
+        intent: Supports comprehensive machine definition
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/ConfigurationStructureTest.php
+
+  - name: holon-container
+    description: Holon PSR-11 container construction from configuration
+    specs:
+      - acceptanceCriteria: buildContainer creates PSR-11 compatible container
+        criticality: contract
+        intent: Provides standard dependency injection interface
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/ContainerCreationTest.php
+
+      - acceptanceCriteria: Container registers direct value services
+        criticality: contract
+        intent: Supports simple value injection
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/ValueServiceTest.php
+
+      - acceptanceCriteria: Container registers factory-based services
+        criticality: contract
+        intent: Supports lazy service instantiation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/FactoryServiceTest.php
+
+      - acceptanceCriteria: Container registers class-based services with arguments
+        criticality: contract
+        intent: Supports constructor dependency injection
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/ClassServiceTest.php
+
+      - acceptanceCriteria: Container caches resolved factory services
+        criticality: constraint
+        intent: Ensures singleton behavior for factory services
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/ServiceCachingTest.php
+
+      - acceptanceCriteria: Container throws RuntimeException for missing services
+        criticality: constraint
+        intent: Provides clear error feedback for missing dependencies
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/MissingServiceErrorTest.php
+
+  - name: holon-features
+    description: Holon dynamic feature instantiation from configuration
+    specs:
+      - acceptanceCriteria: instantiateFeatures creates feature instances from class names
+        criticality: contract
+        intent: Enables declarative feature configuration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/FeatureInstantiationTest.php
+
+      - acceptanceCriteria: instantiateFeatures passes config to feature constructor
+        criticality: contract
+        intent: Supports feature-specific configuration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/FeatureConfigPassingTest.php
+
+      - acceptanceCriteria: instantiateFeatures validates Feature interface implementation
+        criticality: constraint
+        intent: Ensures type safety for feature objects
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/FeatureValidationTest.php
+
+      - acceptanceCriteria: instantiateFeatures throws for non-existent classes
+        criticality: constraint
+        intent: Catches configuration errors early
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/MissingClassErrorTest.php
+
+      - acceptanceCriteria: Holon adds RegionLoader when not present
+        criticality: constraint
+        intent: Ensures YAML processing capability exists
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/DefaultLoaderTest.php
+
+  - name: holon-helpers
+    description: Holon YAML helper functions for dynamic content
+    specs:
+      - acceptanceCriteria: getBootstrapHelpers provides php, env, constant helpers
+        criticality: contract
+        intent: Enables dynamic content in configuration parsing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/BootstrapHelpersTest.php
+
+      - acceptanceCriteria: getYamlHelpers adds container access helpers
+        criticality: contract
+        intent: Enables dependency injection in state callbacks
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/YamlHelpersTest.php
+
+      - acceptanceCriteria: YamlHelpers includes service helper for container access
+        criticality: contract
+        intent: Provides convenient service retrieval syntax
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/ServiceHelperTest.php
+
+  - name: holon-event-loop
+    description: Holon event loop integration for automatic and manual execution
+    specs:
+      - acceptanceCriteria: Holon runs event loop when autoRun is true
+        criticality: contract
+        intent: Enables fire-and-forget machine execution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/AutoRunTest.php
+
+      - acceptanceCriteria: runEventLoop respects maxIterations configuration
+        criticality: constraint
+        intent: Prevents infinite loops in misconfigured machines
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/MaxIterationsTest.php
+
+      - acceptanceCriteria: runEventLoop throws RuntimeException when max iterations reached
+        criticality: constraint
+        intent: Alerts user to potential configuration issues
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/MaxIterationsErrorTest.php
+
+      - acceptanceCriteria: runEventLoop calls trigger factory for each iteration
+        criticality: contract
+        intent: Provides iteration context to trigger generation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/TriggerFactoryTest.php
+
+      - acceptanceCriteria: runEventLoop invokes onIteration callback when provided
+        criticality: contract
+        intent: Enables progress monitoring and debugging
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/OnIterationCallbackTest.php
+
+      - acceptanceCriteria: runEventLoop stops when region reaches final state
+        criticality: contract
+        intent: Completes execution upon machine termination
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/FinalStateStopTest.php
+
+      - acceptanceCriteria: runEventLoop returns last trigger object
+        criticality: contract
+        intent: Provides execution outcome to caller by returning the trigger object that was used in the final iteration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/ResultReturnTest.php
+
+      - acceptanceCriteria: Holon returns Region when autoRun is false
+        criticality: contract
+        intent: Allows manual control of execution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/ManualControlTest.php
+
+  - name: holon-convenience
+    description: Holon convenience methods for simple region creation
+    specs:
+      - acceptanceCriteria: quickRegion creates region from state array
+        criticality: contract
+        intent: Provides backward compatibility and simple API
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/QuickRegionTest.php
+
+      - acceptanceCriteria: quickRegion accepts features array
+        criticality: contract
+        intent: Enables feature composition for simple machines
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/QuickRegionFeaturesTest.php
+
+      - acceptanceCriteria: quickRegion converts array to YAML internally
+        criticality: detail
+        intent: Reuses existing YAML processing pipeline
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/QuickRegionYamlConversionTest.php
+
+  - name: holon-error-handling
+    description: Holon graceful error handling and validation
+    specs:
+      - acceptanceCriteria: Holon throws exception for invalid YAML syntax
+        criticality: constraint
+        intent: Provides clear feedback for malformed configuration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/InvalidYamlErrorTest.php
+
+      - acceptanceCriteria: Holon throws RuntimeException for missing Feature class
+        criticality: constraint
+        intent: Catches feature configuration errors
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/MissingFeatureErrorTest.php
+
+      - acceptanceCriteria: Holon validates Feature interface on instantiation
+        criticality: constraint
+        intent: Ensures feature objects are properly typed
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/Holon/InvalidFeatureErrorTest.php
+
+  - name: integration
+    specs:
+      - acceptanceCriteria: RegionLoader builds working region from YAML configuration
+        criticality: contract
+        intent: Validates end-to-end YAML to working state machine flow
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Loader/YamlToRegionTest.php
+
+      - acceptanceCriteria: RegionLoader builds working region from array configuration
+        criticality: contract
+        intent: Validates end-to-end array to working state machine flow
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Loader/ArrayToRegionTest.php
+
+      - acceptanceCriteria: RegionLoader spawns sub-regions based on triggers
+        criticality: contract
+        intent: Validates dynamic sub-region creation during execution
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Loader/DynamicSpawningTest.php
+
+      - acceptanceCriteria: RegionLoader works with nested hierarchical regions
+        criticality: contract
+        intent: Validates complex multi-level region structures
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Loader/NestedRegionsTest.php
+
+      - acceptanceCriteria: Machine subclass executes complete state machine from YAML
+        criticality: contract
+        intent: Validates Machine abstraction convenience methods
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Loader/MachineExecutionTest.php
+
+      - acceptanceCriteria: Holon builds working machine with features and container
+        criticality: contract
+        intent: Validates complete bootstrap workflow
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Loader/Holon/CompleteBootstrapTest.php
+
+      - acceptanceCriteria: Holon machine executes to completion
+        criticality: contract
+        intent: Ensures bootstrapped machines are functional
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Loader/Holon/ExecutionTest.php
+
+      - acceptanceCriteria: Holon supports complex configurations with nested regions
+        criticality: contract
+        intent: Validates hierarchical machine structures
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Loader/Holon/NestedRegionsTest.php
+
+      - acceptanceCriteria: Container services are accessible in state callbacks
+        criticality: contract
+        intent: Validates dependency injection in actions
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Loader/Holon/ContainerAccessTest.php
