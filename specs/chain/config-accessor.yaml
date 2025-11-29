@@ -1,0 +1,209 @@
+name: config-accessor
+group: chain
+description: Typed configuration accessor pattern for BuildParams that provides fluent, type-safe access to loader configuration, replacing fragile nested array access with discoverable, domain-specific accessor classes
+
+features:
+  - name: build-params-infrastructure
+    description: Core BuildParams methods for typed config access and path-based retrieval
+    specs:
+      - acceptanceCriteria: BuildParams provides config() method that returns typed accessor instances
+        criticality: contract
+        intent: Enables features to access configuration through type-safe, domain-specific accessors rather than fragile array paths, improving code maintainability and providing IDE autocomplete support
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Chains/Params/BuildParams/ProvidesConfigMethodTest.php
+        
+      - acceptanceCriteria: BuildParams caches accessor instances per class to avoid redundant instantiation
+        criticality: constraint
+        intent: Optimizes performance by reusing accessor instances within same BuildParams context, preventing unnecessary object creation overhead when config is accessed multiple times
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Chains/Params/BuildParams/CachesAccessorInstancesTest.php
+        
+      - acceptanceCriteria: BuildParams.getPath() retrieves values using dot notation paths
+        criticality: contract
+        intent: Provides generic path-based config access as infrastructure fallback, enabling ad-hoc config retrieval without creating custom accessors for one-off cases
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Chains/Params/BuildParams/GetPathRetrievesValuesTest.php
+        
+      - acceptanceCriteria: BuildParams.getPath() returns default value when path does not exist
+        criticality: contract
+        intent: Enables safe config access with fallback values, preventing exceptions and enabling graceful degradation when optional config is missing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Chains/Params/BuildParams/GetPathReturnsDefaultTest.php
+        
+      - acceptanceCriteria: BuildParams.getPath() handles non-array intermediate values gracefully
+        criticality: constraint
+        intent: Prevents type errors when path traversal encounters non-array values, returning default instead of attempting invalid array access
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Chains/Params/BuildParams/GetPathHandlesNonArraysTest.php
+        
+      - acceptanceCriteria: BuildParams.hasPath() checks if dot notation path exists
+        criticality: contract
+        intent: Enables conditional logic based on config presence, allowing features to detect optional configuration and adjust behavior accordingly
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Chains/Params/BuildParams/HasPathChecksExistenceTest.php
+        
+      - acceptanceCriteria: BuildParams.hasPath() returns false for non-existent paths
+        criticality: contract
+        intent: Provides reliable negative detection for missing config paths, enabling features to distinguish between missing config and config with null values
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Chains/Params/BuildParams/HasPathReturnsFalseTest.php
+        
+      - acceptanceCriteria: BuildParams.hasPath() handles non-array intermediate values gracefully
+        criticality: constraint
+        intent: Prevents type errors during path existence checks when traversing through non-array values, returning false instead of throwing exceptions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Chains/Params/BuildParams/HasPathHandlesNonArraysTest.php
+
+  - name: config-accessor-base
+    description: Base ConfigAccessor class providing template for typed config access patterns
+    specs:
+      - acceptanceCriteria: ConfigAccessor constructor is final to prevent signature breaking
+        criticality: constraint
+        intent: Enforces consistent instantiation pattern through BuildParams.config(), preventing subclasses from changing constructor signature which would break the factory pattern
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Chains/Params/Config/ConfigAccessor/ConstructorIsFinalTest.php
+        
+      - acceptanceCriteria: ConfigAccessor calls initialize() template method after construction
+        criticality: contract
+        intent: Provides extension point for subclass initialization logic without overriding constructor, enabling caching, validation, and setup while maintaining consistent instantiation pattern
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Chains/Params/Config/ConfigAccessor/CallsInitializeTest.php
+        
+      - acceptanceCriteria: ConfigAccessor.get() retrieves values via BuildParams.getPath()
+        criticality: contract
+        intent: Delegates path-based retrieval to BuildParams infrastructure, providing consistent access pattern for subclasses while centralizing path resolution logic
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Chains/Params/Config/ConfigAccessor/GetDelegatesToBuildParamsTest.php
+        
+      - acceptanceCriteria: ConfigAccessor.has() checks existence via BuildParams.hasPath()
+        criticality: contract
+        intent: Delegates existence checks to BuildParams infrastructure, ensuring consistent path existence logic across all accessor implementations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Chains/Params/Config/ConfigAccessor/HasDelegatesToBuildParamsTest.php
+        
+      - acceptanceCriteria: ConfigAccessor.require() throws RuntimeException when path missing
+        criticality: contract
+        intent: Provides fail-fast validation for required configuration, enabling features to declare mandatory config dependencies and fail explicitly with clear error messages
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Chains/Params/Config/ConfigAccessor/RequireThrowsWhenMissingTest.php
+        
+      - acceptanceCriteria: ConfigAccessor.require() returns value when path exists
+        criticality: contract
+        intent: Combines existence check with retrieval for required config, simplifying code that must have certain configuration values to function
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Chains/Params/Config/ConfigAccessor/RequireReturnsValueTest.php
+        
+      - acceptanceCriteria: ConfigAccessor default initialize() does nothing
+        criticality: constraint
+        intent: Provides no-op default implementation allowing simple accessors to avoid boilerplate while complex accessors can override for custom initialization
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Chains/Params/Config/ConfigAccessor/DefaultInitializeNoOpTest.php
+
+  - name: loader-config-accessor
+    description: Shared LoaderConfig accessor for common loader operations across features
+    specs:
+      - acceptanceCriteria: LoaderConfig.array() returns full loader array data
+        criticality: contract
+        intent: Provides access to complete loader configuration for features needing raw data, supporting edge cases where typed accessors are insufficient
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Chains/Params/Config/LoaderConfig/ArrayReturnsDataTest.php
+        
+      - acceptanceCriteria: LoaderConfig.hasArray() checks if array loader is being used
+        criticality: contract
+        intent: Enables features to detect array-based loader presence before attempting to access loader data, supporting conditional feature enablement based on loader type
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Chains/Params/Config/LoaderConfig/HasArrayChecksExistenceTest.php
+        
+      - acceptanceCriteria: LoaderConfig.states() returns state definitions array
+        criticality: contract
+        intent: Provides convenient access to state definitions for features processing states during build phase, eliminating nested array access boilerplate
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Chains/Params/Config/LoaderConfig/StatesReturnsArrayTest.php
+        
+      - acceptanceCriteria: LoaderConfig.states() returns empty array when states not defined
+        criticality: contract
+        intent: Provides safe default for missing states config, enabling features to iterate state definitions without null checks
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Chains/Params/Config/LoaderConfig/StatesReturnsEmptyTest.php
+        
+      - acceptanceCriteria: LoaderConfig.hasStates() checks if states are defined
+        criticality: contract
+        intent: Enables early exit when states are not configured, improving performance by avoiding unnecessary processing when no states to process
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Chains/Params/Config/LoaderConfig/HasStatesChecksExistenceTest.php
+        
+      - acceptanceCriteria: LoaderConfig.context() returns full context when key is null
+        criticality: contract
+        intent: Provides access to entire context section for features needing multiple context values, avoiding separate calls for each property
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Chains/Params/Config/LoaderConfig/ContextReturnsFullTest.php
+        
+      - acceptanceCriteria: LoaderConfig.context(key) returns specific context key value
+        criticality: contract
+        intent: Enables direct access to specific context properties without nested array syntax, improving readability for features accessing single context values
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Chains/Params/Config/LoaderConfig/ContextReturnsKeyTest.php
+        
+      - acceptanceCriteria: LoaderConfig.context() returns default when context missing
+        criticality: contract
+        intent: Provides safe fallback for optional context configuration, enabling graceful degradation when context section is not defined
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Chains/Params/Config/LoaderConfig/ContextReturnsDefaultTest.php
+        
+      - acceptanceCriteria: LoaderConfig.hasContext() checks if context exists for given key
+        criticality: contract
+        intent: Enables conditional logic based on context presence, allowing features to detect optional context properties and adjust behavior accordingly
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Chains/Params/Config/LoaderConfig/HasContextChecksKeyTest.php
+        
+      - acceptanceCriteria: LoaderConfig.loaderConfig() returns loader metadata
+        criticality: contract
+        intent: Provides access to loader-specific configuration metadata, supporting bootstrap and self-configuring loader patterns
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Chains/Params/Config/LoaderConfig/LoaderConfigReturnsMetadataTest.php
+        
+      - acceptanceCriteria: LoaderConfig.hasType() checks if specific loader type exists
+        criticality: contract
+        intent: Enables detection of different loader types (array, loaderConfig, etc) for conditional processing based on loader input method
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Chains/Params/Config/LoaderConfig/HasTypeChecksExistenceTest.php
+        
+      - acceptanceCriteria: LoaderConfig.type() returns data for specific loader type
+        criticality: contract
+        intent: Provides generic access to any loader type data, supporting extensible loader types without modifying LoaderConfig interface
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Chains/Params/Config/LoaderConfig/TypeReturnsDataTest.php
+
+  - name: async-config-accessor
+    description: AsyncFeature-specific configuration accessor for resolver definitions
+    specs:
+      - acceptanceCriteria: AsyncConfig.resolvers() returns resolver definitions array
+        criticality: contract
+        intent: Provides typed access to async resolver definitions from loader config, eliminating nested array access in AsyncFeature
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Config/AsyncConfig/ResolversReturnsArrayTest.php
+        
+      - acceptanceCriteria: AsyncConfig.resolvers() returns empty array when resolvers not defined
+        criticality: contract
+        intent: Provides safe default for missing resolvers config, enabling features to iterate definitions without null checks
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Config/AsyncConfig/ResolversReturnsEmptyTest.php
+        
+      - acceptanceCriteria: AsyncConfig.hasResolvers() checks if any resolvers are defined
+        criticality: contract
+        intent: Enables early exit when no resolvers configured, improving performance by avoiding unnecessary processing when resolver list is empty
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Config/AsyncConfig/HasResolversChecksExistenceTest.php
+        
+      - acceptanceCriteria: AsyncConfig.resolver(name) finds specific resolver by name
+        criticality: contract
+        intent: Enables lookup of individual resolver definitions by name, supporting scenarios where features need specific resolver metadata
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Config/AsyncConfig/ResolverFindsSpecificTest.php
+        
+      - acceptanceCriteria: AsyncConfig.resolver(name) returns null when resolver not found
+        criticality: contract
+        intent: Provides safe negative case for missing resolvers, enabling conditional logic without exception handling
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Config/AsyncConfig/ResolverReturnsNullTest.php
+        
+      - acceptanceCriteria: AsyncConfig.hasResolver(name) checks if specific resolver exists
+        criticality: contract
+        intent: Enables existence checks for specific resolvers without retrieving full definition, optimizing code that only needs to know if resolver is configured
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Config/AsyncConfig/HasResolverChecksSpecificTest.php
+
+  - name: integration
+    description: End-to-end integration of config accessor pattern with features
+    specs:
+      - acceptanceCriteria: AsyncFeature uses AsyncConfig to access resolver definitions
+        criticality: contract
+        intent: Validates AsyncFeature successfully migrated from nested array access to typed config accessor, demonstrating pattern adoption
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/ConfigAccessor/AsyncFeatureUsesAccessorTest.php
+        
+      - acceptanceCriteria: RegionLoader uses LoaderConfig to access state definitions
+        criticality: contract
+        intent: Validates RegionLoader successfully migrated from nested array access to typed config accessor, demonstrating pattern adoption
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/ConfigAccessor/RegionLoaderUsesAccessorTest.php
+        
+      - acceptanceCriteria: JsonSchemaFeature uses LoaderConfig to access context schema
+        criticality: contract
+        intent: Validates JsonSchemaFeature successfully migrated from nested array access to typed config accessor, demonstrating pattern adoption
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/ConfigAccessor/JsonSchemaUsesAccessorTest.php
+        
+      - acceptanceCriteria: Custom feature can create domain-specific config accessor
+        criticality: contract
+        intent: Validates pattern is reproducible by demonstrating creation and usage of new custom accessor following documented pattern, ensuring extensibility
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/ConfigAccessor/CustomAccessorCreationTest.php
+        
+      - acceptanceCriteria: Accessor with initialize() hook runs custom setup logic
+        criticality: contract
+        intent: Validates initialize() template method enables custom initialization like caching or validation without breaking instantiation pattern
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/ConfigAccessor/InitializeHookTest.php
