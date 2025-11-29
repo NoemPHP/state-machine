@@ -1,0 +1,81 @@
+name: webserver
+group: machines
+description: Asynchronous HTTP server demonstrating cooperative multitasking with spawned connection handling
+
+features:
+  - name: server-lifecycle
+    description: Core server initialization on bootstrap
+    specs:
+      - acceptanceCriteria: Server creates non-blocking socket on entering starting state
+        criticality: contract
+        intent: Enables cooperative multitasking by ensuring socket operations don't block the event loop
+        test: vendor/bin/phpunit tests/PHPUnit/E2E/WebServer/Basic/ServerSocketCreationTest.php
+      
+      - acceptanceCriteria: Server stores socket reference in extended state
+        criticality: contract
+        intent: Makes socket accessible to action handlers for connection acceptance
+        test: vendor/bin/phpunit tests/PHPUnit/E2E/WebServer/Basic/ServerSocketStorageTest.php
+
+  - name: connection-spawning
+    description: Dynamic child region creation for incoming connections
+    specs:
+      - acceptanceCriteria: Server spawns child region when ServerConnection trigger is dispatched
+        criticality: contract
+        intent: Creates isolated state machine per connection, enabling concurrent request handling with independent lifecycles
+        test: vendor/bin/phpunit tests/PHPUnit/E2E/WebServer/Basic/ConnectionSpawningTest.php
+      
+      - acceptanceCriteria: Spawned connection region receives the ServerConnection trigger
+        criticality: contract
+        intent: Passes connection context to spawned region, enabling request processing with access to client socket and request data
+        test: vendor/bin/phpunit tests/PHPUnit/E2E/WebServer/Basic/ConnectionTriggerPropagationTest.php
+      
+      - acceptanceCriteria: Multiple connections spawn independent child regions
+        criticality: contract
+        intent: Enables true concurrent connection handling where each request progresses independently
+        test: vendor/bin/phpunit tests/PHPUnit/E2E/WebServer/Basic/MultipleConnectionSpawningTest.php
+
+  - name: connection-lifecycle
+    description: State transitions for individual HTTP request handling
+    specs:
+      - acceptanceCriteria: Connection region initializes in accept state
+        criticality: contract
+        intent: Establishes initial state for request processing lifecycle
+        test: vendor/bin/phpunit tests/PHPUnit/E2E/WebServer/Basic/ConnectionInitialStateTest.php
+      
+      - acceptanceCriteria: Connection transitions from accept to processing state
+        criticality: contract
+        intent: Moves connection through request handling pipeline after initial setup
+        test: vendor/bin/phpunit tests/PHPUnit/E2E/WebServer/Basic/AcceptToProcessingTransitionTest.php
+      
+      - acceptanceCriteria: Connection stores client socket in extended state during accept
+        criticality: contract
+        intent: Makes client socket accessible throughout connection lifecycle for response writing
+        test: vendor/bin/phpunit tests/PHPUnit/E2E/WebServer/Basic/ClientSocketStorageTest.php
+      
+      - acceptanceCriteria: Connection transitions from processing to close when response complete
+        criticality: contract
+        intent: Signals end of request handling, triggering cleanup and socket closure
+        test: vendor/bin/phpunit tests/PHPUnit/E2E/WebServer/Basic/ProcessingToCloseTransitionTest.php
+      
+      - acceptanceCriteria: Connection closes client socket when entering close state
+        criticality: constraint
+        intent: Ensures proper resource cleanup by closing network connection when request completes
+        test: vendor/bin/phpunit tests/PHPUnit/E2E/WebServer/Basic/SocketCleanupTest.php
+
+  - name: async-behavior
+    description: Cooperative multitasking and non-blocking operations
+    specs:
+      - acceptanceCriteria: Server action handler yields control during connection acceptance loop
+        criticality: contract
+        intent: Enables cooperative multitasking by allowing scheduler to interleave server and connection tasks
+        test: vendor/bin/phpunit tests/PHPUnit/E2E/WebServer/Basic/ServerYieldBehaviorTest.php
+      
+      - acceptanceCriteria: Connection processing handler yields control while generating response
+        criticality: contract
+        intent: Prevents long-running response generation from blocking other connections, maintaining responsiveness
+        test: vendor/bin/phpunit tests/PHPUnit/E2E/WebServer/Basic/ConnectionYieldBehaviorTest.php
+      
+      - acceptanceCriteria: Multiple connections progress concurrently through their states
+        criticality: contract
+        intent: Demonstrates true async behavior where connections don't block each other, essential for scalable server operation
+        test: vendor/bin/phpunit tests/PHPUnit/E2E/WebServer/Basic/ConcurrentProgressTest.php
