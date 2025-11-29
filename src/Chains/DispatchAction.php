@@ -30,10 +30,13 @@ class DispatchAction extends Chain
         /**
          * Process connected regions first.
          * This allows for nested states and transitions.
+         * We call trigger() on each connected region, which:
+         * - Queues the trigger
+         * - Processes the queue (action chain → state update → DoTransition)
+         * - Handles any cascading events from callbacks
          */
         foreach ($connections = $this->connections($action->region) as $region) {
-            $connectedAction = new Action($region, $action->payload);
-            $this->call($connectedAction);
+            $region->trigger($action->payload);
         }
 
         $this->events->onAction($action->region, $action->currentState, $action->payload);
@@ -44,7 +47,7 @@ class DispatchAction extends Chain
     private function connections(Region $region)
     {
         return $this->connectedRegions->call(
-            new Connection($region)
+            new Connection($region, flags: \Noem\State\Connection::RECEIVE_ACTIONS | \Noem\State\Connection::DYNAMIC)
         );
     }
 }

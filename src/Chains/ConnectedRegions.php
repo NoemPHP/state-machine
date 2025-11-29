@@ -57,9 +57,21 @@ class ConnectedRegions extends Chain
                     ) {
                         continue;
                     }
-                    /**
-                     * TODO implement other flags
-                     */
+
+                    if (
+                        $context->hasFlag(Connection::RECEIVE_ACTIONS)
+                        && !$connection->hasFlag(Connection::RECEIVE_ACTIONS)
+                    ) {
+                        continue;
+                    }
+
+                    if (
+                        $context->hasFlag(Connection::RECEIVE_EVENTS)
+                        && !$connection->hasFlag(Connection::RECEIVE_EVENTS)
+                    ) {
+                        continue;
+                    }
+
                     $list[] = $connectedRegion;
                 }
 

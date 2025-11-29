@@ -54,7 +54,9 @@ class MiddlewareBootSequenceTest extends TestCase
 
         $mail->boot();
 
-        $this->assertEquals(['first', 'second', 'third'], $order);
+        // Boot sequence executes in LIFO order (last registered, first executed)
+        // This allows features registered later (during build) to wrap earlier features
+        $this->assertEquals(['third', 'second', 'first'], $order);
     }
 
     public function testUseMethodReturnsChainMail(): void

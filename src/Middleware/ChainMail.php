@@ -81,8 +81,8 @@ class ChainMail
     {
         if (!$this->booted) {
             $this->boot->link(function ($nothing, callable $next) use ($callback) {
-                $this->invoke($callback);
                 $next($nothing);
+                $this->invoke($callback);
             });
 
             return $this;
