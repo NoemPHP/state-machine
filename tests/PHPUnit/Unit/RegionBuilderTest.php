@@ -18,7 +18,7 @@ use PHPUnit\Framework\TestCase;
  * Tests have been refactored into individual test classes under tests/PHPUnit/Unit/Core/RegionBuilder/
  * following the one-spec-one-test-class pattern as defined in specs/core/region-builder.yaml
  * 
- * See AGENTS.md for the spec-driven testing approach.
+ * See CLAUDE.md for the spec-driven testing approach.
  * 
  * This file is kept temporarily for backwards compatibility but will be removed in a future version.
  */

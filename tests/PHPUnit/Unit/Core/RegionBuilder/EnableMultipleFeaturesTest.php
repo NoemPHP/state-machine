@@ -50,9 +50,17 @@ class EnableMultipleFeaturesTest extends TestCase
         };
         
         $builder->enableFeatures($feature1, $feature2, $feature3);
-        
-        $this->assertCount(3, $invocations, 'All three features should be invoked');
-        $this->assertSame(['feature1', 'feature2', 'feature3'], $invocations);
+
+        // Features not yet invoked during enableFeatures()
+        $this->assertCount(0, $invocations, 'Features should NOT be invoked during enableFeatures()');
+
+        $builder->setStates('a', 'b')->build();
+
+        // Features invoked during build()
+        $this->assertCount(3, $invocations, 'All three features should be invoked during build()');
+        $this->assertContains('feature1', $invocations);
+        $this->assertContains('feature2', $invocations);
+        $this->assertContains('feature3', $invocations);
     }
     
     public function testEnableFeaturesCanBeCalledMultipleTimes(): void
@@ -80,7 +88,15 @@ class EnableMultipleFeaturesTest extends TestCase
         
         $builder->enableFeatures($feature1)
                 ->enableFeatures($feature2);
-        
-        $this->assertSame(['first-call', 'second-call'], $invocations);
+
+        // Features not yet invoked
+        $this->assertCount(0, $invocations, 'Features should NOT be invoked during enableFeatures()');
+
+        $builder->setStates('a', 'b')->build();
+
+        // Features invoked during build()
+        $this->assertCount(2, $invocations);
+        $this->assertContains('first-call', $invocations);
+        $this->assertContains('second-call', $invocations);
     }
 }

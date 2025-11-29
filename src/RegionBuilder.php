@@ -9,6 +9,7 @@ use Noem\State\Chains\ConnectedRegions;
 use Noem\State\Chains\DoTransition;
 use Noem\State\Chains\Params\BuildParams;
 use Noem\State\Feature\Feature;
+use Noem\State\Feature\FeatureRegistry;
 use Noem\State\Feature\Transitions\TransitionsFeature;
 use Noem\State\Middleware\ChainMail;
 use Noem\State\Middleware\Mesh;
@@ -27,6 +28,11 @@ class RegionBuilder
 
     protected \Closure $regionFactory;
 
+    // TODO: Make this property private in a future iteration
+    // Currently it's exposed as contract because Features and BuildSteps need access to ChainMail
+    // to register/retrieve services. Making it private would require refactoring ~50+ callsites
+    // and potentially introducing a different dependency injection pattern for BuildSteps.
+    // See: https://github.com/NoemPHP/state-machine/issues/XXX (create issue if pursuing this)
     private(set) ChainMail $chainMail;
 
     private Chains\BuildRegion $buildChain;
@@ -39,6 +45,7 @@ class RegionBuilder
             $chainMail = new ChainMail();
             $chainMail->supply(
                 fn(): RegionBuilder => $this,
+                fn(): FeatureRegistry => new FeatureRegistry(),
                 fn(): Chains\EnhanceRegionBuilder => new Chains\EnhanceRegionBuilder(),
                 fn(ConnectedRegions $c, Events $e): Chains\DispatchAction => new Chains\DispatchAction($c, $e),
                 fn(): Chains\ValidateCallback => new Chains\ValidateCallback(),
@@ -54,6 +61,14 @@ class RegionBuilder
             );
         }
         $this->chainMail = $chainMail;
+
+        // Ensure FeatureRegistry is always available, even with custom ChainMail
+        try {
+            $this->chainMail->get(FeatureRegistry::class);
+        } catch (\Noem\State\Middleware\ChainException) {
+            $this->chainMail->supply(fn(): FeatureRegistry => new FeatureRegistry());
+        }
+
         $this->meta = $this->chainMail->get(Chains\Meta::class);
         $this->buildChain = new Chains\BuildRegion();
         /**
@@ -79,8 +94,10 @@ class RegionBuilder
 
     public function enableFeatures(Feature ...$features): self
     {
+        $registry = $this->chainMail->get(FeatureRegistry::class);
+
         foreach ($features as $feature) {
-            $feature($this->chainMail);
+            $registry->register($feature);
         }
 
         return $this;
@@ -130,10 +147,11 @@ class RegionBuilder
      * @return $this
      */
     public function connect(
-        Region $remoteRegion,
-        int $flags = 0,
+        Region    $remoteRegion,
+        int       $flags = 0,
         ?callable $predicate = null
-    ): self {
+    ): self
+    {
         $this->buildChain->link(
             function (RegionBuilder $builder, callable $next) use ($remoteRegion, $flags, $predicate) {
                 $connectedRegions = $this->chainMail->get(ConnectedRegions::class);
@@ -220,10 +238,11 @@ class RegionBuilder
      */
     public function setMetaData(
         array|ArrayAccess $data,
-        MetaType $type,
-        int $flags = 0,
-        ?callable $predicate = null
-    ): self {
+        MetaType          $type,
+        int               $flags = 0,
+        ?callable         $predicate = null
+    ): self
+    {
         $this->buildChain->link(
             function (RegionBuilder $regionBuilder, callable $next) use ($data, $type, $flags, $predicate) {
                 $region = $next($regionBuilder);
@@ -278,6 +297,12 @@ class RegionBuilder
      */
     public function build(Mesh|iterable|null $featureArgs = null, ?bool $skipMiddlewares = false): Region
     {
+        $featureRegistry = $this->chainMail->get(FeatureRegistry::class);
+        // Resolve features and invoke them with this ChainMail instance
+        // Features are invoked exactly once per ChainMail, preventing duplicate
+        // middleware registration when builders share ChainMail via newInstance()
+        $featureRegistry->resolve($this->chainMail);
+
         $this->chainMail->boot();
         $enhance = $this
             ->chainMail
@@ -289,7 +314,11 @@ class RegionBuilder
             $transitionChain = $this->chainMail->get(DoTransition::class);
             $path = $this->chainMail->get(Chains\Path::class);
             $events = $this->chainMail->get(Events::class);
-            $this->assertValidConfig();
+
+            // Validate the enhanced builder (which may have states set by features like RegionLoader)
+            if (empty($builder->states)) {
+                throw new \RuntimeException("States cannot be empty");
+            }
 
             $region = new Region(
                 transitionChain: $transitionChain,
@@ -308,10 +337,10 @@ class RegionBuilder
         }
 
         $region = $this->buildChain->withProvider($provider)->call($builder);
-        
+
         // Initial state's onEnter should be called on first trigger, not during build
         // This ensures consistent lifecycle: all state entries (including initial) go through the same pathway
-        
+
         return $region;
     }
 
