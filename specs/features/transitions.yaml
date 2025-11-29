@@ -190,28 +190,28 @@ features:
     description: Guard chain internal context parameter construction and access
     specs:
       - acceptanceCriteria: Guard chain receives context with region instance
-        criticality: detail
+        criticality: constraint
         intent: Ensures Guard middleware chain receives Params\Guard context containing region reference, enabling chain middleware to access region state and metadata for validation and logging
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/GuardContext/ReceivesRegionTest.php
         
       - acceptanceCriteria: Guard chain receives context with origin state
-        criticality: detail
+        criticality: constraint
         intent: Ensures Params\Guard context contains origin state string, enabling chain middleware to implement origin-aware guard augmentation and transition logging
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/GuardContext/ReceivesOriginTest.php
         
       - acceptanceCriteria: Guard chain receives context with target state
-        criticality: detail
+        criticality: constraint
         intent: Ensures Params\Guard context contains target state string, enabling chain middleware to implement target-aware validation and state dependency checking
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/GuardContext/ReceivesTargetTest.php
         
       - acceptanceCriteria: Guard chain receives context with trigger payload
-        criticality: detail
-        intent: Ensures Params\Guard context contains trigger object, enabling PrepareInvokable and InvokeCallback chains to properly bind trigger to guard callable parameter
+        criticality: constraint
+        intent: Ensures Params\Guard context contains trigger object, enabling PrepareInvokable and InvokeCallback chains to properly bind trigger to guard callable parameter. Required by features like NamedEvents that access trigger properties.
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/GuardContext/ReceivesTriggerTest.php
         
       - acceptanceCriteria: Guard chain receives context with handler callable
-        criticality: detail
-        intent: Ensures Params\Guard context contains raw guard callable, enabling PrepareInvokable chain to transform and bind the handler before InvokeCallback executes it
+        criticality: constraint
+        intent: Ensures Params\Guard context contains raw guard callable, enabling PrepareInvokable chain to transform and bind the handler before InvokeCallback executes it. Required by features like NamedEvents that inspect handler attributes.
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/GuardContext/ReceivesHandlerTest.php
 
   - name: integration
@@ -282,6 +282,18 @@ features:
 #        criticality: contract
 #        intent: Allows transitions from state to itself with proper lifecycle events, enabling state re-entry patterns and refresh operations
 #        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Transitions/EdgeCases/SelfTransitionTest.php
+#        notes: |
+#          TODO: Self-transitions currently work but do NOT fire lifecycle events (onExit/onEnter).
+#          This is because the implementation detects newState === currentState and skips DoTransition chain.
+#          This spec is commented out because the current behavior doesn't match the intended contract
+#          (firing "proper lifecycle events"). 
+#          
+#          Options to resolve:
+#          1. Implement lifecycle events for self-transitions (make this spec active)
+#          2. Document current behavior as intentional optimization (change intent)
+#          3. Decide self-transitions should not fire events (change to constraint/detail)
+#          
+#          See: SelfTransitionTest.php which documents actual vs. expected behavior
         
       - acceptanceCriteria: Multiple guards to same target state work correctly
         criticality: contract

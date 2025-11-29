@@ -25,6 +25,13 @@ class SpawnRegion extends Chain
     private function provider(SpawnRegionParams $params): ?Region
     {
         /**
+         * Only process spawn records for actions dispatched to the parent region
+         */
+        if ($params->action->region !== $params->record->parentRegion) {
+            return null;
+        }
+
+        /**
          * Inspect the defined predicate function.
          * If it matches our trigger payload, then we can invoke it.
          */
@@ -43,11 +50,23 @@ class SpawnRegion extends Chain
             return null;
         }
 
-        $currentState = $params->record->parentState;
+        $currentState = $params->record->parentStateName;
         $subRegion = ($params->record->regionFactory)();
+
+        /**
+         * If the connection doesn't have RECEIVE_ACTIONS flag, manually dispatch
+         * the spawn trigger to ensure the spawned region receives it.
+         * When RECEIVE_ACTIONS is set, the connection will handle the dispatch.
+         */
+        if (!($params->record->connectionFlags & Connection::RECEIVE_ACTIONS)) {
+            $subRegion->trigger($params->action->payload);
+        }
+
         /**
          * Create a Connection with a predicate that ties
-         * the newly spawned region to its parent region/state
+         * the newly spawned region to its parent region/state.
+         * The connection flags determine whether the child receives
+         * actions, events, and metadata from the parent.
          */
         $connection = new Connection(
             $params->record->parentRegion,

@@ -3,6 +3,7 @@
 namespace Noem\State\Feature\Loader;
 
 use Nette\Schema\Expect;
+use Noem\State\BuildStep;
 use Noem\State\Chains\ConnectedRegions;
 use Noem\State\Chains\DispatchAction;
 use Noem\State\Chains\EnhanceRegionBuilder;
@@ -44,11 +45,14 @@ class RegionLoader implements Feature
                 fn(): LoaderChains\TransformArray => new LoaderChains\TransformArray(),
                 fn(ConnectedRegions $c): LoaderChains\SpawnRegion => new LoaderChains\SpawnRegion($c),
                 fn(): RegionSpawnRegistry => new RegionSpawnRegistry(),
-            )
-            ->use($this->convertYaml(...))
-            ->use($this->extendLoaderSchemaForSpawnerSupport(...))
-            ->use($this->spawnRegionsOnActions(...))
-            ->use($this->processSpawnerSchema(...));
+            );
+
+        // Call methods directly instead of using $chainMail->use()
+        // because we're already in the middle of boot() when this is invoked
+        $chainMail->invoke($this->convertYaml(...));
+        $chainMail->invoke($this->extendLoaderSchemaForSpawnerSupport(...));
+        $chainMail->invoke($this->spawnRegionsOnActions(...));
+        $chainMail->invoke($this->processSpawnerSchema(...));
     }
 
     /**
@@ -57,13 +61,14 @@ class RegionLoader implements Feature
      */
     public function convertYaml(
         EnhanceRegionBuilder $builderEnhancer,
-        Schema $schema,
-        TransformArray $transformArray,
-    ): void {
+        Schema               $schema,
+        TransformArray       $transformArray,
+    ): void
+    {
         $builderEnhancer->link(
             function (
                 Params\BuildParams $args,
-                callable $next,
+                callable           $next,
             ) use (
                 $schema,
                 $transformArray
@@ -102,7 +107,8 @@ class RegionLoader implements Feature
      */
     public function extendLoaderSchemaForSpawnerSupport(
         Schema $schema,
-    ): void {
+    ): void
+    {
         $schema->link(function (SchemaContext $context, callable $next) {
             $spawnSchemaHandle = 'spawn';
             $subRegionSpawnerSchema = Expect::structure([
@@ -113,10 +119,17 @@ class RegionLoader implements Feature
             $spawnSchema = Expect::listOf($subRegionSpawnerSchema);
             $context->addCustomSchema($spawnSchemaHandle, $spawnSchema);
             /**
-             * Update the reference on the region schema since we just produced a new object
+             * Update the reference on the state schema since we just produced a new object
              */
             $context->state = $context->state->extend([
                 $spawnSchemaHandle => $spawnSchema,
+            ]);
+            
+            /**
+             * Update the region schema to use the extended state schema
+             */
+            $context->region = $context->region->extend([
+                'states' => Expect::listOf($context->state),
             ]);
 
             return $next($context);
@@ -128,19 +141,21 @@ class RegionLoader implements Feature
      */
     public function processSpawnerSchema(
         EnhanceRegionBuilder $builderEnhancer
-    ): void {
+    ): void
+    {
         $builderEnhancer->link(
             function (
                 Params\BuildParams $context,
-                callable $next
+                callable           $next
             ) {
                 $builder = $next($context);
                 assert($builder instanceof RegionBuilder);
 
-                if (!isset($context['loader']['array']['states'])) {
+                $loaderConfig = $context->config(\Noem\State\Chains\Params\Config\LoaderConfig::class);
+                if (!$loaderConfig->hasStates()) {
                     return $builder;
                 }
-                foreach ($context['loader']['array']['states'] as $state) {
+                foreach ($loaderConfig->states() as $state) {
                     if (!isset($state['spawn'])) {
                         continue;
                     }
@@ -161,8 +176,8 @@ class RegionLoader implements Feature
                         if ($shared['meta']) {
                             $flags = $flags | Connection::RECEIVE_META;
                         }
-                        $builder->addStep(
-                            self::regionSpawnStep(
+                        $builder->addBuildStep(
+                            new class(
                                 $stateName,
                                 fn() => $builder->newInstance()->build([
                                     'loader' => [
@@ -171,7 +186,36 @@ class RegionLoader implements Feature
                                 ]),
                                 $guard,
                                 $flags
-                            )
+
+                            ) implements BuildStep {
+                                public function __construct(
+                                    private $stateName,
+                                    private $regionFactory,
+                                    private $guard,
+                                    private $connectionFlags,
+                                )
+                                {
+
+                                }
+
+                                public function callback(RegionBuilder $builder, callable $next, callable $first): Region
+                                {
+                                    $spawnRegistry = $builder->chainMail->invoke(fn(RegionSpawnRegistry $r) => $r);
+                                    $region = $next($builder);
+
+                                    $spawnRecord = new RegionSpawnRecord(
+                                        $region,
+                                        $this->stateName,
+                                        $this->regionFactory,
+                                        $this->guard,
+                                        $this->connectionFlags
+                                    );
+                                    $spawnRegistry->addRecord($spawnRecord);
+
+                                    return $region;
+                                }
+                            }
+
                         );
                     }
                 }
@@ -182,41 +226,52 @@ class RegionLoader implements Feature
     }
 
     public static function regionSpawnStep(
-        string $stateName,
+        string   $stateName,
         callable $regionFactory,
         callable $guard,
-        ?int $connectionFlags = C::DYNAMIC | C::RECEIVE_EVENTS | C::RECEIVE_ACTIONS
-    ): \Closure {
-        return function (
-            RegionBuilder $builder,
-            callable $next
-        ) use (
+        int      $connectionFlags = C::DYNAMIC | C::RECEIVE_EVENTS | C::RECEIVE_ACTIONS
+    ): BuildStep
+    {
+        return new class(
             $stateName,
             $regionFactory,
             $guard,
             $connectionFlags
-        ) {
-            $spawnRegistry = $builder->chainMail->invoke(fn(RegionSpawnRegistry $r) => $r);
-            $region = $next($builder);
+        ) implements BuildStep {
+            public function __construct(
+                private string   $stateName,
+                private          $regionFactory,
+                private          $guard,
+                private int      $connectionFlags,
+            )
+            {
+            }
 
-            $spawnRecord = new RegionSpawnRecord(
-                $region,
-                $stateName,
-                $regionFactory,
-                $guard,
-                $connectionFlags
-            );
-            $spawnRegistry->addRecord($spawnRecord);
+            public function callback(RegionBuilder $builder, callable $next, callable $first): Region
+            {
+                $spawnRegistry = $builder->chainMail->invoke(fn(RegionSpawnRegistry $r) => $r);
+                $region = $next($builder);
 
-            return $region;
+                $spawnRecord = new RegionSpawnRecord(
+                    $region,
+                    $this->stateName,
+                    $this->regionFactory,
+                    $this->guard,
+                    $this->connectionFlags
+                );
+                $spawnRegistry->addRecord($spawnRecord);
+
+                return $region;
+            }
         };
     }
 
     public function spawnRegionsOnActions(
-        DispatchAction $dispatchAction,
-        RegionSpawnRegistry $spawnRegistry,
+        DispatchAction           $dispatchAction,
+        RegionSpawnRegistry      $spawnRegistry,
         LoaderChains\SpawnRegion $spawnRegion
-    ): void {
+    ): void
+    {
         $dispatchAction->link(
             function (Params\Action $action, callable $next) use ($spawnRegistry, $spawnRegion): string {
                 foreach ($spawnRegistry->records as $record) {

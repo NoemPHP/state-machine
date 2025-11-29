@@ -83,7 +83,6 @@ class ProcessArray
         }
         isset($array['initial']) && $builder->markInitial($array['initial']);
         isset($array['final']) && $builder->markFinal($array['final']);
-        isset($array['inherits']) && $builder->inherits($array['inherits']);
         isset($array['factory']) && $builder->setFactory($this->createFactoryCallback($array['factory']));
 
         return $builder;
@@ -109,7 +108,7 @@ class ProcessArray
             'onEnter' => Expect::listOf($action),
             'onExit' => Expect::listOf($action),
             'action' => Expect::listOf($action),
-
+            'regions' => Expect::listOf(Expect::array()), // Nested regions validated recursively during build
         ]);
         $region = Expect::structure([
             'label' => Expect::string(),
@@ -160,9 +159,31 @@ class ProcessArray
         }
         $guard = $transition['guard'];
         if (is_callable($guard)) {
-            return $guard(...);
+            // Wrap untyped closures to add proper type hints
+            return $this->ensureTypedGuard($guard);
         }
         throw new \RuntimeException('Invalid "guard" callback');
+    }
+    
+    /**
+     * Ensures a guard closure has proper type hints by wrapping it if necessary
+     */
+    private function ensureTypedGuard(callable $guard): Closure
+    {
+        try {
+            // Try to get the parameter type - if it works, closure is properly typed
+            $reflect = new \ReflectionFunction($guard);
+            $params = $reflect->getParameters();
+            if (isset($params[0]) && $params[0]->getType() !== null) {
+                // Already properly typed
+                return $guard(...);
+            }
+        } catch (\Throwable $e) {
+            // If reflection fails, wrap it anyway
+        }
+        
+        // Wrap untyped closure to add type hints
+        return fn(object $t): bool => (bool)$guard($t);
     }
 
     /**
@@ -185,12 +206,33 @@ class ProcessArray
              * enqueued properly.
              * Hence, we ensure that each callback is unique
              */
-            return clone $run(...);
+            return clone $this->ensureTypedCallback($run);
         }
         throw new \RuntimeException('Invalid "run" callback');
     }
+    
+    /**
+     * Ensures a callback closure has proper type hints by wrapping it if necessary
+     */
+    private function ensureTypedCallback(callable $callback): Closure
+    {
+        try {
+            // Try to get the parameter type - if it works, closure is properly typed
+            $reflect = new \ReflectionFunction($callback);
+            $params = $reflect->getParameters();
+            if (isset($params[0]) && $params[0]->getType() !== null) {
+                // Already properly typed
+                return $callback(...);
+            }
+        } catch (\Throwable $e) {
+            // If reflection fails, wrap it anyway
+        }
 
-    public function createFactoryCallback(string $definition): Closure
+        // Wrap untyped closure to add type hints
+        return fn(object $t) => $callback($t);
+    }
+
+    public function createFactoryCallback($definition): Closure
     {
         if (is_callable($definition)) {
             return $definition(...);

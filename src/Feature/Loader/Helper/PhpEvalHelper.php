@@ -6,14 +6,41 @@ namespace Noem\State\Feature\Loader\Helper;
 
 class PhpEvalHelper
 {
+    private array $scopeVariables = [];
+    
+    /**
+     * Set variables that should be available in the eval scope
+     */
+    public function setScopeVariables(array $variables): void
+    {
+        $this->scopeVariables = $variables;
+    }
+    
     public function __invoke(string $content): mixed
     {
+        // Extract scope variables into local scope
+        extract($this->scopeVariables);
+        
         // Set a custom error handler to convert PHP errors to exceptions
         set_error_handler(function (int $errno, string $errstr, string $errfile, int $errline): bool {
             throw new \ErrorException($errstr, 0, $errno, $errfile, $errline);
         });
         try {
-            return eval($content . ';');
+            $result = eval($content . ';');
+            
+            // If the result is a closure, unbind $this so it can be bound to the proper context later
+            // Only unbind if the closure doesn't use $this (static closures)
+            if ($result instanceof \Closure) {
+                $reflection = new \ReflectionFunction($result);
+                // Only unbind if closure doesn't use $this (check if it has a scope class)
+                if ($reflection->getClosureThis() === null && $reflection->getClosureScopeClass() === null) {
+                    // Closure doesn't use $this, safe to unbind
+                    $result = \Closure::bind($result, null);
+                }
+                // Otherwise leave it as-is - it will be bound by the framework when needed
+            }
+            
+            return $result;
         } catch (\Throwable $exception) {
             throw new \RuntimeException(
                 $exception->getMessage() . PHP_EOL .

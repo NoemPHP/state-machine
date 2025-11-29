@@ -34,18 +34,5 @@ class StreamHandler
         }
         $metaData = stream_get_meta_data($this->resource);
         return $metaData['wrapper_data'] ?? null;
-
-        do {
-            $chunk = fread($this->resource, 1024);
-            $metaData = stream_get_meta_data($this->resource);
-            if ($metaData['timed_out']) {
-                fclose($this->resource);
-                throw new \Exception('Read timed out');
-            }
-            yield $chunk;
-        } while (!feof($this->resource));
-        fclose($this->resource);
-
-        return $metaData['wrapper_data'] ?? null;
     }
 }

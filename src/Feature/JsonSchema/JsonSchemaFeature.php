@@ -57,14 +57,12 @@ class JsonSchemaFeature implements Feature
                  * Setup schema defaults through the builder chains
                  */
                 $enhanceRegionBuilder?->link(function (BuildParams $context, callable $next) {
-                    if (!isset($context['loader']['array'])) {
+                    $loaderConfig = $context->config(\Noem\State\Chains\Params\Config\LoaderConfig::class);
+                    if (!$loaderConfig->hasContext('schema')) {
                         return $next($context);
                     }
-                    $data = $context['loader']['array'];
-                    if (!isset($data['context']['schema'])) {
-                        return $next($context);
-                    }
-                    $schema = $data['context']['schema'];
+
+                    $schema = $loaderConfig->context('schema');
                     $builder = $next($context);
                     assert($builder instanceof RegionBuilder);
                     $builder->addBuildStep(new AddJsonSchema($schema));

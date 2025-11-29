@@ -59,6 +59,129 @@ features:
         intent: Ensures feature-provided services and middleware are accessible in the constructed region, completing feature integration
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/FeatureAvailabilityTest.php
 
+      - acceptanceCriteria: Features can declare dependencies using multiple RequiresFeature attributes
+        criticality: contract
+        intent: Enables explicit feature dependency declaration through repeatable PHP attributes, allowing features to specify multiple prerequisites without manual ordering
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/FeatureDependencyDeclarationTest.php
+
+      - acceptanceCriteria: enableFeatures registers features without immediate invocation
+        criticality: constraint
+        intent: Defers feature invocation to build phase, enabling dependency resolution before feature initialization and preventing order-dependent failures
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/DeferredFeatureInvocationTest.php
+
+      - acceptanceCriteria: Missing feature dependencies are auto-instantiated during build
+        criticality: contract
+        intent: Automatically resolves and instantiates undeclared dependencies recursively, simplifying feature usage by eliminating manual dependency management
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/AutoInstantiateDependenciesTest.php
+
+      - acceptanceCriteria: Features are invoked in dependency order during build via FeatureRegistry.resolve
+        criticality: contract
+        intent: Ensures dependencies are initialized before dependents by delegating to FeatureRegistry.resolve which handles topological sorting and per-ChainMail invocation, guaranteeing correct initialization sequence regardless of enableFeatures call order
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/DependencyOrderInvocationTest.php
+
+      - acceptanceCriteria: Duplicate feature registration by class name is ignored
+        criticality: constraint
+        intent: Prevents multiple instantiations of the same feature class, ensuring singleton-like behavior for feature instances and avoiding redundant initialization
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/DeduplicateFeaturesByClassTest.php
+
+      - acceptanceCriteria: Circular feature dependencies throw LogicException during build
+        criticality: constraint
+        intent: Detects impossible dependency cycles early with clear error messages, preventing infinite loops and providing actionable feedback for dependency graph fixes
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/CircularDependencyDetectionTest.php
+
+      - acceptanceCriteria: Features with multi-level dependencies resolve recursively
+        criticality: contract
+        intent: Handles transitive dependencies automatically (A→B→C), ensuring complete dependency trees are resolved without requiring users to know indirect dependencies
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/TransitiveDependencyResolutionTest.php
+
+  - name: feature-dependency-resolution
+    description: Internal FeatureRegistry component managing dependency graphs and topological sorting
+    specs:
+      - acceptanceCriteria: FeatureRegistry registers feature instances by class name
+        criticality: constraint
+        intent: Tracks feature instances in a class-name-keyed registry, enabling lookups and preventing duplicate registrations of the same feature type
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/FeatureRegistry/RegistersFeaturesByClassTest.php
+
+      - acceptanceCriteria: FeatureRegistry ignores duplicate registration of same feature class
+        criticality: constraint
+        intent: Maintains single instance per feature class in registry, preventing redundant initialization when same feature is enabled multiple times
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/FeatureRegistry/IgnoresDuplicatesTest.php
+
+      - acceptanceCriteria: FeatureRegistry can check if feature class is registered
+        criticality: constraint
+        intent: Provides isRegistered query method for dependency validation, enabling features and builders to check for prerequisites before initialization
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/FeatureRegistry/IsRegisteredCheckTest.php
+
+      - acceptanceCriteria: FeatureRegistry extracts dependencies from RequiresFeature attributes
+        criticality: constraint
+        intent: Uses reflection to read RequiresFeature attributes from feature classes, discovering dependency declarations without manual registration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/FeatureRegistry/ExtractsDependenciesTest.php
+
+      - acceptanceCriteria: FeatureRegistry auto-instantiates missing dependencies during resolution
+        criticality: constraint
+        intent: Recursively instantiates undeclared feature dependencies using zero-arg constructors, completing the dependency graph automatically
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/FeatureRegistry/AutoInstantiatesTest.php
+
+      - acceptanceCriteria: FeatureRegistry resolves transitive dependencies recursively
+        criticality: constraint
+        intent: Follows dependency chains to arbitrary depth (A→B→C→...), ensuring complete dependency trees are discovered and registered
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/FeatureRegistry/ResolvesTransitiveDepsTest.php
+
+      - acceptanceCriteria: FeatureRegistry builds dependency graph with adjacency list
+        criticality: constraint
+        intent: Constructs directed graph representation of feature dependencies, enabling topological sort algorithms for correct initialization order
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/FeatureRegistry/BuildsDependencyGraphTest.php
+
+      - acceptanceCriteria: FeatureRegistry performs topological sort on dependency graph
+        criticality: constraint
+        intent: Orders features so dependencies precede dependents using Kahn's algorithm, guaranteeing safe initialization sequence
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/FeatureRegistry/TopologicalSortTest.php
+
+      - acceptanceCriteria: Topological sort places dependencies before dependents
+        criticality: constraint
+        intent: Ensures features appear after all their dependencies in sorted output, satisfying initialization order requirements for correct feature setup
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/FeatureRegistry/DependenciesFirstOrderTest.php
+
+      - acceptanceCriteria: Topological sort detects circular dependencies
+        criticality: constraint
+        intent: Identifies impossible dependency cycles through graph analysis, throwing LogicException with cycle description to aid debugging
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/FeatureRegistry/CircularDependencyDetectionTest.php
+
+      - acceptanceCriteria: Topological sort throws LogicException for circular dependencies
+        criticality: constraint
+        intent: Fails fast with descriptive error when circular dependencies detected, preventing silent failures or infinite loops during resolution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/FeatureRegistry/CircularDependencyExceptionTest.php
+
+      - acceptanceCriteria: FeatureRegistry resolve accepts ChainMail parameter and returns features in dependency order
+        criticality: contract
+        intent: Resolves dependencies, sorts features topologically, and returns sorted array for the given ChainMail instance, enabling per-container lifecycle management
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/FeatureRegistry/ResolveWithChainMailTest.php
+
+      - acceptanceCriteria: FeatureRegistry resolve invokes features with ChainMail on first call per instance
+        criticality: contract
+        intent: Automatically invokes all features in dependency order when resolve is called for a ChainMail instance for the first time, ensuring features are initialized exactly once per container without requiring explicit invocation loops
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/FeatureRegistry/InvokesOnFirstCallTest.php
+
+      - acceptanceCriteria: FeatureRegistry resolve caches results per ChainMail instance using SplObjectStorage
+        criticality: constraint
+        intent: Maintains separate resolution cache for each ChainMail instance, enabling efficient subsequent lookups and preventing redundant resolution work when resolve is called multiple times for the same container
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/FeatureRegistry/CachesPerInstanceTest.php
+
+      - acceptanceCriteria: FeatureRegistry resolve returns cached results without re-invoking on subsequent calls
+        criticality: contract
+        intent: Returns previously resolved and cached feature array when called multiple times with the same ChainMail instance, preventing duplicate feature invocations and middleware registrations in shared container scenarios
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/FeatureRegistry/ReturnsCachedResultsTest.php
+
+      - acceptanceCriteria: FeatureRegistry resolve handles multiple independent ChainMail instances
+        criticality: contract
+        intent: Treats each ChainMail instance independently with separate resolution and invocation lifecycle, enabling parallel builder hierarchies and isolated feature initialization across different containers
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/FeatureRegistry/MultipleIndependentInstancesTest.php
+
+      - acceptanceCriteria: FeatureRegistry resolve invokes features exactly once per ChainMail instance
+        criticality: contract
+        intent: Guarantees exactly-once invocation semantics per container regardless of how many times resolve is called, preventing duplicate middleware registration and service conflicts when builders share ChainMail via newInstance
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/FeatureRegistry/ExactlyOncePerInstanceTest.php
+
   - name: event-handler-registration
     description: Registering lifecycle callbacks and action handlers
     specs:
@@ -194,8 +317,15 @@ features:
     specs:
       - acceptanceCriteria: Builder exposes ChainMail instance through public property with asymmetric visibility
         criticality: contract
-        intent: Provides direct access to the DI container through a publicly readable property while preventing external modification, enabling advanced service registration and middleware configuration outside the builder's fluent API
+        intent: Provides direct access to the DI container through a publicly readable property while preventing external modification, enabling advanced service registration and middleware configuration outside the builder's fluent API. Features and BuildSteps require this access to register and retrieve services from ChainMail.
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/RegionBuilder/ChainMailAccessTest.php
+        notes: |
+          TODO: Consider making this private in a future iteration. Currently exposed because:
+          - Features need ChainMail to register services during enableFeatures()
+          - BuildSteps need ChainMail to retrieve services (e.g., TransitionRegistry, Meta)
+          - Tests need ChainMail to configure middleware and inspect state
+          Making this private would require refactoring ~50+ callsites and potentially introducing
+          a different dependency injection pattern for BuildSteps.
         
       - acceptanceCriteria: ChainMail is booted automatically when building region
         criticality: constraint

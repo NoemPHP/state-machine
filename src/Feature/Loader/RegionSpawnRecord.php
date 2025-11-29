@@ -12,14 +12,14 @@ class RegionSpawnRecord
 {
     /**
      * @param Region $parentRegion
-     * @param string $parentState
+     * @param string $parentStateName
      * @param Closure():Region $regionFactory
      * @param Closure():bool $guard
      * @param int $connectionFlags
      */
     public function __construct(
         public readonly Region $parentRegion,
-        public readonly string $parentState,
+        public readonly string $parentStateName,
         public readonly Closure $regionFactory,
         public readonly Closure $guard,
         public int $connectionFlags = C::DYNAMIC | C::RECEIVE_EVENTS | C::RECEIVE_ACTIONS,

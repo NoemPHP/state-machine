@@ -85,7 +85,7 @@ class CoroutineScheduler
             return;
         }
         $this->isBusy = true;
-
+        $finished = [];
         foreach ($this->queue as $task) {
             if ($this->isPaused($task)) {
                 continue;
@@ -93,7 +93,7 @@ class CoroutineScheduler
             $this->currentTask = $task;
 
             if ($task->isFinished()) {
-                $this->cancel($task);
+                $finished[]=$task;
                 continue;
             }
 
@@ -103,6 +103,9 @@ class CoroutineScheduler
             } else {
                 $this->lastResults[$task] = $yielded;
             }
+        }
+        foreach ($finished as $task) {
+            $this->cancel($task);
         }
         $this->currentTask = null;
         $this->isBusy = false;

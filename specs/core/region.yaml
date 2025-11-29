@@ -1,6 +1,9 @@
 name: region
 group: core
-description: The Region class is the runtime engine for state machines, managing state transitions, event dispatching, and lifecycle callbacks through a chain-based architecture
+description: |
+  The Region class is the runtime engine for state machines. Its primary task is to keep track of its current state.
+  Its secondary task if to process external triggers, which induces adjacent functionality like managing state transitions,
+  event dispatching, and lifecycle callbacks through a chain-based architecture.
 
 features:
   - name: state-management
@@ -43,14 +46,17 @@ features:
     description: Processing queued events through action and transition chains
     specs:
       - acceptanceCriteria: Dispatching processes all queued events in order
+        criticality: constraint
         intent: Ensures queued events are processed in FIFO order, providing predictable execution sequence for batched operations
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/ProcessQueuedEventsTest.php
-        
+
       - acceptanceCriteria: Dispatching clears the event queue to prevent infinite loops
+        criticality: constraint
         intent: Prevents event reprocessing and infinite loops by clearing the queue before dispatch, ensuring each event executes exactly once
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/EventQueueClearingTest.php
-        
+
       - acceptanceCriteria: Events triggered during dispatch are queued for next cycle
+        criticality: constraint
         intent: Prevents unbounded recursion by deferring nested events to subsequent dispatch cycles, maintaining controlled execution flow
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/NestedEventDispatchTest.php
         
@@ -58,29 +64,50 @@ features:
     description: Integration with the action chain for state-based event handling
     specs:
       - acceptanceCriteria: Action chain is invoked for each dispatched event
+        criticality: contract
         intent: Provides extensible event processing through middleware chain, enabling custom business logic and state updates for each triggered event
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/ActionChainInvocationTest.php
         
       - acceptanceCriteria: Action chain receives region and trigger payload
+        criticality: contract
         intent: Supplies action handlers with necessary context (region, current state, payload) to make informed processing decisions
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/ActionChainContextTest.php
         
       - acceptanceCriteria: Action chain can return same or different state
+        criticality: contract
         intent: Enables action handlers to control state transitions by returning the next state, supporting both stateful operations and state changes
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/ActionChainStateReturnTest.php
         
+      - acceptanceCriteria: Action chain forwards triggers to connected regions with RECEIVE_ACTIONS flag
+        criticality: contract
+        intent: Enables hierarchical state machine behavior where parent actions propagate to child regions, supporting nested state structures and parallel region coordination through automatic trigger forwarding
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/ActionForwardingToConnectedRegionsTest.php
+
+      - acceptanceCriteria: Connected regions process actions and update their state when receiving forwarded triggers
+        criticality: contract
+        intent: Ensures child regions maintain correct state after processing parent-triggered actions by calling their full dispatch logic including state updates and transition evaluation, enabling proper hierarchical state tracking
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Core/Region/ConnectedRegionStateUpdateTest.php
+
+      - acceptanceCriteria: Connected regions via shared ChainMail do not duplicate action callbacks
+        criticality: constraint
+        intent: Ensures child regions created through newInstance with shared ChainMail instances receive actions exactly once, preventing duplicate middleware registration when FeatureRegistry.resolve invokes features once per ChainMail rather than once per build call
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Core/Region/NoActionDuplicationWithSharedChainMailTest.php
+
   - name: transition-chain-integration
     description: Integration with the transition chain for state changes
     specs:
       - acceptanceCriteria: Transition chain is invoked when state changes
+        criticality: contract
         intent: Enables extensible transition handling through middleware chain, allowing custom logic to execute during state changes
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/TransitionChainInvocationTest.php
         
       - acceptanceCriteria: Transition chain receives previous and current state
+        criticality: contract
         intent: Provides transition handlers with full transition context (previous state, region, payload) to implement state-aware logic
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/TransitionChainContextTest.php
         
       - acceptanceCriteria: Transition chain is not invoked when state remains unchanged
+        criticality: constraint
         intent: Optimizes performance and prevents unnecessary processing by skipping transition logic when action handlers return the same state
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/NoTransitionOnSameStateTest.php
         
@@ -88,14 +115,17 @@ features:
     description: State transition lifecycle events and callbacks
     specs:
       - acceptanceCriteria: onEnterParent triggers state entry callbacks
+        criticality: contract
         intent: Executes registered entry callbacks when entering states, enabling initialization logic and side effects during state transitions
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/OnEnterParentCallbackTest.php
         
       - acceptanceCriteria: Entry callbacks can trigger additional events
+        criticality: contract
         intent: Enables cascading state transitions where entering a state can trigger subsequent events, supporting complex workflow patterns
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/EntryCascadingEventsTest.php
         
       - acceptanceCriteria: Cascading events are processed immediately after entry
+        criticality: contract
         intent: Ensures entry-triggered events execute synchronously within the same lifecycle, maintaining predictable state progression during transitions
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/ImmediateCascadeProcessingTest.php
         
@@ -108,6 +138,7 @@ features:
     description: Hierarchical path representation for state machines
     specs:
       - acceptanceCriteria: Region provides path through path chain
+        criticality: contract
         intent: Generates hierarchical path representation through middleware chain, enabling state location tracking in nested state machine structures
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/PathGenerationTest.php
         
@@ -115,13 +146,16 @@ features:
     description: Full integration scenarios combining multiple features
     specs:
       - acceptanceCriteria: Basic state transition with guards and callbacks executes correctly
+        criticality: contract
         intent: Validates complete transition workflow including guard evaluation and lifecycle callbacks, ensuring all components integrate properly
         test: vendor/bin/phpunit tests/PHPUnit/Integration/Core/Region/BasicTransitionIntegrationTest.php
         
       - acceptanceCriteria: Multiple transitions in sequence execute in order
+        criticality: contract
         intent: Confirms sequential state changes maintain correct order and callback execution, supporting multi-step workflows
         test: vendor/bin/phpunit tests/PHPUnit/Integration/Core/Region/SequentialTransitionsTest.php
         
       - acceptanceCriteria: Event queueing and batch processing works correctly
+        criticality: contract
         intent: Verifies queued events process in FIFO order with proper batch handling, enabling efficient deferred event execution
         test: vendor/bin/phpunit tests/PHPUnit/Integration/Core/Region/QueuedEventBatchTest.php

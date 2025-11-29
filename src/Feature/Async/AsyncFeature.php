@@ -50,11 +50,54 @@ class AsyncFeature implements Feature
             fn(): Resolvers => new Resolvers()
         );
         $chainMail
+            ->use($this->deferTicksUntilActionComplete(...))
             ->use($this->enqueueCoroutines(...))
             ->use($this->extendBuilderSchema(...))
             ->use($this->processBuilderConfig(...))
             ->use($this->triggerResolversOnMetadataAccess(...))
             ->use($this->setupAsyncContextMethods(...));
+    }
+
+    /**
+     * Defers ticking until all action callbacks have been processed.
+     * This ensures that all async tasks progress exactly once per trigger,
+     * maintaining fairness when multiple async callbacks are registered.
+     */
+    private function deferTicksUntilActionComplete(
+        ?Chains\DispatchAction $dispatchAction,
+    ): void {
+        if (!$dispatchAction) {
+            return;
+        }
+
+        $dispatchAction->link(function (Params\Action $context, callable $next) {
+            $region = $context->region;
+            
+            // Ensure scheduler exists
+            $scheduler = $this->getCoroutineSchedulerForRegion($this->coroutinesByRegion, $region);
+            
+            // Clean up finished tasks BEFORE processing callbacks
+            // This ensures callbacks that finished in the previous trigger are removed from the map
+            // Collect finished tasks first to avoid modification during iteration
+            $finishedCallbacks = [];
+            foreach ($this->callbackTaskMap as $callback => $task) {
+                if ($task->isFinished()) {
+                    $finishedCallbacks[] = $callback;
+                }
+            }
+            // Now remove them
+            foreach ($finishedCallbacks as $callback) {
+                unset($this->callbackTaskMap[$callback]);
+            }
+            
+            // Process all callbacks
+            $result = $next($context);
+            
+            // Tick once after all callbacks have been processed
+            $scheduler->tick();
+
+            return $result;
+        });
     }
 
     private function enqueueCoroutines(
@@ -77,37 +120,45 @@ class AsyncFeature implements Feature
                 }
                 $coroutines = $this->coroutinesByRegion[$context->region];
                 assert($coroutines instanceof CoroutineScheduler);
+                
                 /**
-                 * If we already track a Task, then just kick the machine.
+                 * If we already track a Task, check if it's finished.
+                 * If finished, remove from map and fall through to create new task.
+                 * Otherwise, return last yielded value without ticking (deferred tick will handle it).
                  */
                 if ($this->callbackTaskMap->offsetExists($context->handler)) {
                     $task = $this->callbackTaskMap[$context->handler];
-                    $coroutines->tick();
-
-                    return $coroutines->getLastYielded($task);
+                    
+                    // Check if task is already finished (from previous trigger)
+                    if ($task->isFinished()) {
+                        // Task completed, remove from map manually
+                        // (scheduler will clean up the task during its next tick)
+                        unset($this->callbackTaskMap[$context->handler]);
+                        // Now fall through to create new task
+                    } else {
+                        // Task still running, return last yielded value
+                        // The deferred tick in deferTicksUntilActionComplete will advance it
+                        return $coroutines->getLastYielded($task);
+                    }
                 }
+                
                 /**
-                 * We need the callback first
+                 * Either no task exists yet, or the previous task completed.
+                 * Invoke callback to get result (either sync value or new generator)
                  */
                 $result = $next($context);
                 if (!$result instanceof \Generator) {
                     /**
                      * Oh, it's a normal synchronous closure, then just move on
-                     * after pinging our coroutines once
+                     * The deferred tick will still run to progress any other async tasks
                      */
-                    $coroutines->tick();
-
                     return $result;
                 }
 
                 $task = $enqueue->call(new AsyncParams\EnqueueParams($context->region, $result));
-                $coroutines->onComplete($task, function () use ($context) {
-                    // Remove the entry from $callbackTaskMap
-                    unset($this->callbackTaskMap[$context->handler]);
-                });
                 $this->callbackTaskMap[$context->handler] = $task;
-                $coroutines->tick();
-
+                
+                // Don't tick here - the deferred tick in deferTicksUntilActionComplete will handle it
                 return $coroutines->getLastYielded($task);
             }
         );
@@ -159,21 +210,17 @@ class AsyncFeature implements Feature
         $enhanceRegionBuilder->link(function (Params\BuildParams $context, callable $next) use ($resolvers) {
             $builder = $next($context);
 
-            if (!isset($context['loader']['array']['context']['resolvers'])) {
+            $asyncConfig = $context->config(Config\AsyncConfig::class);
+            if (!$asyncConfig->hasResolvers()) {
                 return $builder;
             }
-            $resolverDefinitions = $context['loader']['array']['context']['resolvers'];
+            
             assert($builder instanceof RegionBuilder);
-            $builder->addStep(
-                function (RegionBuilder $builder, callable $next) use ($resolverDefinitions, $resolvers) {
-                    $region = $next($builder);
-                    foreach ($resolverDefinitions as $resolver) {
-                        $resolvers->addResolver(new ResolverRecord($region, $resolver['name'], $resolver['run']));
-                    }
-
-                    return $region;
-                }
-            );
+            foreach ($asyncConfig->resolvers() as $resolver) {
+                $builder->addBuildStep(
+                    new AddResolver($resolver['name'], $resolver['run'])
+                );
+            }
 
             return $builder;
         });
