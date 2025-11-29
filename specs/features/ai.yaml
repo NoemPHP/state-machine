@@ -1,0 +1,270 @@
+name: ai
+group: features
+description: The AiFeature enables AI-powered text generation and completion within state machines, providing template helpers for completion and structured extraction, request building with configurable parameters, streaming and non-streaming response handling, and integration with AI APIs for chat and completion endpoints
+
+features:
+  - name: feature-registration
+    description: Feature initialization and service registration in ChainMail
+    specs:
+      - acceptanceCriteria: AiFeature registers SystemPrompt chain in ChainMail
+        criticality: constraint
+        intent: Provides the SystemPrompt chain mechanism through ChainMail registration, enabling system prompt customization for AI interactions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/RegistersSystemPromptChainTest.php
+        
+      - acceptanceCriteria: AiFeature registers template helpers in Helpers service
+        criticality: contract
+        intent: Integrates AI functionality into template system by registering 'complete' and 'capture' helpers, enabling declarative AI operations within templates
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/RegistersTemplateHelpersTest.php
+
+  - name: request-building
+    description: AI request configuration and building
+    specs:
+      - acceptanceCriteria: RequestBuilder constructs Request with default configuration
+        criticality: contract
+        intent: Provides sensible defaults for AI API calls, allowing developers to make requests without specifying every parameter
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/RequestBuilder/ConstructsWithDefaultsTest.php
+        
+      - acceptanceCriteria: RequestBuilder allows setting model
+        criticality: contract
+        intent: Enables model selection for different AI capabilities and performance characteristics through fluent API
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/RequestBuilder/SetsModelTest.php
+        
+      - acceptanceCriteria: RequestBuilder allows setting prompt
+        criticality: contract
+        intent: Enables prompt configuration for directing AI behavior through fluent API
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/RequestBuilder/SetsPromptTest.php
+        
+      - acceptanceCriteria: RequestBuilder allows setting max tokens
+        criticality: contract
+        intent: Enables control over response length through fluent API, preventing excessive token usage
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/RequestBuilder/SetsMaxTokensTest.php
+        
+      - acceptanceCriteria: RequestBuilder allows setting temperature
+        criticality: contract
+        intent: Enables control over response randomness through fluent API, allowing balance between creativity and consistency
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/RequestBuilder/SetsTemperatureTest.php
+        
+      - acceptanceCriteria: RequestBuilder allows setting stop sequences
+        criticality: contract
+        intent: Enables early termination of generation through fluent API when specific text patterns are encountered
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/RequestBuilder/SetsStopSequenceTest.php
+        
+      - acceptanceCriteria: RequestBuilder allows setting response format
+        criticality: contract
+        intent: Enables structured output through JSON schema specification, ensuring AI responses match expected data structures
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/RequestBuilder/SetsResponseFormatTest.php
+        
+      - acceptanceCriteria: RequestBuilder builds immutable Request object
+        criticality: contract
+        intent: Creates immutable Request from builder configuration, ensuring request parameters cannot change during execution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/RequestBuilder/BuildsRequestTest.php
+        
+      - acceptanceCriteria: RequestBuilder supports creating new instance with current configuration
+        criticality: contract
+        intent: Enables builder reuse through new() method, allowing base configurations to be cloned and modified
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/RequestBuilder/CreatesNewInstanceTest.php
+
+  - name: completion-api
+    description: Text completion using AI models
+    specs:
+      - acceptanceCriteria: Completion accepts string prompt and builds Request automatically
+        criticality: contract
+        intent: Simplifies common use case of completing text from string, automatically handling request construction
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/Completion/AcceptsStringPromptTest.php
+        
+      - acceptanceCriteria: Completion accepts pre-built Request object
+        criticality: contract
+        intent: Enables advanced configurations by accepting pre-configured Request objects
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/Completion/AcceptsRequestObjectTest.php
+        
+      - acceptanceCriteria: Completion yields text chunks from streaming API
+        criticality: contract
+        intent: Provides incremental response delivery through generator yielding, enabling real-time UI updates and early processing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/Completion/YieldsTextChunksTest.php
+        
+      - acceptanceCriteria: Completion processes response buffer incrementally
+        criticality: constraint
+        intent: Parses streaming API responses line-by-line, preventing buffer bloat and enabling immediate chunk processing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/Completion/ProcessesBufferIncrementallyTest.php
+        
+      - acceptanceCriteria: Completion handles stop sequences correctly
+        criticality: contract
+        intent: Terminates generation when stop sequence detected in output, preventing unwanted content after delimiter
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/Completion/HandlesStopSequencesTest.php
+        
+      - acceptanceCriteria: Completion buffers partial stop sequences
+        criticality: constraint
+        intent: Withholds output when buffer ends with potential stop sequence prefix, ensuring accurate stop detection across chunk boundaries
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/Completion/BuffersPartialStopSequencesTest.php
+        
+      - acceptanceCriteria: Completion extracts text from JSON responses when asText is true
+        criticality: contract
+        intent: Automatically extracts text field from API JSON, simplifying text-only use cases by hiding response structure
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/Completion/ExtractsTextFromJsonTest.php
+        
+      - acceptanceCriteria: Completion yields raw JSON responses when asText is false
+        criticality: contract
+        intent: Provides access to full API response structure including metadata when needed for advanced processing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/Completion/YieldsRawJsonTest.php
+        
+      - acceptanceCriteria: Completion handles streaming and non-streaming responses
+        criticality: contract
+        intent: Supports both streaming and non-streaming API modes, adapting response processing to match API behavior
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/Completion/HandlesStreamingModesTest.php
+        
+      - acceptanceCriteria: Completion processes incomplete JSON lines correctly
+        criticality: constraint
+        intent: Retains incomplete lines in buffer between iterations, ensuring all data is processed even when responses split mid-JSON
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/Completion/ProcessesIncompleteJsonTest.php
+
+  - name: chat-api
+    description: Conversational AI using chat models
+    specs:
+      - acceptanceCriteria: Chat accepts string prompt and builds Request automatically
+        criticality: contract
+        intent: Simplifies common use case of chat from string, automatically handling request construction with default system message
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/Chat/AcceptsStringPromptTest.php
+        
+      - acceptanceCriteria: Chat accepts pre-built Request object
+        criticality: contract
+        intent: Enables advanced configurations by accepting pre-configured Request objects for complex chat scenarios
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/Chat/AcceptsRequestObjectTest.php
+        
+      - acceptanceCriteria: Chat includes developer role system message
+        criticality: contract
+        intent: Establishes consistent AI behavior by including default system message defining assistant role
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/Chat/IncludesSystemMessageTest.php
+        
+      - acceptanceCriteria: Chat formats messages array with roles
+        criticality: constraint
+        intent: Constructs proper chat API request format with developer and user role messages
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/Chat/FormatsMessagesArrayTest.php
+        
+      - acceptanceCriteria: Chat yields text content from responses
+        criticality: contract
+        intent: Provides incremental response delivery through generator yielding, enabling real-time chat UI updates
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/Chat/YieldsTextContentTest.php
+        
+      - acceptanceCriteria: Chat extracts text from message content when asText is true
+        criticality: contract
+        intent: Automatically extracts message content from API JSON, simplifying text-only chat use cases
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/Chat/ExtractsMessageContentTest.php
+        
+      - acceptanceCriteria: Chat yields raw JSON responses when asText is false
+        criticality: contract
+        intent: Provides access to full API response structure including metadata for advanced chat processing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/Chat/YieldsRawJsonTest.php
+        
+      - acceptanceCriteria: Chat includes response format in request when specified
+        criticality: contract
+        intent: Enables structured chat responses through JSON schema specification
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/Chat/IncludesResponseFormatTest.php
+        
+      - acceptanceCriteria: Chat processes response buffer incrementally
+        criticality: constraint
+        intent: Parses chat API responses line-by-line, preventing buffer bloat and enabling immediate chunk processing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/Chat/ProcessesBufferIncrementallyTest.php
+
+  - name: template-helpers
+    description: AI-powered template helpers for text generation and extraction
+    specs:
+      - acceptanceCriteria: Complete helper generates text continuation
+        criticality: contract
+        intent: Provides template-based text completion, enabling AI-powered content generation within templates
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/TemplateHelpers/CompleteHelperGeneratesTextTest.php
+        
+      - acceptanceCriteria: Complete helper accepts max tokens parameter
+        criticality: contract
+        intent: Enables response length control through max parameter in template syntax
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/TemplateHelpers/CompleteHelperMaxTokensTest.php
+        
+      - acceptanceCriteria: Complete helper accepts stop sequence parameter
+        criticality: contract
+        intent: Enables early termination control through stop parameter in template syntax
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/TemplateHelpers/CompleteHelperStopSequenceTest.php
+        
+      - acceptanceCriteria: Complete helper supports inline mode with buffer
+        criticality: contract
+        intent: Completes text after template buffer when used inline, enabling context-aware completion
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/TemplateHelpers/CompleteHelperInlineModeTest.php
+        
+      - acceptanceCriteria: Complete helper supports block mode with instructions
+        criticality: contract
+        intent: Uses block content as completion instructions when used as block helper, enabling detailed guidance
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/TemplateHelpers/CompleteHelperBlockModeTest.php
+        
+      - acceptanceCriteria: Complete helper includes system prompt and rules
+        criticality: constraint
+        intent: Ensures consistent completion behavior by including comprehensive system prompt with formatting rules
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/TemplateHelpers/CompleteHelperSystemPromptTest.php
+        
+      - acceptanceCriteria: Complete helper yields chunks progressively
+        criticality: contract
+        intent: Provides incremental completion delivery through yielding, enabling real-time template rendering
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/TemplateHelpers/CompleteHelperYieldsChunksTest.php
+        
+      - acceptanceCriteria: Capture helper extracts structured data from text
+        criticality: contract
+        intent: Enables data extraction through AI, storing results in template data context for later use
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/TemplateHelpers/CaptureHelperExtractsDataTest.php
+        
+      - acceptanceCriteria: Capture helper requires target variable name as first argument
+        criticality: contract
+        intent: Specifies where extracted data should be stored through required argument
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/TemplateHelpers/CaptureHelperRequiresVariableNameTest.php
+        
+      - acceptanceCriteria: Capture helper supports inline mode with buffer as input
+        criticality: contract
+        intent: Extracts data from accumulated template buffer when used inline
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/TemplateHelpers/CaptureHelperInlineModeTest.php
+        
+      - acceptanceCriteria: Capture helper supports block mode with instructions
+        criticality: contract
+        intent: Uses block content as extraction instructions when used as block helper
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/TemplateHelpers/CaptureHelperBlockModeTest.php
+        
+      - acceptanceCriteria: Capture helper uses JSON schema response format
+        criticality: constraint
+        intent: Ensures structured extraction by configuring request with JSON schema array format
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/TemplateHelpers/CaptureHelperUsesJsonSchemaTest.php
+        
+      - acceptanceCriteria: Capture helper stores decoded JSON in template data
+        criticality: contract
+        intent: Parses JSON response and stores structured data in specified variable, making it accessible to subsequent template sections
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/TemplateHelpers/CaptureHelperStoresDecodedJsonTest.php
+
+  - name: response-format
+    description: Structured response formatting with JSON schemas
+    specs:
+      - acceptanceCriteria: ResponseFormat accepts format type and definition
+        criticality: contract
+        intent: Enables structured output specification by accepting format type and schema definition
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/ResponseFormat/AcceptsFormatAndDefinitionTest.php
+        
+      - acceptanceCriteria: ResponseFormat stores format and definition as readonly properties
+        criticality: contract
+        intent: Provides immutable response format configuration ensuring schema cannot change during request
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/ResponseFormat/StoresReadonlyPropertiesTest.php
+
+  - name: integration
+    description: End-to-end AI feature integration scenarios
+    specs:
+      - acceptanceCriteria: Completion integrates with AsyncFeature for cooperative execution
+        criticality: contract
+        intent: Enables non-blocking AI generation through AsyncFeature integration, allowing other tasks to execute during API calls
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Ai/CompletionIntegrationTest.php
+        
+      - acceptanceCriteria: Template helpers integrate with TemplateFeature
+        criticality: contract
+        intent: Provides seamless AI functionality within templates through TemplateFeature integration
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Ai/TemplateHelperIntegrationTest.php
+        
+      - acceptanceCriteria: Multiple template helpers can be used sequentially
+        criticality: contract
+        intent: Enables complex AI workflows by supporting multiple helper invocations within same template
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Ai/MultipleHelpersIntegrationTest.php
+        
+      - acceptanceCriteria: Captured data can be used in subsequent template sections
+        criticality: contract
+        intent: Enables AI-driven template logic by making extracted data available to later template sections through data context
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Ai/CapturedDataFlowIntegrationTest.php
