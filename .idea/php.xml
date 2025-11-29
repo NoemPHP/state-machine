@@ -2,7 +2,7 @@
 <project version="4">
   <component name="MessDetector">
     <phpmd_settings>
-      <phpmd_by_interpreter asDefaultInterpreter="true" interpreter_id="97149da7-a966-40e2-97db-bbd5090b24a9" timeout="30000" />
+      <phpmd_by_interpreter asDefaultInterpreter="true" interpreter_id="1f072fcb-904c-4c06-a9ac-2ce5613b06bf" timeout="30000" />
     </phpmd_settings>
   </component>
   <component name="MessDetectorOptionsConfiguration">
@@ -20,7 +20,7 @@
   <component name="PhpCodeSniffer">
     <phpcs_settings>
       <PhpCSConfiguration beautifier_path="$PROJECT_DIR$/vendor/bin/phpcbf" standards="MySource;PEAR;PSR1;PSR12;PSR2;Squiz;Zend" tool_path="$PROJECT_DIR$/vendor/bin/phpcs" />
-      <phpcs_by_interpreter asDefaultInterpreter="true" interpreter_id="97149da7-a966-40e2-97db-bbd5090b24a9" beautifier_path="/var/www/html/vendor/bin/phpcbf" standards="MySource;PEAR;PSR1;PSR12;PSR2;Squiz;Zend" tool_path="/var/www/html/vendor/bin/phpcs" timeout="30000" />
+      <phpcs_by_interpreter asDefaultInterpreter="true" interpreter_id="1f072fcb-904c-4c06-a9ac-2ce5613b06bf" beautifier_path="/var/www/html/vendor/bin/phpcbf" standards="MySource;PEAR;PSR1;PSR12;PSR2;Squiz;Zend" tool_path="/var/www/html/vendor/bin/phpcs" timeout="30000" />
     </phpcs_settings>
   </component>
   <component name="PhpIncludePathManager">
@@ -90,60 +90,8 @@
   </component>
   <component name="PhpInterpreters">
     <interpreters>
-      <interpreter id="97149da7-a966-40e2-97db-bbd5090b24a9" name="state-machine" home="docker-compose://DATA" auto="false" debugger_id="php.debugger.XDebug">
-        <remote_data INTERPRETER_PATH="php8.1" HELPERS_PATH="/opt/.phpstorm_helpers" VALID="true" RUN_AS_ROOT_VIA_SUDO="false" DOCKER_ACCOUNT_NAME="Docker" DOCKER_COMPOSE_SERVICE_NAME="web" DOCKER_REMOTE_PROJECT_PATH="/opt/project">
-          <PathMappingSettings>
-            <option name="pathMappings">
-              <list>
-                <mapping local-root="$PROJECT_DIR$" remote-root="/var/www/html" />
-                <mapping local-root="$PROJECT_DIR$/.ddev" remote-root="/mnt/ddev_config" />
-                <mapping local-root="$PROJECT_DIR$/.ddev/xhprof" remote-root="/usr/local/bin/xhprof" />
-                <mapping local-root="$APPLICATION_CONFIG_DIR$/scratches" remote-root="/opt/scratches" />
-              </list>
-            </option>
-          </PathMappingSettings>
-          <type_data command="EXEC" />
-          <dockerComposeConfigurationPaths>
-            <item value="$PROJECT_DIR$/.ddev/.ddev-docker-compose-full.yaml" />
-          </dockerComposeConfigurationPaths>
-          <envs>
-            <env name="COMPOSE_PROJECT_NAME" value="ddev-state-machine" />
-          </envs>
-        </remote_data>
-      </interpreter>
-      <interpreter id="65191cd0-856a-4f6d-ae29-bc382f88d9c9" name="state-machine" home="docker-compose://DATA" auto="false" debugger_id="php.debugger.XDebug">
-        <remote_data INTERPRETER_PATH="php8.1" HELPERS_PATH="/opt/.phpstorm_helpers" VALID="true" RUN_AS_ROOT_VIA_SUDO="false" DOCKER_ACCOUNT_NAME="Docker" DOCKER_COMPOSE_SERVICE_NAME="web" DOCKER_REMOTE_PROJECT_PATH="/opt/project">
-          <PathMappingSettings>
-            <option name="pathMappings">
-              <list>
-                <mapping local-root="$PROJECT_DIR$" remote-root="/var/www/html" />
-                <mapping local-root="$PROJECT_DIR$/.ddev" remote-root="/mnt/ddev_config" />
-                <mapping local-root="$PROJECT_DIR$/.ddev/xhprof" remote-root="/usr/local/bin/xhprof" />
-                <mapping local-root="$APPLICATION_CONFIG_DIR$/scratches" remote-root="/opt/scratches" />
-              </list>
-            </option>
-          </PathMappingSettings>
-          <type_data command="EXEC" />
-          <dockerComposeConfigurationPaths>
-            <item value="$PROJECT_DIR$/.ddev/.ddev-docker-compose-full.yaml" />
-          </dockerComposeConfigurationPaths>
-          <envs>
-            <env name="COMPOSE_PROJECT_NAME" value="ddev-state-machine" />
-          </envs>
-        </remote_data>
-      </interpreter>
       <interpreter id="1f072fcb-904c-4c06-a9ac-2ce5613b06bf" name="state-machine" home="docker-compose://DATA" auto="false" debugger_id="php.debugger.XDebug">
         <remote_data INTERPRETER_PATH="php8.4" HELPERS_PATH="/opt/.phpstorm_helpers" VALID="true" RUN_AS_ROOT_VIA_SUDO="false" DOCKER_ACCOUNT_NAME="Docker" DOCKER_COMPOSE_SERVICE_NAME="web" DOCKER_REMOTE_PROJECT_PATH="/opt/project">
-          <PathMappingSettings>
-            <option name="pathMappings">
-              <list>
-                <mapping local-root="$PROJECT_DIR$" remote-root="/var/www/html" />
-                <mapping local-root="$PROJECT_DIR$/.ddev" remote-root="/mnt/ddev_config" />
-                <mapping local-root="$PROJECT_DIR$/.ddev/xhprof" remote-root="/usr/local/bin/xhprof" />
-                <mapping local-root="$APPLICATION_CONFIG_DIR$/scratches" remote-root="/opt/scratches" />
-              </list>
-            </option>
-          </PathMappingSettings>
           <type_data command="EXEC" />
           <dockerComposeConfigurationPaths>
             <item value="$PROJECT_DIR$/.ddev/.ddev-docker-compose-full.yaml" />
