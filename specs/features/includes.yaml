@@ -1,0 +1,56 @@
+name: includes
+group: features
+description: The IncludesFeature provides synchronous file loading infrastructure through the LoadFile chain, enabling features to load application files during build and bootstrap
+
+features:
+  - name: feature-registration
+    description: Feature initialization and service registration in ChainMail
+    specs:
+      - acceptanceCriteria: IncludesFeature registers LoadFile chain in ChainMail
+        criticality: contract
+        intent: Supplies the file loading chain to ChainMail container, making it available for features to retrieve and use for loading application files
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Includes/RegistersLoadFileChainTest.php
+
+  - name: file-loading
+    description: Core file loading functionality via LoadFile chain
+    specs:
+      - acceptanceCriteria: LoadFile chain loads file contents from readable path
+        criticality: contract
+        intent: Enables loading application files by reading from filesystem, providing the foundation for YAML includes and configuration loading
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Includes/LoadFileTest.php
+
+      - acceptanceCriteria: LoadFile chain throws RuntimeException for unreadable files
+        criticality: constraint
+        intent: Provides clear error messages for missing or inaccessible files, failing fast with actionable feedback instead of silent failures
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Includes/LoadFileErrorTest.php
+
+      - acceptanceCriteria: LoadFile chain executes middleware in registration order with proper wrapping
+        criticality: contract
+        intent: Allows features to customize file loading via search paths, caching, and path transforms, with first-registered middleware wrapping later middleware following the standard Chain middleware pattern
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Includes/LoadFileMiddlewareTest.php
+
+      - acceptanceCriteria: LoadFile chain default provider reads from filesystem using file_get_contents
+        criticality: detail
+        intent: Provides baseline file loading behavior when no middleware overrides the default implementation
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Includes/LoadFileDefaultProviderTest.php
+
+  - name: params-object
+    description: LoadFileParams parameter object for chain invocation
+    specs:
+      - acceptanceCriteria: LoadFileParams stores file path as readonly property
+        criticality: contract
+        intent: Provides immutable access to the file path being loaded, preventing accidental modification during chain execution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Includes/ParamsStoresPathTest.php
+
+      - acceptanceCriteria: LoadFileParams stores BuildParams context as readonly property
+        criticality: contract
+        intent: Provides access to build context for middleware to access configuration and share state across include chain
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Includes/ParamsStoresBuildContextTest.php
+
+  - name: integration
+    description: End-to-end validation of file loading
+    specs:
+      - acceptanceCriteria: LoadFile chain successfully loads files through middleware stack
+        criticality: contract
+        intent: Validates end-to-end file loading with middleware customization works correctly
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Includes/FileLoadingIntegrationTest.php
