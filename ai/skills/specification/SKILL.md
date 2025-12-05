@@ -1,191 +1,221 @@
-# Specification Skill - Spec-Driven Development
+# Specification Skill - Spec-Driven Development Protocol
 
-## Purpose
+## ⚡ EXECUTION PROTOCOL - NON-NEGOTIABLE
 
-This skill covers the **spec-driven development workflow** for the Regions project. Specifications are executable contracts that define *what* the code must do, while implementation defines *how* it does it.
+**SPECS ARE THE CONTRACT** - When tests fail → fix code. When specs are wrong → ask user. NEVER modify specs without approval.
 
-## Core Philosophy
+---
 
-**SPECS ARE THE CONTRACT** - When tests fail, fix the code, never the specs (unless user approves spec changes).
+## 🚫 ABSOLUTE RULES - NEVER VIOLATE
 
-### The Golden Rules
+| Rule | Violation = Consequence |
+|------|-------------------------|
+| **NEVER write code without specs first** | STOP → Create specs → Get approval → Resume |
+| **NEVER modify specs without user approval** | STOP → Ask user → Get approval → Modify |
+| **ONE SPEC = ONE TEST CLASS** | STOP → Consolidate or split → Maintain 1:1 mapping |
+| **Every bug = new spec FIRST** | STOP → Create spec → Write test → Fix code |
+| **Specs describe WHAT/WHY, not HOW** | STOP → Rewrite spec → Focus on behavior |
 
-1. **NEVER write code without specs first**
-2. **NEVER modify specs without user approval**
-3. **Specs describe WHAT/WHY (behavior, intent), not HOW (implementation)**
-4. **ONE SPEC = ONE TEST CLASS** - maintain 1:1 mapping
-5. **Every bug = new spec** - No bug fix without adding the missing specification
+---
 
-## The 4-Stage Workflow
+## ⚙️ MANDATORY 4-STAGE WORKFLOW
 
-### Stage 1: Feature Planning (MANDATORY before coding)
+**YOU MUST EXECUTE ALL STAGES IN ORDER. NO SKIPPING.**
 
-**Before writing any code:**
+### STAGE 1: FEATURE PLANNING (MANDATORY BEFORE ANY CODE)
 
-1. Review existing specs:
-   ```bash
-   cat specs/[group]/[component].yaml
-   ```
+**EXECUTE THIS PROTOCOL:**
 
-2. Plan changes:
-   - Which specs are affected by this change?
-   - Are there conflicts with existing specs?
-   - What new specs are needed?
+```
+STEP 1: Review existing specs
+  └─ RUN: cat specs/[group]/[component].yaml
 
-3. **Deliverable**: Updated YAML + change summary
+STEP 2: Analyze impact
+  ├─ Which specs affected?
+  ├─ Conflicts with existing specs?
+  └─ What new specs needed?
 
-4. **GET USER APPROVAL** before proceeding
+STEP 3: Create spec changes
+  └─ UPDATE: YAML with new/modified specs
 
-**Never skip this stage.** Even for "simple" changes, spec planning prevents architectural drift.
+STEP 4: GET USER APPROVAL
+  └─ STOP: Do not proceed without approval
 
-### Stage 2: Test Creation (Red Phase)
+STEP 5: Proceed to Stage 2
+  └─ OUTPUT: "✓ Specs approved - proceeding to tests"
+```
 
-1. Create test class per spec (one-to-one mapping)
-2. Implement tests that verify the spec's acceptance criteria
-3. Tests should fail initially (red phase)
-4. Use PHPUnit attributes for organization:
-   ```php
-   #[Group('component'), Group('feature')]
-   ```
+**CHECKPOINT VERIFICATION:**
+- [ ] Existing specs reviewed
+- [ ] Impact analysis complete
+- [ ] YAML updated
+- [ ] User approval obtained
 
-**Test Template:**
+**FAILURE TO COMPLETE = ABORT TASK**
+
+### STAGE 2: TEST CREATION (RED PHASE)
+
+**EXECUTE THIS PROTOCOL:**
+
+```
+STEP 1: Create test class (ONE per spec)
+  └─ FILE: tests/PHPUnit/[Type]/[Component]/[Behavior]Test.php
+
+STEP 2: Implement test
+  ├─ Copy acceptance criteria EXACTLY to PHPDoc
+  ├─ Add PHPUnit attributes: #[Group('component'), Group('feature')]
+  └─ Write test using Arrange → Act → Assert
+
+STEP 3: RUN test (MUST FAIL)
+  ├─ RUN: ddev exec vendor/bin/phpunit [test-path]
+  └─ VERIFY: Test fails (red phase)
+
+STEP 4: Proceed to Stage 3
+  └─ OUTPUT: "✓ Test failing - proceeding to implementation"
+```
+
+**Test must follow template:**
+
 ```php
 /**
- * Acceptance Criterion: [Exact text from YAML]
+ * Acceptance Criterion: [EXACT TEXT FROM YAML]
  */
 #[Group('component'), Group('feature')]
 class DescriptiveTest extends TestCase
 {
     public function testBehavior(): void
     {
-        // Arrange → Act → Assert
+        // Arrange
+        // Act
+        // Assert
     }
 }
 ```
 
-### Stage 3: Implementation (Iterative Green Phase)
+### STAGE 3: IMPLEMENTATION (GREEN PHASE)
 
-**The iteration loop:**
+**EXECUTE THIS ITERATION LOOP:**
 
-1. Make small code change
-2. Run specific test:
-   ```bash
-   ddev exec vendor/bin/phpunit tests/PHPUnit/Unit/[Component]/[Test].php
-   ```
-3. If test fails: **Fix the code** (not the test, not the spec)
-4. Repeat until test passes
+```
+LOOP:
+  STEP 1: Make small code change
 
-**Key principle**: Small iterations with immediate feedback.
+  STEP 2: RUN specific test
+    └─ RUN: ddev exec vendor/bin/phpunit [test-path]
 
-### Stage 4: Final Validation
+  STEP 3: Evaluate result
+    ├─ PASS → Exit loop, proceed to Stage 4
+    └─ FAIL → Fix CODE (not test, not spec), repeat loop
 
-1. Run spec suite:
-   ```bash
-   ddev exec machines/middleware-test-runner/run.sh --spec=specs/[group]/[component].yaml
-   ```
-
-2. Run full regression:
-   ```bash
-   ddev atlas
-   ```
-
-3. Run quality checks:
-   ```bash
-   ddev exec composer quality
-   ```
-
-All must pass before considering the work complete.
-
-## Decision Matrix
-
-| Scenario | Action | Principle |
-|----------|--------|-----------|
-| **New feature** | Check specs → Add specs → Approve → Test → Implement | No code without specs |
-| **Bug report** | Add missing spec → Test (red) → Fix → Test (green) | Every bug = new spec |
-| **Refactoring** | Run specs (baseline) → Refactor → Specs pass | Specs = behavior contract |
-| **API change** | Find ALL affected specs → Update → Approve → Implement | Breaking = approval |
-
-## Spec Writing Guidelines
-
-### Intent vs Implementation
-
-**Core Principle**: Describe WHAT (behavior, API, intent) not HOW (internals, data structures).
-
-#### The Intent Field is Critical
-
-Every spec must answer: **"Why does this behavior matter to users or the system?"**
-
-```yaml
-# ✅ GOOD: Describes observable behavior and business value
-acceptanceCriteria: A region can check if it is in a specific state
-criticality: contract
-intent: Enables conditional logic, allowing consumers to guard operations and validate preconditions
-test: vendor/bin/phpunit tests/.../StateCheckTest.php
-
-# ❌ BAD: Describes internal implementation
-acceptanceCriteria: Region stores current state in a private property
-criticality: constraint  # Wrong! This isn't even constraint-worthy
-intent: Uses encapsulation for state storage
-test: vendor/bin/phpunit tests/.../StateStorageTest.php  # Tests internals, not behavior
+REPEAT until test passes
 ```
 
-#### Red Flags: Spec is Too Implementation-Focused
+**CRITICAL**: Small iterations. Immediate feedback. Fix code ONLY.
 
-Ask these questions about every spec:
+### STAGE 4: FINAL VALIDATION
 
-- **Could this be implemented differently?** → If yes, it's likely a detail
-- **Does this test private methods/data structures?** → Implementation detail
-- **Uses words like "stores", "uses", "maintains", "organized by"?** → Red flag
-- **Would a user notice if this changed?** → If no, consider removing or marking detail
+**EXECUTE ALL CHECKS:**
 
-#### Criticality and Abstraction Levels
+```
+CHECK 1: Spec suite
+  └─ RUN: ddev exec machines/middleware-test-runner/run.sh --spec=specs/[group]/[component].yaml
+  └─ MUST: All pass
 
-| Criticality | Focus | Abstraction | Examples |
-|-------------|-------|-------------|----------|
-| **contract** | Observable behavior, public API | HIGH | "Can check if in state", "Fires lifecycle events" |
-| **constraint** | Internal correctness, safety | MEDIUM | "Skips transitions when unchanged", "Validates config" |
-| **detail** | Performance, defaults | LOW | "Uses lazy loading", "Defaults to first state" |
+CHECK 2: Full regression
+  └─ RUN: ddev atlas
+  └─ MUST: All pass
 
-**Usage Guidelines:**
-- **contract**: User approval + major version bump required
-- **constraint**: Careful review required - breaking causes subtle bugs
-- **detail**: Can evolve freely - focus on implementation quality
+CHECK 3: Quality checks
+  └─ RUN: ddev exec composer quality
+  └─ MUST: All pass
 
-**Current Distribution** (97 total specs):
-- contract: 78% - Public API & lifecycle guarantees
-- constraint: 21% - Internal correctness & safety
-- detail: 1% - Performance & defaults
+CHECK 4: Verification
+  └─ All checks passed → Task complete
+  └─ Any failures → Fix and re-run ALL checks
+```
 
-#### Consolidation Patterns
+**ALL CHECKS MUST PASS BEFORE COMPLETION**
 
-Watch for over-specification:
+---
+
+## 🎯 DECISION MATRIX - USE THIS FOR EVERY TASK
+
+| Scenario | Mandatory Actions | Principle |
+|----------|------------------|-----------|
+| **New feature** | Review specs → Add specs → Approve → Test → Implement | No code without specs |
+| **Bug report** | Add missing spec → Test (red) → Fix → Test (green) | Every bug = new spec |
+| **Refactoring** | Run specs (baseline) → Refactor → Specs pass | Specs = behavior contract |
+| **API change** | Find ALL affected specs → Update → Approve → Implement | Breaking = approval required |
+| **Test fails** | Fix CODE (not test/spec) | Specs are contract |
+| **Spec seems wrong** | Ask user, get approval | Never assume |
+
+---
+
+## ✍️ SPEC WRITING PROTOCOL
+
+### CRITICAL PRINCIPLE: WHAT/WHY NOT HOW
+
+**Execute intent verification:**
+
+```
+FOR each spec:
+  QUESTION 1: Could this be implemented differently?
+    └─ YES → Likely a detail, consider removing
+    └─ NO → Continue
+
+  QUESTION 2: Does this test private methods/data?
+    └─ YES → STOP - Implementation detail, remove spec
+    └─ NO → Continue
+
+  QUESTION 3: Uses "stores", "uses", "maintains"?
+    └─ YES → RED FLAG - Rewrite to focus on behavior
+    └─ NO → Continue
+
+  QUESTION 4: Would user notice if this changed?
+    └─ NO → Consider marking 'detail' or removing
+    └─ YES → Proceed
+
+  QUESTION 5: Can you write compelling intent?
+    └─ NO → Question the spec's value
+    └─ YES → Proceed
+```
+
+### CRITICALITY CLASSIFICATION
+
+| Level | Focus | User Impact | Breaking Change |
+|-------|-------|-------------|-----------------|
+| **contract** | Public API, observable behavior | HIGH | Major version |
+| **constraint** | Internal correctness, safety | MEDIUM | Careful review |
+| **detail** | Performance, defaults | LOW | Can evolve freely |
+
+**Current distribution** (97 specs): 78% contract, 21% constraint, 1% detail
+
+**GUIDELINE**: Aim for contract specs. Question constraints. Minimize details.
+
+### SPEC CONSOLIDATION PROTOCOL
+
+**Red flags for over-specification:**
 - Multiple specs testing slight variations
-- Testing each step of a process separately
-- Specs like "Extracts X", "Applies X", "Registers X" for same feature
+- Testing each process step separately
+- Granular specs like "Extract X", "Apply X", "Register X"
 
-**Before** (7 specs - over-specified):
-- ProcessArray extracts states
-- ProcessArray extracts transitions
-- ProcessArray applies states to builder
-- ProcessArray applies transitions to builder
-- (etc.)
+**Execute consolidation check:**
 
-**After** (2 specs - consolidated):
-- ProcessArray builds valid regions from configuration
-- ProcessArray validates configuration before building
+```
+IF similar specs > 3:
+  STEP 1: Identify common theme
+  STEP 2: Propose consolidation to user
+  STEP 3: Get approval
+  STEP 4: Create consolidated spec
+  STEP 5: Update test
+  STEP 6: Remove old specs
+```
 
-#### When in Doubt
+---
 
-1. **Read the intent** - Can't write compelling intent? Question the spec
-2. **Check criticality** - Detail specs are candidates for removal
-3. **Look for duplication** - Integration tests often cover granular specs
-4. **Ask the user** - Propose consolidation during planning
-
-## Spec Format & Conventions
+## 📋 SPEC FORMAT REQUIREMENTS
 
 ### Component Specs
-
-Features, middleware, and core components:
 
 ```yaml
 name: component_name
@@ -193,133 +223,110 @@ group: category
 features:
   - name: feature_name
     specs:
-      - acceptanceCriteria: Clear, testable behavior
+      - acceptanceCriteria: Clear, testable, OBSERVABLE behavior
         criticality: contract|constraint|detail
-        intent: Why this matters to users/system
+        intent: WHY this matters (business value, user impact)
         test: vendor/bin/phpunit path/to/Test.php
 ```
 
-### Machine Specs
+**MANDATORY FIELDS:**
+- ✅ `acceptanceCriteria` - Observable behavior ONLY
+- ✅ `criticality` - contract/constraint/detail
+- ✅ `intent` - Business value explanation
+- ✅ `test` - Correct path to test file
 
-Complete applications (end-to-end):
+### Machine Specs
 
 ```yaml
 name: machine_name
 group: machines
-description: High-level description of machine purpose
+description: Application purpose
 features:
-  - name: feature_group_name
-    description: What this group of behaviors accomplishes
+  - name: feature_group
+    description: Group accomplishment
     specs:
-      - acceptanceCriteria: Observable end-to-end behavior
+      - acceptanceCriteria: End-to-end OBSERVABLE behavior
         criticality: contract|constraint
-        intent: Why this behavior matters for the application
+        intent: Application-level business value
         test: vendor/bin/phpunit tests/PHPUnit/E2E/MachineName/Basic/TestName.php
 ```
 
-**Key Differences:**
-- **Scope**: Machines test complete applications; components test isolated features
-- **Location**: E2E tests in `tests/PHPUnit/E2E/`, specs in `specs/machines/`
-- **Criticality**: Machines rarely use `detail` - focus on contract behaviors
-- **Mocking**: Use mock infrastructure for external dependencies (sockets, files, APIs)
+**Differences from component specs:**
+- Scope: Complete applications (E2E)
+- Location: `tests/PHPUnit/E2E/`, `specs/machines/`
+- Rarely use `detail` criticality
+- Use mock infrastructure for dependencies
 
-## Spec Maintenance Checklist
+---
 
-Before closing any task involving specs:
+## ✅ PRE-COMPLETION CHECKLIST
+
+**Execute before closing ANY spec-related task:**
 
 - [ ] All specs have `criticality` field
 - [ ] All specs have compelling `intent`
-- [ ] No duplicate or overlapping specs
-- [ ] Every spec has corresponding test
+- [ ] No duplicate/overlapping specs
+- [ ] Every spec has corresponding test (1:1)
 - [ ] Test paths in YAML are correct
 - [ ] All tests pass
-- [ ] User has approved all spec changes
+- [ ] User approved all spec changes
 
-## Common Pitfalls
+**ANY UNCHECKED BOX = TASK INCOMPLETE**
 
-### Pitfall 1: "Fixing" Specs to Match Code
+---
 
-**Wrong approach:**
+## 🚨 VIOLATION PROTOCOLS
+
+### Violation: "Fixing" Specs to Match Code
+
+**WRONG:**
 ```
-Test fails → "The spec is wrong" → Modify spec
-```
-
-**Correct approach:**
-```
-Test fails → "The code doesn't match the contract" → Fix code
-```
-
-### Pitfall 2: Skipping Planning Phase
-
-**Wrong approach:**
-```
-"This is a quick fix" → Write code directly → Tests fail unexpectedly
+Test fails → "Spec is wrong" → Modify spec
 ```
 
-**Correct approach:**
+**CORRECT:**
+```
+Test fails → "Code doesn't match contract" → Fix code
+```
+
+**IF spec actually wrong:**
+```
+Test fails → Ask user → Get approval → Modify spec
+```
+
+### Violation: Skipping Planning Phase
+
+**WRONG:**
+```
+"Quick fix" → Write code → Tests fail unexpectedly
+```
+
+**CORRECT:**
 ```
 Review specs → Identify gaps → Get approval → Write tests → Implement
 ```
 
-### Pitfall 3: Testing Implementation Details
+### Violation: Testing Implementation Details
 
-**Wrong approach:**
+**WRONG:**
 ```yaml
 acceptanceCriteria: StateManager stores states in associative array
 criticality: constraint
 ```
 
-**Correct approach:**
+**CORRECT:**
 ```yaml
 acceptanceCriteria: StateManager provides O(1) state lookup by name
 criticality: constraint
 intent: Enables efficient state queries in machines with many states
 ```
 
-## Integration with Other Skills
+---
 
-- **Before coding** → Use this skill to plan and validate specs
-- **During testing** → Use testing skill with specs as reference
-- **For documentation** → Use documentation skill to explain specs in README
-- **For core development** → Core-development skill implements based on specs
-- **For region development** → Region-development skill follows spec contracts
-
-## Examples from Project History
-
-### Example 1: Successful Spec-Driven Bug Fix
-
-**Bug Report**: "Child regions don't update state when parent triggers action"
-
-**Spec-Driven Response**:
-1. Added spec to `specs/core/region.yaml`:
-   ```yaml
-   acceptanceCriteria: Connected regions update state when receiving triggers from parent
-   criticality: contract
-   intent: Ensures hierarchical state machines maintain consistency across parent-child relationships
-   ```
-2. Created failing test: `ConnectedRegionsStateUpdateTest.php`
-3. Fixed `Region::processOneAction()` to properly handle child dispatch
-4. Test passes, regression suite passes
-5. Documented fix in `BUG_CONNECTED_REGIONS_STATE_UPDATE.md`
-
-### Example 2: Spec Consolidation
-
-**Before**: 7 specs for ProcessArray feature
-- Each tested a granular step (extract, apply, register)
-- Heavy duplication in tests
-- Intent unclear for individual steps
-
-**After**: 2 consolidated specs
-- "ProcessArray builds valid regions from configuration"
-- "ProcessArray validates configuration before building"
-- Clear intent, better coverage, less maintenance
-
-**Result**: Better test organization, clearer contracts
-
-## Reference Commands
+## 🔍 REFERENCE COMMANDS
 
 ```bash
-# View all specs for a component
+# View component specs
 cat specs/[group]/[component].yaml
 
 # Run specific spec suite
@@ -334,16 +341,36 @@ ddev atlas --verbose            # Full output
 ddev atlas --stop-on-failure    # Stop at first failure
 ```
 
-## When to Load This Skill
+---
 
-**Always load when:**
-- Planning new features or changes
-- Responding to bug reports
-- Reviewing or modifying specs
-- Starting any development work
-- User mentions specs, contracts, or acceptance criteria
+## 🔗 SKILL INTEGRATION
 
-**Combine with:**
-- **testing** skill - for test implementation details
-- **core-development** skill - for implementation guidance
-- **documentation** skill - for documenting spec changes
+**Load with these skills:**
+- **testing** - Test implementation
+- **core-development** - Implementation guidance
+- **documentation** - Document spec changes
+- **region-development** - Machine spec patterns
+
+---
+
+## 📚 EXAMPLES FROM PROJECT
+
+### Example: Spec-Driven Bug Fix
+
+**Bug**: "Child regions don't update state when parent triggers"
+
+**Protocol execution:**
+1. ✅ Created spec in `specs/core/region.yaml`
+2. ✅ Created failing test: `ConnectedRegionsStateUpdateTest.php`
+3. ✅ Fixed `Region::processOneAction()`
+4. ✅ Test passes, regression passes
+5. ✅ Documented in `BUG_CONNECTED_REGIONS_STATE_UPDATE.md`
+
+### Example: Spec Consolidation
+
+**Before**: 7 granular specs (extract, apply, register steps)
+**After**: 2 consolidated specs:
+- "ProcessArray builds valid regions from configuration"
+- "ProcessArray validates configuration before building"
+
+**Result**: Clearer contracts, better coverage, less maintenance

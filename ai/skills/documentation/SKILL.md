@@ -1,38 +1,53 @@
-# Documentation Skill - Documentation Standards & Maintenance
+# Documentation Skill - Documentation Standards Protocol
 
-## Purpose
+## ⚡ CRITICAL DOCUMENTATION RULES
 
-This skill covers **documentation standards and best practices** for the Regions project, including README maintenance, AGENTS.md files, inline documentation, and API documentation.
+**Boy Scout Rule** - Always improve documentation when touching code. NEVER leave outdated information. NEVER skip documentation for new features.
 
-## Documentation Types
+---
 
-### 1. AGENTS.md Files
+## 🚫 ABSOLUTE RULES - NEVER VIOLATE
 
-#### Root-Level AGENTS.md
+| Rule | Violation = Consequence |
+|------|-------------------------|
+| **NEVER leave outdated information** | STOP → Update immediately |
+| **NEVER skip docs for new features** | STOP → Document before completion |
+| **NEVER remove docs without replacement** | STOP → Replace or update first |
+| **Intent MUST be compelling** | STOP → Rewrite until business value clear |
+| **Examples MUST run without errors** | STOP → Test and fix examples |
 
-**Purpose**: Bootstrap context for AI agents. Should be lean and directive-focused.
+---
 
-**Structure**:
+## 📋 DOCUMENTATION TYPES REFERENCE
+
+### CLAUDE.md Files
+
+#### Root-Level CLAUDE.md
+
+**Purpose**: Bootstrap context for AI agents. Lean and directive-focused.
+
+**MANDATORY Structure:**
+
 ```markdown
 # Project Name - AI Agent Guide
 
 ## Purpose
-Brief description of the project
+Brief description
 
 ## Conditional Skill Loading
-Instructions for loading appropriate skills based on task type
+Decision tree for loading skills based on task type
 
 ## Project Overview
 High-level architecture and key concepts
 
 ## Feature Overview
-Concise list of available features with one-sentence descriptions
+Concise list with one-sentence descriptions
 
 ## Critical Principles
-Spec-driven development emphasis and core rules
+Spec-driven development emphasis, core rules
 
 ## Directory Structure
-Overview of project organization
+Project organization overview
 
 ## Reference
 Quick-reference tables and commands
@@ -41,25 +56,23 @@ Quick-reference tables and commands
 Clear triggers for loading each skill
 ```
 
-**Key Principles**:
+**Constraints:**
 - Keep concise (~200-300 lines)
 - Focus on WHAT and WHEN, not HOW
-- Direct to appropriate skills for HOW
+- Direct to skills for HOW
 - Emphasize spec-driven development
-- No maintenance instructions (move to documentation skill)
 
-#### Feature-Level AGENTS.md
+#### Feature-Level CLAUDE.md
 
-**Location**: `machines/{machine-name}/AGENTS.md` or `src/Feature/{FeatureName}/AGENTS.md`
+**Location**: `machines/{machine-name}/CLAUDE.md` or `src/Feature/{FeatureName}/CLAUDE.md`
 
-**Purpose**: Feature-specific context and instructions.
-
-**When to Create**:
+**When to create:**
 - Complex machines with unique patterns
 - Features with non-obvious usage
 - Components with special requirements
 
-**Structure**:
+**MANDATORY Structure:**
+
 ```markdown
 # Feature Name - Agent Instructions
 
@@ -82,13 +95,11 @@ Concrete usage examples
 How this connects with other parts
 ```
 
-### 2. README.md Files
+### README.md Files
 
 #### Project README
 
-**Purpose**: Human-readable project overview and setup guide.
-
-**Required Sections**:
+**MANDATORY Sections:**
 1. **Overview** - What the project is
 2. **Installation** - Setup instructions
 3. **Quick Start** - Basic usage example
@@ -97,59 +108,11 @@ How this connects with other parts
 6. **Contributing** - How to contribute
 7. **License** - License information
 
-**Example Structure**:
-```markdown
-# Regions - Event-Based State Machines
-
-Event-based finite state machines with hierarchical states, middleware, and feature system.
-
-## Installation
-
-```bash
-composer require noem/state
-```
-
-## Quick Start
-
-```php
-use Noem\State\RegionBuilder;
-
-$region = (new RegionBuilder())
-    ->setStates('idle', 'active', 'done')
-    ->markInitial('idle')
-    ->build();
-```
-
-## Features
-
-- **Hierarchical States** - Nested state machines
-- **Middleware System** - Extensible processing chains
-- **Feature Architecture** - Modular capabilities
-- **Async Support** - Coroutine-based operations
-- **YAML Configuration** - Declarative machine definitions
-
-## Documentation
-
-- [User Guide](docs/user-guide.md)
-- [API Reference](docs/api-reference.md)
-- [Examples](machines/)
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md)
-
-## License
-
-MIT License - see [LICENSE](LICENSE)
-```
-
 #### Feature READMEs
 
 **Location**: `src/Feature/{FeatureName}/README.md`
 
-**Purpose**: Feature-specific usage guide.
-
-**Sections**:
+**MANDATORY Sections:**
 1. **Overview** - Feature purpose
 2. **Installation** - If feature is optional
 3. **Usage** - How to use
@@ -157,18 +120,19 @@ MIT License - see [LICENSE](LICENSE)
 5. **Examples** - Code samples
 6. **API Reference** - Public methods
 
-### 3. Inline Documentation
+### Inline Documentation
 
 #### PHPDoc Standards
 
-**Class Documentation**:
+**Class documentation:**
+
 ```php
 /**
  * Event-based finite state machine with hierarchical state support.
- * 
+ *
  * Provides lifecycle callbacks, event dispatch, and connected region management.
  * Regions can be composed hierarchically for complex state machine architectures.
- * 
+ *
  * @package Noem\State
  */
 class Region
@@ -177,18 +141,19 @@ class Region
 }
 ```
 
-**Method Documentation**:
+**Method documentation:**
+
 ```php
 /**
  * Trigger an event in the state machine.
- * 
+ *
  * Dispatches the event to action callbacks, evaluates guards, and executes
  * transitions if conditions are met. Propagates events to connected child regions.
- * 
+ *
  * @param object $payload Event payload containing trigger data
- * 
+ *
  * @return void
- * 
+ *
  * @throws \RuntimeException If the region is in a final state
  */
 public function trigger(object $payload): void
@@ -197,7 +162,8 @@ public function trigger(object $payload): void
 }
 ```
 
-**Property Documentation**:
+**Property documentation:**
+
 ```php
 /**
  * @var array<string, array<string, array<callable>>> State → Event → Callbacks map
@@ -212,20 +178,21 @@ private array $connections = [];
 
 #### Inline Comments
 
-**When to Use**:
+**When to use:**
 - Complex algorithms
 - Non-obvious behavior
 - Critical implementation details
 - Workarounds for bugs
 
-**Style**:
+**Style:**
+
 ```php
 // Use single-line comments for brief explanations
 $result = $this->processAction($trigger);
 
 /**
  * Multi-line comments for longer explanations.
- * 
+ *
  * This algorithm implements the LIFO middleware pattern where
  * the last registered middleware executes first, creating a
  * "Russian doll" wrapping pattern.
@@ -237,11 +204,12 @@ foreach ($middleware as $layer) {
 
 #### Test Documentation
 
-**Link to Specs**:
+**MANDATORY - Link to specs:**
+
 ```php
 /**
  * Acceptance Criterion: A region can check if it is in a specific state
- * 
+ *
  * @see specs/core/region.yaml
  */
 #[Group('region'), Group('state-management')]
@@ -257,94 +225,98 @@ class StateCheckTest extends TestCase
 }
 ```
 
-### 4. Specification Documentation
+### Specification Documentation
 
-#### YAML Specs
-
-**Purpose**: Executable contracts defining behavior.
-
-**Critical Fields**:
+**Critical fields:**
 - `acceptanceCriteria` - Observable behavior
 - `criticality` - contract|constraint|detail
 - `intent` - Why this matters
 - `test` - Path to test file
 
-**Documentation Guidelines**:
-1. **Intent is critical** - Must explain business value
+**Guidelines:**
+1. **Intent is CRITICAL** - Must explain business value
 2. **Describe WHAT, not HOW** - Observable behavior only
 3. **Be specific** - Testable and unambiguous
 4. **Avoid implementation details** - Focus on contracts
 
-**Example**:
-```yaml
-features:
-  - name: state-management
-    specs:
-      - acceptanceCriteria: A region can check if it is in a specific state
-        criticality: contract
-        intent: |
-          Enables conditional logic in applications, allowing consumers to
-          guard operations, validate preconditions, and implement state-
-          dependent behavior without accessing internal state representation.
-        test: vendor/bin/phpunit tests/PHPUnit/Unit/Region/StateCheckTest.php
+---
+
+## 🔧 DOCUMENTATION MAINTENANCE PROTOCOL
+
+### Boy Scout Rule (MANDATORY)
+
+**Execute when touching any code:**
+
+```
+STEP 1: Check documentation age
+  ├─ Examples outdated?
+  ├─ Links broken?
+  ├─ Information stale?
+  └─ Missing PHPDoc?
+
+STEP 2: Update immediately
+  └─ Fix all issues found
+
+STEP 3: Never leave worse than found
+  └─ Always improve
 ```
 
-## Documentation Maintenance
+**DO:**
+- ✅ Update stale examples
+- ✅ Fix broken links
+- ✅ Clarify confusing sections
+- ✅ Add missing PHPDoc
+- ✅ Update version numbers
 
-### Boy Scout Rule
+**DON'T:**
+- ❌ Leave outdated information
+- ❌ Ignore broken examples
+- ❌ Skip documentation for new features
+- ❌ Remove documentation without replacement
 
-**Always improve documentation when touching code**:
+### CLAUDE.md Updates
 
-✅ **Do**:
-- Update stale examples
-- Fix broken links
-- Clarify confusing sections
-- Add missing PHPDoc
-- Update version numbers
+#### Root CLAUDE.md Changes
 
-❌ **Don't**:
-- Leave outdated information
-- Ignore broken examples
-- Skip documentation for new features
-- Remove documentation without replacement
-
-### Keeping AGENTS.md Updated
-
-#### Root AGENTS.md Changes
-
-**When to Update**:
+**When to update:**
 - New skill added
 - Project structure changes
 - Core principles change
 - New critical patterns emerge
 
-**Update Process**:
-1. Identify what changed
-2. Update relevant section
-3. Keep it concise (offload to skills if detailed)
-4. Verify all skill references are correct
-5. Check conditional loading triggers
+**Update protocol:**
+
+```
+STEP 1: Identify what changed
+STEP 2: Update relevant section
+STEP 3: Keep concise (offload to skills if detailed)
+STEP 4: Verify all skill references correct
+STEP 5: Check conditional loading triggers
+```
 
 #### Skill File Changes
 
-**When to Update**:
+**When to update:**
 - New pattern discovered
 - Common pitfall identified
 - Best practice emerges
 - API changes
 - Examples become stale
 
-**Update Process**:
-1. Add to appropriate section
-2. Include code examples
-3. Link to related skills
-4. Update "When to Load" section if triggers change
+**Update protocol:**
+
+```
+STEP 1: Add to appropriate section
+STEP 2: Include code examples
+STEP 3: Link to related skills
+STEP 4: Update "When to Load" if triggers change
+```
 
 ### README Maintenance
 
 #### Version Updates
 
-When releasing new versions:
+**Execute when releasing:**
 - Update installation instructions
 - Update version numbers in examples
 - Add new features to feature list
@@ -352,7 +324,7 @@ When releasing new versions:
 
 #### Example Maintenance
 
-**Regular Checks**:
+**MANDATORY regular checks:**
 - [ ] Examples run without errors
 - [ ] Examples use current API
 - [ ] Examples follow current best practices
@@ -360,30 +332,34 @@ When releasing new versions:
 
 ### Specification Maintenance
 
-#### When Specs Change
+**Protocol when specs change:**
 
-**Always**:
-1. Get user approval first
-2. Update YAML file
-3. Update corresponding test
-4. Update test path in YAML
-5. Run spec suite to verify
-6. Document reason for change in commit
+```
+STEP 1: Get user approval - MANDATORY
+STEP 2: Update YAML file
+STEP 3: Update corresponding test
+STEP 4: Update test path in YAML
+STEP 5: Run spec suite to verify
+STEP 6: Document reason for change in commit
+```
 
-#### Consolidation
+**Consolidation protocol:**
 
-When consolidating specs:
-1. Propose consolidation to user
-2. Create new consolidated spec
-3. Update test to match new spec
-4. Remove old specs
-5. Update spec count in documentation
+```
+STEP 1: Propose consolidation to user
+STEP 2: Create new consolidated spec
+STEP 3: Update test to match new spec
+STEP 4: Remove old specs
+STEP 5: Update spec count in documentation
+```
 
-## Documentation Standards
+---
+
+## 📝 DOCUMENTATION STANDARDS
 
 ### Markdown Style
 
-**Headers**:
+**Headers:**
 ```markdown
 # H1 - Top-level sections
 ## H2 - Major sections
@@ -391,7 +367,7 @@ When consolidating specs:
 #### H4 - Minor subsections (use sparingly)
 ```
 
-**Code Blocks**:
+**Code blocks:**
 ````markdown
 ```php
 // PHP code with syntax highlighting
@@ -410,7 +386,7 @@ composer install
 ```
 ````
 
-**Lists**:
+**Lists:**
 ```markdown
 - Unordered lists for items without sequence
 - Use for feature lists, capabilities, options
@@ -419,7 +395,7 @@ composer install
 2. Use for instructions, procedures, algorithms
 ```
 
-**Tables**:
+**Tables:**
 ```markdown
 | Column 1 | Column 2 | Column 3 |
 |----------|----------|----------|
@@ -427,7 +403,7 @@ composer install
 | Data 4   | Data 5   | Data 6   |
 ```
 
-**Links**:
+**Links:**
 ```markdown
 [Link text](path/to/file.md)
 [External link](https://example.com)
@@ -436,7 +412,8 @@ composer install
 
 ### PHP Documentation Style
 
-**Use PHPStan/Psalm Types**:
+**Use PHPStan/Psalm types:**
+
 ```php
 /**
  * @param array<string, mixed> $context
@@ -445,7 +422,8 @@ composer install
  */
 ```
 
-**Nullable Types**:
+**Nullable types:**
+
 ```php
 /**
  * @param string|null $initial Optional initial state
@@ -453,7 +431,8 @@ composer install
  */
 ```
 
-**Union Types**:
+**Union types:**
+
 ```php
 /**
  * @param string|int $identifier State name or index
@@ -463,7 +442,8 @@ composer install
 
 ### YAML Documentation Style
 
-**Comments**:
+**Comments:**
+
 ```yaml
 # Top-level comment explaining section
 name: machine_name
@@ -476,24 +456,27 @@ states:
         - handler: action.handler  # Inline comment
 ```
 
-**Intent Formatting**:
+**Intent formatting:**
+
 ```yaml
 intent: |
   Multi-line intent with proper formatting.
-  
+
   Can include paragraphs and detailed explanations
   of why this behavior matters to users.
 ```
 
-## Common Documentation Tasks
+---
+
+## ✅ DOCUMENTATION TASK PROTOCOLS
 
 ### Task: Add New Feature
 
-**Checklist**:
+**MANDATORY Checklist:**
 - [ ] Create feature README (`src/Feature/NewFeature/README.md`)
 - [ ] Add feature to project README feature list
-- [ ] Create or update feature-level AGENTS.md if complex
-- [ ] Add feature overview to root AGENTS.md
+- [ ] Create or update feature-level CLAUDE.md if complex
+- [ ] Add feature overview to root CLAUDE.md
 - [ ] Document in appropriate skill file
 - [ ] Add PHPDoc to all public methods
 - [ ] Create usage examples
@@ -501,7 +484,7 @@ intent: |
 
 ### Task: Fix Bug
 
-**Checklist**:
+**MANDATORY Checklist:**
 - [ ] Add missing spec (if spec gap)
 - [ ] Update relevant documentation
 - [ ] Add to "Common Pitfalls" if applicable
@@ -510,7 +493,7 @@ intent: |
 
 ### Task: Refactor Code
 
-**Checklist**:
+**MANDATORY Checklist:**
 - [ ] Update affected README sections
 - [ ] Update inline documentation
 - [ ] Update examples using old API
@@ -519,111 +502,60 @@ intent: |
 
 ### Task: Create New Machine
 
-**Checklist**:
+**MANDATORY Checklist:**
 - [ ] Create machine README (`machines/{name}/README.md`)
-- [ ] Create machine-level AGENTS.md if complex
+- [ ] Create machine-level CLAUDE.md if complex
 - [ ] Add machine to examples list in project README
 - [ ] Document container configuration
 - [ ] Add usage examples
 - [ ] Document any unique patterns
 
-## Integration with Other Skills
+---
 
-### With Specification Skill
+## 🔗 SKILL INTEGRATION
 
-- Ensure specs have compelling intent
-- Link tests to specs in documentation
-- Document spec-driven workflow
+**Load with these skills:**
+- **specification** - Spec documentation
+- **testing** - Test documentation
+- **core-development** - API documentation
+- **region-development** - Usage documentation
 
-### With Testing Skill
+---
 
-- Document test patterns
-- Link test documentation to specs
-- Explain test organization
+## ✅ PRE-COMMIT QUALITY PROTOCOL
 
-### With Core Development Skill
+**MANDATORY before committing documentation:**
 
-- Document architectural decisions
-- Explain design patterns
-- Reference implementation details
+```
+CHECK 1: Markdown renders correctly
+  └─ Verify all formatting
 
-### With Region Development Skill
+CHECK 2: All links work
+  └─ Test all internal and external links
 
-- Document machine patterns
-- Explain YAML schema
-- Provide usage examples
+CHECK 3: Code examples run
+  └─ Test all code samples
 
-## Quality Checks
+CHECK 4: PHPDoc accurate
+  └─ Verify all type annotations
 
-### Before Committing Documentation
+CHECK 5: Spelling correct
+  └─ Check for typos
 
-**Checklist**:
-- [ ] Markdown renders correctly
-- [ ] All links work
-- [ ] Code examples run
-- [ ] PHPDoc is accurate
-- [ ] Spelling is correct
-- [ ] Formatting is consistent
-
-### Periodic Audits
-
-**Quarterly Reviews**:
-- [ ] Update version numbers
-- [ ] Verify examples still work
-- [ ] Check for outdated sections
-- [ ] Update external links
-- [ ] Consolidate redundant information
-
-## Tools & Automation
-
-### Markdown Linting
-
-```bash
-# Check markdown syntax
-markdownlint docs/**/*.md
-
-# Fix automatically where possible
-markdownlint --fix docs/**/*.md
+CHECK 6: Formatting consistent
+  └─ Follow established patterns
 ```
 
-### Link Checking
+**ANY CHECK FAILS = DO NOT COMMIT**
 
-```bash
-# Verify all links are valid
-markdown-link-check docs/**/*.md
-```
+---
 
-### PHPDoc Validation
-
-```bash
-# Check documentation coverage
-phpdoc --validate
-```
-
-## When to Load This Skill
-
-**Always load when:**
-- Writing or updating documentation
-- Creating README files
-- Maintaining AGENTS.md files
-- Adding inline code comments
-- Documenting architectural decisions
-- Creating examples
-
-**Combine with:**
-- **specification** skill - for spec documentation
-- **testing** skill - for test documentation  
-- **core-development** skill - for API documentation
-- **region-development** skill - for usage documentation
-
-## Reference
-
-### Documentation Files in Project
+## 📂 DOCUMENTATION FILES REFERENCE
 
 ```
 /
 ├── README.md                           # Project overview
-├── AGENTS.md                           # AI agent bootstrap
+├── CLAUDE.md                           # AI agent bootstrap
 ├── CONTRIBUTING.md                     # Contribution guide
 ├── LICENSE                             # License file
 ├── ai/
@@ -648,10 +580,12 @@ phpdoc --validate
 └── machines/                           # Example machines
     └── */
         ├── README.md                   # Machine overview
-        └── AGENTS.md                   # Optional machine docs
+        └── CLAUDE.md                   # Optional machine docs
 ```
 
-### External Documentation
+---
+
+## 🔍 EXTERNAL DOCUMENTATION
 
 - [PHPDoc Reference](https://docs.phpdoc.org/)
 - [Markdown Guide](https://www.markdownguide.org/)

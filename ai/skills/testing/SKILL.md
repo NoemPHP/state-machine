@@ -1,54 +1,58 @@
-# Testing Skill - Testing Infrastructure & Patterns
+# Testing Skill - Testing Infrastructure Protocol
 
-## Purpose
+## ⚡ CRITICAL TESTING RULES
 
-This skill covers **testing strategies, patterns, and infrastructure** for the Regions project. It provides guidance on unit tests, integration tests, E2E tests, and the custom test runner system.
+**ONE SPEC = ONE TEST CLASS** - Maintain strict 1:1 mapping. Violation = consolidate or split immediately.
 
-## Test Organization
+---
 
-### Directory Structure
+## 🚫 ABSOLUTE RULES - NEVER VIOLATE
+
+| Rule | Violation = Consequence |
+|------|-------------------------|
+| **ONE SPEC = ONE TEST CLASS** | STOP → Consolidate or split to restore 1:1 |
+| **ChainMail MUST boot() before assertions** | STOP → Add boot() call before assertions |
+| **Guards MUST accept trigger parameter** | STOP → Add `fn(object $trigger)` signature |
+| **ExtendedState BEFORE AsyncFeature** | STOP → Reorder features |
+| **Use isset() for Helpers, NOT hasHelper()** | STOP → Replace with isset() |
+
+---
+
+## 📂 TEST ORGANIZATION PROTOCOL
+
+### Directory Structure (MANDATORY)
 
 ```
 tests/PHPUnit/
-├── Unit/[Group]/[Component]/[Behavior]Test.php    # Unit tests
-├── Integration/[Group]/[Component]/                # Integration tests
-└── E2E/                                            # Machine tests (end-to-end)
-    ├── ApplicationTestCase.php                     # Base class for machines
-    ├── AsyncMachineTestCase.php                   # Base for async machines
-    ├── NetworkMachineTestCase.php                 # Base for network machines
+├── Unit/[Group]/[Component]/[Behavior]Test.php    # Single class/method
+├── Integration/[Group]/[Component]/                # Multiple components
+└── E2E/                                            # Complete machines
+    ├── ApplicationTestCase.php                     # Base for all machines
+    ├── AsyncMachineTestCase.php                   # Base for async
+    ├── NetworkMachineTestCase.php                 # Base for network
     ├── Support/                                    # Mock infrastructure
     │   ├── MockSocket.php
     │   └── MockConnection.php
-    └── [MachineName]/Basic/[Test].php             # Machine-specific tests
+    └── [MachineName]/Basic/[Test].php             # Machine tests
 ```
 
-### Test Type Selection
+### Test Type Selection Matrix
 
-| Test Type | When to Use | Location |
-|-----------|-------------|----------|
-| **Unit** | Single class/method behavior | `tests/PHPUnit/Unit/` |
-| **Integration** | Multiple components interaction | `tests/PHPUnit/Integration/` |
-| **E2E** | Complete machine behavior | `tests/PHPUnit/E2E/` |
+| Scenario | Test Type | Location | Base Class |
+|----------|-----------|----------|------------|
+| Single class/method behavior | Unit | `Unit/[Group]/[Component]/` | `TestCase` |
+| Multiple components interacting | Integration | `Integration/[Group]/[Component]/` | `TestCase` |
+| Complete machine behavior | E2E | `E2E/[MachineName]/Basic/` | `ApplicationTestCase` |
+| Async machine | E2E | `E2E/[MachineName]/Basic/` | `AsyncMachineTestCase` |
+| Network machine | E2E | `E2E/[MachineName]/Basic/` | `NetworkMachineTestCase` |
 
-## Test Creation Guidelines
+---
 
-### One Spec = One Test Class
+## ✍️ TEST CREATION PROTOCOL
 
-**Critical rule**: Maintain 1:1 mapping between specs and test classes.
+### MANDATORY Template
 
-```php
-// ✅ GOOD: One test class per spec
-class StateCheckTest extends TestCase { ... }  // For "Region can check if in state" spec
-
-// ❌ BAD: Multiple specs in one test class
-class RegionTest extends TestCase {
-    public function testStateCheck() { ... }
-    public function testTransitions() { ... }
-    public function testLifecycle() { ... }
-}
-```
-
-### Test Template
+**EXECUTE THIS FOR EVERY TEST:**
 
 ```php
 <?php
@@ -61,7 +65,7 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Acceptance Criterion: [Exact text from YAML spec]
+ * Acceptance Criterion: [EXACT TEXT FROM YAML SPEC]
  */
 #[Group('component'), Group('feature')]
 class DescriptiveTest extends TestCase
@@ -73,57 +77,83 @@ class DescriptiveTest extends TestCase
     {
         // Arrange: Set up test conditions
         $subject = new Subject();
-        
-        // Act: Perform the action being tested
+
+        // Act: Perform action being tested
         $result = $subject->doSomething();
-        
+
         // Assert: Verify expected outcome
         $this->assertTrue($result);
     }
 }
 ```
 
-### PHPUnit Attributes
+**MANDATORY ELEMENTS:**
+- ✅ PHPDoc with EXACT acceptance criteria from YAML
+- ✅ PHPUnit attributes for grouping
+- ✅ Arrange → Act → Assert structure
+- ✅ Descriptive test method name
 
-Use attributes for test organization and filtering:
+---
 
+## 🔧 CRITICAL TESTING PATTERNS
+
+### Pattern 1: ChainMail Boot Requirement
+
+**CRITICAL**: ChainMail middleware does NOT execute until `boot()` called.
+
+**WRONG:**
 ```php
-#[Group('region'), Group('lifecycle')]        // Component + feature grouping
-#[Group('transitions'), Group('guards')]      // Multiple logical groups
-```
-
-**Running specific groups:**
-```bash
-ddev exec vendor/bin/phpunit --group=transitions
-ddev exec vendor/bin/phpunit --group=lifecycle --group=region
-```
-
-## Testing Patterns
-
-### ChainMail Boot Requirement
-
-**Critical pattern**: ChainMail middleware doesn't execute until `boot()` is called.
-
-```php
-// ❌ WRONG: Middleware not executed
 $chainMail = new ChainMail();
 $feature($chainMail);
-$service = $chainMail->get(MyService::class);  // FAILS: Service not registered yet
-
-// ✅ CORRECT: Boot to execute middleware
-$chainMail = new ChainMail();
-$feature($chainMail);
-$chainMail->boot();  // Executes all registered middleware
-$service = $chainMail->get(MyService::class);  // SUCCESS: Service available
+$service = $chainMail->get(MyService::class);  // FAILS
 ```
 
-**Common workflow:**
-1. Create ChainMail instance
-2. Register features/middleware
-3. Call `boot()`
-4. Assert expected state
+**CORRECT:**
+```php
+$chainMail = new ChainMail();
+$feature($chainMail);
+$chainMail->boot();  // MANDATORY
+$service = $chainMail->get(MyService::class);  // SUCCESS
+```
 
-### State Machine Construction Pattern
+**Protocol:**
+```
+STEP 1: Create ChainMail instance
+STEP 2: Register features/middleware
+STEP 3: Call boot() - MANDATORY
+STEP 4: Assert expected state
+```
+
+### Pattern 2: Guard Signature Requirement
+
+**Guards MUST accept trigger parameter.**
+
+**WRONG:**
+```php
+fn(): bool => true  // Error: "Required Parameter 0 not declared"
+```
+
+**CORRECT:**
+```php
+fn(object $trigger): bool => $trigger->isValid
+```
+
+**Verification test:**
+```php
+public function testGuardMustAcceptTrigger(): void
+{
+    $this->expectException(\TypeError::class);
+    $this->expectExceptionMessage('Required Parameter 0 not declared');
+
+    (new RegionBuilder())
+        ->addBuildStep(new AddTransition('A', 'B', fn(): bool => true))
+        ->build();
+}
+```
+
+### Pattern 3: State Machine Construction
+
+**Standard pattern:**
 
 ```php
 private function buildRegion(): Region
@@ -133,7 +163,7 @@ private function buildRegion(): Region
         ->setStates('idle', 'processing', 'done')
         ->markInitial('idle')
         ->markFinal('done')
-        ->addBuildStep(new AddTransition('idle', 'processing', 
+        ->addBuildStep(new AddTransition('idle', 'processing',
             fn(object $t): bool => $t->ready
         ))
         ->onEnter('processing', fn(object $t) => $this->recordAction('start'))
@@ -141,221 +171,132 @@ private function buildRegion(): Region
 }
 ```
 
-### Guard Signature Testing
+---
 
-Guards must accept a trigger parameter:
+## 🎰 MACHINE TESTING PROTOCOL
 
-```php
-// ✅ CORRECT: Guard accepts trigger
-fn(object $trigger): bool => $trigger->isValid
+### Base Test Class Selection
 
-// ❌ WRONG: Missing parameter causes error
-fn(): bool => true  // Error: "Required Parameter 0 not declared"
+**Execute this decision tree:**
+
+```
+MACHINE TYPE?
+├─ Standard (no async, no network)
+│  └─ USE: ApplicationTestCase
+│
+├─ Uses AsyncFeature
+│  └─ USE: AsyncMachineTestCase
+│     └─ PROVIDES: tickUntil(), tickN(), countActiveTasks()
+│
+└─ Uses network I/O
+   └─ USE: NetworkMachineTestCase
+      └─ PROVIDES: queueHttpRequest(), assertConnectionClosed()
 ```
 
-## Machine Testing (E2E)
+### ApplicationTestCase Protocol
 
-### Base Test Classes
-
-#### ApplicationTestCase
-
-Base class for all machine tests:
+**MANDATORY implementation:**
 
 ```php
-abstract class ApplicationTestCase extends TestCase
+abstract class YourMachineTest extends ApplicationTestCase
 {
-    protected function region(): Region
-    {
-        // Load from yaml() and container()
-    }
-    
-    abstract protected function yaml(): string;
-    abstract protected function container(): iterable;
-}
-```
-
-#### AsyncMachineTestCase
-
-For machines using async features:
-
-```php
-class AsyncMachineTestCase extends ApplicationTestCase
-{
-    /**
-     * Tick until condition is true or maxTicks reached.
-     */
-    protected function tickUntil(Region $region, callable $condition, int $maxTicks = 100): void;
-    
-    /**
-     * Tick N times.
-     */
-    protected function tickN(Region $region, int $ticks): void;
-    
-    /**
-     * Count active tasks in region.
-     */
-    protected function countActiveTasks(Region $region): int;
-    
-    /**
-     * Assert region has active tasks.
-     */
-    protected function assertHasActiveTasks(Region $region, string $message = ''): void;
-}
-```
-
-#### NetworkMachineTestCase
-
-For machines with network I/O:
-
-```php
-class NetworkMachineTestCase extends AsyncMachineTestCase
-{
-    protected MockSocket $mockSocket;
-    
-    /**
-     * Queue a mock HTTP request.
-     */
-    protected function queueHttpRequest(
-        string $method = 'GET',
-        string $uri = '/',
-        array $headers = [],
-        string $body = ''
-    ): MockConnection;
-    
-    /**
-     * Assert connection was closed.
-     */
-    protected function assertConnectionClosed(MockConnection $connection, string $message = ''): void;
-    
-    /**
-     * Assert socket is non-blocking.
-     */
-    protected function assertSocketNonBlocking(string $message = ''): void;
-}
-```
-
-### Machine Testing Pattern
-
-```php
-<?php
-
-namespace Noem\State\Tests\PHPUnit\E2E\WebServer\Basic;
-
-use Noem\State\Tests\PHPUnit\E2E\NetworkMachineTestCase;
-use PHPUnit\Framework\Attributes\Test;
-
-class HandleHttpRequestTest extends NetworkMachineTestCase
-{
-    #[Test]
-    public function machineProcessesHttpRequest(): void
-    {
-        // Arrange: Set up machine with mocked dependencies
-        $region = $this->region();
-        $mockConnection = $this->queueHttpRequest('GET', '/test');
-        
-        // Act: Execute machine behavior
-        $this->tickN($region, 10);
-        
-        // Assert: Verify observable outcomes
-        $this->assertConnectionClosed($mockConnection);
-        $this->assertTrue($region->isInState('idle'));
-    }
-    
     protected function yaml(): string
     {
-        return file_get_contents(__DIR__ . '/../../../machines/webserver/machine.yml');
+        return file_get_contents(__DIR__ . '/../../../machines/machine-name/machine.yml');
     }
-    
-    protected function container(): iterable
+
+    abstract protected function container(): iterable
     {
         return [
-            'socket' => fn() => $this->mockSocket,
-            'action.accept_connection' => function ($trigger) {
-                // Use mock instead of real socket
-                $this->mockSocket->accept();
+            'service.name' => fn() => $this->mockService,
+            'action.handler' => function ($trigger) {
+                $this->recordAction('handler', $trigger);
             },
         ];
     }
 }
 ```
 
-### Mock Infrastructure
+### AsyncMachineTestCase Methods
 
-#### MockSocket
-
-Simulates socket operations:
+**Available methods:**
 
 ```php
-$mockSocket = new MockSocket();
-$mockSocket->queueConnection($mockConnection);
-$connection = $mockSocket->accept();  // Returns queued connection
+// Tick until condition true or maxTicks reached
+protected function tickUntil(Region $region, callable $condition, int $maxTicks = 100): void;
+
+// Tick N times
+protected function tickN(Region $region, int $ticks): void;
+
+// Count active tasks
+protected function countActiveTasks(Region $region): int;
+
+// Assert has active tasks
+protected function assertHasActiveTasks(Region $region, string $message = ''): void;
 ```
 
-#### MockConnection
-
-Simulates client connections:
+**Usage pattern:**
 
 ```php
-$mockConnection = new MockConnection("GET /test HTTP/1.1\r\n\r\n");
-$data = $mockConnection->read(1024);
-$mockConnection->write("HTTP/1.1 200 OK\r\n\r\nHello");
-$mockConnection->close();
+public function testAsyncBehavior(): void
+{
+    $region = $this->region();
+
+    // Trigger creates task
+    $region->trigger($createTaskEvent);
+    $this->assertHasActiveTasks($region);
+
+    // Tick until completion
+    $this->tickUntil($region, fn() => !$this->countActiveTasks($region));
+
+    // Verify cleanup
+    $this->assertCount(0, $this->countActiveTasks($region));
+}
 ```
 
-## Test Execution
+### NetworkMachineTestCase Methods
 
-### Running Tests
+**Available methods:**
 
-```bash
-# Single test class
-ddev exec vendor/bin/phpunit tests/PHPUnit/Unit/Region/StateCheckTest.php
+```php
+// Queue mock HTTP request
+protected function queueHttpRequest(
+    string $method = 'GET',
+    string $uri = '/',
+    array $headers = [],
+    string $body = ''
+): MockConnection;
 
-# All tests in directory
-ddev exec vendor/bin/phpunit tests/PHPUnit/Unit/Region/
+// Assert connection closed
+protected function assertConnectionClosed(MockConnection $connection, string $message = ''): void;
 
-# By group
-ddev exec vendor/bin/phpunit --group=transitions
-
-# Specific test method
-ddev exec vendor/bin/phpunit --filter=testGuardReceivesTrigger
-
-# E2E tests
-ddev exec vendor/bin/phpunit tests/PHPUnit/E2E/WebServer/Basic/
+// Assert socket non-blocking
+protected function assertSocketNonBlocking(string $message = ''): void;
 ```
 
-### Using Test Runner
+**Usage pattern:**
 
-Run spec-defined tests via middleware test runner:
+```php
+public function testHttpRequest(): void
+{
+    $region = $this->region();
+    $mockConnection = $this->queueHttpRequest('GET', '/test');
 
-```bash
-# Run specific spec suite
-ddev exec machines/middleware-test-runner/run.sh --spec=specs/core/region.yaml
+    $this->tickN($region, 10);
 
-# With flags
-ddev exec machines/middleware-test-runner/run.sh \
-  --spec=specs/features/transitions.yaml \
-  --verbose \
-  --stop-on-failure
+    $this->assertConnectionClosed($mockConnection);
+    $this->assertTrue($region->isInState('idle'));
+}
 ```
 
-### Full Regression
+---
 
-```bash
-# Run all specs (atlas command)
-ddev atlas
-
-# With output control
-ddev atlas --quiet              # Errors only
-ddev atlas --verbose            # Full output
-ddev atlas --stop-on-failure    # Stop at first failure
-```
-
-## Assertion Patterns
+## 🔍 ASSERTION PATTERNS
 
 ### State Assertions
 
 ```php
-// State checks
+// Single state check
 $this->assertTrue($region->isInState('processing'));
 $this->assertFalse($region->isFinal());
 
@@ -366,7 +307,7 @@ $this->assertTrue(
 );
 ```
 
-### Action Recording
+### Action Recording Pattern
 
 ```php
 private array $recordedActions = [];
@@ -390,46 +331,74 @@ $this->assertCount(1, $this->recordedActions);
 public function testActionsExecuteBeforeTransitions(): void
 {
     $sequence = [];
-    
+
     $region = (new RegionBuilder())
         ->setStates('A', 'B')
         ->markInitial('A')
         ->on('A', 'moveToB', fn($t) => $sequence[] = 'action')
-        ->addBuildStep(new AddTransition('A', 'B', 
+        ->addBuildStep(new AddTransition('A', 'B',
             fn($t): bool => ($sequence[] = 'guard') && true
         ))
         ->onEnter('B', fn($t) => $sequence[] = 'enter:B')
         ->build();
-    
+
     $region->trigger((object)['type' => 'moveToB']);
-    
+
     $this->assertEquals(['action', 'guard', 'enter:B'], $sequence);
 }
 ```
 
-### Task Lifecycle Verification (Async)
+---
 
-```php
-public function testTaskCreatedAndCleaned(): void
-{
-    $region = $this->buildAsyncRegion();
-    
-    // Initial state: no tasks
-    $this->assertCount(0, $this->countActiveTasks($region));
-    
-    // Trigger creates task
-    $region->trigger($createTaskEvent);
-    $this->assertHasActiveTasks($region);
-    
-    // Tick until completion
-    $this->tickUntil($region, fn() => !$this->countActiveTasks($region));
-    
-    // Final state: task cleaned up
-    $this->assertCount(0, $this->countActiveTasks($region));
-}
+## 🚀 TEST EXECUTION PROTOCOL
+
+### Running Tests
+
+```bash
+# Single test class
+ddev exec vendor/bin/phpunit tests/PHPUnit/Unit/Region/StateCheckTest.php
+
+# All tests in directory
+ddev exec vendor/bin/phpunit tests/PHPUnit/Unit/Region/
+
+# By group
+ddev exec vendor/bin/phpunit --group=transitions
+
+# Specific test method
+ddev exec vendor/bin/phpunit --filter=testGuardReceivesTrigger
+
+# E2E tests
+ddev exec vendor/bin/phpunit tests/PHPUnit/E2E/WebServer/Basic/
 ```
 
-## Testing Critical Behaviors
+### Using Test Runner
+
+```bash
+# Run specific spec suite
+ddev exec machines/middleware-test-runner/run.sh --spec=specs/core/region.yaml
+
+# With flags
+ddev exec machines/middleware-test-runner/run.sh \
+  --spec=specs/features/transitions.yaml \
+  --verbose \
+  --stop-on-failure
+```
+
+### Full Regression
+
+```bash
+# Run all specs
+ddev atlas
+
+# With output control
+ddev atlas --quiet              # Errors only
+ddev atlas --verbose            # Full output
+ddev atlas --stop-on-failure    # Stop at first failure
+```
+
+---
+
+## 🚨 CRITICAL BEHAVIORS TO TEST
 
 ### Hierarchical State Updates
 
@@ -440,16 +409,16 @@ public function testChildRegionUpdatesStateOnParentTrigger(): void
         ->setStates('active')
         ->markInitial('active')
         ->build();
-    
+
     $child = (new RegionBuilder())
         ->setStates('idle', 'busy')
         ->markInitial('idle')
         ->addBuildStep(new AddTransition('idle', 'busy', fn($t): bool => true))
         ->build();
-    
+
     $parent->connect($child);
     $parent->trigger(new \stdClass());
-    
+
     $this->assertTrue($child->isInState('busy'), 'Child should transition');
 }
 ```
@@ -461,7 +430,7 @@ public function testAsyncFeatureRequiresExtendedState(): void
 {
     $this->expectException(\RuntimeException::class);
     $this->expectExceptionMessage('context › resolvers');
-    
+
     // ❌ Wrong order: AsyncFeature before ExtendedState
     $region = (new RegionBuilder())
         ->enableFeatures(
@@ -486,119 +455,133 @@ public function testCorrectFeatureOrder(): void
         ->build(['loader' => ['array' => [
             'context' => ['resolvers' => []]
         ]]]);
-    
+
     $this->assertInstanceOf(Region::class, $region);
+}
+```
+
+---
+
+## 🐛 DEBUGGING FAILED TESTS PROTOCOL
+
+**EXECUTE IN ORDER:**
+
+```
+STEP 1: Read the spec
+  └─ RUN: cat specs/[group]/[component].yaml | grep -A 10 "acceptanceCriteria: [failing behavior]"
+
+STEP 2: Verify spec-test alignment
+  ├─ Test name matches acceptance criterion?
+  ├─ Assertions verify specified behavior?
+  └─ Not testing implementation details?
+
+STEP 3: Check common issues
+  ├─ [ ] ChainMail booted before assertions?
+  ├─ [ ] Guard signature includes trigger parameter?
+  ├─ [ ] Feature order correct (ExtendedState before AsyncFeature)?
+  ├─ [ ] Using isset() for Helpers, not hasHelper()?
+  └─ [ ] Self-transitions execute full lifecycle?
+
+STEP 4: Isolate the problem
+  └─ RUN: ddev exec vendor/bin/phpunit --testdox --verbose [test-path]
+
+STEP 5: Fix code, NOT test
+  └─ If test correctly implements spec → fix code, not test
+```
+
+---
+
+## ✅ PRE-COMMIT QUALITY PROTOCOL
+
+**MANDATORY before ANY commit:**
+
+```
+CHECK 1: Run all tests
+  └─ RUN: ddev exec vendor/bin/phpunit
+  └─ MUST: All pass
+
+CHECK 2: Quality checks
+  └─ RUN: ddev exec composer quality
+  └─ MUST: All pass
+
+CHECK 3: Full regression
+  └─ RUN: ddev atlas
+  └─ MUST: All pass
+```
+
+**ANY FAILURE = DO NOT COMMIT**
+
+---
+
+## 🔗 SKILL INTEGRATION
+
+**Load with these skills:**
+- **specification** - Spec-to-test alignment
+- **core-development** - Implementation context
+- **region-development** - Machine testing patterns
+
+---
+
+## 📚 COMMON TESTING SCENARIOS
+
+### Task Lifecycle Verification (Async)
+
+```php
+public function testTaskCreatedAndCleaned(): void
+{
+    $region = $this->buildAsyncRegion();
+
+    // Initial: no tasks
+    $this->assertCount(0, $this->countActiveTasks($region));
+
+    // Trigger creates task
+    $region->trigger($createTaskEvent);
+    $this->assertHasActiveTasks($region);
+
+    // Tick until completion
+    $this->tickUntil($region, fn() => !$this->countActiveTasks($region));
+
+    // Final: task cleaned up
+    $this->assertCount(0, $this->countActiveTasks($region));
 }
 ```
 
 ### Guard Validation
 
 ```php
-public function testGuardMustAcceptTrigger(): void
-{
-    $this->expectException(\TypeError::class);
-    $this->expectExceptionMessage('Required Parameter 0 not declared');
-    
-    // ❌ Guard missing parameter
-    (new RegionBuilder())
-        ->addBuildStep(new AddTransition('A', 'B', fn(): bool => true))
-        ->build();
-}
-
 public function testGuardReceivesTrigger(): void
 {
     $receivedTrigger = null;
-    
+
     $region = (new RegionBuilder())
         ->setStates('A', 'B')
         ->markInitial('A')
-        ->addBuildStep(new AddTransition('A', 'B', 
+        ->addBuildStep(new AddTransition('A', 'B',
             function(object $t) use (&$receivedTrigger): bool {
                 $receivedTrigger = $t;
                 return true;
             }
         ))
         ->build();
-    
+
     $trigger = (object)['value' => 42];
     $region->trigger($trigger);
-    
+
     $this->assertSame($trigger, $receivedTrigger);
 }
 ```
 
-## Debugging Failed Tests
+### Mock Infrastructure Usage
 
-### Step 1: Read the Spec
+```php
+// MockSocket
+$mockSocket = new MockSocket();
+$mockSocket->queueConnection($mockConnection);
+$connection = $mockSocket->accept();
 
-Before debugging, always read the spec:
-```bash
-cat specs/[group]/[component].yaml | grep -A 10 "acceptanceCriteria: [failing behavior]"
+// MockConnection
+$mockConnection = new MockConnection("GET /test HTTP/1.1\r\n\r\n");
+$data = $mockConnection->read(1024);
+$mockConnection->write("HTTP/1.1 200 OK\r\n\r\nHello");
+$mockConnection->close();
 ```
-
-### Step 2: Verify Spec-Test Alignment
-
-Ensure the test actually tests what the spec describes:
-- Test name matches acceptance criterion
-- Assertions verify the specified behavior
-- No testing of implementation details
-
-### Step 3: Check for Common Issues
-
-- [ ] ChainMail booted before assertions?
-- [ ] Guard signature includes trigger parameter?
-- [ ] Feature order correct (ExtendedState before AsyncFeature)?
-- [ ] Using isset() for Helpers, not hasHelper()?
-- [ ] Self-transitions execute full lifecycle?
-
-### Step 4: Isolate the Problem
-
-```bash
-# Run just the failing test with verbose output
-ddev exec vendor/bin/phpunit --testdox --verbose tests/PHPUnit/.../FailingTest.php
-
-# Run with debug output
-ddev exec vendor/bin/phpunit --debug tests/PHPUnit/.../FailingTest.php
-```
-
-### Step 5: Fix Code, Not Test
-
-**Remember**: If the test correctly implements the spec, fix the code, not the test.
-
-## Quality Assurance
-
-### Before Committing
-
-```bash
-# Run all tests
-ddev exec vendor/bin/phpunit
-
-# Run quality checks
-ddev exec composer quality
-
-# Run full regression
-ddev atlas
-```
-
-All must pass before commit.
-
-### Coverage Considerations
-
-- Aim for high coverage of contract specs
-- Constraint specs should be covered
-- Detail specs coverage is optional
-- Integration tests often provide coverage for multiple unit specs
-
-## When to Load This Skill
-
-**Always load when:**
-- Writing tests for new features
-- Debugging failing tests
-- Reviewing test organization
-- Working on test infrastructure
-- User asks about testing patterns
-
-**Combine with:**
-- **specification** skill - for spec-to-test alignment
-- **core-development** skill - for implementation context
-- **region-development** skill - for machine testing patterns

@@ -1,12 +1,26 @@
-# Region Development Skill - State Machine Application Development
+# Region Development Skill - State Machine Application Protocol
 
-## Purpose
+## ⚡ CRITICAL MACHINE DEVELOPMENT RULES
 
-This skill covers **state-machine-based application development** using the Regions library. It focuses on YAML schema, syntax, RegionBuilder usage patterns, and building complete machines.
+**Guards MUST accept trigger** - `fn($t)` signature mandatory. ExtendedState MUST come before AsyncFeature. Initial state MANDATORY.
 
-## YAML Machine Schema
+---
 
-### Basic Structure
+## 🚫 ABSOLUTE RULES - NEVER VIOLATE
+
+| Rule | Violation = Consequence |
+|------|-------------------------|
+| **Guards MUST accept trigger: fn($t)** | STOP → Add trigger parameter |
+| **Handlers MUST be in container** | STOP → Add to container configuration |
+| **Initial state MUST be defined** | STOP → Add `initial:` field |
+| **ExtendedState BEFORE AsyncFeature** | STOP → Reorder features list |
+| **NO circular dependencies in container** | STOP → Refactor dependencies |
+
+---
+
+## 📋 YAML MACHINE SCHEMA REFERENCE
+
+### Basic Structure (MANDATORY)
 
 ```yaml
 name: machine_name
@@ -25,19 +39,27 @@ transitions:
     to: state_b
     guard: !php "return fn($t) => $t->ready;"
 
-initial: initial_state_name
+initial: initial_state_name  # MANDATORY
 final:
   - final_state_name
 ```
 
 ### State Definition
 
+**Elements:**
+- `name` - State identifier (string) - MANDATORY
+- `on` - Event → action mappings
+- `onEnter` - Callbacks when entering state
+- `onExit` - Callbacks when exiting state
+
+**Example:**
+
 ```yaml
 states:
   - name: idle
     on:
-      start:  # Event name
-        - handler: action.start_processing  # Service from container
+      start:
+        - handler: action.start_processing
     onEnter:
       - handler: action.log_entry
       - handler: action.initialize_resources
@@ -45,63 +67,36 @@ states:
       - handler: action.cleanup
 ```
 
-**Key Elements:**
-- `name` - State identifier (string)
-- `on` - Event → action mappings
-- `onEnter` - Callbacks when entering state
-- `onExit` - Callbacks when exiting state
-
-### Event Handlers
-
-Handlers reference services from the container:
-
-```yaml
-on:
-  request_received:
-    - handler: action.parse_request
-    - handler: action.validate_input
-    - handler: action.route_request
-```
-
-**Container Configuration:**
-```yaml
-container:
-  - id: action.parse_request
-    class: App\Actions\ParseRequest
-    arguments:
-      - '@service.logger'
-```
-
 ### Transitions
 
-Automatic transitions with guard conditions:
+**Guard requirements:**
+- MUST accept trigger parameter: `fn($t)`
+- MUST return boolean
+- First matching guard wins
+
+**Example:**
 
 ```yaml
 transitions:
   - from: idle
     to: processing
     guard: !php "return fn($t) => $t->type === 'start';"
-  
+
   - from: processing
     to: done
     guard: !php "return fn($t) => $t->status === 'complete';"
-  
+
   - from: processing
     to: error
     guard: !php "return fn($t) => isset($t->error);"
 ```
 
-**Guard Requirements:**
-- Must accept trigger parameter: `fn($t)`
-- Must return boolean
-- First matching guard wins
-
-### Initial and Final States
+### Initial and Final States (MANDATORY)
 
 ```yaml
-initial: idle  # State machine starts here
+initial: idle  # Machine starts here - MANDATORY
 
-final:  # Machine stops when reaching any of these
+final:  # Machine stops at any of these
   - done
   - error
   - cancelled
@@ -109,7 +104,7 @@ final:  # Machine stops when reaching any of these
 
 ### Extended State (Context)
 
-Shared data across states:
+**Shared data across states:**
 
 ```yaml
 context:
@@ -121,6 +116,7 @@ context:
 ```
 
 **Access in actions:**
+
 ```php
 public function __invoke(object $trigger, array $context): void
 {
@@ -131,7 +127,7 @@ public function __invoke(object $trigger, array $context): void
 
 ### Hierarchical States (Regions)
 
-States can contain child regions:
+**States containing child regions:**
 
 ```yaml
 states:
@@ -150,7 +146,7 @@ states:
 
 ### Orthogonal Regions (Parallel States)
 
-Multiple regions executing simultaneously:
+**Multiple regions executing simultaneously:**
 
 ```yaml
 states:
@@ -161,7 +157,7 @@ states:
           - name: fetching
           - name: processing
         initial: fetching
-      
+
       # Region 2: UI updates
       - states:
           - name: rendering
@@ -171,7 +167,7 @@ states:
 
 ### Spawn Configuration
 
-Dynamic child region creation:
+**Dynamic child region creation:**
 
 ```yaml
 states:
@@ -185,13 +181,13 @@ states:
           initial: worker_idle
 ```
 
-**Spawn Modes:**
+**Spawn modes:**
 - `PERSISTENT` - Child survives parent state changes (default)
 - `DYNAMIC` - Child destroyed when parent changes state
 
 ### Async Resolvers
 
-For lazy-loaded data:
+**Lazy-loaded data:**
 
 ```yaml
 context:
@@ -199,13 +195,14 @@ context:
     userData:
       handler: service.user_repository
       cacheKey: user_{{ userId }}
-    
+
     configuration:
       handler: service.config_loader
       cacheKey: app_config
 ```
 
-**Access in actions:**
+**Access:**
+
 ```php
 public function __invoke(object $trigger, array $context): void
 {
@@ -215,20 +212,12 @@ public function __invoke(object $trigger, array $context): void
 
 ### Templates
 
-Dynamic content generation:
+**Dynamic content generation:**
 
 ```yaml
 templates:
   greeting: "Hello, {{ name }}! Welcome to {{ app.name }}."
   error: "Error {{ code }}: {{ message }}"
-```
-
-**Usage:**
-```php
-$rendered = $templateEngine->render('greeting', [
-    'name' => 'Alice',
-    'app' => ['name' => 'MyApp']
-]);
 ```
 
 ### AI Integration
@@ -242,7 +231,9 @@ ai:
       maxTokens: 100
 ```
 
-## Container Configuration
+---
+
+## 🔧 CONTAINER CONFIGURATION
 
 ### Service Definition
 
@@ -250,13 +241,13 @@ ai:
 container:
   - id: service.logger
     class: Psr\Log\NullLogger
-  
+
   - id: service.database
     class: App\Database
     arguments:
       - '@service.config'
       - dsn: "mysql:host=localhost"
-  
+
   - id: action.process_request
     class: App\Actions\ProcessRequest
     arguments:
@@ -264,9 +255,9 @@ container:
       - '@service.database'
 ```
 
-**Key Elements:**
-- `id` - Service identifier for dependency injection
-- `class` - Fully qualified class name
+**Elements:**
+- `id` - Service identifier for dependency injection - MANDATORY
+- `class` - Fully qualified class name - MANDATORY
 - `arguments` - Constructor dependencies
   - `@service.name` - Reference to another service
   - Scalar values - Direct arguments
@@ -282,11 +273,13 @@ container:
       - timeout: 30
 ```
 
-## YAML Helpers
+---
+
+## 🔨 YAML HELPERS
 
 ### !php Helper
 
-Execute PHP code:
+**Execute PHP code:**
 
 ```yaml
 guard: !php "return fn($t) => $t->ready;"
@@ -295,7 +288,7 @@ handler: !php "return fn($t) => error_log($t->message);"
 
 ### !env Helper
 
-Access environment variables:
+**Access environment variables:**
 
 ```yaml
 container:
@@ -308,7 +301,7 @@ container:
 
 ### !service Helper
 
-Reference container services:
+**Reference container services:**
 
 ```yaml
 context:
@@ -316,7 +309,9 @@ context:
   config: !service service.config
 ```
 
-## RegionBuilder Patterns
+---
+
+## 💻 REGIONBUILDER PATTERNS
 
 ### Basic Construction
 
@@ -403,7 +398,9 @@ $result = Holon::fromYaml('machine.yaml', [
 ]);
 ```
 
-## Machine Execution Patterns
+---
+
+## 🚀 MACHINE EXECUTION PATTERNS
 
 ### Manual Event Loop
 
@@ -456,7 +453,9 @@ $region = (new RegionBuilder())
 $socket->on('data', fn($data) => $region->trigger((object)['type' => 'request', 'data' => $data]));
 ```
 
-## Example Machines
+---
+
+## 📚 EXAMPLE MACHINES
 
 ### Simple Counter
 
@@ -478,7 +477,7 @@ context:
 container:
   - id: action.increment
     class: !php "return fn($t, $ctx) => $ctx['counter']++;"
-  
+
   - id: action.decrement
     class: !php "return fn($t, $ctx) => $ctx['counter']--;"
 ```
@@ -492,14 +491,14 @@ states:
     on:
       connection:
         - handler: action.accept_connection
-    
+
   - name: processing
     on:
       request_parsed:
         - handler: action.route_request
       response_ready:
         - handler: action.send_response
-    
+
   - name: closing
     onEnter:
       - handler: action.close_connection
@@ -508,11 +507,11 @@ transitions:
   - from: listening
     to: processing
     guard: !php "return fn($t) => $t->type === 'connection';"
-  
+
   - from: processing
     to: listening
     guard: !php "return fn($t) => $t->type === 'response_sent';"
-  
+
   - from: processing
     to: closing
     guard: !php "return fn($t) => isset($t->error);"
@@ -532,47 +531,9 @@ container:
     class: App\Actions\CloseConnection
 ```
 
-### Worker Pool
+---
 
-```yaml
-name: worker_pool
-states:
-  - name: coordinating
-    spawn:
-      - guard: !php "return fn($t) => $t->type === 'spawn_worker';"
-        region:
-          states:
-            - name: idle
-              on:
-                task:
-                  - handler: action.process_task
-            
-            - name: busy
-              on:
-                complete:
-                  - handler: action.mark_complete
-          
-          transitions:
-            - from: idle
-              to: busy
-              guard: !php "return fn($t) => $t->type === 'task';"
-            
-            - from: busy
-              to: idle
-              guard: !php "return fn($t) => $t->type === 'complete';"
-          
-          initial: idle
-
-initial: coordinating
-
-container:
-  - id: action.process_task
-    class: App\Actions\ProcessTask
-  - id: action.mark_complete
-    class: App\Actions\MarkComplete
-```
-
-## Common Patterns
+## 🚨 COMMON PATTERNS
 
 ### State Check Guards
 
@@ -612,11 +573,11 @@ transitions:
   - from: processing
     to: error
     guard: !php "return fn($t) => isset($t->error);"
-  
+
   - from: error
     to: processing
     guard: !php "return fn($t) => $t->recovered;"
-  
+
   - from: error
     to: failed
     guard: !php "return fn($t) => $t->retries >= 3;"
@@ -625,31 +586,9 @@ final:
   - failed
 ```
 
-### Hierarchical Workflows
+---
 
-```yaml
-states:
-  - name: order_processing
-    regions:
-      - name: validation
-        states:
-          - name: checking_inventory
-          - name: verifying_payment
-          - name: confirmed
-        initial: checking_inventory
-        final: [confirmed]
-      
-      - name: fulfillment
-        states:
-          - name: pending
-          - name: picking
-          - name: packing
-          - name: shipped
-        initial: pending
-        final: [shipped]
-```
-
-## Debugging Machines
+## 🐛 DEBUGGING PROTOCOL
 
 ### Enable Logging
 
@@ -689,7 +628,9 @@ $context = $region->getContext();
 print_r($context);
 ```
 
-## Testing Machines
+---
+
+## 🧪 TESTING MACHINES PROTOCOL
 
 ### Using Machine Test Base Classes
 
@@ -700,21 +641,24 @@ class MyMachineTest extends ApplicationTestCase
 {
     protected function yaml(): string
     {
-        return file_get_contents(__DIR__ . '/../machines/my-machine/machine.yml');
+        return file_get_contents(__DIR__ . '/../../../machines/my-machine/machine.yml');
     }
-    
+
     protected function container(): iterable
     {
         return [
-            'action.handler' => fn($t) => $this->recordAction('handler', $t),
+            'service.name' => fn() => $this->mockService,
+            'action.handler' => function ($trigger) {
+                $this->recordAction('handler', $trigger);
+            },
         ];
     }
-    
+
     public function testMachineBehavior(): void
     {
         $region = $this->region();
         $region->trigger((object)['type' => 'test']);
-        
+
         $this->assertTrue($region->isInState('expected_state'));
     }
 }
@@ -730,17 +674,17 @@ class WebServerTest extends NetworkMachineTestCase
     public function testHandlesRequest(): void
     {
         $region = $this->region();
-        
+
         // Queue mock request
         $connection = $this->queueHttpRequest('GET', '/test');
-        
+
         // Execute machine
         $this->tickN($region, 10);
-        
+
         // Verify behavior
         $this->assertConnectionClosed($connection);
     }
-    
+
     protected function container(): iterable
     {
         return [
@@ -750,105 +694,115 @@ class WebServerTest extends NetworkMachineTestCase
 }
 ```
 
-## Feature-Specific AGENTS.md Files
+---
 
-When working on machines in `machines/`, check for feature-specific documentation:
+## 🔍 FEATURE-SPECIFIC CONTEXT PROTOCOL
+
+**EXECUTE when working on machines:**
 
 ```
-machines/
-└── webserver/
-    ├── machine.yml
-    ├── machine.php
-    ├── src/
-    └── AGENTS.md          # ← Load if exists
+STEP 1: Identify machine location
+  └─ machines/{machine-name}/
+
+STEP 2: Check for feature-specific docs
+  └─ CHECK: machines/{machine-name}/CLAUDE.md
+
+STEP 3: Load if exists
+  ├─ EXISTS → Load and follow instructions
+  └─ MISSING → Proceed with general guidance
 ```
 
-**Loading pattern:**
-```
-IF working on machine in machines/{machine-name}/
-THEN check for machines/{machine-name}/AGENTS.md
-IF exists THEN load and follow those instructions
-```
+---
 
-## Common Pitfalls
+## 🚨 VIOLATION PROTOCOLS
 
-### Pitfall 1: Guard Missing Trigger Parameter
+### Violation: Guard Missing Trigger Parameter
 
+**WRONG:**
 ```yaml
-# ❌ WRONG
 guard: !php "return fn() => true;"
+```
 
-# ✅ CORRECT
+**CORRECT:**
+```yaml
 guard: !php "return fn($t) => true;"
 ```
 
-### Pitfall 2: Handler Not in Container
+### Violation: Handler Not in Container
 
+**WRONG:**
 ```yaml
-# ❌ WRONG: Handler referenced but not defined
 on:
   event:
-    - handler: action.missing
+    - handler: action.missing  # Not defined in container
+```
 
-# ✅ CORRECT: Handler defined in container
+**CORRECT:**
+```yaml
 container:
   - id: action.missing
     class: App\Actions\Missing
+
+states:
+  - name: state
+    on:
+      event:
+        - handler: action.missing  # Now defined
 ```
 
-### Pitfall 3: Circular Dependencies
+### Violation: Circular Dependencies
 
+**WRONG:**
 ```yaml
-# ❌ WRONG: Service A depends on B, B depends on A
 container:
   - id: service.a
     class: ServiceA
     arguments: ['@service.b']
-  
+
   - id: service.b
     class: ServiceB
-    arguments: ['@service.a']
+    arguments: ['@service.a']  # Circular!
 ```
 
-### Pitfall 4: Wrong Feature Order
+**CORRECT:** Refactor to remove circular dependency.
 
+### Violation: Wrong Feature Order
+
+**WRONG:**
 ```yaml
-# ❌ WRONG: AsyncFeature before ExtendedState
 features:
   - Noem\State\Feature\Async\AsyncFeature
   - Noem\State\Feature\ExtendedState\ExtendedState
-
-# ✅ CORRECT: ExtendedState first
-features:
-  - Noem\State\Feature\ExtendedState\ExtendedState
-  - Noem\State\Feature\Async\AsyncFeature
 ```
 
-### Pitfall 5: Forgetting Initial/Final States
-
+**CORRECT:**
 ```yaml
-# ❌ WRONG: No initial state
-states:
-  - name: idle
-  - name: active
-
-# ✅ CORRECT: Initial state defined
-states:
-  - name: idle
-  - name: active
-initial: idle
+features:
+  - Noem\State\Feature\ExtendedState\ExtendedState  # First
+  - Noem\State\Feature\Async\AsyncFeature           # Second
 ```
 
-## Integration with Other Skills
+### Violation: Missing Initial State
 
-- **For specs** → Use specification skill
-- **For tests** → Use testing skill
-- **For core features** → Use core-development skill
-- **For documentation** → Use documentation skill
+**WRONG:**
+```yaml
+states:
+  - name: idle
+  - name: active
+# No initial state defined
+```
 
-## Reference
+**CORRECT:**
+```yaml
+states:
+  - name: idle
+  - name: active
+initial: idle  # MANDATORY
+```
 
-### Machine Directory Structure
+---
+
+## 📂 MACHINE DIRECTORY STRUCTURE
 
 ```
 machines/
@@ -859,31 +813,28 @@ machines/
     │   ├── Actions/
     │   ├── Services/
     │   └── container.php  # Container configuration
-    └── AGENTS.md          # Feature-specific docs (optional)
+    └── CLAUDE.md          # Feature-specific docs (optional)
 ```
 
-### Example Machines in Project
+---
 
+## 📚 PROJECT EXAMPLES
+
+**Example machines in project:**
 - `machines/webserver/` - HTTP server state machine
 - `machines/middleware-test-runner/` - Spec test executor
 
-### Related Documentation
-
+**Related documentation:**
 - `specs/machines/` - Machine specifications
 - `tests/PHPUnit/E2E/` - Machine tests
 - `src/Feature/Loader/` - YAML loader implementation
 
-## When to Load This Skill
+---
 
-**Always load when:**
-- Building state machine applications
-- Writing YAML machine configs
-- Working on machines in `machines/`
-- Debugging machine execution
-- Creating action handlers
+## 🔗 SKILL INTEGRATION
 
-**Combine with:**
-- **specification** skill - for machine specs
-- **testing** skill - for E2E testing
-- **core-development** skill - for feature usage
-- **documentation** skill - for machine docs
+**Load with these skills:**
+- **specification** - Machine specs
+- **testing** - E2E testing
+- **core-development** - Feature usage
+- **documentation** - Machine docs

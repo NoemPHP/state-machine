@@ -1,20 +1,35 @@
-# Core Development Skill - PHP Library & Framework Development
+# Core Development Skill - PHP Library Development Protocol
 
-## Purpose
+## ⚡ CRITICAL CORE PRINCIPLES
 
-This skill covers **PHP library and framework development** for the Regions project, including Chain/Middleware systems, Region/Builder core, Feature architecture, and advanced patterns.
+**Chain system uses LIFO** - Last registered middleware executes FIRST. Feature order matters. ExtendedState MUST precede AsyncFeature.
 
-## Core Components
+---
+
+## 🚫 ABSOLUTE RULES - NEVER VIOLATE
+
+| Rule | Violation = Consequence |
+|------|-------------------------|
+| **ExtendedState BEFORE AsyncFeature** | STOP → Reorder features → Schema error resolved |
+| **ChainMail service type = key** | STOP → Fix return type annotation |
+| **Guards MUST accept trigger parameter** | STOP → Add `fn(object $trigger)` |
+| **NEVER modify /vendor/** | STOP → Ask user for approval |
+| **ConfigAccessor: NEVER override __construct()** | STOP → Use initialize() instead |
+
+---
+
+## 🏗️ CORE COMPONENTS REFERENCE
 
 ### Region.php
 
-The state machine runtime. Handles:
+**State machine runtime. Handles:**
 - State storage and transitions
 - Event dispatch and action execution
 - Connected region management
 - Lifecycle callbacks (onEnter, onExit, on)
 
-**Key Methods:**
+**Critical methods:**
+
 ```php
 public function trigger(object $payload): void;              // Dispatch event
 public function isInState(string $state): bool;              // State check
@@ -22,44 +37,28 @@ public function isFinal(): bool;                             // Final state chec
 public function connect(Region $childRegion): void;          // Hierarchical composition
 ```
 
-**Critical Implementation Detail:**
-```php
-// ✅ FIXED: Connected regions now update state correctly
-foreach ($connections as $childRegion) {
-    $childRegion->processOneAction($payload);  // Properly handles:
-    //   1. Call action chain
-    //   2. Update $childRegion->currentState 
-    //   3. Call DoTransition chain
-}
-```
+**FIXED BUG**: Connected regions now correctly update state via `processOneAction()`.
 
 ### RegionBuilder.php
 
-Fluent API for constructing regions:
+**Fluent API for constructing regions.**
 
+**Key methods:**
 ```php
-$region = (new RegionBuilder())
-    ->enableFeatures($feature1, $feature2)
-    ->setStates('idle', 'processing', 'done')
-    ->markInitial('idle')
-    ->markFinal('done')
-    ->onEnter('processing', fn($t) => $this->startWork())
-    ->addBuildStep($customStep)
-    ->build($contextArgs);
+->enableFeatures(...$features)      // Register feature middleware
+->setStates(...$names)              // Define state names
+->markInitial($state)               // Designate initial state
+->markFinal($state)                 // Designate final state
+->on($state, $event, $callback)    // Register action
+->onEnter($state, $callback)        // Enter callback
+->onExit($state, $callback)         // Exit callback
+->addBuildStep(BuildStep $step)     // Custom build logic
+->build(array $args = [])           // Construct region
 ```
-
-**Key Methods:**
-- `enableFeatures(...$features)` - Register feature middleware
-- `setStates(...$names)` - Define state names
-- `markInitial($state)` / `markFinal($state)` - Designate special states
-- `on($state, $event, $callback)` - Register action
-- `onEnter($state, $callback)` / `onExit($state, $callback)` - Lifecycle callbacks
-- `addBuildStep(BuildStep $step)` - Custom build logic
-- `build(array $args = [])` - Construct the region
 
 ### Chain System
 
-LIFO (Last-In-First-Out) middleware execution:
+**LIFO (Last-In-First-Out) execution.**
 
 ```php
 $chain = new Chain();
@@ -70,12 +69,13 @@ $chain->link($middleware3);  // Registered last
 // Execution order: middleware3 → middleware2 → middleware1 → provider
 ```
 
-**Why LIFO?**
+**WHY LIFO:**
 - Last middleware wraps all previous middleware
 - Creates "Russian doll" pattern
-- Outer layers can intercept/modify inner layers
+- Outer layers intercept/modify inner layers
 
-**Common Pattern:**
+**Standard pattern:**
+
 ```php
 $chain = new Chain($defaultProvider);
 $chain->link(function($context, callable $next) {
@@ -88,42 +88,44 @@ $chain->link(function($context, callable $next) {
 
 ### ChainMail (DI Container)
 
-PSR-11 container with middleware-based configuration:
+**PSR-11 container with middleware-based configuration.**
 
-```php
-$chainMail = new ChainMail();
+**Protocol:**
 
-// Supply services
-$chainMail->supply(fn(): MyService => new MyService());
+```
+STEP 1: Create ChainMail
+  └─ $chainMail = new ChainMail();
 
-// Register middleware
-$chainMail->use(function(RegionBuilder $b, callable $next) {
-    // Modify builder
-    return $next($b);
-});
+STEP 2: Supply services
+  └─ $chainMail->supply(fn(): MyService => new MyService());
 
-// Execute middleware
-$chainMail->boot();
+STEP 3: Register middleware
+  └─ $chainMail->use(function(RegionBuilder $b, callable $next) { ... });
 
-// Retrieve services
-$service = $chainMail->get(MyService::class);
+STEP 4: Execute middleware
+  └─ $chainMail->boot();
+
+STEP 5: Retrieve services
+  └─ $service = $chainMail->get(MyService::class);
 ```
 
-**Critical Pattern**: Service type = key
+**CRITICAL PATTERN - Service Type = Key:**
 
+**WRONG:**
 ```php
-// ✅ CORRECT: Return type defines service key
-$chainMail->supply(fn(): MyService => new MyService());
-$service = $chainMail->get(MyService::class);  // Works
-
-// ❌ WRONG: Generic return type
 $chainMail->supply(fn(): object => new MyService());
-$service = $chainMail->get(MyService::class);  // Fails: Service not found
+$service = $chainMail->get(MyService::class);  // FAILS: Service not found
+```
+
+**CORRECT:**
+```php
+$chainMail->supply(fn(): MyService => new MyService());
+$service = $chainMail->get(MyService::class);  // SUCCESS
 ```
 
 ### Mesh (Helper Registry)
 
-Helper function registry implementing `ArrayAccess`:
+**Helper function registry with ArrayAccess.**
 
 ```php
 $mesh = new Mesh();
@@ -133,14 +135,25 @@ $mesh['helper'] = fn() => 'value';
 if (isset($mesh['helper'])) {
     $value = $mesh['helper']();
 }
-
-// ❌ WRONG: No hasHelper() method
-$mesh->hasHelper('helper');  // Error
 ```
 
-## Feature System
+**WRONG:**
+```php
+$mesh->hasHelper('helper');  // NO such method - use isset()
+```
+
+**CORRECT:**
+```php
+isset($mesh['helper'])  // Use isset() for checking
+```
+
+---
+
+## 🎯 FEATURE SYSTEM PROTOCOL
 
 ### Feature Interface
+
+**MANDATORY implementation:**
 
 ```php
 interface Feature
@@ -150,6 +163,8 @@ interface Feature
 ```
 
 ### Feature Implementation Pattern
+
+**Standard structure:**
 
 ```php
 <?php
@@ -163,18 +178,18 @@ class MyFeature implements Feature
 {
     public function __invoke(ChainMail $chainMail): void
     {
-        // 1. Supply services
+        // STEP 1: Supply services
         $this->supplyServices($chainMail);
-        
-        // 2. Register middleware
+
+        // STEP 2: Register middleware
         $this->registerMiddleware($chainMail);
     }
-    
+
     private function supplyServices(ChainMail $chainMail): void
     {
         $chainMail->supply(fn(): MyService => new MyService());
     }
-    
+
     private function registerMiddleware(ChainMail $chainMail): void
     {
         $chainMail->use(function(RegionBuilder $builder, callable $next) {
@@ -188,31 +203,34 @@ class MyFeature implements Feature
 
 ### Feature Dependencies & Ordering
 
-**CRITICAL**: Feature order matters due to Chain's LIFO execution.
+**CRITICAL - Feature order matters due to LIFO execution.**
 
-```php
-// Features enabled as: [A, B, C]
-// Execute as: A wraps (B wraps (C wraps provider))
-// Flow: A → B → C → provider → C → B → A
+```
+Features enabled as: [A, B, C]
+Execute as: A wraps (B wraps (C wraps provider))
+Flow: A → B → C → provider → C → B → A
 ```
 
-**Common Dependencies:**
+**Dependency Matrix:**
 
-| Feature | Must Come After | Reason |
-|---------|-----------------|--------|
-| `AsyncFeature` | `ExtendedState` | Extends the `context` schema |
-| Any feature | `RegionLoader` | Loader processes YAML/array configs first |
+| Feature | MUST Come After | Reason |
+|---------|----------------|--------|
+| `AsyncFeature` | `ExtendedState` | Extends `context` schema |
+| Any feature | `RegionLoader` | Loader processes YAML/array first |
 
-**Example:**
+**CORRECT ORDER:**
+
 ```php
-// ✅ CORRECT ORDER
 $builder->enableFeatures(
     new RegionLoader(),      // Always first for YAML/array loading
     new ExtendedState(),     // Creates base 'context' schema
     new AsyncFeature()       // Extends existing 'context' schema
 );
+```
 
-// ❌ WRONG ORDER
+**WRONG ORDER (CAUSES ERROR):**
+
+```php
 $builder->enableFeatures(
     new AsyncFeature(),      // Tries to extend non-existent schema
     new ExtendedState()      // Creates schema too late
@@ -220,11 +238,13 @@ $builder->enableFeatures(
 // Result: "Unexpected item 'context › resolvers'" validation error
 ```
 
-## Config Accessor Pattern
+---
+
+## 📋 CONFIG ACCESSOR PATTERN
 
 ### Problem
 
-Features accessing loader config with nested arrays is fragile:
+**Fragile nested array access:**
 
 ```php
 // ❌ OLD: Fragile, verbose, error-prone
@@ -236,7 +256,7 @@ $resolvers = $context['loader']['array']['context']['resolvers'];
 
 ### Solution
 
-Typed config accessors with fluent API:
+**Typed config accessors with fluent API:**
 
 ```php
 // ✅ NEW: Clean, type-safe, discoverable
@@ -251,7 +271,7 @@ foreach ($asyncConfig->resolvers() as $resolver) {
 
 ### Creating Config Accessors
 
-**Template** (reproducible pattern):
+**MANDATORY TEMPLATE:**
 
 ```php
 <?php
@@ -266,8 +286,8 @@ use Noem\State\Chains\Params\Config\ConfigAccessor;
 class MyFeatureConfig extends ConfigAccessor
 {
     // ⚠️ DO NOT override __construct() - it's final!
-    // ✅ Override initialize() instead for setup logic
-    
+    // ✅ Override initialize() instead
+
     protected function initialize(): void
     {
         // Optional: initialization logic
@@ -276,7 +296,7 @@ class MyFeatureConfig extends ConfigAccessor
 
     /**
      * Get widgets from loader config.
-     * 
+     *
      * @return array<string, mixed>
      */
     public function widgets(): array
@@ -285,7 +305,7 @@ class MyFeatureConfig extends ConfigAccessor
     }
 
     /**
-     * Check if widgets are configured.
+     * Check if widgets configured.
      */
     public function hasWidgets(): bool
     {
@@ -294,7 +314,7 @@ class MyFeatureConfig extends ConfigAccessor
 
     /**
      * Require specific widget or throw.
-     * 
+     *
      * @throws \RuntimeException
      */
     public function requireWidget(string $name): array
@@ -304,16 +324,16 @@ class MyFeatureConfig extends ConfigAccessor
 }
 ```
 
-**Base Methods** (in ConfigAccessor):
+**Base Methods (in ConfigAccessor):**
 - `get(string $path, mixed $default = null): mixed` - Get value at dot path
 - `has(string $path): bool` - Check if path exists
 - `require(string $path): mixed` - Get or throw exception
 
 **Usage in Feature:**
+
 ```php
-private function processConfig(
-    Chains\EnhanceRegionBuilder $enhanceRegionBuilder
-): void {
+private function processConfig(Chains\EnhanceRegionBuilder $enhanceRegionBuilder): void
+{
     $enhanceRegionBuilder->link(function (Params\BuildParams $context, callable $next) {
         $builder = $next($context);
 
@@ -321,7 +341,7 @@ private function processConfig(
         if (!$config->hasWidgets()) {
             return $builder;
         }
-        
+
         foreach ($config->widgets() as $widget) {
             // Process widgets...
         }
@@ -331,26 +351,25 @@ private function processConfig(
 }
 ```
 
-**Why This Pattern:**
+**Benefits:**
 - ✅ Type-safe with PHPDoc for IDE autocomplete
 - ✅ Discoverable - IDE shows all config methods
-- ✅ Isolated - Each feature owns its config domain
+- ✅ Isolated - Each feature owns config domain
 - ✅ Testable - Mock ConfigAccessor in tests
 - ✅ Consistent - Same pattern across features
 - ⚠️ Final constructor - Prevents signature breaking
 
 **Existing Accessors:**
 - `AsyncConfig` - Async feature resolver definitions
-- `LoaderConfig` - Common loader operations (shared across features)
+- `LoaderConfig` - Common loader operations
 
-## Middleware Chains
+---
 
-### Chain Types
+## 🔗 MIDDLEWARE CHAINS REFERENCE
 
-The builder uses multiple chains for different purposes:
+### Chain Types in RegionBuilder
 
 ```php
-// In RegionBuilder
 private Chains\Chain $featureChain;              // Feature registration
 private Chains\Chain $buildParamsChain;          // Build context initialization
 private Chains\Chain $enhanceRegionBuilderChain; // Builder modification
@@ -359,57 +378,57 @@ private Chains\Chain $produceRegion;             // Region construction
 
 ### Chain Usage Pattern
 
-```php
-// 1. Create chain with default provider
-$chain = new Chain(fn($context) => defaultBehavior($context));
+```
+STEP 1: Create chain with default provider
+  └─ $chain = new Chain(fn($context) => defaultBehavior($context));
 
-// 2. Link middleware (executed in LIFO order)
-$chain->link(function($context, callable $next) {
-    // Pre-processing
-    $context = modifyContext($context);
-    
-    // Call inner layers
-    $result = $next($context);
-    
-    // Post-processing
-    return enhanceResult($result);
-});
+STEP 2: Link middleware (executed LIFO)
+  └─ $chain->link(function($context, callable $next) {
+         // Pre-processing
+         $context = modifyContext($context);
+         // Call inner layers
+         $result = $next($context);
+         // Post-processing
+         return enhanceResult($result);
+     });
 
-// 3. Execute chain
-$result = $chain->call($initialContext);
+STEP 3: Execute chain
+  └─ $result = $chain->call($initialContext);
 ```
 
 ### EnhanceRegionBuilder Chain
 
-Most features add middleware here:
+**Most features add middleware here:**
 
 ```php
 $chainMail->use(function(RegionBuilder $builder, callable $next) {
-    // Get a chain from builder
+    // Get chain from builder
     $chain = $builder->getChain(Chains\EnhanceRegionBuilder::class);
-    
+
     // Link middleware
     $chain->link(function(BuildParams $context, callable $next) {
         $builder = $next($context);
-        
+
         // Modify builder based on config
         $config = $context->config(MyFeatureConfig::class);
         foreach ($config->widgets() as $widget) {
             $builder->onEnter($widget['state'], $widget['callback']);
         }
-        
+
         return $builder;
     });
-    
+
     return $next($builder);
 });
 ```
 
-## Critical Implementation Details
+---
+
+## 🚨 CRITICAL IMPLEMENTATION DETAILS
 
 ### Connected Regions State Update (FIXED)
 
-Previously, child regions weren't updating state when parent triggered actions. **This is now fixed:**
+**Previously broken. Now fixed:**
 
 ```php
 // In Region::processOneAction()
@@ -421,22 +440,24 @@ foreach ($connections as $childRegion) {
 }
 ```
 
-**Benefit**: All hierarchical state machines now work correctly.
+**Benefit**: All hierarchical state machines work correctly.
 
 ### Execution Order
 
-Actions execute BEFORE transitions:
+**Actions execute BEFORE transitions:**
 
-```php
+```
 $region->trigger($event);
-// Order:
-// 1. Action callbacks fire
-// 2. Guard evaluation
-// 3. Transition execution (if guard passes)
-// 4. onEnter callbacks for new state
+
+Order:
+1. Action callbacks fire
+2. Guard evaluation
+3. Transition execution (if guard passes)
+4. onEnter callbacks for new state
 ```
 
-**Test this behavior:**
+**Verification test:**
+
 ```php
 $sequence = [];
 $region
@@ -450,7 +471,7 @@ $this->assertEquals(['action', 'guard', 'enter:B'], $sequence);
 
 ### Spawn Behavior
 
-Spawn guards control CREATION, not propagation:
+**Guards control CREATION, not propagation:**
 
 - `guard = true` → NEW child spawned + receives trigger
 - `guard = false` → NO new spawn, but EXISTING children receive trigger
@@ -458,40 +479,40 @@ Spawn guards control CREATION, not propagation:
 
 ### AsyncFeature Task Lifecycle
 
-Tasks are cleaned up at the START of action dispatch:
+**Tasks cleaned up at START of action dispatch:**
 
 ```php
 // In deferTicksUntilActionComplete():
 // 1. Manual cleanup BEFORE callbacks
 // 2. Removes finished tasks from callbackTaskMap
 // 3. Prevents race conditions
-
-// ❌ AVOID: Multiple cleanup mechanisms
-// Why: Redundant cleanup creates race conditions when:
-//   - Old task finishes during tick but isn't cancelled until next tick
-//   - New task created with same callback before old task cancelled
-//   - Old task's cleanup callback removes new task's mapping
 ```
 
-**Task Identity**: WeakMap uses callback as key, so multiple sequential tasks from same callback must be carefully managed.
+**AVOID**: Multiple cleanup mechanisms create race conditions.
+
+**Task Identity**: WeakMap uses callback as key - manage sequential tasks carefully.
 
 ### Call::call Buffer Pattern
 
-`Call::call` returns generator's return value, NOT yielded values:
+**`Call::call` returns generator's return value, NOT yielded values:**
 
+**CORRECT:**
 ```php
-// ✅ CORRECT: Use buffer to accumulate content
 $buffer = [];
 yield Call::call(new Load($file), $buffer);
 $content = implode('', $buffer);  // Concatenate yielded characters
+```
 
-// ❌ WRONG: Generator return value is metadata
+**WRONG:**
+```php
 $content = yield Call::call(new Load($file));  // Returns null (metadata)
 ```
 
-**Why**: `StreamHandler` yields characters but returns wrapper_data metadata. The buffer parameter is the intended API for collecting I/O results.
+**WHY**: `StreamHandler` yields characters but returns wrapper_data metadata. Buffer parameter is intended API for collecting I/O results.
 
-## Code Conventions
+---
+
+## 💻 CODE CONVENTIONS
 
 ### File Headers
 
@@ -524,9 +545,10 @@ Noem\State\
 
 ### PHP Version & Features
 
-**Minimum**: PHP 8.4+
+**Minimum: PHP 8.4+**
 
-**Use modern features:**
+**USE modern features:**
+
 ```php
 // Union types
 public function process(User|Admin $actor): Result;
@@ -548,11 +570,13 @@ $result = match($status) {
 $value = $config?->get('key');
 ```
 
-## Available Features
+---
+
+## 🎛️ AVAILABLE FEATURES REFERENCE
 
 ### TransitionsFeature
 
-Automatic transitions based on guards:
+**Automatic transitions based on guards.**
 
 ```php
 use Noem\State\Feature\Transitions\{AddTransition, TransitionsFeature};
@@ -563,7 +587,7 @@ $region = (new RegionBuilder())
     ->build();
 ```
 
-**Key Behaviors:**
+**Key behaviors:**
 - Checks transitions after each action
 - Skips when state changed imperatively
 - Prevents transitions from final states
@@ -572,7 +596,7 @@ $region = (new RegionBuilder())
 
 ### ExtendedState
 
-Context data scoped to states/regions:
+**Context data scoped to states/regions.**
 
 ```php
 $region = (new RegionBuilder())
@@ -591,12 +615,14 @@ $counter = $context['counter'];
 
 ### AsyncFeature
 
-Coroutine-based async operations:
+**Coroutine-based async operations.**
+
+**REQUIRES ExtendedState first:**
 
 ```php
 $region = (new RegionBuilder())
     ->enableFeatures(
-        new ExtendedState(),  // Required before AsyncFeature
+        new ExtendedState(),  // MANDATORY before AsyncFeature
         new AsyncFeature()
     )
     ->build(['loader' => ['array' => [
@@ -611,45 +637,15 @@ $region = (new RegionBuilder())
     ]]]);
 ```
 
-**Key Capabilities:**
+**Capabilities:**
 - Lazy loading with cache
 - Cache invalidation
 - Task lifecycle management
 - WeakMap-based task tracking
 
-### TemplateFeature
-
-Dynamic content generation:
-
-```php
-$region = (new RegionBuilder())
-    ->enableFeatures(new TemplateFeature())
-    ->build(['loader' => ['array' => [
-        'templates' => [
-            'greeting' => 'Hello, {{ name }}!',
-        ]
-    ]]]);
-```
-
-### AiFeature
-
-AI integration for dynamic content:
-
-```php
-$region = (new RegionBuilder())
-    ->enableFeatures(new AiFeature())
-    ->build(['loader' => ['array' => [
-        'ai' => [
-            'prompts' => [
-                'welcome' => 'Generate a welcoming message',
-            ]
-        ]
-    ]]]);
-```
-
 ### RegionLoader
 
-Load from YAML/array configs:
+**Load from YAML/array configs.**
 
 ```php
 use Noem\State\Feature\Loader\RegionLoader;
@@ -659,11 +655,11 @@ $builder = $loader->fromYaml($yamlContent);
 $region = $builder->build();
 ```
 
-### Holon (Self-Contained Loader)
+### Holon (SelfContainedLoader)
 
-**Status**: ⚠️ Implementation exists, being renamed from `SelfContainedLoader`
+**⚠️ Implementation exists, being renamed from `SelfContainedLoader`**
 
-Complete machine bootstrap from YAML:
+**Complete machine bootstrap from YAML:**
 
 ```php
 // One-liner
@@ -683,12 +679,14 @@ $result = Holon::fromYaml('machine.yaml', [
 - Integrated event loop
 - Helper functions (php, env, service)
 
-**Pending Work:**
+**Pending work:**
 - Rename to Holon
 - Implement machine spawning via `spawn.machine`
 - Add container delegation support
 
-## Common Errors & Solutions
+---
+
+## 🚫 COMMON ERRORS & SOLUTIONS
 
 | Error | Cause | Solution |
 |-------|-------|----------|
@@ -698,10 +696,11 @@ $result = Holon::fromYaml('machine.yaml', [
 | `Undefined constant MetaType::Region` | Wrong MetaType | Use `ContextMetaType::get()` |
 | Tests fail after "working" change | Specs define contract | Fix code, not tests |
 
-## Reference Materials
+---
 
-### Key Classes
+## 📚 KEY CLASSES REFERENCE
 
+**Core:**
 - `src/Region.php` - State machine runtime
 - `src/RegionBuilder.php` - Builder API
 - `src/Chains/Chain.php` - LIFO middleware
@@ -709,24 +708,18 @@ $result = Holon::fromYaml('machine.yaml', [
 - `src/Feature/Feature.php` - Feature interface
 - `src/Chains/Params/Config/ConfigAccessor.php` - Config accessor base
 
-### Documentation
-
+**Documentation:**
 - `README.md` - Project overview
-- `AGENTS.md` - Bootstrap context
+- `CLAUDE.md` - Bootstrap context
 - `BUG_CONNECTED_REGIONS_STATE_UPDATE.md` - Hierarchical state fix
 - `SPAWN_INTEGRATION_PROPOSAL.md` - Machine spawning design
 
-## When to Load This Skill
+---
 
-**Always load when:**
-- Implementing core library features
-- Working with Chain/ChainMail/Mesh
-- Creating new features
-- Debugging middleware execution
-- Working with Region/RegionBuilder
+## 🔗 SKILL INTEGRATION
 
-**Combine with:**
-- **specification** skill - for spec-driven workflow
-- **testing** skill - for testing patterns
-- **region-development** skill - for usage examples
-- **documentation** skill - for documenting changes
+**Load with these skills:**
+- **specification** - Spec-driven workflow
+- **testing** - Testing patterns
+- **region-development** - Usage examples
+- **documentation** - Document changes

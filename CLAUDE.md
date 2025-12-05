@@ -129,25 +129,55 @@ Some tasks require loading MULTIPLE skills in sequence:
 
 **EXECUTE THIS PROTOCOL AFTER LOADING SKILLS:**
 
-```
-STEP 1: Identify if task involves specific component
-  ├─ Does task mention feature in /src/Feature/{FeatureName}/?
-  │  └─ YES → Check for /src/Feature/{FeatureName}/CLAUDE.md
-  │           ├─ EXISTS → LOAD IT NOW
-  │           │          OUTPUT: "✓ Loaded feature context: [path]"
-  │           └─ MISSING → OUTPUT: "No feature-specific context found"
-  │
-  └─ Does task mention machine in /machines/{machine-name}/?
-     └─ YES → Check for /machines/{machine-name}/CLAUDE.md
-              ├─ EXISTS → LOAD IT NOW
-              │          OUTPUT: "✓ Loaded machine context: [path]"
-              └─ MISSING → OUTPUT: "No machine-specific context found"
+### STEP 1: Identify Component Type
 
-STEP 2: If neither applies
-  └─ OUTPUT: "No component-specific context required"
+**If task mentions a feature (e.g., "AsyncFeature", "TransitionsFeature", "RegionLoader"):**
+
+```bash
+# Check for feature-specific CLAUDE.md
+# Pattern: /home/biont/Development/state-machine/src/Feature/{FeatureName}/CLAUDE.md
+# Example: /home/biont/Development/state-machine/src/Feature/Async/CLAUDE.md
+
+# Execute this command:
+test -f /home/biont/Development/state-machine/src/Feature/{FeatureName}/CLAUDE.md && echo "EXISTS" || echo "NOT FOUND"
 ```
 
-**Feature/machine-level CLAUDE.md files override general guidance.**
+**If task mentions a machine (e.g., "webserver", "middleware-test-runner"):**
+
+```bash
+# Check for machine-specific CLAUDE.md
+# Pattern: /home/biont/Development/state-machine/machines/{machine-name}/CLAUDE.md
+# Example: /home/biont/Development/state-machine/machines/webserver/CLAUDE.md
+
+# Execute this command:
+test -f /home/biont/Development/state-machine/machines/{machine-name}/CLAUDE.md && echo "EXISTS" || echo "NOT FOUND"
+```
+
+### STEP 2: Load If Found
+
+```
+IF file EXISTS:
+  ├─ LOAD using Read tool with absolute path
+  ├─ OUTPUT: "✓ Loaded component context: [absolute-path]"
+  └─ FOLLOW instructions in that file (they OVERRIDE general guidance)
+
+ELSE:
+  └─ OUTPUT: "No component-specific context needed"
+```
+
+### STEP 3: Quick Discovery Commands
+
+**List all features with CLAUDE.md:**
+```bash
+find /home/biont/Development/state-machine/src/Feature -name "CLAUDE.md"
+```
+
+**List all machines with CLAUDE.md:**
+```bash
+find /home/biont/Development/state-machine/machines -name "CLAUDE.md"
+```
+
+**⚠️ CRITICAL**: Component-level CLAUDE.md files OVERRIDE general guidance. Always prioritize component-specific instructions.
 
 ---
 
@@ -254,15 +284,21 @@ Done
 
 The project uses a modular feature system where features extend RegionBuilder capabilities:
 
-| Feature                | Purpose                                                 | Critical Notes                   |
-|------------------------|---------------------------------------------------------|----------------------------------|
-| **TransitionsFeature** | Automatic state transitions with guard conditions       | -                                |
-| **ExtendedState**      | Context data scoped to states/regions                   | ⚠️ MUST load before AsyncFeature |
-| **AsyncFeature**       | Coroutine-based async operations with task scheduling   | Requires ExtendedState first     |
-| **RegionLoader**       | Load machines from YAML/array configurations            | Often loaded first               |
-| **TemplateFeature**    | Dynamic content generation from templates               | -                                |
-| **AiFeature**          | AI integration for dynamic content generation           | -                                |
-| **SpawnFeature**       | Dynamic child region creation with lifecycle management | -                                |
+| Feature                  | Purpose                                                 | Critical Notes                   |
+|--------------------------|---------------------------------------------------------|----------------------------------|
+| **TransitionsFeature**   | Automatic state transitions with guard conditions       | Enabled by default               |
+| **ExtendedState**        | Context data scoped to states/regions                   | ⚠️ MUST load before AsyncFeature |
+| **AsyncFeature**         | Coroutine-based async operations with task scheduling   | Requires ExtendedState first     |
+| **RegionLoader**         | Load machines from YAML/array configurations            | Often loaded first; includes spawn functionality |
+| **Holon**                | Complete machine bootstrap from YAML (one-liner)        | Formerly SelfContainedLoader     |
+| **OrthogonalRegions**    | Parallel state execution via nested regions within states | Enables complex hierarchical machines |
+| **EventHooks**           | Before/After event hooks using PHP attributes           | Dispatches additional events around actions |
+| **NamedEvents**          | Named event subscriptions using PHP attributes          | Fine-grained event filtering     |
+| **ComponentsFeature**    | Entity/Component/System pattern for states              | Attach reusable behavior to states |
+| **JsonSchemaFeature**    | JSON schema validation for context configuration        | Extends context schema           |
+| **TemplateFeature**      | Dynamic content generation from templates               | Mustache-style templating        |
+| **AiFeature**            | AI integration for dynamic content generation           | Claude API integration           |
+| **ImperativeStateFeature** | ⚠️ NOT IMPLEMENTED - Placeholder for future feature   | -                                |
 
 **⚠️ CRITICAL**: Feature order matters! Features wrap each other in LIFO order. ExtendedState MUST come before AsyncFeature.
 
