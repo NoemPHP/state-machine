@@ -6,6 +6,7 @@ namespace Noem\State\Tests\Unit\Feature\Loader;
 
 use Noem\State\Feature\Loader\LoaderChains\TransformArray;
 use Noem\State\Feature\Loader\RegionLoader;
+use Noem\State\Feature\Includes\IncludesFeature;
 use Noem\State\Middleware\ChainMail;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
@@ -35,6 +36,9 @@ class TransformArrayChainRegistrationTest extends TestCase
             fn(\Noem\State\Chains\ConnectedRegions $connectedRegions): \Noem\State\Chains\Meta => new \Noem\State\Chains\Meta($connectedRegions),
             \Noem\State\Events::conjure()
         );
+
+        $includes = new IncludesFeature();
+        $includes($chainMail);
 
         $loader = new RegionLoader();
 

@@ -33,6 +33,16 @@ features:
         intent: Provides registry for tracking spawn configurations
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SpawnRegistryRegistrationTest.php
 
+      - acceptanceCriteria: RegionLoader registers ConvertYaml as a service
+        criticality: contract
+        intent: Makes YAML converter available for helpers to perform recursive parsing with consistent helper configuration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/ConvertYamlRegistrationTest.php
+
+      - acceptanceCriteria: RegionLoader registers YamlHelpers registry as a service
+        criticality: contract
+        intent: Provides extensible helper registration mechanism for features to add custom YAML tags
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/YamlHelpersRegistrationTest.php
+
   - name: yaml-conversion
     specs:
       - acceptanceCriteria: ConvertYaml parses valid YAML string into array
@@ -91,6 +101,165 @@ features:
         criticality: detail
         intent: Provides sensible default for helper usage
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/ContainerGetHelperDefaultTest.php
+
+  - name: yaml-helper-registration
+    description: Extensible YAML helper registration through YamlHelpers registry
+    specs:
+      - acceptanceCriteria: YamlHelpers registry stores helper functions by name
+        criticality: contract
+        intent: Enables features to contribute custom YAML tags by registering helper functions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/YamlHelpersStorageTest.php
+
+      - acceptanceCriteria: YamlHelpers registry returns empty array when no helpers registered
+        criticality: detail
+        intent: Provides sensible default for helper registry with no custom helpers
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/YamlHelpersEmptyTest.php
+
+      - acceptanceCriteria: YamlHelpers registry allows features to register multiple helpers
+        criticality: contract
+        intent: Supports features adding multiple custom YAML tags in single registration call
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/YamlHelpersMultipleTest.php
+
+      - acceptanceCriteria: YamlHelpers registry throws exception when duplicate helper name registered
+        criticality: constraint
+        intent: Prevents helper conflicts by requiring unique names ensuring predictable YAML parsing behavior
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/YamlHelpersDuplicateErrorTest.php
+
+      - acceptanceCriteria: ConvertYaml retrieves helpers from YamlHelpers registry
+        criticality: contract
+        intent: Uses dynamically registered helpers instead of static configuration enabling feature extensibility
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/ConvertYamlUsesRegistryTest.php
+
+      - acceptanceCriteria: ConvertYaml merges registry helpers with constructor-provided helpers
+        criticality: contract
+        intent: Supports both feature-registered helpers and user-provided helpers with constructor helpers taking precedence
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/ConvertYamlMergesHelpersTest.php
+
+  - name: yaml-include-helpers
+    description: File inclusion helpers for modular YAML composition
+    specs:
+      - acceptanceCriteria: RegionLoader declares dependency on IncludesFeature via RequiresFeature attribute
+        criticality: contract
+        intent: Ensures LoadFile chain is available through automatic dependency resolution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/RequiresIncludesFeatureTest.php
+
+      - acceptanceCriteria: "RegionLoader registers !include helper that uses LoadFile chain and ConvertYaml service from ChainMail"
+        criticality: contract
+        intent: Enables recursive YAML includes by reusing configured ConvertYaml instance for consistent helper availability across nesting levels
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Loader/IncludeHelperTest.php
+
+      - acceptanceCriteria: "RegionLoader registers !includeRelative helper that uses LoadFile chain and ConvertYaml service from ChainMail"
+        criticality: contract
+        intent: Enables recursive relative includes by reusing configured ConvertYaml instance with updated current file context
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Loader/IncludeRelativeHelperTest.php
+
+      - acceptanceCriteria: "!include resolves paths relative to configured basePath"
+        criticality: contract
+        intent: Provides predictable path resolution regardless of nesting depth using loader.array.includes.basePath
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Loader/IncludeBasePathTest.php
+
+      - acceptanceCriteria: "!include defaults to current working directory when basePath not configured"
+        criticality: detail
+        intent: Provides sensible default behavior using getcwd() as fallback basePath
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Loader/IncludeDefaultBasePathTest.php
+
+      - acceptanceCriteria: "!includeRelative first invocation resolves paths relative to basePath"
+        criticality: contract
+        intent: Uses basePath for initial include since no current file context exists yet
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Loader/IncludeRelativeFirstInvocationTest.php
+
+      - acceptanceCriteria: "!includeRelative subsequent invocations resolve paths relative to current file"
+        criticality: contract
+        intent: Enables portable YAML modules by resolving paths relative to the file being parsed after first invocation
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Loader/IncludeRelativeSubsequentTest.php
+
+      - acceptanceCriteria: "!include and !includeRelative replace tag with parsed YAML content"
+        criticality: contract
+        intent: Allows seamless composition of YAML structures by substituting include tags with file contents
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Loader/IncludeReplacementTest.php
+
+      - acceptanceCriteria: Include helpers use LoadFile chain to load file contents
+        criticality: contract
+        intent: Leverages extensible file loading infrastructure with middleware support for caching and path resolution
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Loader/IncludeUsesLoadFileChainTest.php
+
+      - acceptanceCriteria: "Nested !includeRelative maintains relative path chain through current file tracking"
+        criticality: contract
+        intent: Ensures correct path resolution in deeply nested relative includes by updating current file context
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Loader/IncludeRelativeNestedTest.php
+
+      - acceptanceCriteria: "!include re-parses included YAML with same helpers"
+        criticality: contract
+        intent: Enables nested includes and recursive YAML composition with consistent helper availability
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Loader/IncludeRecursiveTest.php
+
+      - acceptanceCriteria: "!includeRelative re-parses included YAML with updated helper context"
+        criticality: contract
+        intent: Updates current file reference in helpers to maintain correct relative resolution chain
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Loader/IncludeRelativeRecursiveTest.php
+
+      - acceptanceCriteria: "!include handles absolute paths without basePath modification"
+        criticality: constraint
+        intent: Allows explicit absolute paths to bypass basePath resolution for system-level includes
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Loader/IncludeAbsolutePathTest.php
+
+      - acceptanceCriteria: "!includeRelative handles absolute paths without relative resolution"
+        criticality: constraint
+        intent: Allows explicit absolute paths to bypass current file resolution for system-level includes
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Loader/IncludeRelativeAbsolutePathTest.php
+
+      - acceptanceCriteria: Include helpers throw RuntimeException when LoadFile chain fails
+        criticality: constraint
+        intent: Propagates clear error feedback when included files are missing or inaccessible
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Loader/IncludeFileErrorTest.php
+
+      - acceptanceCriteria: "Nested !include preserves all registered helpers from YamlHelpers registry"
+        criticality: contract
+        intent: Validates that custom helpers registered by features work correctly in deeply nested includes
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Loader/NestedIncludePreservesHelpersTest.php
+
+  - name: include-depth-limiting
+    description: Prevent infinite recursion in nested includes via depth tracking in helpers
+    specs:
+      - acceptanceCriteria: IncludeHelper tracks recursion depth across nested YAML includes
+        criticality: contract
+        intent: Automatically monitors nested includes without requiring consumers to manually track depth, preventing infinite recursion
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/IncludeHelperDepthTrackingTest.php
+
+      - acceptanceCriteria: IncludeRelativeHelper tracks recursion depth across nested YAML includes
+        criticality: contract
+        intent: Automatically monitors nested relative includes without requiring consumers to manually track depth, preventing infinite recursion
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/IncludeRelativeHelperDepthTrackingTest.php
+
+      - acceptanceCriteria: IncludeHelper throws RuntimeException when recursion depth exceeds MAX_INCLUDE_DEPTH
+        criticality: constraint
+        intent: Enforces depth limit preventing stack overflow with clear error message indicating the problematic file path
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/IncludeHelperDepthEnforcementTest.php
+
+      - acceptanceCriteria: IncludeRelativeHelper throws RuntimeException when recursion depth exceeds MAX_INCLUDE_DEPTH
+        criticality: constraint
+        intent: Enforces depth limit preventing stack overflow with clear error message indicating the problematic file path
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/IncludeRelativeHelperDepthEnforcementTest.php
+
+      - acceptanceCriteria: Include helpers increment depth before recursive ConvertYaml invocation
+        criticality: constraint
+        intent: Ensures depth is tracked before processing nested YAML content, preventing bypasses
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/IncludeHelperDepthIncrementTimingTest.php
+
+      - acceptanceCriteria: Include helpers reset depth tracking after successful or failed invocation
+        criticality: constraint
+        intent: Properly cleans up depth tracking when returning from nested calls, preventing depth accumulation across unrelated invocations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/IncludeHelperDepthResetTest.php
+
+      - acceptanceCriteria: Include helpers maintain independent depth counters per helper instance
+        criticality: constraint
+        intent: Ensures parallel include chains don't interfere with each other's depth tracking
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/IncludeHelperDepthIndependenceTest.php
+
+      - acceptanceCriteria: Include helpers use MAX_INCLUDE_DEPTH constant of 10 as default limit
+        criticality: detail
+        intent: Provides reasonable default depth limit that prevents most accidental recursion while allowing practical nesting
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/IncludeHelperDepthLimitDefaultTest.php
 
   - name: array-processing
     specs:

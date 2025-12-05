@@ -7,6 +7,7 @@ namespace Noem\State\Tests\Unit\Feature\Loader;
 use Noem\State\Chains\ConnectedRegions;
 use Noem\State\Feature\Loader\LoaderChains\SpawnRegion;
 use Noem\State\Feature\Loader\RegionLoader;
+use Noem\State\Feature\Includes\IncludesFeature;
 use Noem\State\Middleware\ChainMail;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
@@ -36,6 +37,9 @@ class SpawnRegionChainRegistrationTest extends TestCase
             fn(ConnectedRegions $connectedRegions): \Noem\State\Chains\Meta => new \Noem\State\Chains\Meta($connectedRegions),
             \Noem\State\Events::conjure()
         );
+
+        $includes = new IncludesFeature();
+        $includes($chainMail);
 
         $loader = new RegionLoader();
         $loader($chainMail);

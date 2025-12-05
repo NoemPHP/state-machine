@@ -2,28 +2,28 @@
 
 declare(strict_types=1);
 
-namespace Noem\State\Tests\Unit\Feature\Loader;
+namespace Noem\State\Tests\PHPUnit\Unit\Feature\Loader;
 
-use Noem\State\Feature\Loader\LoaderChains\Schema;
+use Noem\State\Feature\Loader\ConvertYaml;
 use Noem\State\Feature\Loader\RegionLoader;
-use Noem\State\Feature\Includes\IncludesFeature;
 use Noem\State\Middleware\ChainMail;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Acceptance Criterion: RegionLoader registers Schema chain as a service
+ * Acceptance Criterion: RegionLoader registers ConvertYaml as a service
  */
-#[Group('loader')]
-#[Group('feature-registration')]
-class SchemaChainRegistrationTest extends TestCase
+#[Group('loader'), Group('feature-registration')]
+class ConvertYamlRegistrationTest extends TestCase
 {
-    public function testRegistersSchemaChain(): void
+    public function testRegistersConvertYamlService(): void
     {
+        // Arrange
         $chainMail = new ChainMail();
         // RegionLoader depends on services normally registered by RegionBuilder
+        $connectedRegions = new \Noem\State\Chains\ConnectedRegions();
         $chainMail->supply(
-            fn(): \Noem\State\Chains\ConnectedRegions => new \Noem\State\Chains\ConnectedRegions(),
+            fn(): \Noem\State\Chains\ConnectedRegions => $connectedRegions,
             fn(): \Noem\State\Chains\EnhanceRegionBuilder => new \Noem\State\Chains\EnhanceRegionBuilder(),
             fn(): \Noem\State\Chains\ValidateCallback => new \Noem\State\Chains\ValidateCallback(),
             fn(): \Noem\State\Chains\PrepareInvokable => new \Noem\State\Chains\PrepareInvokable(),
@@ -37,15 +37,18 @@ class SchemaChainRegistrationTest extends TestCase
             \Noem\State\Events::conjure()
         );
 
-        $includes = new IncludesFeature();
+        // RegionLoader requires IncludesFeature
+        $includes = new \Noem\State\Feature\Includes\IncludesFeature();
         $includes($chainMail);
 
-        $loader = new RegionLoader();
+        $feature = new RegionLoader();
 
-        $loader($chainMail);
+        // Act
+        $feature($chainMail);
+        $chainMail->boot();
 
-        $schema = $chainMail->get(Schema::class);
-
-        $this->assertInstanceOf(Schema::class, $schema);
+        // Assert
+        $converter = $chainMail->get(ConvertYaml::class);
+        $this->assertInstanceOf(ConvertYaml::class, $converter);
     }
 }

@@ -9,15 +9,50 @@ use Symfony\Component\Yaml\Yaml;
 
 readonly class ConvertYaml
 {
-    public function fromString(string $yaml, array $helpers): array
+    /**
+     * @param YamlHelpers|null $yamlHelpers Optional registry for feature-registered helpers
+     * @param array<string, callable> $constructorHelpers Optional helpers provided at construction time
+     */
+    public function __construct(
+        private ?YamlHelpers $yamlHelpers = null,
+        private array $constructorHelpers = []
+    ) {
+    }
+
+    /**
+     * Convert YAML string to array, processing custom tags with helpers.
+     *
+     * @param string $yaml The YAML string to parse
+     * @param array $additionalHelpers Optional helpers to merge with registry helpers (take precedence)
+     * @return array The parsed array
+     */
+    public function fromString(string $yaml, array $additionalHelpers = []): array
     {
-        $array = Yaml::parse(
+        // Merge helpers: registry → constructor → additional (later takes precedence)
+        $helpers = $this->yamlHelpers?->getHelpers() ?? [];
+        $helpers = array_merge($helpers, $this->constructorHelpers, $additionalHelpers);
+
+        $parsed = Yaml::parse(
             $yaml,
             Yaml::PARSE_CUSTOM_TAGS
         );
-        $this->processArray($array, $helpers);
 
-        return $array;
+        // Handle top-level TaggedValue (e.g., entire YAML is "!include file")
+        if ($parsed instanceof TaggedValue) {
+            $parsed = $this->resolveHelper($parsed, $helpers);
+        }
+
+        // Ensure we have an array after processing top-level tags
+        if (!is_array($parsed)) {
+            throw new \RuntimeException('YAML must resolve to an array structure');
+        }
+
+        // Process the array recursively to handle any nested TaggedValues
+        // This is needed even if we resolved a top-level tag, as the result
+        // may contain nested tags
+        $this->processArray($parsed, $helpers);
+
+        return $parsed;
     }
 
     /**

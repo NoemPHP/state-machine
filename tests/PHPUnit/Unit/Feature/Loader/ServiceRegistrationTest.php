@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Noem\State\Tests\Unit\Feature\Loader;
 
 use Noem\State\Chains\ConnectedRegions;
+use Noem\State\Feature\Includes\IncludesFeature;
 use Noem\State\Feature\Loader\Container;
 use Noem\State\Feature\Loader\LoaderChains\Schema;
 use Noem\State\Feature\Loader\LoaderChains\SpawnRegion;
@@ -40,6 +41,10 @@ class ServiceRegistrationTest extends TestCase
             fn(ConnectedRegions $connectedRegions): \Noem\State\Chains\Meta => new \Noem\State\Chains\Meta($connectedRegions),
             \Noem\State\Events::conjure()
         );
+
+        // RegionLoader now requires IncludesFeature
+        $includes = new IncludesFeature();
+        $includes($chainMail);
 
         $loader = new RegionLoader();
         $loader($chainMail);

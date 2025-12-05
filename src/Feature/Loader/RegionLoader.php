@@ -11,10 +11,14 @@ use Noem\State\Chains\Params;
 use Noem\State\Connection;
 use Noem\State\Connection as C;
 use Noem\State\Feature\Feature;
+use Noem\State\Feature\Includes\Chains\LoadFile;
+use Noem\State\Feature\Includes\IncludesFeature;
+use Noem\State\Feature\Includes\LoadFileParams;
 use Noem\State\Feature\Loader\LoaderChains\Params\SchemaContext;
 use Noem\State\Feature\Loader\LoaderChains\Params\SpawnRegionParams;
 use Noem\State\Feature\Loader\LoaderChains\Schema;
 use Noem\State\Feature\Loader\LoaderChains\TransformArray;
+use Noem\State\Feature\RequiresFeature;
 use Noem\State\Middleware\Chain;
 use Noem\State\Middleware\ChainException;
 use Noem\State\Middleware\ChainMail;
@@ -31,6 +35,7 @@ use Noem\State\Util\ParameterDeriver;
  * It can load configurations from YAML input using the fromYaml() method
  * or from PHP arrays using the fromArray() method.
  */
+#[RequiresFeature(IncludesFeature::class)]
 class RegionLoader implements Feature
 {
     /**
@@ -45,6 +50,8 @@ class RegionLoader implements Feature
                 fn(): LoaderChains\TransformArray => new LoaderChains\TransformArray(),
                 fn(ConnectedRegions $c): LoaderChains\SpawnRegion => new LoaderChains\SpawnRegion($c),
                 fn(): RegionSpawnRegistry => new RegionSpawnRegistry(),
+                fn(): YamlHelpers => new YamlHelpers(),
+                fn(YamlHelpers $yamlHelpers): ConvertYaml => new ConvertYaml($yamlHelpers),
             );
 
         // Call methods directly instead of using $chainMail->use()
@@ -63,15 +70,22 @@ class RegionLoader implements Feature
         EnhanceRegionBuilder $builderEnhancer,
         Schema               $schema,
         TransformArray       $transformArray,
+        LoadFile $loadFile,
+        ConvertYaml $convertYaml,
+        YamlHelpers $yamlHelpers,
     ): void
     {
+        // Register include helpers in the registry so they're available recursively
         $builderEnhancer->link(
             function (
                 Params\BuildParams $args,
                 callable           $next,
             ) use (
                 $schema,
-                $transformArray
+                $transformArray,
+                $loadFile,
+                $convertYaml,
+                $yamlHelpers
             ): RegionBuilder {
                 if (!isset($args['loader'])) {
                     return $next($args);
@@ -86,7 +100,18 @@ class RegionLoader implements Feature
                     $data = is_readable($data)
                         ? file_get_contents($data)
                         : $data;
-                    $array = new ConvertYaml()->fromString($data, $loaderArgs['yamlHelpers'] ?? []);
+
+                    // Register include helpers if not already registered
+                    $this->registerIncludeHelpers(
+                        $yamlHelpers,
+                        $loadFile,
+                        $args,
+                        $convertYaml,
+                        new LoadFileParams('', $args)
+                    );
+
+                    // User-provided helpers passed as additional (take precedence)
+                    $array = $convertYaml->fromString($data, $loaderArgs['yamlHelpers'] ?? []);
                     $loaderArgs['array'] = $array;
                     $args['loader'] = $loaderArgs;
                 }
@@ -100,6 +125,42 @@ class RegionLoader implements Feature
                 return $next($args);
             }
         );
+    }
+
+    /**
+     * Register include helpers in YamlHelpers registry if not already registered.
+     *
+     * This ensures include helpers are available recursively when parsing nested includes.
+     */
+    private function registerIncludeHelpers(
+        YamlHelpers $yamlHelpers,
+        LoadFile $loadFile,
+        Params\BuildParams $buildParams,
+        ConvertYaml $convertYaml,
+        LoadFileParams $currentParams
+    ): void
+    {
+        // Check if already registered to avoid duplicate registration errors
+        $existingHelpers = $yamlHelpers->getHelpers();
+
+        if (!isset($existingHelpers['include'])) {
+            $yamlHelpers->register('include', new Helper\IncludeHelper(
+                $loadFile,
+                $buildParams,
+                $convertYaml,
+                $currentParams
+            ));
+        }
+
+        if (!isset($existingHelpers['includeRelative'])) {
+            $yamlHelpers->register('includeRelative', new Helper\IncludeRelativeHelper(
+                $loadFile,
+                $buildParams,
+                $convertYaml,
+                $currentParams,
+                null // No current file for initial invocation
+            ));
+        }
     }
 
     /**
