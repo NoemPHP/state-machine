@@ -159,3 +159,21 @@ features:
         criticality: contract
         intent: Verifies queued events process in FIFO order with proper batch handling, enabling efficient deferred event execution
         test: vendor/bin/phpunit tests/PHPUnit/Integration/Core/Region/QueuedEventBatchTest.php
+
+  - name: notification-subscription
+    description: Global listener registration API
+    specs:
+      - acceptanceCriteria: Region.on() delegates to NotificationChain.subscribe()
+        criticality: contract
+        intent: Provides convenient listener registration API that delegates to chain's subscribe method
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/OnDelegatesToSubscribeTest.php
+
+      - acceptanceCriteria: Region.on() returns deregister function from chain
+        criticality: contract
+        intent: Exposes chain's deregister function through Region API for listener cleanup
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/OnReturnsDeregisterTest.php
+
+      - acceptanceCriteria: Listeners receive Region as optional second parameter
+        criticality: contract
+        intent: Enables listeners to identify event source Region, supporting filtering and nested region patterns
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/ListenerRegionParameterTest.php

@@ -1,0 +1,45 @@
+name: subscription
+group: features
+description: Type-based listener filtering with direct parameter inspection and caching, plus optional BoundAccess integration
+
+features:
+  - name: type-filtering
+    description: Inspects and filters listeners by first parameter type
+    specs:
+      - acceptanceCriteria: Feature inspects parameter types directly on returned listeners
+        criticality: contract
+        intent: Filters listeners by inspecting first parameter type without wrapping, keeping implementation simple
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Subscription/DirectTypeInspectionTest.php
+
+      - acceptanceCriteria: Feature uses SplObjectStorage to cache listener parameter types
+        criticality: detail
+        intent: Optimizes repeated type lookups by caching reflection results per listener, improving performance
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Subscription/TypeCacheTest.php
+
+      - acceptanceCriteria: Feature filters listeners by parameter type compatibility
+        criticality: contract
+        intent: Returns only listeners whose first parameter accepts the event type, enabling type-safe subscriptions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Subscription/TypeFilterTest.php
+
+      - acceptanceCriteria: Listeners with object typehint match all events
+        criticality: contract
+        intent: Enables catch-all listeners that receive every event regardless of specific type
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Subscription/CatchAllTest.php
+
+      - acceptanceCriteria: Type filtering supports inheritance and interface implementation
+        criticality: contract
+        intent: Listeners accepting base types receive events of derived types, following Liskov substitution principle
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Subscription/InheritanceFilteringTest.php
+
+  - name: bound-access-integration
+    description: Optional ExtendedState integration for emitting events from state callbacks
+    specs:
+      - acceptanceCriteria: Feature integrates NotificationChain with BoundAccess when ExtendedState enabled
+        criticality: contract
+        intent: Makes NotificationChain accessible in state callbacks via this.notificationChain for internal event emission
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Subscription/BoundAccessIntegrationTest.php
+
+      - acceptanceCriteria: State callbacks can emit events via this.notificationChain
+        criticality: contract
+        intent: Enables state entry/exit logic to notify subscribers directly, supporting observer patterns within state machine
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Subscription/StateCallbackEmitTest.php
