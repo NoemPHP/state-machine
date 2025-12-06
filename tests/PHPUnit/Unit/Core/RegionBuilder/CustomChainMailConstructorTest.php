@@ -34,6 +34,7 @@ class CustomChainMailConstructorTest extends TestCase
             fn(ConnectedRegions $connectedRegions): \Noem\State\Chains\Meta => new \Noem\State\Chains\Meta($connectedRegions),
             fn(): \Noem\State\Chains\Set => new \Noem\State\Chains\Set(),
             fn(): \Noem\State\Chains\Get => new \Noem\State\Chains\Get(),
+            fn(): \Noem\State\Chains\Notification => new \Noem\State\Chains\Notification(),
             Events::conjure(),
             fn(ConnectedRegions $connections): \Noem\State\Chains\Path => new \Noem\State\Chains\Path($connections)
         );

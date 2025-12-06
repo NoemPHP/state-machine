@@ -6,6 +6,7 @@ namespace Noem\State\Tests\Unit\Core\Region;
 
 use Noem\State\Chains\DispatchAction;
 use Noem\State\Chains\DoTransition;
+use Noem\State\Chains\Notification;
 use Noem\State\Chains\Path;
 use Noem\State\Events;
 use Noem\State\Region;
@@ -52,6 +53,7 @@ class CurrentStateTrackingTest extends TestCase
         $actionChain->shouldReceive('link');
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
+        $notificationChain = \Mockery::mock(Notification::class);
 
         // Action chain should return the current state by default
         $actionChain->shouldReceive('call')
@@ -64,7 +66,8 @@ class CurrentStateTrackingTest extends TestCase
             $final,
             $actionChain,
             $transitionChain,
-            $pathChain
+            $pathChain,
+            $notificationChain
         );
     }
 

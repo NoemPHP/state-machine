@@ -6,6 +6,7 @@ namespace Noem\State\Tests\Unit\Core\Region;
 
 use Noem\State\Chains\DispatchAction;
 use Noem\State\Chains\DoTransition;
+use Noem\State\Chains\Notification;
 use Noem\State\Chains\Path;
 use Noem\State\Chains\Params\Action;
 use Noem\State\Events;
@@ -28,6 +29,8 @@ class EventQueueClearingTest extends TestCase
 
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
+        $notificationChain = \Mockery::mock(Notification::class);
+        $notificationChain = \Mockery::mock(Notification::class);
 
         $callCount = 0;
         $actionChain->shouldReceive('call')
@@ -42,7 +45,8 @@ class EventQueueClearingTest extends TestCase
             'final',
             $actionChain,
             $transitionChain,
-            $pathChain
+            $pathChain,
+            $notificationChain
         );
 
         // Enqueue 3 events
@@ -70,6 +74,8 @@ class EventQueueClearingTest extends TestCase
 
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
+        $notificationChain = \Mockery::mock(Notification::class);
+        $notificationChain = \Mockery::mock(Notification::class);
 
         $processedIds = [];
         $actionChain->shouldReceive('call')
@@ -84,7 +90,8 @@ class EventQueueClearingTest extends TestCase
             'final',
             $actionChain,
             $transitionChain,
-            $pathChain
+            $pathChain,
+            $notificationChain
         );
 
         $region->trigger((object)['id' => 1], true);

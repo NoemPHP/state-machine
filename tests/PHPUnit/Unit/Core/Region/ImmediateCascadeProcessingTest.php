@@ -6,6 +6,7 @@ namespace Noem\State\Tests\Unit\Core\Region;
 
 use Noem\State\Chains\DispatchAction;
 use Noem\State\Chains\DoTransition;
+use Noem\State\Chains\Notification;
 use Noem\State\Chains\Path;
 use Noem\State\Events;
 use Noem\State\Region;
@@ -27,6 +28,8 @@ class ImmediateCascadeProcessingTest extends TestCase
 
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
+        $notificationChain = \Mockery::mock(Notification::class);
+        $notificationChain = \Mockery::mock(Notification::class);
 
         $processedEvents = [];
         $actionChain->shouldReceive('call')
@@ -41,7 +44,8 @@ class ImmediateCascadeProcessingTest extends TestCase
             'final',
             $actionChain,
             $transitionChain,
-            $pathChain
+            $pathChain,
+            $notificationChain
         );
 
         $events->shouldReceive('onEnterState')
@@ -66,6 +70,8 @@ class ImmediateCascadeProcessingTest extends TestCase
 
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
+        $notificationChain = \Mockery::mock(Notification::class);
+        $notificationChain = \Mockery::mock(Notification::class);
 
         $sequence = [];
         
@@ -89,7 +95,8 @@ class ImmediateCascadeProcessingTest extends TestCase
             'final',
             $actionChain,
             $transitionChain,
-            $pathChain
+            $pathChain,
+            $notificationChain
         );
 
         $region->onEnterParent((object)['step' => 'original']);

@@ -6,6 +6,7 @@ namespace Noem\State\Tests\Unit\Core\Region;
 
 use Noem\State\Chains\DispatchAction;
 use Noem\State\Chains\DoTransition;
+use Noem\State\Chains\Notification;
 use Noem\State\Chains\Path;
 use Noem\State\Chains\Params\Action;
 use Noem\State\Events;
@@ -28,6 +29,8 @@ class ActionChainContextTest extends TestCase
 
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
+        $notificationChain = \Mockery::mock(Notification::class);
+        $notificationChain = \Mockery::mock(Notification::class);
 
         $actionChain->shouldReceive('call')
             ->once()
@@ -40,7 +43,8 @@ class ActionChainContextTest extends TestCase
             'final',
             $actionChain,
             $transitionChain,
-            $pathChain
+            $pathChain,
+            $notificationChain
         );
 
         $region->trigger((object)['data' => 'test'], false);
@@ -56,6 +60,8 @@ class ActionChainContextTest extends TestCase
 
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
+        $notificationChain = \Mockery::mock(Notification::class);
+        $notificationChain = \Mockery::mock(Notification::class);
 
         $capturedRegion = null;
         $actionChain->shouldReceive('call')
@@ -70,7 +76,8 @@ class ActionChainContextTest extends TestCase
             'final',
             $actionChain,
             $transitionChain,
-            $pathChain
+            $pathChain,
+            $notificationChain
         );
 
         $region->trigger((object)['data' => 'test'], false);
@@ -86,6 +93,8 @@ class ActionChainContextTest extends TestCase
 
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
+        $notificationChain = \Mockery::mock(Notification::class);
+        $notificationChain = \Mockery::mock(Notification::class);
 
         $capturedPayload = null;
         $actionChain->shouldReceive('call')
@@ -100,7 +109,8 @@ class ActionChainContextTest extends TestCase
             'final',
             $actionChain,
             $transitionChain,
-            $pathChain
+            $pathChain,
+            $notificationChain
         );
 
         $payload = (object)['id' => 123, 'name' => 'test'];
@@ -117,6 +127,8 @@ class ActionChainContextTest extends TestCase
 
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
+        $notificationChain = \Mockery::mock(Notification::class);
+        $notificationChain = \Mockery::mock(Notification::class);
 
         $capturedState = null;
         $actionChain->shouldReceive('call')
@@ -131,7 +143,8 @@ class ActionChainContextTest extends TestCase
             'final',
             $actionChain,
             $transitionChain,
-            $pathChain
+            $pathChain,
+            $notificationChain
         );
 
         $region->trigger((object)['data' => 'test'], false);

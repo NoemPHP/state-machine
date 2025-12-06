@@ -30,6 +30,7 @@ class Region
         private readonly Chains\DispatchAction $actionChain,
         private readonly Chains\DoTransition   $transitionChain,
         private readonly Chains\Path           $path,
+        public readonly Chains\Notification    $notificationChain,
     )
     {
         $this->currentState = $initial;
@@ -147,5 +148,21 @@ class Region
     public function currentState(): string
     {
         return $this->currentState;
+    }
+
+    /**
+     * Register a listener for notifications (globally)
+     *
+     * Convenience wrapper for NotificationChain::subscribe().
+     * Listeners receive event as first param, Region as optional second.
+     * Listeners are GLOBAL - they receive events from all regions.
+     *
+     * @param callable $listener Callback (object $event, ?Region $region)
+     * @return callable Deregister function
+     */
+    public function on(callable $listener): callable
+    {
+        // Delegate to chain's subscribe method
+        return $this->notificationChain->subscribe($listener);
     }
 }

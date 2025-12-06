@@ -6,6 +6,7 @@ namespace Noem\State\Tests\Unit\Core\Region;
 
 use Noem\State\Chains\DispatchAction;
 use Noem\State\Chains\DoTransition;
+use Noem\State\Chains\Notification;
 use Noem\State\Chains\Path;
 use Noem\State\Chains\Params\Action;
 use Noem\State\Events;
@@ -28,6 +29,8 @@ class ActionChainInvocationTest extends TestCase
 
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
+        $notificationChain = \Mockery::mock(Notification::class);
+        $notificationChain = \Mockery::mock(Notification::class);
 
         $actionChain->shouldReceive('call')
             ->times(3)
@@ -39,7 +42,8 @@ class ActionChainInvocationTest extends TestCase
             'final',
             $actionChain,
             $transitionChain,
-            $pathChain
+            $pathChain,
+            $notificationChain
         );
 
         $region->trigger((object)['id' => 1], false);
@@ -58,6 +62,8 @@ class ActionChainInvocationTest extends TestCase
 
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
+        $notificationChain = \Mockery::mock(Notification::class);
+        $notificationChain = \Mockery::mock(Notification::class);
 
         $callCount = 0;
         $actionChain->shouldReceive('call')
@@ -72,7 +78,8 @@ class ActionChainInvocationTest extends TestCase
             'final',
             $actionChain,
             $transitionChain,
-            $pathChain
+            $pathChain,
+            $notificationChain
         );
 
         $region->trigger((object)['id' => 1], false);
@@ -88,6 +95,8 @@ class ActionChainInvocationTest extends TestCase
 
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
+        $notificationChain = \Mockery::mock(Notification::class);
+        $notificationChain = \Mockery::mock(Notification::class);
 
         $actionChain->shouldReceive('call')
             ->never();
@@ -98,7 +107,8 @@ class ActionChainInvocationTest extends TestCase
             'final',
             $actionChain,
             $transitionChain,
-            $pathChain
+            $pathChain,
+            $notificationChain
         );
 
         $region->trigger((object)['id' => 1], true);

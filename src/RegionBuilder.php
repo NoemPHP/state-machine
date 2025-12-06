@@ -56,6 +56,7 @@ class RegionBuilder
                 fn(Chains\ConnectedRegions $connectedRegions): Chains\Meta => new Chains\Meta($connectedRegions),
                 fn(): Chains\Set => new Chains\Set(),
                 fn(): Chains\Get => new Chains\Get(),
+                fn(): Chains\Notification => new Chains\Notification(),
                 Events::conjure(),
                 fn(Chains\ConnectedRegions $connections): Chains\Path => new Chains\Path($connections)
             );
@@ -313,6 +314,7 @@ class RegionBuilder
             $actionChain = $this->chainMail->get(Chains\DispatchAction::class);
             $transitionChain = $this->chainMail->get(DoTransition::class);
             $path = $this->chainMail->get(Chains\Path::class);
+            $notificationChain = $this->chainMail->get(Chains\Notification::class);
             $events = $this->chainMail->get(Events::class);
 
             // Validate the enhanced builder (which may have states set by features like RegionLoader)
@@ -326,7 +328,8 @@ class RegionBuilder
                 initial: $builder->initial ?? current($builder->states),
                 final: $builder->final ?? end($builder->states),
                 actionChain: $actionChain,
-                path: $path
+                path: $path,
+                notificationChain: $notificationChain
             );
 
             return $region;

@@ -30,6 +30,7 @@ class FeatureInvocationTest extends TestCase
             fn(): \Noem\State\Chains\ExtendedState => new \Noem\State\Chains\ExtendedState(),
             fn(): \Noem\State\Chains\Set => new \Noem\State\Chains\Set(),
             fn(): \Noem\State\Chains\Get => new \Noem\State\Chains\Get(),
+            fn(): \Noem\State\Chains\Notification => new \Noem\State\Chains\Notification(),
             fn(\Noem\State\Chains\ConnectedRegions $connections): \Noem\State\Chains\Path => new \Noem\State\Chains\Path($connections),
             \Noem\State\Events::conjure(),
             fn(\Noem\State\Chains\ConnectedRegions $c, \Noem\State\Events $e): \Noem\State\Chains\DispatchAction => new \Noem\State\Chains\DispatchAction($c, $e),

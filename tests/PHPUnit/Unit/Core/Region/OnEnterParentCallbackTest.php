@@ -6,6 +6,7 @@ namespace Noem\State\Tests\Unit\Core\Region;
 
 use Noem\State\Chains\DispatchAction;
 use Noem\State\Chains\DoTransition;
+use Noem\State\Chains\Notification;
 use Noem\State\Chains\Path;
 use Noem\State\Events;
 use Noem\State\Region;
@@ -27,6 +28,8 @@ class OnEnterParentCallbackTest extends TestCase
 
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
+        $notificationChain = \Mockery::mock(Notification::class);
+        $notificationChain = \Mockery::mock(Notification::class);
 
         $events->shouldReceive('onEnterState')
             ->once()
@@ -46,7 +49,8 @@ class OnEnterParentCallbackTest extends TestCase
             'final',
             $actionChain,
             $transitionChain,
-            $pathChain
+            $pathChain,
+            $notificationChain
         );
 
         $trigger = (object)['data' => 'test'];
@@ -63,6 +67,8 @@ class OnEnterParentCallbackTest extends TestCase
 
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
+        $notificationChain = \Mockery::mock(Notification::class);
+        $notificationChain = \Mockery::mock(Notification::class);
 
         $capturedState = null;
         $events->shouldReceive('onEnterState')
@@ -80,7 +86,8 @@ class OnEnterParentCallbackTest extends TestCase
             'final',
             $actionChain,
             $transitionChain,
-            $pathChain
+            $pathChain,
+            $notificationChain
         );
 
         $region->onEnterParent((object)['data' => 'test']);
@@ -96,6 +103,8 @@ class OnEnterParentCallbackTest extends TestCase
 
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
+        $notificationChain = \Mockery::mock(Notification::class);
+        $notificationChain = \Mockery::mock(Notification::class);
 
         $capturedTrigger = null;
         $events->shouldReceive('onEnterState')
@@ -113,7 +122,8 @@ class OnEnterParentCallbackTest extends TestCase
             'final',
             $actionChain,
             $transitionChain,
-            $pathChain
+            $pathChain,
+            $notificationChain
         );
 
         $payload = (object)['id' => 789, 'name' => 'trigger'];
