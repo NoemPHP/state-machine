@@ -14,7 +14,7 @@
     <rule ref="PSR12"/>
 
     <!-- Additional quality rules -->
-    <rule ref="Generic.Arrays.DuplicateArrayKey"/>
+    <!-- <rule ref="Generic.Arrays.DuplicateArrayKey"/> --> <!-- Disabled - sniff no longer exists in PHP_CodeSniffer -->
     <rule ref="Generic.Classes.DuplicateClassName"/>
     <rule ref="Generic.CodeAnalysis.EmptyStatement"/>
     <rule ref="Generic.CodeAnalysis.UnconditionalIfStatement"/>
