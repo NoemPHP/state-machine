@@ -40,7 +40,7 @@ class ConnectionInitialStateTest extends NetworkMachineTestCase
     {
         // Arrange - Build a connection region directly (without spawning)
         $region = $this->region();
-        
+
         // Assert - Region should be in accept state initially
         $this->assertTrue(
             $region->isInState('accept'),

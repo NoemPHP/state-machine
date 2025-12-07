@@ -78,7 +78,11 @@ class NullableParametersTest extends TestCase
         $receivedDateTime = 'not-null';
         $receivedStdClass = 'not-null';
 
-        $mail->use(function (string $str, ?\DateTime $dt, ?\stdClass $obj) use (
+        $mail->use(function (
+            string $str,
+            ?\DateTime $dt,
+            ?\stdClass $obj
+        ) use (
             &$receivedString,
             &$receivedDateTime,
             &$receivedStdClass

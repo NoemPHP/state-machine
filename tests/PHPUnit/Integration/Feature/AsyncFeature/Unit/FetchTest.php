@@ -9,7 +9,6 @@ use PHPUnit\Framework\TestCase;
 
 class FetchTest extends TestCase
 {
-
     public function testGet()
     {
         $this->markTestSkipped();

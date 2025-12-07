@@ -38,16 +38,16 @@ YAML;
 
         // Act
         $result = Holon::fromYaml($yaml);
-        
+
         // Assert - should complete without hitting maxIterations
         $this->assertNotNull($result);
     }
-    
+
     public function testDoesNotExceedNecessaryIterations(): void
     {
         // Arrange
         $iterationCount = 0;
-        
+
         $yaml = <<<YAML
 machine:
   eventLoop:
@@ -65,17 +65,17 @@ YAML;
         // We can't directly test iteration count from YAML config,
         // but we can verify the machine completes quickly
         $startTime = microtime(true);
-        
+
         // Act
         $result = Holon::fromYaml($yaml);
-        
+
         $duration = microtime(true) - $startTime;
-        
+
         // Assert - should complete very quickly (well under 1 second)
         $this->assertLessThan(1.0, $duration);
         $this->assertNotNull($result);
     }
-    
+
     public function testStopsImmediatelyIfAlreadyInFinalState(): void
     {
         // Arrange
@@ -91,11 +91,11 @@ YAML;
 
         // Act
         $result = Holon::fromYaml($yaml);
-        
+
         // Assert - should complete immediately
         $this->assertNotNull($result);
     }
-    
+
     public function testMultipleTransitionsUntilFinal(): void
     {
         // Arrange
@@ -128,7 +128,7 @@ YAML;
 
         // Act
         $result = Holon::fromYaml($yaml);
-        
+
         // Assert - should complete successfully
         $this->assertNotNull($result);
     }

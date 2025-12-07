@@ -40,7 +40,7 @@ class ServerSocketCreationTest extends NetworkMachineTestCase
     {
         // Arrange - Build the region (entering starting state triggers onEnter)
         $region = $this->region();
-        
+
         // Assert - Socket should be non-blocking
         $this->assertSocketNonBlocking('Server socket should be non-blocking for cooperative multitasking');
     }
@@ -60,12 +60,12 @@ YAML;
     public function container(): iterable
     {
         $mockSocket = $this->mockSocket;
-        
+
         return [
             'server.starting.onEnter' => function (object $trigger) use ($mockSocket) {
                 // Set socket to non-blocking
                 $mockSocket->setBlocking(false);
-                
+
                 // Store socket reference
                 $this->set('server', $mockSocket);
             },

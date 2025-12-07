@@ -21,18 +21,18 @@ class FetchCompilesHeadersTest extends TestCase
             'Accept' => 'application/json',
             'Custom-Header' => 'custom-value',
         ];
-        
+
         // Use a data URL to avoid actual HTTP request
         $fetch = new Fetch('data://text/plain,test', 'GET', $headers);
         $generator = $fetch();
-        
+
         // The generator should be created successfully with headers compiled
         $this->assertInstanceOf(\Generator::class, $generator);
-        
+
         // Test that Fetch can be constructed with headers (verifying no errors)
         $this->assertInstanceOf(Fetch::class, $fetch);
     }
-    
+
     public function testCompilesMultipleHeaders(): void
     {
         $headers = [
@@ -40,18 +40,18 @@ class FetchCompilesHeadersTest extends TestCase
             'Accept-Language' => 'en-US',
             'Cache-Control' => 'no-cache',
         ];
-        
+
         $fetch = new Fetch('data://text/plain,test', 'POST', $headers, '{"data": "value"}');
         $generator = $fetch();
-        
+
         $this->assertInstanceOf(\Generator::class, $generator);
     }
-    
+
     public function testHandlesEmptyHeaders(): void
     {
         $fetch = new Fetch('data://text/plain,test', 'GET', []);
         $generator = $fetch();
-        
+
         $this->assertInstanceOf(\Generator::class, $generator);
     }
 }

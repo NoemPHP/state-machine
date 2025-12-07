@@ -29,12 +29,12 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert - region should be built successfully
         // This proves RegionLoader was added automatically
         $this->assertEquals('start', $region->currentState());
     }
-    
+
     public function testDoesNotAddRegionLoaderWhenAlreadyPresent(): void
     {
         // Arrange
@@ -50,11 +50,11 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert - should work without duplicating RegionLoader
         $this->assertEquals('start', $region->currentState());
     }
-    
+
     public function testAddsRegionLoaderBeforeBuilding(): void
     {
         // Arrange - machine with no features specified
@@ -75,15 +75,15 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert - states should be loaded from YAML (proving RegionLoader worked)
         $this->assertEquals('idle', $region->currentState());
         $this->assertFalse($region->isFinal());
-        
+
         // Trigger transitions to verify the machine works
         $region->trigger(new \stdClass());
         $this->assertEquals('active', $region->currentState());
-        
+
         $region->trigger(new \stdClass());
         $this->assertEquals('done', $region->currentState());
         $this->assertTrue($region->isFinal());

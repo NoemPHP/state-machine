@@ -16,7 +16,6 @@ use PHPUnit\Framework\Attributes\TestDox;
 
 class EventHooksTest extends RegionBuilderTestCase
 {
-
     /**
      * @return void
      */
@@ -41,7 +40,6 @@ class EventHooksTest extends RegionBuilderTestCase
         $region = $this->builder->build();
 
         $event = new class implements Event {
-
             public function name(): string
             {
                 return 'hello-world';
@@ -117,7 +115,6 @@ class EventHooksTest extends RegionBuilderTestCase
         );
 
         $event = new class implements Event {
-
             public function name(): string
             {
                 return 'hello-world';

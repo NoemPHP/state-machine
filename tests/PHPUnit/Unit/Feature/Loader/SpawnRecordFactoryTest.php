@@ -23,9 +23,9 @@ class SpawnRecordFactoryTest extends TestCase
         $parentRegion = (new RegionBuilder())->setStates('parent')->build();
         $guard = fn(object $t): bool => true;
         $factory = fn(): Region => (new RegionBuilder())->setStates('child')->build();
-        
+
         $record = new RegionSpawnRecord($parentRegion, 'parent', $factory, $guard);
-        
+
         $this->assertInstanceOf(Closure::class, $record->regionFactory);
         $this->assertSame($factory, $record->regionFactory);
     }
@@ -35,18 +35,18 @@ class SpawnRecordFactoryTest extends TestCase
         $parentRegion = (new RegionBuilder())->setStates('parent')->build();
         $guard = fn(object $t): bool => true;
         $invoked = false;
-        
-        $factory = function() use (&$invoked): Region {
+
+        $factory = function () use (&$invoked): Region {
             $invoked = true;
             return (new RegionBuilder())->setStates('child')->build();
         };
-        
+
         $record = new RegionSpawnRecord($parentRegion, 'parent', $factory, $guard);
-        
+
         $this->assertFalse($invoked);
-        
+
         $spawnedRegion = ($record->regionFactory)();
-        
+
         $this->assertTrue($invoked);
         $this->assertInstanceOf(Region::class, $spawnedRegion);
     }
@@ -56,11 +56,11 @@ class SpawnRecordFactoryTest extends TestCase
         $parentRegion = (new RegionBuilder())->setStates('parent')->build();
         $guard = fn(object $t): bool => true;
         $factory = fn(): Region => (new RegionBuilder())->setStates('customChild')->build();
-        
+
         $record = new RegionSpawnRecord($parentRegion, 'parent', $factory, $guard);
-        
+
         $spawnedRegion = ($record->regionFactory)();
-        
+
         $this->assertTrue($spawnedRegion->isInState('customChild'));
     }
 }

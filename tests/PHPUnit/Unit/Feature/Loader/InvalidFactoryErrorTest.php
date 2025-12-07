@@ -20,10 +20,10 @@ class InvalidFactoryErrorTest extends TestCase
     public function testThrowsRuntimeExceptionForInvalidFactory(): void
     {
         $processor = new ProcessArray(new Schema(), new TransformArray());
-        
+
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Invalid factory');
-        
+
         $processor->createFactoryCallback('not_a_callable');
     }
 }

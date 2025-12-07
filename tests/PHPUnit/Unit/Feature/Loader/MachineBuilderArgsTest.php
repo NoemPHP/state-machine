@@ -18,25 +18,25 @@ class MachineBuilderArgsTest extends TestCase
     public function testBuilderArgsIncludesLoaderConfiguration(): void
     {
         $yaml = 'states: [{name: test}]';
-        
-        $machine = new class($yaml) extends Machine {
+
+        $machine = new class ($yaml) extends Machine {
             public function __construct(private string $yaml)
             {
             }
-            
+
             public function yaml(): string
             {
                 return $this->yaml;
             }
-            
+
             public function trigger(): object
             {
                 return new \stdClass();
             }
         };
-        
+
         $builderArgs = $machine->builderArgs();
-        
+
         $this->assertIsArray($builderArgs);
         $this->assertArrayHasKey('loader', $builderArgs);
         $this->assertArrayHasKey('yaml', $builderArgs['loader']);

@@ -19,9 +19,9 @@ class ArrayCopyTest extends TestCase
     {
         $mesh = new Mesh();
         $mesh['key'] = 'value';
-        
+
         $result = $mesh->getArrayCopy();
-        
+
         $this->assertIsArray($result);
     }
 
@@ -31,9 +31,9 @@ class ArrayCopyTest extends TestCase
         $mesh[] = 'one';
         $mesh[] = 'two';
         $mesh[] = 'three';
-        
+
         $result = $mesh->getArrayCopy();
-        
+
         $this->assertSame(['one', 'two', 'three'], $result);
     }
 
@@ -43,18 +43,18 @@ class ArrayCopyTest extends TestCase
         $mesh[] = 'a';
         $mesh[] = 'b';
         $mesh[] = 'c';
-        
+
         $result = $mesh->getArrayCopy();
-        
+
         $this->assertSame(['a', 'b', 'c'], $result);
     }
 
     public function testGetArrayCopyReturnsEmptyArrayForEmptyMesh(): void
     {
         $mesh = new Mesh();
-        
+
         $result = $mesh->getArrayCopy();
-        
+
         $this->assertSame([], $result);
     }
 
@@ -62,10 +62,10 @@ class ArrayCopyTest extends TestCase
     {
         $mesh = new Mesh();
         $mesh['key'] = 'original';
-        
+
         $copy = $mesh->getArrayCopy();
         $copy['key'] = 'modified';
-        
+
         // Modifying the copy should not affect the mesh
         $this->assertSame('original', $mesh['key']);
     }
@@ -77,9 +77,9 @@ class ArrayCopyTest extends TestCase
         $mesh[] = 42;
         $mesh[] = ['nested' => 'data'];
         $mesh[] = (object)['prop' => 'value'];
-        
+
         $result = $mesh->getArrayCopy();
-        
+
         $this->assertSame('text', $result[0]);
         $this->assertSame(42, $result[1]);
         $this->assertSame(['nested' => 'data'], $result[2]);
@@ -90,10 +90,10 @@ class ArrayCopyTest extends TestCase
     {
         $mesh = new Mesh();
         $mesh['key'] = 'value';
-        
+
         $copy1 = $mesh->getArrayCopy();
         $copy2 = $mesh->getArrayCopy();
-        
+
         $this->assertEquals($copy1, $copy2, 'Arrays should have same content');
     }
 }

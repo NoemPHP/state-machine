@@ -24,14 +24,14 @@ class RetrievesRegistryFromChainMailTest extends TestCase
             ->enableFeatures(new TransitionsFeature())
             ->setStates('start', 'end')
             ->addBuildStep(new AddTransition('start', 'end'));
-        
+
         // Build the region - this triggers AddTransition callback
         $region = $builder->build();
-        
+
         // Verify registry was accessed and used
         $registry = $builder->chainMail->get(TransitionRegistry::class);
         $transitions = $registry->getTransitionsForState($region, 'start');
-        
+
         $this->assertInstanceOf(TransitionRegistry::class, $registry);
         $this->assertArrayHasKey('end', $transitions);
     }

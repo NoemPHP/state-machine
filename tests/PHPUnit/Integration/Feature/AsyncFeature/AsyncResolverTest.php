@@ -18,7 +18,6 @@ use PHPUnit\Framework\TestCase;
 
 class AsyncResolverTest extends TestCase
 {
-
     protected ChainMail $chainmail;
 
     protected Chains\Meta $meta;
@@ -88,7 +87,7 @@ class AsyncResolverTest extends TestCase
             $dep = $this->get('bar');
             yield;
 
-            return $dep.' world';
+            return $dep . ' world';
         });
         $this->resolve->addResolver($record);
         $metaParams = new Params\Meta($region, ContextMetaType::get());

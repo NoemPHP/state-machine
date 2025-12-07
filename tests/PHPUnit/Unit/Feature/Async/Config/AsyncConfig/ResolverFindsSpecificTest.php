@@ -21,7 +21,7 @@ class ResolverFindsSpecificTest extends TestCase
         $builder = new RegionBuilder();
         $firstResolver = fn() => 'first';
         $secondResolver = fn() => 'second';
-        
+
         $paramsArray = [
             'loader' => [
                 'array' => [
@@ -62,9 +62,9 @@ class ResolverFindsSpecificTest extends TestCase
             ]
         ];
         $params = new BuildParams($builder, $paramsArray);
-        
+
         $asyncConfig = $params->config(AsyncConfig::class);
-        
+
         $found = $asyncConfig->resolver('target');
         $this->assertNotNull($found);
         $this->assertSame('target', $found['name']);

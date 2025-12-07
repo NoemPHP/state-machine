@@ -18,7 +18,6 @@ use PHPUnit\Framework\Attributes\TestDox;
 
 class AsyncFeatureTest extends RegionBuilderTestCase
 {
-
     public function setUp(): void
     {
         parent::setUp();
@@ -367,7 +366,7 @@ class AsyncFeatureTest extends RegionBuilderTestCase
                 $json = implode($response);
                 $json = json_decode($json, true);
                 $t->out .= $responseHeaders[0];
-                $t->out .= '|user:'.$json['userId'];
+                $t->out .= '|user:' . $json['userId'];
                 $t->out .= '|END';
                 yield;
             })

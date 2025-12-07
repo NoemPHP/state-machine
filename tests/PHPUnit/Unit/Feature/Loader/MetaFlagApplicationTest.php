@@ -22,7 +22,7 @@ class MetaFlagApplicationTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader());
-        
+
         $array = [
             'states' => [
                 [
@@ -45,30 +45,30 @@ class MetaFlagApplicationTest extends TestCase
             ],
             'initial' => 'parent',
         ];
-        
+
         // Build the region
         $region = $builder->build([
             'loader' => [
                 'array' => $array,
             ],
         ]);
-        
+
         // Get the spawn registry
         $registry = $builder->chainMail->invoke(fn(RegionSpawnRegistry $r) => $r);
         $spawnRecord = $registry->records[0];
-        
+
         // Verify that RECEIVE_META flag is set when meta sharing is enabled
         $this->assertTrue(
             ($spawnRecord->connectionFlags & Connection::RECEIVE_META) === Connection::RECEIVE_META,
             'RECEIVE_META flag should be set when meta sharing is enabled'
         );
     }
-    
+
     public function testExcludesReceiveMetaFlagWhenMetaSharingDisabled(): void
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader());
-        
+
         $array = [
             'states' => [
                 [
@@ -91,18 +91,18 @@ class MetaFlagApplicationTest extends TestCase
             ],
             'initial' => 'parent',
         ];
-        
+
         // Build the region
         $region = $builder->build([
             'loader' => [
                 'array' => $array,
             ],
         ]);
-        
+
         // Get the spawn registry
         $registry = $builder->chainMail->invoke(fn(RegionSpawnRegistry $r) => $r);
         $spawnRecord = $registry->records[0];
-        
+
         // Verify that RECEIVE_META flag is NOT set when meta sharing is disabled
         $this->assertFalse(
             ($spawnRecord->connectionFlags & Connection::RECEIVE_META) === Connection::RECEIVE_META,

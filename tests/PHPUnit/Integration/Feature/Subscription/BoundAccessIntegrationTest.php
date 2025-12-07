@@ -54,7 +54,9 @@ class BoundAccessIntegrationTest extends TestCase
         $region->trigger((object)['type' => 'transition']);
 
         // Then: Subscriber should have been called
-        $this->assertTrue($subscriberCalled,
-            'Subscriber should receive events emitted from state callbacks via BoundAccess integration');
+        $this->assertTrue(
+            $subscriberCalled,
+            'Subscriber should receive events emitted from state callbacks via BoundAccess integration'
+        );
     }
 }

@@ -21,12 +21,12 @@ class NestedRegionExtractionTest extends TestCase
     public function testExtractsNestedRegionsFromConfiguration(): void
     {
         $processor = new ProcessArray(new Schema(), new TransformArray());
-        
+
         // Test the extractConfig method directly to verify regions extraction
         $reflection = new \ReflectionClass($processor);
         $method = $reflection->getMethod('extractConfig');
         $method->setAccessible(true);
-        
+
         $statesConfig = [
             [
                 'name' => 'parent',
@@ -39,9 +39,9 @@ class NestedRegionExtractionTest extends TestCase
                 ],
             ],
         ];
-        
+
         [$states, $regions, $transitions, $callbacks] = $method->invoke($processor, $statesConfig);
-        
+
         $this->assertContains('parent', $states);
         $this->assertArrayHasKey('parent', $regions);
         $this->assertCount(1, $regions['parent']);

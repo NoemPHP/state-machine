@@ -20,11 +20,11 @@ class NestedRegionConnectionTest extends TestCase
     public function testCreatesAndConnectsNestedRegions(): void
     {
         $processor = new ProcessArray(new Schema(), new TransformArray());
-        
+
         $reflection = new \ReflectionClass($processor);
         $method = $reflection->getMethod('extractConfig');
         $method->setAccessible(true);
-        
+
         $statesConfig = [
             [
                 'name' => 'parent',
@@ -33,9 +33,9 @@ class NestedRegionConnectionTest extends TestCase
                 ],
             ],
         ];
-        
+
         [$states, $regions] = $method->invoke($processor, $statesConfig);
-        
+
         $this->assertArrayHasKey('parent', $regions);
     }
 }

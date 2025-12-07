@@ -30,17 +30,17 @@ states:
 YAML;
 
         $region = SelfContainedLoader::fromYaml($yaml);
-        
+
         $this->assertInstanceOf(Region::class, $region);
         $this->assertEquals('start', $region->currentState());
         $this->assertFalse($region->isFinal());
-        
+
         $region->trigger(new \stdClass());
-        
+
         $this->assertEquals('end', $region->currentState());
         $this->assertTrue($region->isFinal());
     }
-    
+
     public function testCanLoadWithFeatures(): void
     {
         $yaml = <<<YAML
@@ -64,17 +64,17 @@ states:
 YAML;
 
         $region = SelfContainedLoader::fromYaml($yaml);
-        
+
         $this->assertInstanceOf(Region::class, $region);
-        
+
         // Trigger to verify ExtendedState feature is working
         $region->trigger(new \stdClass());
-        
+
         // We can't directly test the extended state here without access to context,
         // but we can verify the transition worked (TransitionsFeature)
         $this->assertEquals('done', $region->currentState());
     }
-    
+
     public function testCanLoadWithContainer(): void
     {
         $yaml = <<<YAML
@@ -105,11 +105,11 @@ states:
 YAML;
 
         $region = SelfContainedLoader::fromYaml($yaml);
-        
+
         $this->assertInstanceOf(Region::class, $region);
         $this->assertEquals('start', $region->currentState());
     }
-    
+
     public function testAutoRunEventLoop(): void
     {
         $yaml = <<<YAML
@@ -136,11 +136,11 @@ YAML;
 
         // This should auto-run and complete
         $result = SelfContainedLoader::fromYaml($yaml);
-        
+
         // After auto-run, we should get the final result (not the Region)
         $this->assertIsObject($result);
     }
-    
+
     public function testEventLoopManagerCreation(): void
     {
         $yaml = <<<YAML
@@ -167,23 +167,23 @@ YAML;
                 'maxIterations' => 10,
             ],
         ]);
-        
+
         $this->assertInstanceOf(EventLoopManager::class, $manager);
         $this->assertEquals('idle', $manager->currentState());
         $this->assertFalse($manager->isRunning());
-        
+
         // Test manual tick
         $trigger = new \stdClass();
         $trigger->start = true;
-        
+
         $manager->tick();
         $this->assertEquals('working', $manager->currentState());
-        
+
         $manager->tick();
         $this->assertEquals('done', $manager->currentState());
         $this->assertTrue($manager->isFinal());
     }
-    
+
     public function testQuickRegionCreation(): void
     {
         $states = [
@@ -191,16 +191,16 @@ YAML;
             ['name' => 'second'],
             ['name' => 'third', 'final' => true],
         ];
-        
+
         $region = SelfContainedLoader::quickRegion($states, [
             'Noem\State\Feature\Transitions\TransitionsFeature',
         ]);
-        
+
         $this->assertInstanceOf(Region::class, $region);
         $this->assertEquals('first', $region->currentState());
         $this->assertFalse($region->isFinal());
     }
-    
+
     public function testComplexYamlWithHelpers(): void
     {
         $yaml = <<<YAML
@@ -264,37 +264,37 @@ states:
 YAML;
 
         $region = SelfContainedLoader::fromYaml($yaml);
-        
+
         $this->assertEquals('init', $region->currentState());
-        
+
         // Run through the state machine
         $trigger = new \stdClass();
         $region->trigger($trigger); // init -> counting
-        
+
         $this->assertEquals('counting', $region->currentState());
-        
+
         // Count up to max
         for ($i = 0; $i < 3; $i++) {
             $region->trigger($trigger);
         }
-        
+
         $this->assertEquals('finished', $region->currentState());
         $this->assertTrue($region->isFinal());
     }
-    
+
     public function testErrorHandlingForInvalidYaml(): void
     {
         $this->expectException(\Exception::class);
-        
+
         $yaml = "invalid: yaml: content: [[[";
         SelfContainedLoader::fromYaml($yaml);
     }
-    
+
     public function testErrorHandlingForInvalidFeatureClass(): void
     {
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage("Feature class 'NonExistentClass' does not exist");
-        
+
         $yaml = <<<YAML
 machine:
   features:
@@ -308,7 +308,7 @@ YAML;
 
         SelfContainedLoader::fromYaml($yaml);
     }
-    
+
     public function testLoadingFromFile(): void
     {
         // Create a temporary file
@@ -320,7 +320,7 @@ states:
     final: true
 YAML;
         file_put_contents($tempFile, $yaml);
-        
+
         try {
             $region = SelfContainedLoader::fromYaml($tempFile);
             $this->assertInstanceOf(Region::class, $region);

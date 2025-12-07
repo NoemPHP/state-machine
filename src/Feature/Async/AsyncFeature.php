@@ -72,10 +72,10 @@ class AsyncFeature implements Feature
 
         $dispatchAction->link(function (Params\Action $context, callable $next) {
             $region = $context->region;
-            
+
             // Ensure scheduler exists
             $scheduler = $this->getCoroutineSchedulerForRegion($this->coroutinesByRegion, $region);
-            
+
             // Clean up finished tasks BEFORE processing callbacks
             // This ensures callbacks that finished in the previous trigger are removed from the map
             // Collect finished tasks first to avoid modification during iteration
@@ -89,10 +89,10 @@ class AsyncFeature implements Feature
             foreach ($finishedCallbacks as $callback) {
                 unset($this->callbackTaskMap[$callback]);
             }
-            
+
             // Process all callbacks
             $result = $next($context);
-            
+
             // Tick once after all callbacks have been processed
             $scheduler->tick();
 
@@ -120,7 +120,7 @@ class AsyncFeature implements Feature
                 }
                 $coroutines = $this->coroutinesByRegion[$context->region];
                 assert($coroutines instanceof CoroutineScheduler);
-                
+
                 /**
                  * If we already track a Task, check if it's finished.
                  * If finished, remove from map and fall through to create new task.
@@ -128,7 +128,7 @@ class AsyncFeature implements Feature
                  */
                 if ($this->callbackTaskMap->offsetExists($context->handler)) {
                     $task = $this->callbackTaskMap[$context->handler];
-                    
+
                     // Check if task is already finished (from previous trigger)
                     if ($task->isFinished()) {
                         // Task completed, remove from map manually
@@ -141,7 +141,7 @@ class AsyncFeature implements Feature
                         return $coroutines->getLastYielded($task);
                     }
                 }
-                
+
                 /**
                  * Either no task exists yet, or the previous task completed.
                  * Invoke callback to get result (either sync value or new generator)
@@ -157,7 +157,7 @@ class AsyncFeature implements Feature
 
                 $task = $enqueue->call(new AsyncParams\EnqueueParams($context->region, $result));
                 $this->callbackTaskMap[$context->handler] = $task;
-                
+
                 // Don't tick here - the deferred tick in deferTicksUntilActionComplete will handle it
                 return $coroutines->getLastYielded($task);
             }
@@ -214,7 +214,7 @@ class AsyncFeature implements Feature
             if (!$asyncConfig->hasResolvers()) {
                 return $builder;
             }
-            
+
             assert($builder instanceof RegionBuilder);
             foreach ($asyncConfig->resolvers() as $resolver) {
                 $builder->addBuildStep(

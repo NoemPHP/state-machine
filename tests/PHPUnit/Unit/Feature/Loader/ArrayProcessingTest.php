@@ -20,7 +20,7 @@ class ArrayProcessingTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader());
-        
+
         $config = [
             'states' => [
                 ['name' => 'start'],
@@ -29,13 +29,13 @@ class ArrayProcessingTest extends TestCase
             'initial' => 'start',
             'final' => 'end',
         ];
-        
+
         $region = $builder->build([
             'loader' => [
                 'array' => $config,
             ],
         ]);
-        
+
         $this->assertTrue($region->isInState('start'));
     }
 }

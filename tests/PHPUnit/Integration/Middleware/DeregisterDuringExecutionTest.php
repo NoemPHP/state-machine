@@ -284,14 +284,14 @@ class DeregisterDuringExecutionTest extends TestCase
 
         // Stack: m1 -> m2 -> m3 -> m4
         // m2 will deregister m1, m3, and itself during execution
-        
+
         $deregister1 = $chain->link(function ($c, $next) use (&$executionLog) {
             $executionLog[] = 'm1';
             return $next($c);
         });
 
         $deregister3 = null;
-        
+
         $deregister2 = $chain->link(function ($c, $next) use (&$executionLog, &$deregister1, &$deregister3) {
             $executionLog[] = 'm2-start';
             $deregister1(); // Remove m1

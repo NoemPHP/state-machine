@@ -20,7 +20,7 @@ class HasPathReturnsFalseTest extends TestCase
         $builder = new RegionBuilder();
         $config = ['existing' => 'value'];
         $params = new BuildParams($builder, $config);
-        
+
         $this->assertFalse($params->hasPath('non.existent.path'));
     }
 }

@@ -24,7 +24,7 @@ class ContextReturnsFullTest extends TestCase
             'variables' => ['key' => 'value'],
             'customData' => 'test'
         ];
-        
+
         $paramsArray = [
             'loader' => [
                 'array' => [
@@ -33,9 +33,9 @@ class ContextReturnsFullTest extends TestCase
             ]
         ];
         $params = new BuildParams($builder, $paramsArray);
-        
+
         $loaderConfig = $params->config(LoaderConfig::class);
-        
+
         $this->assertSame($contextData, $loaderConfig->context());
     }
 }

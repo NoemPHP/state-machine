@@ -37,17 +37,17 @@ class ExtendsLoaderSchemaTest extends TestCase
             Events::conjure()
         );
 
-        // Create a Schema chain 
+        // Create a Schema chain
         $schema = new Schema();
         $chainMail->supply(fn(): Schema => $schema);
 
         // Track whether middleware was called
         $middlewareCalled = false;
-        
+
         // Register AsyncFeature - this should hook into the Schema chain
         $feature = new AsyncFeature();
         $feature($chainMail);
-        
+
         // Boot ChainMail to execute all queued middleware registrations
         $chainMail->boot();
 
@@ -79,7 +79,7 @@ class ExtendsLoaderSchemaTest extends TestCase
         // Now test that the schema accepts resolvers
         // The AsyncFeature middleware should have extended the context schema
         $processor = new \Nette\Schema\Processor();
-        
+
         // Test with the updated custom schema
         $updatedContextSchema = $schemaContext->getCustomSchema('context');
         $this->assertNotNull($updatedContextSchema, 'Custom context schema should exist');

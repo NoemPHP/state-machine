@@ -25,20 +25,20 @@ class HasArrayChecksExistenceTest extends TestCase
             ]
         ];
         $params = new BuildParams($builder, $config);
-        
+
         $loaderConfig = $params->config(LoaderConfig::class);
-        
+
         $this->assertTrue($loaderConfig->hasArray());
     }
-    
+
     public function testHasArrayReturnsFalseWhenArrayMissing(): void
     {
         $builder = new RegionBuilder();
         $config = ['loader' => []];
         $params = new BuildParams($builder, $config);
-        
+
         $loaderConfig = $params->config(LoaderConfig::class);
-        
+
         $this->assertFalse($loaderConfig->hasArray());
     }
 }

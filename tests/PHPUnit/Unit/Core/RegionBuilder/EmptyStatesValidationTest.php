@@ -18,21 +18,21 @@ class EmptyStatesValidationTest extends TestCase
     public function testBuildThrowsExceptionWithEmptyStates(): void
     {
         $builder = new RegionBuilder();
-        
+
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('States cannot be empty');
-        
+
         $builder->build();
     }
-    
+
     public function testBuildSucceedsWithAtLeastOneState(): void
     {
         $builder = new RegionBuilder();
-        
+
         $builder->setStates('single-state');
-        
+
         $region = $builder->build();
-        
+
         $this->assertTrue($region->isInState('single-state'));
     }
 }

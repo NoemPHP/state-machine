@@ -23,7 +23,6 @@ use PHPUnit\Framework\Attributes\TestDox;
 
 class RegionTest extends RegionBuilderTestCase
 {
-
     /**
      * @return void
      */
@@ -433,7 +432,6 @@ class RegionTest extends RegionBuilderTestCase
         $this->assertFalse($region->isInState('two'), "Region should ignore non-matching event'");
 
         $event = new class implements Event {
-
             public function name(): string
             {
                 return 'hello-world';

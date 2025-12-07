@@ -20,17 +20,17 @@ class GuardClosureCreationTest extends TestCase
     public function testCreatesGuardClosureFromCallable(): void
     {
         $processor = new ProcessArray(new Schema(), new TransformArray());
-        
+
         $guardCallable = fn(object $t): bool => $t->value > 5;
         $transition = [
             'target' => 'nextState',
             'guard' => $guardCallable,
         ];
-        
+
         $guard = $processor->createTransitionGuard($transition);
-        
+
         $this->assertInstanceOf(\Closure::class, $guard);
-        
+
         // Test guard logic
         $this->assertTrue($guard((object)['value' => 10]));
         $this->assertFalse($guard((object)['value' => 3]));

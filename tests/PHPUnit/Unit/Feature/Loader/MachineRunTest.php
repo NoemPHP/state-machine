@@ -20,14 +20,14 @@ class MachineRunTest extends TestCase
     {
         $triggerCount = 0;
         $featuresUsed = false;
-        
-        $machine = new class($triggerCount, $featuresUsed) extends Machine {
+
+        $machine = new class ($triggerCount, $featuresUsed) extends Machine {
             public function __construct(
                 private int &$count,
                 private bool &$featuresUsed
             ) {
             }
-            
+
             public function yaml(): string
             {
                 return <<<YAML
@@ -40,7 +40,7 @@ class MachineRunTest extends TestCase
                 final: end
                 YAML;
             }
-            
+
             public function trigger(): object
             {
                 $this->count++;
@@ -48,7 +48,7 @@ class MachineRunTest extends TestCase
                 $trigger->id = $this->count;
                 return $trigger;
             }
-            
+
             public function features(): iterable
             {
                 $this->featuresUsed = true;
@@ -58,16 +58,16 @@ class MachineRunTest extends TestCase
                 ];
             }
         };
-        
+
         // Use the static run method
         $result = Machine::run($machine);
-        
+
         // Verify features were used
         $this->assertTrue($featuresUsed, 'Machine features should be used');
-        
+
         // Verify triggers were called (at least once)
         $this->assertGreaterThanOrEqual(1, $triggerCount, 'Triggers should be called');
-        
+
         // Verify result is returned
         $this->assertIsObject($result);
         $this->assertObjectHasProperty('id', $result);

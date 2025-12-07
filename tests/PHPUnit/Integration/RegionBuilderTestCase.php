@@ -16,7 +16,6 @@ use PHPUnit\Framework\TestCase;
 
 abstract class RegionBuilderTestCase extends TestCase
 {
-
     protected RegionBuilder $builder;
 
     protected Meta $meta {
@@ -99,4 +98,3 @@ abstract class RegionBuilderTestCase extends TestCase
         return $fetcher->call($this->builder);
     }
 }
-

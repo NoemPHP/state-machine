@@ -20,7 +20,7 @@ class YamlToArrayConversionTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader());
-        
+
         $yaml = <<<YAML
         states:
           - name: one
@@ -30,19 +30,19 @@ class YamlToArrayConversionTest extends TestCase
         initial: one
         final: two
         YAML;
-        
+
         $region = $builder->build([
             'loader' => [
                 'yaml' => $yaml,
             ],
         ]);
-        
+
         // If YAML was properly converted to array and processed, region should work correctly
         $this->assertTrue($region->isInState('one'));
         $this->assertFalse($region->isFinal());
-        
+
         $region->trigger((object)['test' => 1]);
-        
+
         $this->assertTrue($region->isInState('two'));
         $this->assertTrue($region->isFinal());
     }

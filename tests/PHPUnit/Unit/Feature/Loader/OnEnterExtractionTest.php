@@ -20,11 +20,11 @@ class OnEnterExtractionTest extends TestCase
     public function testExtractsOnEnterCallbacksFromConfiguration(): void
     {
         $processor = new ProcessArray(new Schema(), new TransformArray());
-        
+
         $reflection = new \ReflectionClass($processor);
         $method = $reflection->getMethod('extractConfig');
         $method->setAccessible(true);
-        
+
         $statesConfig = [
             [
                 'name' => 'active',
@@ -33,9 +33,9 @@ class OnEnterExtractionTest extends TestCase
                 ],
             ],
         ];
-        
+
         [$states, $regions, $transitions, $callbacks] = $method->invoke($processor, $statesConfig);
-        
+
         $this->assertArrayHasKey('active', $callbacks['onEnter']);
         $this->assertCount(1, $callbacks['onEnter']['active']);
     }

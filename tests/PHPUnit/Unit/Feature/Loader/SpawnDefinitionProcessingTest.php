@@ -21,7 +21,7 @@ class SpawnDefinitionProcessingTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader());
-        
+
         $array = [
             'states' => [
                 [
@@ -41,20 +41,20 @@ class SpawnDefinitionProcessingTest extends TestCase
             ],
             'initial' => 'parent',
         ];
-        
+
         // Build the region
         $region = $builder->build([
             'loader' => [
                 'array' => $array,
             ],
         ]);
-        
+
         // Get the spawn registry from the builder's ChainMail
         $registry = $builder->chainMail->invoke(fn(RegionSpawnRegistry $r) => $r);
-        
+
         // Verify that spawn records were created
         $this->assertCount(1, $registry->records, 'Should have one spawn record');
-        
+
         $spawnRecord = $registry->records[0];
         $this->assertSame($region, $spawnRecord->parentRegion);
         $this->assertEquals('parent', $spawnRecord->parentStateName);

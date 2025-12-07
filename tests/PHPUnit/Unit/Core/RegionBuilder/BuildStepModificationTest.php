@@ -21,7 +21,7 @@ class BuildStepModificationTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->setStates('idle');
-        
+
         $buildStep = new class implements BuildStep {
             public function callback(RegionBuilder $builder, callable $next, callable $first): Region
             {
@@ -30,51 +30,55 @@ class BuildStepModificationTest extends TestCase
                 return $next($builder);
             }
         };
-        
+
         $builder->addBuildStep($buildStep);
         $region = $builder->build();
-        
+
         $this->assertInstanceOf(Region::class, $region);
     }
-    
+
     public function testBuildStepCanModifyRegionAfterConstruction(): void
     {
         $builder = new RegionBuilder();
         $builder->setStates('idle');
-        
+
         $regionModified = false;
-        
-        $buildStep = new class($regionModified) implements BuildStep {
-            public function __construct(private bool &$modified) {}
-            
+
+        $buildStep = new class ($regionModified) implements BuildStep {
+            public function __construct(private bool &$modified)
+            {
+            }
+
             public function callback(RegionBuilder $builder, callable $next, callable $first): Region
             {
                 $region = $next($builder);
-                
+
                 // Mark that we accessed the region
                 $this->modified = $region instanceof Region;
-                
+
                 return $region;
             }
         };
-        
+
         $builder->addBuildStep($buildStep);
         $region = $builder->build();
-        
+
         $this->assertTrue($regionModified, 'Build step should have access to region after construction');
         $this->assertInstanceOf(Region::class, $region);
     }
-    
+
     public function testMultipleBuildStepsCanModifySequentially(): void
     {
         $builder = new RegionBuilder();
         $builder->setStates('idle');
-        
+
         $modifications = [];
-        
-        $stepOne = new class($modifications) implements BuildStep {
-            public function __construct(private array &$mods) {}
-            
+
+        $stepOne = new class ($modifications) implements BuildStep {
+            public function __construct(private array &$mods)
+            {
+            }
+
             public function callback(RegionBuilder $builder, callable $next, callable $first): Region
             {
                 $this->mods[] = 'step1_before';
@@ -84,10 +88,12 @@ class BuildStepModificationTest extends TestCase
                 return $region;
             }
         };
-        
-        $stepTwo = new class($modifications) implements BuildStep {
-            public function __construct(private array &$mods) {}
-            
+
+        $stepTwo = new class ($modifications) implements BuildStep {
+            public function __construct(private array &$mods)
+            {
+            }
+
             public function callback(RegionBuilder $builder, callable $next, callable $first): Region
             {
                 $this->mods[] = 'step2_before';
@@ -97,12 +103,12 @@ class BuildStepModificationTest extends TestCase
                 return $region;
             }
         };
-        
+
         $builder->addBuildStep($stepOne)
                 ->addBuildStep($stepTwo);
-        
+
         $region = $builder->build();
-        
+
         $this->assertEquals(
             ['step1_before', 'step2_before', 'step2_after', 'step1_after'],
             $modifications,

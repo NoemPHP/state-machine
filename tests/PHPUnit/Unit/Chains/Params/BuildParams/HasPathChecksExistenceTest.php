@@ -26,7 +26,7 @@ class HasPathChecksExistenceTest extends TestCase
             ]
         ];
         $params = new BuildParams($builder, $config);
-        
+
         $this->assertTrue($params->hasPath('loader.array.states'));
     }
 }

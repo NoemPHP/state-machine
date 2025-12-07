@@ -22,15 +22,15 @@ class MachineDefaultContainerTest extends TestCase
             {
                 return 'states: [{name: test}]';
             }
-            
+
             public function trigger(): object
             {
                 return new \stdClass();
             }
         };
-        
+
         $container = $machine->container();
-        
+
         $this->assertIsIterable($container);
         $this->assertCount(0, iterator_to_array($container));
     }

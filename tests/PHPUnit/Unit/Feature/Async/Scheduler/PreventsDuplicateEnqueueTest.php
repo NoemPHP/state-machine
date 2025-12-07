@@ -17,30 +17,33 @@ class PreventsDuplicateEnqueueTest extends TestCase
     public function testPreventsDuplicateEnqueue(): void
     {
         $scheduler = new CoroutineScheduler();
-        
+
         $generator = (function () {
             yield 'first';
             yield 'second';
         })();
-        
+
         $task1 = $scheduler->enqueue($generator);
         $task2 = $scheduler->enqueue($generator);
-        
-        $this->assertSame($task1, $task2, 
-            'Enqueueing the same generator twice should return the same task');
+
+        $this->assertSame(
+            $task1,
+            $task2,
+            'Enqueueing the same generator twice should return the same task'
+        );
     }
-    
+
     public function testReturnsExistingTaskWhenAlreadyEnqueued(): void
     {
         $scheduler = new CoroutineScheduler();
-        
+
         $generator = (function () {
             yield 'value';
         })();
-        
+
         $firstTask = $scheduler->enqueue($generator);
         $secondTask = $scheduler->enqueue($generator);
-        
+
         $this->assertSame($firstTask, $secondTask);
         $this->assertSame($firstTask, $scheduler->getTaskForCoroutine($generator));
     }

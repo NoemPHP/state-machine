@@ -18,30 +18,30 @@ class StreamHandlerTimeoutTest extends TestCase
     {
         // Create a stream that can be configured to timeout
         $resource = fopen('php://temp', 'r+');
-        
+
         // Set a very short timeout
         stream_set_timeout($resource, 0, 1);
-        
+
         // Mark the stream as timed out by manipulating metadata
         // This is tricky - we need to trigger an actual timeout condition
         // For testing purposes, we'll verify the timeout detection logic exists
-        
+
         $handler = new StreamHandler($resource);
-        
+
         // The handler should be ready to detect timeouts
         $this->assertInstanceOf(StreamHandler::class, $handler);
-        
+
         fclose($resource);
     }
-    
+
     public function testDetectsTimeoutMetadata(): void
     {
         // Test that the handler checks for timeout metadata
         $resource = fopen('data://text/plain,test', 'r');
-        
+
         $handler = new StreamHandler($resource);
         $generator = $handler();
-        
+
         // The generator should complete without timeout for normal streams
         $didComplete = true;
         try {
@@ -51,7 +51,7 @@ class StreamHandlerTimeoutTest extends TestCase
         } catch (\Exception $e) {
             $didComplete = false;
         }
-        
+
         $this->assertTrue($didComplete, 'Should complete without timeout for normal streams');
     }
 }

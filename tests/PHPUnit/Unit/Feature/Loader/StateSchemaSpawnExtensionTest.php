@@ -24,19 +24,19 @@ class StateSchemaSpawnExtensionTest extends TestCase
     {
         // Create a Schema chain
         $schema = new Schema();
-        
+
         // Create a RegionLoader and call the schema extension method directly
         $loader = new RegionLoader();
         $loader->extendLoaderSchemaForSpawnerSupport($schema);
-        
+
         // Create initial schema context
         $callback = Expect::anyOf(Expect::string(), Expect::type(\Closure::class));
         $action = Expect::structure(['run' => $callback]);
         $state = Expect::structure(['name' => Expect::string()->required()]);
         $region = Expect::structure(['states' => Expect::listOf($state)]);
-        
+
         $context = new SchemaContext($callback, $action, $state, $region);
-        
+
         // Test data with spawn property
         $stateData = [
             'name' => 'test',
@@ -48,7 +48,7 @@ class StateSchemaSpawnExtensionTest extends TestCase
                 ],
             ],
         ];
-        
+
         // Process through the schema chain with a provider that tests the state schema
         $result = null;
         $schema->withProvider(function (SchemaContext $context) use ($stateData, &$result) {
@@ -57,7 +57,7 @@ class StateSchemaSpawnExtensionTest extends TestCase
             $result = $processor->process($context->state, $stateData);
             return null;
         })->call($context);
-        
+
         // Verify the schema accepted the spawn property
         $this->assertNotNull($result);
         $this->assertEquals('test', $result->name);

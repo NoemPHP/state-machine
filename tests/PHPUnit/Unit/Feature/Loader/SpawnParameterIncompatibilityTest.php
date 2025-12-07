@@ -11,8 +11,11 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 
-class TypedTrigger {
-    public function __construct(public string $value) {}
+class TypedTrigger
+{
+    public function __construct(public string $value)
+    {
+    }
 }
 
 /**
@@ -26,31 +29,31 @@ class SpawnParameterIncompatibilityTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader());
-        
+
         $guardCalled = false;
         $factoryCalled = false;
-        
+
         // Guard expects TypedTrigger specifically
-        $guard = function(TypedTrigger $t) use (&$guardCalled): bool {
+        $guard = function (TypedTrigger $t) use (&$guardCalled): bool {
             $guardCalled = true;
             return true;
         };
-        
-        $regionFactory = function() use (&$factoryCalled, $builder): Region {
+
+        $regionFactory = function () use (&$factoryCalled, $builder): Region {
             $factoryCalled = true;
             return $builder->newInstance()->setStates('child')->build();
         };
-        
+
         $builder->setStates('parent');
         $builder->addBuildStep(
             RegionLoader::regionSpawnStep('parent', $regionFactory, $guard)
         );
-        
+
         $region = $builder->build();
-        
+
         // Trigger with incompatible type
         $region->trigger(new stdClass());
-        
+
         // Neither guard nor factory should have been called
         $this->assertFalse($guardCalled, 'Guard should not be called with incompatible parameter');
         $this->assertFalse($factoryCalled, 'Factory should not be called when parameter incompatible');
@@ -60,31 +63,31 @@ class SpawnParameterIncompatibilityTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader());
-        
+
         $spawnedRegions = [];
-        
-        $guard = function(TypedTrigger $t): bool {
+
+        $guard = function (TypedTrigger $t): bool {
             return true;
         };
-        
-        $regionFactory = function() use (&$spawnedRegions, $builder): Region {
+
+        $regionFactory = function () use (&$spawnedRegions, $builder): Region {
             $region = $builder->newInstance()->setStates('child')->build();
             $spawnedRegions[] = $region;
             return $region;
         };
-        
+
         $builder->setStates('parent');
         $builder->addBuildStep(
             RegionLoader::regionSpawnStep('parent', $regionFactory, $guard)
         );
-        
+
         $region = $builder->build();
-        
+
         // Trigger multiple times with incompatible types
         $region->trigger(new stdClass());
         $region->trigger(new stdClass());
         $region->trigger(new stdClass());
-        
+
         // No regions should have been spawned
         $this->assertCount(0, $spawnedRegions, 'No regions should spawn with incompatible parameters');
     }

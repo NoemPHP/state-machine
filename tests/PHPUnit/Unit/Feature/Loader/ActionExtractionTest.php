@@ -20,11 +20,11 @@ class ActionExtractionTest extends TestCase
     public function testExtractsActionCallbacksFromConfiguration(): void
     {
         $processor = new ProcessArray(new Schema(), new TransformArray());
-        
+
         $reflection = new \ReflectionClass($processor);
         $method = $reflection->getMethod('extractConfig');
         $method->setAccessible(true);
-        
+
         $statesConfig = [
             [
                 'name' => 'processing',
@@ -33,9 +33,9 @@ class ActionExtractionTest extends TestCase
                 ],
             ],
         ];
-        
+
         [$states, $regions, $transitions, $callbacks] = $method->invoke($processor, $statesConfig);
-        
+
         $this->assertArrayHasKey('processing', $callbacks['action']);
         $this->assertCount(1, $callbacks['action']['processing']);
     }

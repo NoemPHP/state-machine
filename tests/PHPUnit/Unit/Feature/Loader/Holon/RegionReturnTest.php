@@ -28,11 +28,11 @@ YAML;
 
         // Act
         $result = Holon::fromYaml($yaml);
-        
+
         // Assert
         $this->assertInstanceOf(Region::class, $result);
     }
-    
+
     public function testReturnsRegionWhenAutoRunIsFalse(): void
     {
         // Arrange
@@ -48,11 +48,11 @@ YAML;
 
         // Act
         $result = Holon::fromYaml($yaml);
-        
+
         // Assert
         $this->assertInstanceOf(Region::class, $result);
     }
-    
+
     public function testReturnsWorkingRegion(): void
     {
         // Arrange
@@ -68,7 +68,7 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert - Verify region is functional
         $this->assertEquals('a', $region->currentState());
         $region->trigger(new \stdClass());

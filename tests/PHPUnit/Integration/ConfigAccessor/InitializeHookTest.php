@@ -20,11 +20,11 @@ class CachingConfigAccessor extends ConfigAccessor
 {
     private array $cache = [];
     public bool $initializeCalled = false;
-    
+
     protected function initialize(): void
     {
         $this->initializeCalled = true;
-        
+
         // Build cache during initialization
         $items = $this->get('loader.array.items', []);
         foreach ($items as $item) {
@@ -33,7 +33,7 @@ class CachingConfigAccessor extends ConfigAccessor
             }
         }
     }
-    
+
     /**
      * Get item by ID from cache (built during initialization)
      */
@@ -41,7 +41,7 @@ class CachingConfigAccessor extends ConfigAccessor
     {
         return $this->cache[$id] ?? null;
     }
-    
+
     /**
      * Get all cached items
      */
@@ -58,29 +58,29 @@ class ValidatingConfigAccessor extends ConfigAccessor
 {
     public bool $isValid = false;
     public array $validationErrors = [];
-    
+
     protected function initialize(): void
     {
         // Perform validation during initialization
         $this->validationErrors = [];
-        
+
         if (!$this->has('loader.array.required_field')) {
             $this->validationErrors[] = 'required_field is missing';
         }
-        
+
         $version = $this->get('loader.array.version');
         if ($version !== null && !is_string($version)) {
             $this->validationErrors[] = 'version must be a string';
         }
-        
+
         $this->isValid = empty($this->validationErrors);
     }
-    
+
     public function isValid(): bool
     {
         return $this->isValid;
     }
-    
+
     public function getValidationErrors(): array
     {
         return $this->validationErrors;
@@ -93,18 +93,18 @@ class ValidatingConfigAccessor extends ConfigAccessor
 class CachingTestFeature implements Feature
 {
     public ?array $foundItem = null;
-    
+
     public function __invoke(ChainMail $chainMail): void
     {
         $chainMail->supply()->use(
             function (EnhanceRegionBuilder $enhanceRegionBuilder) {
                 $enhanceRegionBuilder->link(function (BuildParams $context, callable $next) {
                     $builder = $next($context);
-                    
+
                     $config = $context->config(CachingConfigAccessor::class);
                     // Use cached lookup instead of searching through array
                     $this->foundItem = $config->getItemById('item2');
-                    
+
                     return $builder;
                 });
             }
@@ -128,13 +128,13 @@ class InitializeHookTest extends TestCase
             ]
         ];
         $params = new BuildParams(new RegionBuilder(), $configArray);
-        
+
         $accessor = $params->config(CachingConfigAccessor::class);
-        
+
         // Verify initialize() was called
         $this->assertTrue($accessor->initializeCalled);
     }
-    
+
     public function testInitializeHookBuildsCache(): void
     {
         $items = [
@@ -151,20 +151,20 @@ class InitializeHookTest extends TestCase
             ]
         ];
         $params = new BuildParams(new RegionBuilder(), $configArray);
-        
+
         $accessor = $params->config(CachingConfigAccessor::class);
-        
+
         // Verify cache was built during initialization
         $cached = $accessor->getCachedItems();
         $this->assertCount(3, $cached);
         $this->assertSame('First', $cached['item1']['name']);
         $this->assertSame('Second', $cached['item2']['name']);
-        
+
         // Verify cached lookup works
         $item = $accessor->getItemById('item2');
         $this->assertSame('Second', $item['name']);
     }
-    
+
     public function testInitializeHookWithValidation(): void
     {
         $configArrayValid = [
@@ -185,31 +185,31 @@ class InitializeHookTest extends TestCase
             ]
         ];
         $paramsInvalid = new BuildParams(new RegionBuilder(), $configArrayInvalid);
-        
+
         $accessorValid = $paramsValid->config(ValidatingConfigAccessor::class);
         $accessorInvalid = $paramsInvalid->config(ValidatingConfigAccessor::class);
-        
+
         // Verify validation ran during initialization
         $this->assertTrue($accessorValid->isValid());
         $this->assertEmpty($accessorValid->getValidationErrors());
-        
+
         $this->assertFalse($accessorInvalid->isValid());
         $this->assertContains('required_field is missing', $accessorInvalid->getValidationErrors());
         $this->assertContains('version must be a string', $accessorInvalid->getValidationErrors());
     }
-    
+
     public function testFeatureUsesInitializedCache(): void
     {
         $builder = new RegionBuilder();
         $feature = new CachingTestFeature();
         $builder->enableFeatures($feature);
-        
+
         $items = [
             ['id' => 'item1', 'name' => 'First'],
             ['id' => 'item2', 'name' => 'Second'],
             ['id' => 'item3', 'name' => 'Third'],
         ];
-        
+
         $region = $builder
             ->setStates('idle')
             ->build([
@@ -219,7 +219,7 @@ class InitializeHookTest extends TestCase
                     ]
                 ]
             ]);
-        
+
         // Verify feature used the cached lookup from initialize()
         $this->assertNotNull($feature->foundItem);
         $this->assertSame('item2', $feature->foundItem['id']);

@@ -22,7 +22,9 @@ class IsRegisteredCheckTest extends TestCase
         $registry = new FeatureRegistry();
 
         $feature = new class implements Feature {
-            public function __invoke(ChainMail $chainMail): void {}
+            public function __invoke(ChainMail $chainMail): void
+            {
+            }
         };
 
         $registry->register($feature);
@@ -38,7 +40,9 @@ class IsRegisteredCheckTest extends TestCase
         $registry = new FeatureRegistry();
 
         $feature = new class implements Feature {
-            public function __invoke(ChainMail $chainMail): void {}
+            public function __invoke(ChainMail $chainMail): void
+            {
+            }
         };
 
         $this->assertFalse(

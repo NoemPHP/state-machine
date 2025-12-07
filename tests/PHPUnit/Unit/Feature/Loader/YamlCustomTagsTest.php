@@ -21,21 +21,21 @@ class YamlCustomTagsTest extends TestCase
         $yaml = <<<YAML
         value: !custom "data"
         YAML;
-        
+
         $helperCalled = false;
         $receivedValue = null;
-        
+
         $helpers = [
-            'custom' => function(string $value) use (&$helperCalled, &$receivedValue) {
+            'custom' => function (string $value) use (&$helperCalled, &$receivedValue) {
                 $helperCalled = true;
                 $receivedValue = $value;
                 return "processed_$value";
             }
         ];
-        
+
         $converter = new ConvertYaml();
         $result = $converter->fromString($yaml, $helpers);
-        
+
         // Verify the helper was called (which means TaggedValue was created)
         $this->assertTrue($helperCalled, 'Helper should have been called');
         $this->assertEquals('data', $receivedValue, 'Helper should receive the tagged value');

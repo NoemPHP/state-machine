@@ -33,23 +33,23 @@ class ReturnsFalseOnIncompatibleTriggerTest extends TestCase
         $region = (new RegionBuilder())->setStates('a', 'b')->build();
         $trigger = new stdClass();
         $handler = fn(CustomEvent $t): bool => true;
-        
+
         $context = new Params\Guard($region, 'a', 'b', $handler, $trigger);
         $result = $guard->call($context);
-        
+
         $this->assertFalse($result);
     }
-    
+
     public function testReturnsTrueForCompatibleType(): void
     {
         $guard = new Guard(new InvokeCallback(), new PrepareInvokable());
         $region = (new RegionBuilder())->setStates('a', 'b')->build();
         $trigger = new CustomEvent('test');
         $handler = fn(CustomEvent $t): bool => $t->data === 'test';
-        
+
         $context = new Params\Guard($region, 'a', 'b', $handler, $trigger);
         $result = $guard->call($context);
-        
+
         $this->assertTrue($result);
     }
 }

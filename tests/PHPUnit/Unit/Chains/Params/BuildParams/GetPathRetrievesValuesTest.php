@@ -28,12 +28,12 @@ class GetPathRetrievesValuesTest extends TestCase
             ]
         ];
         $params = new BuildParams($builder, $config);
-        
+
         $result = $params->getPath('loader.array.context.resolvers');
-        
+
         $this->assertSame(['resolver1', 'resolver2'], $result);
     }
-    
+
     public function testGetPathHandlesNestedPaths(): void
     {
         $builder = new RegionBuilder();
@@ -45,7 +45,7 @@ class GetPathRetrievesValuesTest extends TestCase
             ]
         ];
         $params = new BuildParams($builder, $config);
-        
+
         $this->assertSame('value', $params->getPath('a.b.c'));
     }
 }

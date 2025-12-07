@@ -22,13 +22,13 @@ class ReturnsCurrentStateTest extends TestCase
     {
         $trigger = new stdClass();
         $trigger->ready = false;
-        
+
         $region = (new RegionBuilder())
             ->enableFeatures(new TransitionsFeature())
             ->setStates('idle', 'working')
             ->addBuildStep(new AddTransition('idle', 'working', fn(object $t): bool => $t->ready))
             ->build();
-        
+
         $this->assertTrue($region->isInState('idle'));
 
         $region->trigger($trigger);

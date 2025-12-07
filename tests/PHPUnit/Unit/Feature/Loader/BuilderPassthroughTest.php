@@ -20,13 +20,13 @@ class BuilderPassthroughTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader());
-        
+
         // Build without loader args - should use normal builder flow
         $region = $builder
             ->setStates('idle', 'active')
             ->markInitial('idle')
             ->build();
-        
+
         $this->assertInstanceOf(\Noem\State\Region::class, $region);
         $this->assertTrue($region->isInState('idle'));
     }

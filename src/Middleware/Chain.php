@@ -78,12 +78,12 @@ class Chain implements ChainInterface
         $this->currentChain = null;
 
         // Return a deregister function
-        return function() use ($id, $callback) {
+        return function () use ($id, $callback) {
             if (isset($this->middlewareRegistry[$id])) {
                 unset($this->middlewareRegistry[$id]);
 
                 // Remove from middlewares array
-                $this->middlewares = array_filter($this->middlewares, function($middleware) use ($callback) {
+                $this->middlewares = array_filter($this->middlewares, function ($middleware) use ($callback) {
                     return $middleware !== $callback;
                 });
 

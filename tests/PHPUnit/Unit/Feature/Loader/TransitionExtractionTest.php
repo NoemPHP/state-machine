@@ -20,11 +20,11 @@ class TransitionExtractionTest extends TestCase
     public function testExtractsTransitionsFromConfiguration(): void
     {
         $processor = new ProcessArray(new Schema(), new TransformArray());
-        
+
         $reflection = new \ReflectionClass($processor);
         $method = $reflection->getMethod('extractConfig');
         $method->setAccessible(true);
-        
+
         $statesConfig = [
             [
                 'name' => 'idle',
@@ -33,9 +33,9 @@ class TransitionExtractionTest extends TestCase
                 ],
             ],
         ];
-        
+
         [$states, $regions, $transitions, $callbacks] = $method->invoke($processor, $statesConfig);
-        
+
         $this->assertArrayHasKey('idle', $transitions);
         $this->assertCount(1, $transitions['idle']);
         $this->assertEquals('active', $transitions['idle'][0]['target']);

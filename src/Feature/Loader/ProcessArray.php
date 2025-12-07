@@ -164,7 +164,7 @@ class ProcessArray
         }
         throw new \RuntimeException('Invalid "guard" callback');
     }
-    
+
     /**
      * Ensures a guard closure has proper type hints by wrapping it if necessary
      */
@@ -181,7 +181,7 @@ class ProcessArray
         } catch (\Throwable $e) {
             // If reflection fails, wrap it anyway
         }
-        
+
         // Wrap untyped closure to add type hints
         return fn(object $t): bool => (bool)$guard($t);
     }
@@ -210,7 +210,7 @@ class ProcessArray
         }
         throw new \RuntimeException('Invalid "run" callback');
     }
-    
+
     /**
      * Ensures a callback closure has proper type hints by wrapping it if necessary
      */

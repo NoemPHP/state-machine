@@ -20,10 +20,10 @@ class SkipsOnImperativeChangeTest extends TestCase
     {
         $builder = new RegionBuilder();
         $guardCalled = false;
-        
+
         // Add middleware to DispatchAction chain that imperatively changes state
-        $builder->chainMail->use(function(\Noem\State\Chains\DispatchAction $dispatchAction) {
-            $dispatchAction->link(function(\Noem\State\Chains\Params\Action $action, callable $next): string {
+        $builder->chainMail->use(function (\Noem\State\Chains\DispatchAction $dispatchAction) {
+            $dispatchAction->link(function (\Noem\State\Chains\Params\Action $action, callable $next): string {
                 // Call the next middleware first
                 $next($action);
                 // Then imperatively return a different state
@@ -35,7 +35,7 @@ class SkipsOnImperativeChangeTest extends TestCase
             ->setStates('one', 'two', 'three')
             ->markInitial('one')
             // Add automatic transition from one to two
-            ->addBuildStep(new AddTransition('one', 'two', function(object $t) use (&$guardCalled): bool {
+            ->addBuildStep(new AddTransition('one', 'two', function (object $t) use (&$guardCalled): bool {
                 $guardCalled = true;
                 return true;
             }))
@@ -50,27 +50,27 @@ class SkipsOnImperativeChangeTest extends TestCase
         // Guard should not have been called since state changed imperatively
         $this->assertFalse($guardCalled);
     }
-    
+
     public function testAllowsAutomaticTransitionWhenActionReturnsCurrentState(): void
     {
         $builder = new RegionBuilder();
         $guardCalled = false;
-        
+
         $region = $builder
             ->setStates('a', 'b')
             ->markInitial('a')
-            ->addBuildStep(new AddTransition('a', 'b', function(object $t) use (&$guardCalled): bool {
+            ->addBuildStep(new AddTransition('a', 'b', function (object $t) use (&$guardCalled): bool {
                 $guardCalled = true;
                 return true;
             }))
-            ->onAction('a', function(object $t) {
+            ->onAction('a', function (object $t) {
                 // Don't return anything (no imperative change)
                 // This allows automatic transitions to proceed
             })
             ->build();
-        
+
         $region->trigger((object)[]);
-        
+
         // Should transition automatically to b
         $this->assertTrue($region->isInState('b'));
         // Guard should have been called

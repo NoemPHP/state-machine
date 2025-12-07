@@ -23,10 +23,10 @@ class YamlParsingTest extends TestCase
           - name: active
         initial: idle
         YAML;
-        
+
         $converter = new ConvertYaml();
         $result = $converter->fromString($yaml, []);
-        
+
         $this->assertIsArray($result);
         $this->assertArrayHasKey('states', $result);
         $this->assertArrayHasKey('initial', $result);

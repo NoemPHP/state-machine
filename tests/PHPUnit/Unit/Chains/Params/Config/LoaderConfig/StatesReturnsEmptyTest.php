@@ -21,9 +21,9 @@ class StatesReturnsEmptyTest extends TestCase
         $builder = new RegionBuilder();
         $config = ['loader' => ['array' => []]];
         $params = new BuildParams($builder, $config);
-        
+
         $loaderConfig = $params->config(LoaderConfig::class);
-        
+
         $this->assertSame([], $loaderConfig->states());
     }
 }

@@ -6,7 +6,7 @@ namespace Noem\State\Test\E2E\Support;
 
 /**
  * Mock socket for testing network operations without real I/O.
- * 
+ *
  * Simulates stream_socket_* functions with controllable behavior.
  */
 class MockSocket
@@ -15,7 +15,7 @@ class MockSocket
     private bool $closed = false;
     private array $pendingConnections = [];
     private array $activeClients = [];
-    
+
     /**
      * Create a mock server socket.
      */
@@ -23,7 +23,7 @@ class MockSocket
     {
         return new self();
     }
-    
+
     /**
      * Set blocking mode.
      */
@@ -31,7 +31,7 @@ class MockSocket
     {
         $this->blocking = $blocking;
     }
-    
+
     /**
      * Check if socket is blocking.
      */
@@ -39,7 +39,7 @@ class MockSocket
     {
         return $this->blocking;
     }
-    
+
     /**
      * Queue a pending connection.
      */
@@ -47,7 +47,7 @@ class MockSocket
     {
         $this->pendingConnections[] = $connection;
     }
-    
+
     /**
      * Accept a connection (returns null if non-blocking and no connections).
      */
@@ -56,23 +56,23 @@ class MockSocket
         if (empty($this->pendingConnections)) {
             return null;
         }
-        
+
         $connection = array_shift($this->pendingConnections);
         $this->activeClients[spl_object_id($connection)] = $connection;
-        
+
         return $connection;
     }
-    
+
     /**
      * Get all active client connections.
-     * 
+     *
      * @return MockConnection[]
      */
     public function getActiveClients(): array
     {
         return array_values($this->activeClients);
     }
-    
+
     /**
      * Close the server socket.
      */
@@ -80,7 +80,7 @@ class MockSocket
     {
         $this->closed = true;
     }
-    
+
     /**
      * Check if socket is closed.
      */
@@ -88,7 +88,7 @@ class MockSocket
     {
         return $this->closed;
     }
-    
+
     /**
      * Get count of pending connections.
      */

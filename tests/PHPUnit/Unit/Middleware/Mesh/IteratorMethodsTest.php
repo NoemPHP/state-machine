@@ -20,7 +20,7 @@ class IteratorMethodsTest extends TestCase
         $mesh = new Mesh();
         $mesh[] = 'first';
         $mesh[] = 'second';
-        
+
         $this->assertSame('first', $mesh->current());
     }
 
@@ -29,9 +29,9 @@ class IteratorMethodsTest extends TestCase
         $mesh = new Mesh();
         $mesh[] = 'first';
         $mesh[] = 'second';
-        
+
         $this->assertSame('first', $mesh->current());
-        
+
         $mesh->next();
         $this->assertSame('second', $mesh->current());
     }
@@ -41,9 +41,9 @@ class IteratorMethodsTest extends TestCase
         $mesh = new Mesh();
         $mesh[] = 'first';
         $mesh[] = 'second';
-        
+
         $this->assertSame(0, $mesh->key());
-        
+
         $mesh->next();
         $this->assertSame(1, $mesh->key());
     }
@@ -53,12 +53,12 @@ class IteratorMethodsTest extends TestCase
         $mesh = new Mesh();
         $mesh[] = 'one';
         $mesh[] = 'two';
-        
+
         $this->assertTrue($mesh->valid());
-        
+
         $mesh->next();
         $this->assertTrue($mesh->valid());
-        
+
         $mesh->next();
         $this->assertFalse($mesh->valid());
     }
@@ -68,10 +68,10 @@ class IteratorMethodsTest extends TestCase
         $mesh = new Mesh();
         $mesh[] = 'x';
         $mesh[] = 'y';
-        
+
         $mesh->next();
         $this->assertSame(1, $mesh->key());
-        
+
         $mesh->rewind();
         $this->assertSame(0, $mesh->key());
     }
@@ -82,28 +82,28 @@ class IteratorMethodsTest extends TestCase
         $mesh[] = 'a';
         $mesh[] = 'b';
         $mesh[] = 'c';
-        
+
         // Initial state
         $this->assertTrue($mesh->valid());
         $this->assertSame(0, $mesh->key());
         $this->assertSame('a', $mesh->current());
-        
+
         // First next
         $mesh->next();
         $this->assertTrue($mesh->valid());
         $this->assertSame(1, $mesh->key());
         $this->assertSame('b', $mesh->current());
-        
+
         // Second next
         $mesh->next();
         $this->assertTrue($mesh->valid());
         $this->assertSame(2, $mesh->key());
         $this->assertSame('c', $mesh->current());
-        
+
         // Third next (past end)
         $mesh->next();
         $this->assertFalse($mesh->valid());
-        
+
         // Rewind
         $mesh->rewind();
         $this->assertTrue($mesh->valid());
@@ -114,7 +114,7 @@ class IteratorMethodsTest extends TestCase
     public function testValidOnEmptyMesh(): void
     {
         $mesh = new Mesh();
-        
+
         $this->assertFalse($mesh->valid());
     }
 
@@ -124,17 +124,17 @@ class IteratorMethodsTest extends TestCase
         $mesh[] = 'first';
         $mesh[] = 'second';
         $mesh[] = 'third';
-        
+
         // Navigate to end
         $mesh->next();
         $mesh->next();
         $mesh->next();
-        
+
         $this->assertFalse($mesh->valid());
-        
+
         // Rewind brings us back to start
         $mesh->rewind();
-        
+
         $this->assertTrue($mesh->valid());
         $this->assertSame(0, $mesh->key());
         $this->assertSame('first', $mesh->current());
@@ -145,11 +145,11 @@ class IteratorMethodsTest extends TestCase
         $mesh = new Mesh();
         $mesh[] = 'one';
         $mesh[] = 'two';
-        
+
         // Iterator uses numeric positions
         $this->assertTrue($mesh->valid());
         $this->assertSame(0, $mesh->key());
-        
+
         $mesh->next();
         $this->assertSame(1, $mesh->key());
     }
@@ -160,7 +160,7 @@ class IteratorMethodsTest extends TestCase
         $mesh[] = 'a';
         $mesh[] = 'b';
         $mesh[] = 'c';
-        
+
         // Manual iteration
         $manualResult = [];
         $mesh->rewind();
@@ -168,13 +168,13 @@ class IteratorMethodsTest extends TestCase
             $manualResult[] = $mesh->current();
             $mesh->next();
         }
-        
+
         // Foreach iteration
         $foreachResult = [];
         foreach ($mesh as $value) {
             $foreachResult[] = $value;
         }
-        
+
         $this->assertSame($foreachResult, $manualResult);
     }
 }

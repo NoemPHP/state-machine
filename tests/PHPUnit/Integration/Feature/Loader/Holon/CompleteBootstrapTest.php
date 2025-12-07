@@ -44,20 +44,20 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert - machine is fully functional
         $this->assertInstanceOf(Region::class, $region);
         $this->assertEquals('initializing', $region->currentState());
-        
+
         // Execute through states
         $region->trigger(new \stdClass());
         $this->assertEquals('running', $region->currentState());
-        
+
         $region->trigger(new \stdClass());
         $this->assertEquals('complete', $region->currentState());
         $this->assertTrue($region->isFinal());
     }
-    
+
     public function testBootstrapsWithMultipleFeatures(): void
     {
         // Arrange
@@ -81,13 +81,13 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert
         $this->assertInstanceOf(Region::class, $region);
         $region->trigger(new \stdClass());
         $this->assertTrue($region->isFinal());
     }
-    
+
     public function testBootstrapsMinimalMachine(): void
     {
         // Arrange - absolute minimum configuration
@@ -100,13 +100,13 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert
         $this->assertInstanceOf(Region::class, $region);
         $this->assertEquals('done', $region->currentState());
         $this->assertTrue($region->isFinal());
     }
-    
+
     public function testBootstrapsWithPhpHelpers(): void
     {
         // Arrange
@@ -124,7 +124,7 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert - PHP helper processed during bootstrap
         $this->assertInstanceOf(Region::class, $region);
     }

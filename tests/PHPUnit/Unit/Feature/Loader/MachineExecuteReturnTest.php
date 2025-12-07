@@ -20,12 +20,12 @@ class MachineExecuteReturnTest extends TestCase
     public function testExecuteReturnsLastTriggerResult(): void
     {
         $triggerCount = 0;
-        
-        $machine = new class($triggerCount) extends Machine {
+
+        $machine = new class ($triggerCount) extends Machine {
             public function __construct(private int &$count)
             {
             }
-            
+
             public function yaml(): string
             {
                 return <<<YAML
@@ -41,7 +41,7 @@ class MachineExecuteReturnTest extends TestCase
                 final: end
                 YAML;
             }
-            
+
             public function trigger(): object
             {
                 $this->count++;
@@ -50,7 +50,7 @@ class MachineExecuteReturnTest extends TestCase
                 $trigger->label = "trigger-{$this->count}";
                 return $trigger;
             }
-            
+
             public function features(): iterable
             {
                 return [
@@ -59,23 +59,23 @@ class MachineExecuteReturnTest extends TestCase
                 ];
             }
         };
-        
+
         $builder = new RegionBuilder();
         $region = $builder
             ->enableFeatures(...$machine->features())
             ->build($machine->builderArgs());
-        
+
         $result = $machine->execute($region);
-        
+
         // Result should be the last trigger object
         $this->assertIsObject($result);
         $this->assertObjectHasProperty('id', $result);
         $this->assertObjectHasProperty('label', $result);
-        
+
         // Should be the last trigger that completed the state machine
         $this->assertSame($triggerCount, $result->id);
         $this->assertSame("trigger-{$triggerCount}", $result->label);
-        
+
         // Verify the region reached final state
         $this->assertTrue($region->isFinal());
     }

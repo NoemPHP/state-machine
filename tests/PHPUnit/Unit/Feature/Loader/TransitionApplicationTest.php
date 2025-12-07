@@ -22,7 +22,7 @@ class TransitionApplicationTest extends TestCase
     public function testAddsTransitionsUsingAddTransitionBuildStep(): void
     {
         $processor = new ProcessArray(new Schema(), new TransformArray());
-        
+
         $config = [
             'states' => [
                 [
@@ -34,13 +34,13 @@ class TransitionApplicationTest extends TestCase
                 ['name' => 'active'],
             ],
         ];
-        
+
         $builder = new RegionBuilder();
         $builder->enableFeatures(new TransitionsFeature());
         $processor->fromData($config, $builder);
-        
+
         $region = $builder->build();
-        
+
         // Verify transition was applied - region should start in idle
         $this->assertTrue($region->isInState('idle'));
     }

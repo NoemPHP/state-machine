@@ -12,9 +12,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Acceptance Criterion: RegionLoader creates isolated builder instances for spawned sub-regions
- * 
+ *
  * Intent: Prevents configuration leakage between parent and spawned regions by using separate builder instances
- * 
+ *
  * Replaces 1 spec from spawn-processing:
  * - RegionLoader creates new builder instance for sub-region
  */

@@ -23,7 +23,9 @@ class CachesPerInstanceTest extends TestCase
         $chainMailB = new ChainMail();
 
         $feature = new class implements Feature {
-            public function __invoke(ChainMail $chainMail): void {}
+            public function __invoke(ChainMail $chainMail): void
+            {
+            }
         };
 
         $registry->register($feature);
@@ -38,8 +40,11 @@ class CachesPerInstanceTest extends TestCase
         $resultB = $registry->resolve($chainMailB);
 
         // Same instance should return same array reference
-        $this->assertSame($resultA1, $resultA2,
-            'Subsequent calls with same ChainMail should return cached array');
+        $this->assertSame(
+            $resultA1,
+            $resultA2,
+            'Subsequent calls with same ChainMail should return cached array'
+        );
 
         // Different instances get same features but the behavior is what matters
         $this->assertCount(1, $resultA1);
@@ -58,10 +63,13 @@ class CachesPerInstanceTest extends TestCase
         // We'll track invocations which should only happen once
         $invocationCount = 0;
 
-        $feature = new class($invocationCount) implements Feature {
-            public function __construct(private &$invocationCount) {}
+        $feature = new class ($invocationCount) implements Feature {
+            public function __construct(private &$invocationCount)
+            {
+            }
 
-            public function __invoke(ChainMail $chainMail): void {
+            public function __invoke(ChainMail $chainMail): void
+            {
                 $this->invocationCount++;
             }
         };
@@ -74,8 +82,11 @@ class CachesPerInstanceTest extends TestCase
         $registry->resolve($chainMail);
 
         // Should only invoke once
-        $this->assertEquals(1, $invocationCount,
-            'Feature should only be invoked once despite multiple resolve calls');
+        $this->assertEquals(
+            1,
+            $invocationCount,
+            'Feature should only be invoked once despite multiple resolve calls'
+        );
     }
 
     public function testCacheIsPerInstanceNotGlobal(): void
@@ -87,10 +98,13 @@ class CachesPerInstanceTest extends TestCase
 
         $invocationsPerInstance = [];
 
-        $feature = new class($invocationsPerInstance) implements Feature {
-            public function __construct(private &$invocationsPerInstance) {}
+        $feature = new class ($invocationsPerInstance) implements Feature {
+            public function __construct(private &$invocationsPerInstance)
+            {
+            }
 
-            public function __invoke(ChainMail $chainMail): void {
+            public function __invoke(ChainMail $chainMail): void
+            {
                 $id = spl_object_id($chainMail);
                 $this->invocationsPerInstance[$id] = ($this->invocationsPerInstance[$id] ?? 0) + 1;
             }
@@ -104,11 +118,14 @@ class CachesPerInstanceTest extends TestCase
         $registry->resolve($chainMailC);
 
         // Each instance should have exactly one invocation
-        $this->assertEquals([
+        $this->assertEquals(
+            [
             spl_object_id($chainMailA) => 1,
             spl_object_id($chainMailB) => 1,
             spl_object_id($chainMailC) => 1,
-        ], $invocationsPerInstance,
-            'Each ChainMail instance should trigger exactly one invocation');
+            ],
+            $invocationsPerInstance,
+            'Each ChainMail instance should trigger exactly one invocation'
+        );
     }
 }

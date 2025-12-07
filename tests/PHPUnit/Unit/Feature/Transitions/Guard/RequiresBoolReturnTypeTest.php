@@ -23,36 +23,36 @@ class RequiresBoolReturnTypeTest extends TestCase
     {
         $builder = new RegionBuilder();
         $region = $builder->setStates('a', 'b')->build();
-        
+
         $invokeCallback = $builder->chainMail->get(InvokeCallback::class);
         $prepareInvokable = $builder->chainMail->get(PrepareInvokable::class);
-        
+
         $guard = new Guard($invokeCallback, $prepareInvokable);
-        
+
         $validGuard = fn(object $t): bool => true;
         $context = new Params\Guard($region, 'a', 'b', $validGuard, (object)[]);
-        
+
         $result = $guard->call($context);
-        
+
         $this->assertIsBool($result);
     }
-    
+
     public function testThrowsOnNonBoolReturnType(): void
     {
         $builder = new RegionBuilder();
         $region = $builder->setStates('a', 'b')->build();
-        
+
         $invokeCallback = $builder->chainMail->get(InvokeCallback::class);
         $prepareInvokable = $builder->chainMail->get(PrepareInvokable::class);
-        
+
         $guard = new Guard($invokeCallback, $prepareInvokable);
-        
+
         $invalidGuard = fn(object $t): string => 'yes';
         $context = new Params\Guard($region, 'a', 'b', $invalidGuard, (object)[]);
-        
+
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Guards must return bool');
-        
+
         $guard->call($context);
     }
 }

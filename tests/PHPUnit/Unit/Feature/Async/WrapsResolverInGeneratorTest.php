@@ -78,7 +78,7 @@ class WrapsResolverInGeneratorTest extends TestCase
         // The first access returns null because the resolver executes asynchronously
         $this->assertNull($capturedValues[0], 'First access returns null as resolver is async');
     }
-    
+
     public function testWaitsForResolverCompletion(): void
     {
         $builder = new RegionBuilder();
@@ -87,7 +87,7 @@ class WrapsResolverInGeneratorTest extends TestCase
             new ExtendedState(),
             new \Noem\State\Feature\Transitions\TransitionsFeature()
         );
-        
+
         $steps = [];
         $capturedValue = null;
 

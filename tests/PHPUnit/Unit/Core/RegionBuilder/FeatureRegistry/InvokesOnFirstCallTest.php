@@ -22,10 +22,13 @@ class InvokesOnFirstCallTest extends TestCase
         $chainMail = new ChainMail();
         $invoked = false;
 
-        $feature = new class($invoked) implements Feature {
-            public function __construct(private &$invoked) {}
+        $feature = new class ($invoked) implements Feature {
+            public function __construct(private &$invoked)
+            {
+            }
 
-            public function __invoke(ChainMail $chainMail): void {
+            public function __invoke(ChainMail $chainMail): void
+            {
                 $this->invoked = true;
             }
         };
@@ -44,10 +47,13 @@ class InvokesOnFirstCallTest extends TestCase
         $chainMail = new ChainMail();
         $receivedChainMail = null;
 
-        $feature = new class($receivedChainMail) implements Feature {
-            public function __construct(private &$receivedChainMail) {}
+        $feature = new class ($receivedChainMail) implements Feature {
+            public function __construct(private &$receivedChainMail)
+            {
+            }
 
-            public function __invoke(ChainMail $chainMail): void {
+            public function __invoke(ChainMail $chainMail): void
+            {
                 $this->receivedChainMail = $chainMail;
             }
         };
@@ -56,8 +62,11 @@ class InvokesOnFirstCallTest extends TestCase
 
         $registry->resolve($chainMail);
 
-        $this->assertSame($chainMail, $receivedChainMail,
-            'Feature should receive the same ChainMail instance passed to resolve');
+        $this->assertSame(
+            $chainMail,
+            $receivedChainMail,
+            'Feature should receive the same ChainMail instance passed to resolve'
+        );
     }
 
     public function testResolveInvokesAllFeaturesInOrder(): void
@@ -66,18 +75,24 @@ class InvokesOnFirstCallTest extends TestCase
         $chainMail = new ChainMail();
         $invocationOrder = [];
 
-        $featureA = new class($invocationOrder) implements Feature {
-            public function __construct(private &$invocationOrder) {}
+        $featureA = new class ($invocationOrder) implements Feature {
+            public function __construct(private &$invocationOrder)
+            {
+            }
 
-            public function __invoke(ChainMail $chainMail): void {
+            public function __invoke(ChainMail $chainMail): void
+            {
                 $this->invocationOrder[] = 'A';
             }
         };
 
-        $featureB = new class($invocationOrder) implements Feature {
-            public function __construct(private &$invocationOrder) {}
+        $featureB = new class ($invocationOrder) implements Feature {
+            public function __construct(private &$invocationOrder)
+            {
+            }
 
-            public function __invoke(ChainMail $chainMail): void {
+            public function __invoke(ChainMail $chainMail): void
+            {
                 $this->invocationOrder[] = 'B';
             }
         };
@@ -87,8 +102,11 @@ class InvokesOnFirstCallTest extends TestCase
 
         $registry->resolve($chainMail);
 
-        $this->assertCount(2, $invocationOrder,
-            'All features should be invoked');
+        $this->assertCount(
+            2,
+            $invocationOrder,
+            'All features should be invoked'
+        );
         $this->assertContains('A', $invocationOrder);
         $this->assertContains('B', $invocationOrder);
     }

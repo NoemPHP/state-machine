@@ -30,11 +30,11 @@ YAML;
 
         // Assert
         $this->expectException(ParseException::class);
-        
+
         // Act
         Holon::fromYaml($invalidYaml);
     }
-    
+
     public function testThrowsExceptionForInvalidYamlStructure(): void
     {
         // Arrange
@@ -47,11 +47,11 @@ YAML;
 
         // Assert
         $this->expectException(ParseException::class);
-        
+
         // Act
         Holon::fromYaml($invalidYaml);
     }
-    
+
     public function testThrowsExceptionForInvalidIndentation(): void
     {
         // Arrange
@@ -65,11 +65,11 @@ YAML;
 
         // Assert
         $this->expectException(ParseException::class);
-        
+
         // Act
         Holon::fromYaml($invalidYaml);
     }
-    
+
     public function testAcceptsValidYaml(): void
     {
         // Arrange
@@ -82,7 +82,7 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($validYaml);
-        
+
         // Assert - no exception thrown
         $this->assertNotNull($region);
     }

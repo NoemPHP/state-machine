@@ -20,12 +20,11 @@ class IncludeHelper
     use DepthTracker;
 
     public function __construct(
-        private readonly LoadFile       $loadFile,
-        private readonly BuildParams    $buildParams,
-        private readonly ConvertYaml    $convertYaml,
+        private readonly LoadFile $loadFile,
+        private readonly BuildParams $buildParams,
+        private readonly ConvertYaml $convertYaml,
         private readonly LoadFileParams $currentParams,
-    )
-    {
+    ) {
     }
 
     public function __invoke(string $path): mixed

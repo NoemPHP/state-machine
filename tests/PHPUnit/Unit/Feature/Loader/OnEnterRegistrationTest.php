@@ -21,26 +21,28 @@ class OnEnterRegistrationTest extends TestCase
     public function testRegistersOnEnterCallbacksWithBuilder(): void
     {
         $called = false;
-        
+
         $processor = new ProcessArray(new Schema(), new TransformArray());
-        
+
         $config = [
             'states' => [
                 [
                     'name' => 'active',
                     'onEnter' => [
-                        ['run' => function(object $t) use (&$called) { $called = true; }],
+                        ['run' => function (object $t) use (&$called) {
+                            $called = true;
+                        }],
                     ],
                 ],
             ],
         ];
-        
+
         $builder = new RegionBuilder();
         $processor->fromData($config, $builder);
-        
+
         $region = $builder->build();
         $region->trigger((object)[]);
-        
+
         $this->assertTrue($called, 'onEnter callback should have been called');
     }
 }

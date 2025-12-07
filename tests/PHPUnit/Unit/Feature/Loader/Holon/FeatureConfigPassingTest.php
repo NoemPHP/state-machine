@@ -23,18 +23,22 @@ class FeatureConfigPassingTest extends TestCase
         $reflection = new ReflectionClass(Holon::class);
         $method = $reflection->getMethod('instantiateFeatures');
         $method->setAccessible(true);
-        
+
         $buildContainer = $reflection->getMethod('buildContainer');
         $buildContainer->setAccessible(true);
         $container = $buildContainer->invoke(null, ['services' => []]);
-        
+
         // Create a feature that accepts config in constructor
-        $testFeature = new class(['option' => 'value']) implements Feature {
-            public function __construct(public readonly array $config = []) {}
-            public function __invoke(ChainMail $chainMail): void {}
+        $testFeature = new class (['option' => 'value']) implements Feature {
+            public function __construct(public readonly array $config = [])
+            {
+            }
+            public function __invoke(ChainMail $chainMail): void
+            {
+            }
         };
         $testFeatureClass = get_class($testFeature);
-        
+
         $expectedConfig = ['option1' => 'value1', 'option2' => 'value2'];
         $featuresConfig = [
             [
@@ -42,72 +46,80 @@ class FeatureConfigPassingTest extends TestCase
                 'config' => $expectedConfig
             ]
         ];
-        
+
         // Act
         $features = $method->invoke(null, $featuresConfig, $container);
-        
+
         // Assert
         $this->assertCount(1, $features);
         $this->assertEquals($expectedConfig, $features[0]->config);
     }
-    
+
     public function testInstantiatesWithoutConfigWhenNotProvided(): void
     {
         // Arrange
         $reflection = new ReflectionClass(Holon::class);
         $method = $reflection->getMethod('instantiateFeatures');
         $method->setAccessible(true);
-        
+
         $buildContainer = $reflection->getMethod('buildContainer');
         $buildContainer->setAccessible(true);
         $container = $buildContainer->invoke(null, ['services' => []]);
-        
+
         // Feature with optional config parameter
         $testFeature = new class implements Feature {
-            public function __construct(public readonly array $config = []) {}
-            public function __invoke(ChainMail $chainMail): void {}
+            public function __construct(public readonly array $config = [])
+            {
+            }
+            public function __invoke(ChainMail $chainMail): void
+            {
+            }
         };
         $testFeatureClass = get_class($testFeature);
-        
+
         $featuresConfig = [
             ['class' => $testFeatureClass]
         ];
-        
+
         // Act
         $features = $method->invoke(null, $featuresConfig, $container);
-        
+
         // Assert
         $this->assertCount(1, $features);
         $this->assertEmpty($features[0]->config);
     }
-    
+
     public function testSupportsEmptyConfigArray(): void
     {
         // Arrange
         $reflection = new ReflectionClass(Holon::class);
         $method = $reflection->getMethod('instantiateFeatures');
         $method->setAccessible(true);
-        
+
         $buildContainer = $reflection->getMethod('buildContainer');
         $buildContainer->setAccessible(true);
         $container = $buildContainer->invoke(null, ['services' => []]);
-        
+
         $testFeature = new class implements Feature {
-            public function __construct(public readonly array $config = []) {}
-            public function __invoke(ChainMail $chainMail): void {}
+            public function __construct(public readonly array $config = [])
+            {
+            }
+            public function __invoke(ChainMail $chainMail): void
+            {
+            }
         };
         $testFeatureClass = get_class($testFeature);
-        
+
         $featuresConfig = [
             [
                 'class' => $testFeatureClass,
                 'config' => []
             ]
         ];
-        
+
         // Act
         $features = $method->invoke(null, $featuresConfig, $container);
-        
+
         // Assert
         $this->assertCount(1, $features);
         $this->assertEmpty($features[0]->config);

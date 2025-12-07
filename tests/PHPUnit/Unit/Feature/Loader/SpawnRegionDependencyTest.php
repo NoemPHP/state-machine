@@ -21,18 +21,18 @@ class SpawnRegionDependencyTest extends TestCase
     {
         $connectedRegions = new ConnectedRegions();
         $spawnRegion = new SpawnRegion($connectedRegions);
-        
+
         $reflection = new ReflectionClass($spawnRegion);
         $property = $reflection->getProperty('connectedRegions');
-        
+
         $value = $property->getValue($spawnRegion);
-        
+
         $this->assertInstanceOf(
             ConnectedRegions::class,
             $value,
             'SpawnRegion should store ConnectedRegions dependency'
         );
-        
+
         $this->assertSame(
             $connectedRegions,
             $value,

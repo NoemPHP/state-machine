@@ -22,8 +22,10 @@ class EnableFeaturesTest extends TestCase
         $builder = new RegionBuilder();
         $invoked = false;
 
-        $feature = new class($invoked) implements Feature {
-            public function __construct(private bool &$invoked) {}
+        $feature = new class ($invoked) implements Feature {
+            public function __construct(private bool &$invoked)
+            {
+            }
 
             public function __invoke(ChainMail $chainMail): void
             {
@@ -42,14 +44,16 @@ class EnableFeaturesTest extends TestCase
 
         $this->assertTrue($invoked, 'Feature should be invoked during build()');
     }
-    
+
     public function testEnableFeaturesInvokesFeature(): void
     {
         $builder = new RegionBuilder();
         $receivedChainMail = null;
 
-        $feature = new class($receivedChainMail) implements Feature {
-            public function __construct(private mixed &$receivedChainMail) {}
+        $feature = new class ($receivedChainMail) implements Feature {
+            public function __construct(private mixed &$receivedChainMail)
+            {
+            }
 
             public function __invoke(ChainMail $chainMail): void
             {

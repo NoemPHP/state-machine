@@ -20,7 +20,7 @@ class CustomFeatureConfig extends ConfigAccessor
 {
     /**
      * Get widgets from loader config.
-     * 
+     *
      * @return array<string, mixed>
      */
     public function widgets(): array
@@ -38,14 +38,14 @@ class CustomFeatureConfig extends ConfigAccessor
 
     /**
      * Require specific widget or throw.
-     * 
+     *
      * @throws \RuntimeException
      */
     public function requireWidget(string $name): array
     {
         return $this->require("loader.array.custom_feature.widgets.{$name}");
     }
-    
+
     /**
      * Get max items configuration.
      */
@@ -62,23 +62,23 @@ class CustomTestFeature implements Feature
 {
     public array $processedWidgets = [];
     public int $maxItems = 0;
-    
+
     public function __invoke(ChainMail $chainMail): void
     {
         $chainMail->supply()->use(
             function (EnhanceRegionBuilder $enhanceRegionBuilder) {
                 $enhanceRegionBuilder->link(function (BuildParams $context, callable $next) {
                     $builder = $next($context);
-                    
+
                     $config = $context->config(CustomFeatureConfig::class);
                     if (!$config->hasWidgets()) {
                         return $builder;
                     }
-                    
+
                     // Process widgets using the custom accessor
                     $this->processedWidgets = $config->widgets();
                     $this->maxItems = $config->maxItems();
-                    
+
                     return $builder;
                 });
             }
@@ -97,12 +97,12 @@ class CustomAccessorCreationTest extends TestCase
         $builder = new RegionBuilder();
         $customFeature = new CustomTestFeature();
         $builder->enableFeatures($customFeature);
-        
+
         $widgetsData = [
             'widget1' => ['type' => 'button', 'label' => 'Click me'],
             'widget2' => ['type' => 'input', 'label' => 'Enter text'],
         ];
-        
+
         $region = $builder
             ->setStates('idle', 'active')
             ->build([
@@ -115,19 +115,19 @@ class CustomAccessorCreationTest extends TestCase
                     ]
                 ]
             ]);
-        
+
         // Verify custom accessor was used to access config
         $this->assertSame($widgetsData, $customFeature->processedWidgets);
         $this->assertSame(25, $customFeature->maxItems);
         $this->assertNotNull($region);
     }
-    
+
     public function testCustomAccessorWithDefaults(): void
     {
         $builder = new RegionBuilder();
         $customFeature = new CustomTestFeature();
         $builder->enableFeatures($customFeature);
-        
+
         $region = $builder
             ->setStates('idle', 'active')
             ->build([
@@ -161,13 +161,13 @@ class CustomAccessorCreationTest extends TestCase
             ]
         ];
         $params = new BuildParams(new RegionBuilder(), $paramsArray);
-        
+
         $config = $params->config(CustomFeatureConfig::class);
-        
+
         // Test require() returns value when exists
         $widget = $config->requireWidget('myWidget');
         $this->assertSame(['type' => 'button'], $widget);
-        
+
         // Test require() throws when missing
         $this->expectException(\RuntimeException::class);
         $config->requireWidget('nonExistent');

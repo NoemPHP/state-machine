@@ -96,7 +96,7 @@ class EventQueueClearingTest extends TestCase
 
         $region->trigger((object)['id' => 1], true);
         $region->trigger((object)['id' => 2], false);
-        
+
         // Trigger again
         $region->trigger((object)['id' => 3], false);
 

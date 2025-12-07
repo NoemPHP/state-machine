@@ -13,9 +13,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Acceptance Criterion: RegionLoader registers spawn steps as build steps during array processing
- * 
+ *
  * Intent: Integrates spawn configuration into the builder chain for execution during region construction
- * 
+ *
  * Replaces 8 specs:
  * - spawn-processing (2 specs): Registration logic
  * - spawn-step-execution (6 specs): Build step mechanics
@@ -114,7 +114,7 @@ class BuildStepRegistrationTest extends TestCase
 
         // Verify spawn record was created by checking registry
         $registry = $builder->chainMail->invoke(fn(RegionSpawnRegistry $r) => $r);
-        
+
         $this->assertCount(1, $registry->records, 'Spawn record should be created during build');
     }
 
@@ -153,7 +153,7 @@ class BuildStepRegistrationTest extends TestCase
 
         // Verify multiple records added to registry
         $registry = $builder->chainMail->invoke(fn(RegionSpawnRegistry $r) => $r);
-        
+
         $this->assertCount(
             2,
             $registry->records,
@@ -167,7 +167,7 @@ class BuildStepRegistrationTest extends TestCase
         // Tests: regionSpawnStep returns closure accepting builder and next
         // Tests: regionSpawnStep calls next to build region
         // Tests: regionSpawnStep returns built region
-        
+
         $config = [
             'states' => [
                 [
@@ -263,7 +263,7 @@ class BuildStepRegistrationTest extends TestCase
 
         // Verify three spawn records created (one per spawn definition)
         $registry = $builder->chainMail->invoke(fn(RegionSpawnRegistry $r) => $r);
-        
+
         $this->assertCount(
             3,
             $registry->records,
@@ -276,7 +276,7 @@ class BuildStepRegistrationTest extends TestCase
     {
         // Tests: Build steps preserve order of spawn definitions
         $order = [];
-        
+
         $config = [
             'states' => [
                 [

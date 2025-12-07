@@ -13,13 +13,13 @@ class MockConnection
     private string $readBuffer = '';
     private string $writeBuffer = '';
     private int $readPosition = 0;
-    
+
     public function __construct(
         private readonly string $request
     ) {
         $this->readBuffer = $request;
     }
-    
+
     /**
      * Create a mock HTTP GET request.
      */
@@ -30,16 +30,16 @@ class MockConnection
         string $body = ''
     ): self {
         $request = "{$method} {$uri} HTTP/1.1\r\n";
-        
+
         foreach ($headers as $name => $value) {
             $request .= "{$name}: {$value}\r\n";
         }
-        
+
         $request .= "\r\n{$body}";
-        
+
         return new self($request);
     }
-    
+
     /**
      * Read data from connection (simulates fread).
      */
@@ -48,17 +48,17 @@ class MockConnection
         if ($this->closed) {
             return '';
         }
-        
+
         if ($this->readPosition >= strlen($this->readBuffer)) {
             return '';
         }
-        
+
         $chunk = substr($this->readBuffer, $this->readPosition, $length);
         $this->readPosition += strlen($chunk);
-        
+
         return $chunk;
     }
-    
+
     /**
      * Write data to connection (simulates fwrite).
      */
@@ -67,12 +67,12 @@ class MockConnection
         if ($this->closed) {
             return false;
         }
-        
+
         $this->writeBuffer .= $data;
-        
+
         return strlen($data);
     }
-    
+
     /**
      * Close the connection.
      */
@@ -80,7 +80,7 @@ class MockConnection
     {
         $this->closed = true;
     }
-    
+
     /**
      * Check if connection is closed.
      */
@@ -88,7 +88,7 @@ class MockConnection
     {
         return $this->closed;
     }
-    
+
     /**
      * Check if end of stream reached.
      */
@@ -96,7 +96,7 @@ class MockConnection
     {
         return $this->closed || $this->readPosition >= strlen($this->readBuffer);
     }
-    
+
     /**
      * Get all data written to this connection.
      */
@@ -104,7 +104,7 @@ class MockConnection
     {
         return $this->writeBuffer;
     }
-    
+
     /**
      * Get the original request.
      */
@@ -112,7 +112,7 @@ class MockConnection
     {
         return $this->request;
     }
-    
+
     /**
      * Get remote address (simulates stream_socket_get_name).
      */

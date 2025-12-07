@@ -40,7 +40,7 @@ class ServerSocketStorageTest extends NetworkMachineTestCase
     {
         // Arrange & Act - Build the region (triggers onEnter)
         $region = $this->region();
-        
+
         // Assert - Socket should be accessible via extended state
         $this->assertRegionContext(
             $region,
@@ -64,7 +64,7 @@ YAML;
     public function container(): iterable
     {
         $mockSocket = $this->mockSocket;
-        
+
         return [
             'server.starting.onEnter' => function (object $trigger) use ($mockSocket) {
                 $mockSocket->setBlocking(false);

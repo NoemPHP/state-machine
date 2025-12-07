@@ -21,19 +21,19 @@ class StateApplicationTest extends TestCase
     public function testAppliesStatesToRegionBuilder(): void
     {
         $processor = new ProcessArray(new Schema(), new TransformArray());
-        
+
         $config = [
             'states' => [
                 ['name' => 'idle'],
                 ['name' => 'active'],
             ],
         ];
-        
+
         $builder = new RegionBuilder();
         $processor->fromData($config, $builder);
-        
+
         $region = $builder->build();
-        
+
         $this->assertTrue($region->isInState('idle'));
     }
 }

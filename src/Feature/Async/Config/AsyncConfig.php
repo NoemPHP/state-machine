@@ -8,7 +8,7 @@ use Noem\State\Chains\Params\Config\ConfigAccessor;
 
 /**
  * Typed accessor for AsyncFeature configuration.
- * 
+ *
  * Provides convenient access to async-specific configuration such as
  * resolver definitions from loader config.
  */
@@ -16,7 +16,7 @@ class AsyncConfig extends ConfigAccessor
 {
     /**
      * Get resolver definitions from loader config.
-     * 
+     *
      * @return array<array{name: string, run: \Closure}> List of resolver definitions
      */
     public function resolvers(): array
@@ -26,7 +26,7 @@ class AsyncConfig extends ConfigAccessor
 
     /**
      * Check if resolvers are defined in loader config.
-     * 
+     *
      * @return bool True if at least one resolver is defined
      */
     public function hasResolvers(): bool
@@ -37,7 +37,7 @@ class AsyncConfig extends ConfigAccessor
 
     /**
      * Get a specific resolver definition by name.
-     * 
+     *
      * @param string $name The resolver name to find
      * @return array{name: string, run: \Closure}|null Resolver definition or null if not found
      */
@@ -53,7 +53,7 @@ class AsyncConfig extends ConfigAccessor
 
     /**
      * Check if a specific resolver is defined.
-     * 
+     *
      * @param string $name The resolver name to check
      * @return bool
      */

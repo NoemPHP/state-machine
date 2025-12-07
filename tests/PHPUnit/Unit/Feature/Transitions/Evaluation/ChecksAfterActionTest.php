@@ -22,33 +22,33 @@ class ChecksAfterActionTest extends TestCase
     {
         $trigger = new stdClass();
         $trigger->ready = true;
-        
+
         $region = (new RegionBuilder())
             ->enableFeatures(new TransitionsFeature())
             ->setStates('idle', 'working')
             ->addBuildStep(new AddTransition('idle', 'working', fn(object $t): bool => $t->ready))
             ->build();
-        
+
         $this->assertFalse($region->isInState('working'));
-        
+
         // Trigger action - should automatically transition
         $region->trigger($trigger);
-        
+
         $this->assertTrue($region->isInState('working'));
     }
-    
+
     public function testChecksTransitionEvenWithoutExplicitActionHandler(): void
     {
         $trigger = new stdClass();
-        
+
         $region = (new RegionBuilder())
             ->enableFeatures(new TransitionsFeature())
             ->setStates('start', 'end')
             ->addBuildStep(new AddTransition('start', 'end'))
             ->build();
-        
+
         $region->trigger($trigger);
-        
+
         $this->assertTrue($region->isInState('end'));
     }
 }

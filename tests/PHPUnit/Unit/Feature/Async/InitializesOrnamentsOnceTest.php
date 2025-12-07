@@ -61,15 +61,15 @@ class InitializesOrnamentsOnceTest extends TestCase
                     ],
                 ],
             ]);
-        
+
         // Execute ticks
         for ($i = 0; $i < 10; $i++) {
             $region->trigger(new \stdClass());
         }
-        
+
         $this->assertSame(1, $initCount, 'Resolver should only be called once despite multiple accesses');
     }
-    
+
     public function testDoesNotReinitializeOnSubsequentMetaAccess(): void
     {
         $builder = new RegionBuilder();
@@ -78,9 +78,9 @@ class InitializesOrnamentsOnceTest extends TestCase
             new ExtendedState(),
             new \Noem\State\Feature\Transitions\TransitionsFeature()
         );
-        
+
         $resolverCalls = 0;
-        
+
         $region = $builder
             ->setStates('idle', 'step1', 'step2', 'step3')
             ->markInitial('idle')
@@ -126,12 +126,12 @@ class InitializesOrnamentsOnceTest extends TestCase
                     ],
                 ],
             ]);
-        
+
         // Execute enough ticks to go through all states
         for ($i = 0; $i < 20; $i++) {
             $region->trigger(new \stdClass());
         }
-        
+
         $this->assertSame(1, $resolverCalls, 'Ornament should only be initialized once');
     }
 }

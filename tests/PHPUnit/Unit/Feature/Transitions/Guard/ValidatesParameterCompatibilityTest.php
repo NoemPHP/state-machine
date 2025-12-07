@@ -26,23 +26,23 @@ class ValidatesParameterCompatibilityTest extends TestCase
         $region = (new RegionBuilder())->setStates('a', 'b')->build();
         $trigger = new stdClass();
         $handler = fn(object $t): bool => true;
-        
+
         $context = new Params\Guard($region, 'a', 'b', $handler, $trigger);
         $result = $guard->call($context);
-        
+
         $this->assertTrue($result);
     }
-    
+
     public function testAcceptsSpecificTypeParameter(): void
     {
         $guard = new Guard(new InvokeCallback(), new PrepareInvokable());
         $region = (new RegionBuilder())->setStates('a', 'b')->build();
         $trigger = new stdClass();
         $handler = fn(stdClass $t): bool => true;
-        
+
         $context = new Params\Guard($region, 'a', 'b', $handler, $trigger);
         $result = $guard->call($context);
-        
+
         $this->assertTrue($result);
     }
 }

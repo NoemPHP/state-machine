@@ -51,10 +51,18 @@ class SequentialTransitionsTest extends RegionBuilderTestCase
         $r = $r
             ->setStates('one', 'two', 'three')
             ->markInitial('one')
-            ->onExit('one', function(object $t) use (&$sequence) { $sequence[] = 'exit-one'; })
-            ->onEnter('two', function(object $t) use (&$sequence) { $sequence[] = 'enter-two'; })
-            ->onExit('two', function(object $t) use (&$sequence) { $sequence[] = 'exit-two'; })
-            ->onEnter('three', function(object $t) use (&$sequence) { $sequence[] = 'enter-three'; })
+            ->onExit('one', function (object $t) use (&$sequence) {
+                $sequence[] = 'exit-one';
+            })
+            ->onEnter('two', function (object $t) use (&$sequence) {
+                $sequence[] = 'enter-two';
+            })
+            ->onExit('two', function (object $t) use (&$sequence) {
+                $sequence[] = 'exit-two';
+            })
+            ->onEnter('three', function (object $t) use (&$sequence) {
+                $sequence[] = 'enter-three';
+            })
             ->addBuildStep(new AddTransition('one', 'two', fn(object $t): bool => true))
             ->addBuildStep(new AddTransition('two', 'three', fn(object $t): bool => true))
             ->build();

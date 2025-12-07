@@ -37,12 +37,12 @@ YAML;
 
         // Act
         $result = Holon::fromYaml($yaml);
-        
+
         // Assert - should return trigger result, not Region
         // The machine should have run to completion
         $this->assertNotNull($result);
     }
-    
+
     public function testReturnsRegionWhenAutoRunFalse(): void
     {
         // Arrange
@@ -62,13 +62,13 @@ YAML;
 
         // Act
         $result = Holon::fromYaml($yaml);
-        
+
         // Assert - should return Region instance
         $this->assertInstanceOf(\Noem\State\Region::class, $result);
         $this->assertEquals('start', $result->currentState());
         $this->assertFalse($result->isFinal());
     }
-    
+
     public function testDefaultBehaviorReturnsRegion(): void
     {
         // Arrange - no eventLoop config means autoRun defaults to false
@@ -81,16 +81,16 @@ YAML;
 
         // Act
         $result = Holon::fromYaml($yaml);
-        
+
         // Assert - should return Region by default
         $this->assertInstanceOf(\Noem\State\Region::class, $result);
     }
-    
+
     public function testAutoRunExecutesToFinalState(): void
     {
         // Arrange
         $executionLog = [];
-        
+
         $yaml = <<<YAML
 machine:
   eventLoop:
@@ -111,7 +111,7 @@ YAML;
 
         // Act
         $result = Holon::fromYaml($yaml);
-        
+
         // Assert - the machine completed execution
         $this->assertNotNull($result);
     }

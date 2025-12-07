@@ -56,11 +56,11 @@ class CustomChainMailConstructorTest extends TestCase
         $customChainMail = $this->createConfiguredChainMail();
 
         $builder = new RegionBuilder($customChainMail);
-        
+
         // Verify builder can be built successfully with custom ChainMail
         $builder->setStates('idle');
         $region = $builder->build();
-        
+
         $this->assertInstanceOf(\Noem\State\Region::class, $region);
     }
 
@@ -71,7 +71,7 @@ class CustomChainMailConstructorTest extends TestCase
 
         // Builder should use the custom ChainMail as-is without modifying it
         $this->assertSame($customChainMail, $builder->chainMail);
-        
+
         // Verify builder works with custom ChainMail
         $builder->setStates('idle');
         $region = $builder->build();
@@ -81,10 +81,10 @@ class CustomChainMailConstructorTest extends TestCase
     public function testMultipleBuildersCanShareChainMail(): void
     {
         $sharedChainMail = $this->createConfiguredChainMail();
-        
+
         $builder1 = new RegionBuilder($sharedChainMail);
         $builder2 = new RegionBuilder($sharedChainMail);
-        
+
         $this->assertSame($sharedChainMail, $builder1->chainMail);
         $this->assertSame($sharedChainMail, $builder2->chainMail);
         $this->assertSame($builder1->chainMail, $builder2->chainMail);

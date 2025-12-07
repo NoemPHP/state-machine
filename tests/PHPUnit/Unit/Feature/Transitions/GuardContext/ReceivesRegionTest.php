@@ -22,20 +22,20 @@ class ReceivesRegionTest extends TestCase
         $region = (new RegionBuilder())->setStates('a', 'b')->build();
         $trigger = new stdClass();
         $handler = fn(object $t): bool => true;
-        
+
         $context = new Guard($region, 'a', 'b', $handler, $trigger);
-        
+
         $this->assertSame($region, $context->region);
     }
-    
+
     public function testGuardContextRegionIsAccessible(): void
     {
         $region = (new RegionBuilder())->setStates('start', 'end')->build();
         $trigger = new stdClass();
         $handler = fn(object $t): bool => true;
-        
+
         $context = new Guard($region, 'start', 'end', $handler, $trigger);
-        
+
         // Verify we can access region properties
         $this->assertEquals('start', $context->region->currentState());
     }

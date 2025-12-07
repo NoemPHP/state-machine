@@ -14,19 +14,19 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @deprecated This monolithic test file is deprecated in favor of granular spec-based tests.
- * 
+ *
  * Tests have been refactored into individual test classes under tests/PHPUnit/Unit/Core/RegionBuilder/
  * following the one-spec-one-test-class pattern as defined in specs/core/region-builder.yaml
- * 
+ *
  * See CLAUDE.md for the spec-driven testing approach.
- * 
+ *
  * This file is kept temporarily for backwards compatibility but will be removed in a future version.
  */
 class RegionBuilderTest extends TestCase
 {
     /**
      * Test middleware enhancement of builder
-     * 
+     *
      * Note: This functionality is now tested in:
      * - tests/PHPUnit/Unit/Core/RegionBuilder/EnhanceBuilderIntegrationTest.php
      */
@@ -59,7 +59,7 @@ class RegionBuilderTest extends TestCase
 
     /**
      * Test multiple middleware registration
-     * 
+     *
      * Note: This functionality is now tested in:
      * - tests/PHPUnit/Unit/Core/RegionBuilder/EnhanceBuilderIntegrationTest.php
      */

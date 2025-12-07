@@ -19,41 +19,41 @@ class ConfigValidationTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->setStates('idle', 'processing');
-        
+
         $region = $builder->build();
-        
+
         $this->assertInstanceOf(\Noem\State\Region::class, $region);
     }
-    
+
     public function testValidationOccursDuringBuild(): void
     {
         $builder = new RegionBuilder();
         $builder->setStates('state1', 'state2', 'state3');
-        
+
         // If validation fails, build should throw
         // If it succeeds, we get a region
         $region = $builder->build();
-        
+
         $this->assertInstanceOf(\Noem\State\Region::class, $region);
     }
-    
+
     public function testSingleStateIsValid(): void
     {
         $builder = new RegionBuilder();
         $builder->setStates('only_state');
-        
+
         $region = $builder->build();
-        
+
         $this->assertInstanceOf(\Noem\State\Region::class, $region);
     }
-    
+
     public function testMultipleStatesAreValid(): void
     {
         $builder = new RegionBuilder();
         $builder->setStates('one', 'two', 'three', 'four', 'five');
-        
+
         $region = $builder->build();
-        
+
         $this->assertInstanceOf(\Noem\State\Region::class, $region);
     }
 }

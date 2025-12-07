@@ -20,24 +20,24 @@ class EmptyRegistryTest extends TestCase
     {
         $registry = new TransitionRegistry();
         $region = (new RegionBuilder())->setStates('a', 'b')->build();
-        
+
         $transitions = $registry->getTransitionsForState($region, 'a');
-        
+
         $this->assertIsArray($transitions);
         $this->assertEmpty($transitions);
     }
-    
+
     public function testRegistryWithNoTransitionsForStateReturnsEmpty(): void
     {
         $registry = new TransitionRegistry();
         $region = (new RegionBuilder())->setStates('a', 'b', 'c')->build();
-        
+
         // Register transition from 'a' to 'b'
         $registry->pushTransition($region, 'a', 'b', fn(object $t): bool => true);
-        
+
         // Query for state 'c' which has no transitions
         $transitions = $registry->getTransitionsForState($region, 'c');
-        
+
         $this->assertIsArray($transitions);
         $this->assertEmpty($transitions);
     }

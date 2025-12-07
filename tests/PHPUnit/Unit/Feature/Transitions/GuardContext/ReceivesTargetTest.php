@@ -22,20 +22,20 @@ class ReceivesTargetTest extends TestCase
         $region = (new RegionBuilder())->setStates('start', 'middle', 'end')->build();
         $trigger = new stdClass();
         $handler = fn(object $t): bool => true;
-        
+
         $context = new Guard($region, 'start', 'end', $handler, $trigger);
-        
+
         $this->assertEquals('end', $context->target);
     }
-    
+
     public function testGuardContextTargetMatchesDestinationState(): void
     {
         $region = (new RegionBuilder())->setStates('idle', 'processing', 'complete')->build();
         $trigger = new stdClass();
         $handler = fn(object $t): bool => true;
-        
+
         $context = new Guard($region, 'idle', 'processing', $handler, $trigger);
-        
+
         $this->assertEquals('processing', $context->target);
     }
 }

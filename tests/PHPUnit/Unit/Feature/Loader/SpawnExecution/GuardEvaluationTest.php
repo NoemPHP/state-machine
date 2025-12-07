@@ -11,9 +11,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Acceptance Criterion: SpawnRegion evaluates guards and spawns sub-regions when conditions are met
- * 
+ *
  * Intent: Provides conditional sub-region spawning based on trigger evaluation during action dispatch
- * 
+ *
  * Replaces 6 specs from spawn-execution:
  * - RegionLoader checks spawn registry on every action dispatch
  * - SpawnRegion checks parameter compatibility with trigger payload
@@ -31,7 +31,7 @@ class GuardEvaluationTest extends TestCase
     {
         // Tests: RegionLoader checks spawn registry on every action dispatch
         $guardCheckCount = 0;
-        
+
         $config = [
             'states' => [
                 [
@@ -72,7 +72,7 @@ class GuardEvaluationTest extends TestCase
     {
         // Tests: SpawnRegion checks parameter compatibility with trigger payload
         $guardCalled = false;
-        
+
         $config = [
             'states' => [
                 [
@@ -107,7 +107,7 @@ class GuardEvaluationTest extends TestCase
     {
         // Tests: SpawnRegion returns null when parameter incompatible
         $guardCalled = false;
-        
+
         $config = [
             'states' => [
                 [
@@ -146,7 +146,7 @@ class GuardEvaluationTest extends TestCase
     {
         // Tests: SpawnRegion evaluates guard predicate with trigger payload
         $receivedTrigger = null;
-        
+
         $config = [
             'states' => [
                 [
@@ -183,7 +183,7 @@ class GuardEvaluationTest extends TestCase
     {
         // Tests: SpawnRegion returns null when guard returns false
         $childEntered = false;
-        
+
         $config = [
             'states' => [
                 [
@@ -229,7 +229,7 @@ class GuardEvaluationTest extends TestCase
         // Tests: SpawnRegion invokes region factory when guard returns true
         $factoryInvoked = false;
         $childEntered = false;
-        
+
         $config = [
             'states' => [
                 [
@@ -275,7 +275,7 @@ class GuardEvaluationTest extends TestCase
         // Tests: SpawnRegion invokes region factory when guard returns true
         // and returns the spawned region
         $spawnedRegionCreated = false;
-        
+
         $config = [
             'states' => [
                 [
@@ -317,7 +317,7 @@ class GuardEvaluationTest extends TestCase
         // Tests: Guard evaluation with trigger payload for conditional spawning
         $spawn1Created = false;
         $spawn2Created = false;
-        
+
         $config = [
             'states' => [
                 [
@@ -384,7 +384,7 @@ class GuardEvaluationTest extends TestCase
     {
         // Tests: Guards only evaluated when parent is in spawning state
         $guardCheckedInWrongState = false;
-        
+
         $config = [
             'states' => [
                 [
@@ -411,9 +411,9 @@ class GuardEvaluationTest extends TestCase
         // Move to state2 (not the spawning state)
         // This would require transitions which we don't have in this minimal config
         // For now, we just verify that guard is checked when in correct state
-        
+
         $region->trigger(new \stdClass());
-        
+
         // Guard should be checked since we're in state1
         $this->assertTrue(
             $guardCheckedInWrongState,

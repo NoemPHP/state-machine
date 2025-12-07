@@ -43,14 +43,14 @@ YAML;
         $trigger = new \stdClass();
         $region = Holon::fromYaml($yaml);
         $region->trigger($trigger);
-        
+
         // Assert - callback from container was resolved at build time and executed
         $this->assertEquals('done', $region->currentState());
         $this->assertIsArray($trigger->configData);
         $this->assertEquals('Test Machine', $trigger->configData['name']);
         $this->assertEquals('1.0', $trigger->configData['version']);
     }
-    
+
     public function testFactoryServicesWork(): void
     {
         // Arrange - Factory creates timestamp value at build time
@@ -87,13 +87,13 @@ YAML;
         $beforeTrigger = time();
         $region->trigger($trigger);
         $afterTrigger = time();
-        
+
         // Assert - timestamp was captured at build time, not runtime
         $this->assertIsInt($trigger->timestamp);
         $this->assertLessThanOrEqual($beforeTrigger, $trigger->timestamp);
         $this->assertGreaterThanOrEqual($beforeTrigger - 2, $trigger->timestamp); // Allow 2s margin
     }
-    
+
     public function testClassServicesInstantiate(): void
     {
         // Arrange - Class instantiated at build time, used to create callback
@@ -130,12 +130,12 @@ YAML;
         $trigger = new \stdClass();
         $region = Holon::fromYaml($yaml);
         $region->trigger($trigger);
-        
+
         // Assert - class was instantiated at build time and used in callback
         $this->assertInstanceOf(\DateTime::class, $trigger->dateObject);
         $this->assertEquals('2024-01-01', $trigger->dateString);
     }
-    
+
     public function testMultipleServicesCoexist(): void
     {
         // Arrange - Multiple services resolved at build time via !get helper
@@ -177,13 +177,13 @@ YAML;
         $trigger = new \stdClass();
         $region = Holon::fromYaml($yaml);
         $region->trigger($trigger);
-        
+
         // Assert - all services were resolved and accessible
         $this->assertIsArray($trigger->services);
         $this->assertCount(3, $trigger->services);
         $this->assertEquals(['A', 'B', 'C'], $trigger->services);
     }
-    
+
     public function testServiceDependencyInjection(): void
     {
         // Arrange - Repository service depends on database service at build time
@@ -220,13 +220,13 @@ YAML;
         $trigger = new \stdClass();
         $region = Holon::fromYaml($yaml);
         $region->trigger($trigger);
-        
+
         // Assert - repository was built with database dependency at build time
         $this->assertIsArray($trigger->repo);
         $this->assertEquals('db_connection', $trigger->repo['db']);
         $this->assertEquals('repository', $trigger->repo['type']);
     }
-    
+
     public function testServicesAvailableDuringExecution(): void
     {
         // Arrange - Container provides configuration at build time

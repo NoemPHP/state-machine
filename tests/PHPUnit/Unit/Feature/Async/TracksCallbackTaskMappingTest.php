@@ -19,9 +19,9 @@ class TracksCallbackTaskMappingTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new AsyncFeature());
-        
+
         $yields = [];
-        
+
         $region = $builder
             ->setStates('idle')
             ->onAction('idle', function (object $trigger) use (&$yields) {
@@ -32,15 +32,15 @@ class TracksCallbackTaskMappingTest extends TestCase
                 $yields[] = 'third';
             })
             ->build();
-        
+
         // First trigger - creates task and executes first yield
         $region->trigger(new \stdClass());
         $this->assertSame(['first'], $yields);
-        
+
         // Second trigger - should resume the same task (not create a new one)
         $region->trigger(new \stdClass());
         $this->assertSame(['first', 'second'], $yields);
-        
+
         // Third trigger - continues the same task
         $region->trigger(new \stdClass());
         $this->assertSame(['first', 'second', 'third'], $yields);

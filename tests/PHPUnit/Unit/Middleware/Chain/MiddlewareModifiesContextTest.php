@@ -31,15 +31,15 @@ class MiddlewareModifiesContextTest extends TestCase
 
     public function testMultipleMiddlewareCanModifyContext(): void
     {
-        $middleware1 = function($c, $next) {
+        $middleware1 = function ($c, $next) {
             $modified = $c . '-m1';
             return $next($modified);
         };
-        $middleware2 = function($c, $next) {
+        $middleware2 = function ($c, $next) {
             $modified = $c . '-m2';
             return $next($modified);
         };
-        $middleware3 = function($c, $next) {
+        $middleware3 = function ($c, $next) {
             $modified = $c . '-m3';
             return $next($modified);
         };

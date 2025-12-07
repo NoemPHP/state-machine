@@ -46,12 +46,12 @@ class NestedEventDispatchTest extends TestCase
         $actionChain->shouldReceive('call')
             ->andReturnUsing(function (Action $context) use (&$processedIds, $region) {
                 $processedIds[] = $context->payload->id;
-                
+
                 // During processing of event 1, trigger event 2 with enqueue
                 if ($context->payload->id === 1) {
                     $region->trigger((object)['id' => 2], true);
                 }
-                
+
                 return 'initial';
             });
 
@@ -60,10 +60,10 @@ class NestedEventDispatchTest extends TestCase
 
         // Only event 1 should have been processed in first batch
         $this->assertEquals([1], $processedIds);
-        
+
         // Trigger another event to process the queue
         $region->trigger((object)['id' => 3], false);
-        
+
         // Now both event 2 (queued) and event 3 should be processed
         $this->assertEquals([1, 2, 3], $processedIds);
     }
@@ -81,7 +81,7 @@ class NestedEventDispatchTest extends TestCase
 
         $callCount = 0;
         $maxCalls = 10; // Safety limit
-        
+
         $region = new Region(
             $events,
             'initial',
@@ -95,12 +95,12 @@ class NestedEventDispatchTest extends TestCase
         $actionChain->shouldReceive('call')
             ->andReturnUsing(function (Action $context) use (&$callCount, $maxCalls, $region) {
                 $callCount++;
-                
+
                 // Try to create infinite loop by triggering during dispatch
                 if ($callCount < $maxCalls && $context->payload->trigger === true) {
                     $region->trigger((object)['trigger' => true], true);
                 }
-                
+
                 return 'initial';
             });
 

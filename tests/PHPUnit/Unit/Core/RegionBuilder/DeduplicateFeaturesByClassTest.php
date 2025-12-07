@@ -21,8 +21,10 @@ class DeduplicateFeaturesByClassTest extends TestCase
     {
         $invocationCount = 0;
 
-        $featureClass = new class($invocationCount) implements Feature {
-            public function __construct(private int &$count) {}
+        $featureClass = new class ($invocationCount) implements Feature {
+            public function __construct(private int &$count)
+            {
+            }
 
             public function __invoke(ChainMail $chainMail): void
             {
@@ -48,8 +50,10 @@ class DeduplicateFeaturesByClassTest extends TestCase
     {
         $invocationCount = 0;
 
-        $featureClass = new class($invocationCount) implements Feature {
-            public function __construct(private int &$count) {}
+        $featureClass = new class ($invocationCount) implements Feature {
+            public function __construct(private int &$count)
+            {
+            }
 
             public function __invoke(ChainMail $chainMail): void
             {

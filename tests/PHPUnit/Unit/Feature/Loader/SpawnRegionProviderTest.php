@@ -21,23 +21,23 @@ class SpawnRegionProviderTest extends TestCase
     {
         $connectedRegions = new ConnectedRegions();
         $spawnRegion = new SpawnRegion($connectedRegions);
-        
+
         $reflection = new ReflectionClass($spawnRegion);
-        
+
         // Verify the provider method exists
         $this->assertTrue(
             $reflection->hasMethod('provider'),
             'SpawnRegion should have a provider method'
         );
-        
+
         $providerMethod = $reflection->getMethod('provider');
-        
+
         // Verify it's private (implementation detail)
         $this->assertTrue(
             $providerMethod->isPrivate(),
             'Provider method should be private'
         );
-        
+
         // Verify the provider method signature accepts SpawnRegionParams
         $parameters = $providerMethod->getParameters();
         $this->assertCount(1, $parameters, 'Provider method should accept one parameter');

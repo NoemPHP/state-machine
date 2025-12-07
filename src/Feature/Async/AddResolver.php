@@ -10,7 +10,7 @@ use Noem\State\RegionBuilder;
 
 /**
  * Registers a lazy resolver for a specific context property.
- * 
+ *
  * Resolvers enable on-demand computation of context values through async callbacks.
  * When the property is accessed via the mesh, the resolver executes and caches the result.
  */

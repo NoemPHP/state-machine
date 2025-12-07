@@ -20,20 +20,20 @@ class DefaultGuardCreationTest extends TestCase
     public function testCreatesDefaultAlwaysTrueGuard(): void
     {
         $processor = new ProcessArray(new Schema(), new TransformArray());
-        
+
         // Transition without guard specified
         $transition = [
             'target' => 'nextState',
         ];
-        
+
         $guard = $processor->createTransitionGuard($transition);
-        
+
         $this->assertInstanceOf(\Closure::class, $guard);
-        
+
         // Guard should always return true
         $trigger = (object)['test' => 'data'];
         $result = $guard($trigger);
-        
+
         $this->assertTrue($result);
     }
 }

@@ -19,7 +19,7 @@ class ContextReturnsDefaultTest extends TestCase
     public function testContextReturnsDefaultWhenMissing(): void
     {
         $builder = new RegionBuilder();
-        
+
         $paramsArray = [
             'loader' => [
                 'array' => [
@@ -28,21 +28,21 @@ class ContextReturnsDefaultTest extends TestCase
             ]
         ];
         $params = new BuildParams($builder, $paramsArray);
-        
+
         $loaderConfig = $params->config(LoaderConfig::class);
-        
+
         // Test missing context returns null by default
         $this->assertNull($loaderConfig->context());
-        
+
         // Test missing context returns custom default
         $this->assertSame([], $loaderConfig->context(default: []));
         $this->assertSame('default', $loaderConfig->context(default: 'default'));
     }
-    
+
     public function testContextReturnsDefaultForMissingKey(): void
     {
         $builder = new RegionBuilder();
-        
+
         $paramsArray = [
             'loader' => [
                 'array' => [
@@ -53,12 +53,12 @@ class ContextReturnsDefaultTest extends TestCase
             ]
         ];
         $params = new BuildParams($builder, $paramsArray);
-        
+
         $loaderConfig = $params->config(LoaderConfig::class);
-        
+
         // Test missing key returns null by default
         $this->assertNull($loaderConfig->context('missingKey'));
-        
+
         // Test missing key returns custom default
         $this->assertSame([], $loaderConfig->context('missingKey', []));
         $this->assertSame('fallback', $loaderConfig->context('missingKey', 'fallback'));

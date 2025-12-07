@@ -13,7 +13,6 @@ use PHPUnit\Framework\TestCase;
 
 class TemplateRendererTest extends TestCase
 {
-
     public function testVariable()
     {
         $factory = new TemplateFactory(new Helpers());
@@ -162,7 +161,7 @@ TPL
 
     #[Test] public function eachWithAsyncInnerBlock()
     {
-        $filename = TEST_RESOURCES_DIR.'/content.txt';
+        $filename = TEST_RESOURCES_DIR . '/content.txt';
         $helpers = new Helpers();
         $helpers->registerHelper('custom', function (Invocation $invocation, callable $next) use ($filename) {
             $load = new Load($filename);
@@ -180,7 +179,7 @@ TPL
             $buffer .= $chunk;
         }
         $this->assertSame(
-            file_get_contents($filename).file_get_contents($filename),
+            file_get_contents($filename) . file_get_contents($filename),
             $buffer
         );
     }
@@ -212,7 +211,7 @@ TPL
             $buffer .= $chunk;
         }
         $this->assertSame(
-            $title.$title,
+            $title . $title,
             $buffer
         );
     }

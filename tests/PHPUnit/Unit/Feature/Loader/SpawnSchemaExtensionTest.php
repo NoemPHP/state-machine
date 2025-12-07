@@ -23,7 +23,7 @@ class SpawnSchemaExtensionTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader());
-        
+
         // YAML with spawn property - if schema is extended, this will validate correctly
         $yaml = <<<YAML
         states:
@@ -36,11 +36,11 @@ class SpawnSchemaExtensionTest extends TestCase
                   initial: child
         initial: parent
         YAML;
-        
+
         $helpers = [
             'php' => fn(string $code) => eval("return $code;"),
         ];
-        
+
         // If spawn schema extension works, this should not throw validation error
         $region = $builder->build([
             'loader' => [
@@ -48,7 +48,7 @@ class SpawnSchemaExtensionTest extends TestCase
                 'yamlHelpers' => $helpers,
             ],
         ]);
-        
+
         $this->assertTrue($region->isInState('parent'));
     }
 }

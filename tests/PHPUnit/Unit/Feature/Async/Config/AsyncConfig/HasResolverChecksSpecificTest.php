@@ -19,7 +19,7 @@ class HasResolverChecksSpecificTest extends TestCase
     public function testHasResolverReturnsTrueWhenExists(): void
     {
         $builder = new RegionBuilder();
-        
+
         $paramsArray = [
             'loader' => [
                 'array' => [
@@ -58,9 +58,9 @@ class HasResolverChecksSpecificTest extends TestCase
             ]
         ];
         $params = new BuildParams($builder, $paramsArray);
-        
+
         $asyncConfig = $params->config(AsyncConfig::class);
-        
+
         $this->assertFalse($asyncConfig->hasResolver('nonExistent'));
         $this->assertFalse($asyncConfig->hasResolver('missing'));
     }

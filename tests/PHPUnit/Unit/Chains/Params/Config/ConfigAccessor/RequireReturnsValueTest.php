@@ -21,9 +21,9 @@ class RequireReturnsValueTest extends TestCase
         $builder = new RegionBuilder();
         $config = ['test' => 'expected_value'];
         $params = new BuildParams($builder, $config);
-        
+
         $accessor = $params->config(RequireValueTestAccessor::class);
-        
+
         $this->assertSame('expected_value', $accessor->testRequire());
     }
 }

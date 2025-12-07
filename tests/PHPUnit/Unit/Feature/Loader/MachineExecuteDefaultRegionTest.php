@@ -21,12 +21,12 @@ class MachineExecuteDefaultRegionTest extends TestCase
     public function testExecuteUsesRegionMethodWhenNoRegionProvided(): void
     {
         $regionMethodCalled = false;
-        
-        $machine = new class($regionMethodCalled) extends Machine {
+
+        $machine = new class ($regionMethodCalled) extends Machine {
             public function __construct(private bool &$called)
             {
             }
-            
+
             public function yaml(): string
             {
                 return <<<YAML
@@ -39,12 +39,12 @@ class MachineExecuteDefaultRegionTest extends TestCase
                 final: end
                 YAML;
             }
-            
+
             public function trigger(): object
             {
                 return new \stdClass();
             }
-            
+
             public function features(): iterable
             {
                 return [
@@ -52,7 +52,7 @@ class MachineExecuteDefaultRegionTest extends TestCase
                     new TransitionsFeature(),
                 ];
             }
-            
+
             public function region(): Region
             {
                 $this->called = true;
@@ -62,10 +62,10 @@ class MachineExecuteDefaultRegionTest extends TestCase
                     ->build($this->builderArgs());
             }
         };
-        
+
         // Call execute without providing a region
         $result = $machine->execute();
-        
+
         $this->assertTrue($regionMethodCalled, 'region() method should be called when no region provided');
         $this->assertIsObject($result);
     }

@@ -18,38 +18,38 @@ class FetchTest extends TestCase
     {
         $fetch = new Fetch('https://example.com');
         $generator = $fetch();
-        
+
         $this->assertInstanceOf(\Generator::class, $generator, 'Fetch should return a generator');
     }
-    
+
     public function testGeneratorYields(): void
     {
         // Using a data URL to avoid actual HTTP request
         $fetch = new Fetch('data://text/plain,Hello World');
         $generator = $fetch();
-        
+
         $generator->valid();  // Start the generator
         $this->assertTrue($generator->valid(), 'Generator should yield values');
     }
-    
+
     public function testConstructsWithUrl(): void
     {
         $fetch = new Fetch('https://example.com/test');
         $this->assertInstanceOf(Fetch::class, $fetch);
     }
-    
+
     public function testConstructsWithMethod(): void
     {
         $fetch = new Fetch('https://example.com', 'POST');
         $this->assertInstanceOf(Fetch::class, $fetch);
     }
-    
+
     public function testConstructsWithHeaders(): void
     {
         $fetch = new Fetch('https://example.com', 'GET', ['Accept' => 'application/json']);
         $this->assertInstanceOf(Fetch::class, $fetch);
     }
-    
+
     public function testConstructsWithBody(): void
     {
         $fetch = new Fetch('https://example.com', 'POST', [], '{"key": "value"}');

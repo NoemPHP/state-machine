@@ -24,9 +24,9 @@ class SpawnRecordGuardTest extends TestCase
         $parentRegion = (new RegionBuilder())->setStates('parent')->build();
         $guard = fn(object $t): bool => true;
         $factory = fn(): Region => (new RegionBuilder())->setStates('child')->build();
-        
+
         $record = new RegionSpawnRecord($parentRegion, 'parent', $factory, $guard);
-        
+
         $this->assertInstanceOf(Closure::class, $record->guard);
         $this->assertSame($guard, $record->guard);
     }
@@ -35,19 +35,19 @@ class SpawnRecordGuardTest extends TestCase
     {
         $parentRegion = (new RegionBuilder())->setStates('parent')->build();
         $factory = fn(): Region => (new RegionBuilder())->setStates('child')->build();
-        
+
         $invoked = false;
-        $guard = function(object $t) use (&$invoked): bool {
+        $guard = function (object $t) use (&$invoked): bool {
             $invoked = true;
             return true;
         };
-        
+
         $record = new RegionSpawnRecord($parentRegion, 'parent', $factory, $guard);
-        
+
         $this->assertFalse($invoked);
-        
+
         $result = ($record->guard)(new stdClass());
-        
+
         $this->assertTrue($invoked);
         $this->assertTrue($result);
     }
@@ -56,13 +56,13 @@ class SpawnRecordGuardTest extends TestCase
     {
         $parentRegion = (new RegionBuilder())->setStates('parent')->build();
         $factory = fn(): Region => (new RegionBuilder())->setStates('child')->build();
-        
+
         $guardTrue = fn(object $t): bool => true;
         $guardFalse = fn(object $t): bool => false;
-        
+
         $recordTrue = new RegionSpawnRecord($parentRegion, 'parent', $factory, $guardTrue);
         $recordFalse = new RegionSpawnRecord($parentRegion, 'parent', $factory, $guardFalse);
-        
+
         $this->assertTrue(($recordTrue->guard)(new stdClass()));
         $this->assertFalse(($recordFalse->guard)(new stdClass()));
     }
@@ -71,20 +71,20 @@ class SpawnRecordGuardTest extends TestCase
     {
         $parentRegion = (new RegionBuilder())->setStates('parent')->build();
         $factory = fn(): Region => (new RegionBuilder())->setStates('child')->build();
-        
+
         $receivedTrigger = null;
-        $guard = function(object $t) use (&$receivedTrigger): bool {
+        $guard = function (object $t) use (&$receivedTrigger): bool {
             $receivedTrigger = $t;
             return true;
         };
-        
+
         $record = new RegionSpawnRecord($parentRegion, 'parent', $factory, $guard);
-        
+
         $trigger = new stdClass();
         $trigger->testProperty = 'testValue';
-        
+
         ($record->guard)($trigger);
-        
+
         $this->assertSame($trigger, $receivedTrigger);
         $this->assertSame('testValue', $receivedTrigger->testProperty);
     }

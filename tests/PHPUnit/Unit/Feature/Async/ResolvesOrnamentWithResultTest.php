@@ -23,7 +23,7 @@ class ResolvesOrnamentWithResultTest extends TestCase
             new AsyncFeature(),
             new ExtendedState()
         );
-        
+
         $capturedResult = null;
 
         $region = $builder
@@ -58,7 +58,7 @@ class ResolvesOrnamentWithResultTest extends TestCase
         // First access returns null, value becomes available after async resolution
         $this->assertNull($capturedResult, 'First access returns null as resolver is async');
     }
-    
+
     public function testResolverReturnValueBecomesPropertyValue(): void
     {
         $builder = new RegionBuilder();
@@ -66,9 +66,9 @@ class ResolvesOrnamentWithResultTest extends TestCase
             new AsyncFeature(),
             new ExtendedState()
         );
-        
+
         $capturedValue = null;
-        
+
         $region = $builder
             ->setStates('idle', 'active')
             ->onEnter('active', function (object $trigger) use (&$capturedValue) {

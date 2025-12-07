@@ -22,9 +22,9 @@ class SpawnRecordParentRegionTest extends TestCase
         $parentRegion = (new RegionBuilder())->setStates('parent')->build();
         $guard = fn(object $t): bool => true;
         $factory = fn(): Region => (new RegionBuilder())->setStates('child')->build();
-        
+
         $record = new RegionSpawnRecord($parentRegion, 'parent', $factory, $guard);
-        
+
         $this->assertSame($parentRegion, $record->parentRegion);
     }
 
@@ -33,9 +33,9 @@ class SpawnRecordParentRegionTest extends TestCase
         $parentRegion = (new RegionBuilder())->setStates('parent')->build();
         $guard = fn(object $t): bool => true;
         $factory = fn(): Region => (new RegionBuilder())->setStates('child')->build();
-        
+
         $record = new RegionSpawnRecord($parentRegion, 'parent', $factory, $guard);
-        
+
         // Verify it's the correct type
         $this->assertInstanceOf(Region::class, $record->parentRegion);
         $this->assertTrue($record->parentRegion->isInState('parent'));

@@ -21,13 +21,12 @@ class IncludeRelativeHelper
     use DepthTracker;
 
     public function __construct(
-        private readonly LoadFile       $loadFile,
-        private readonly BuildParams    $buildParams,
-        private readonly ConvertYaml    $convertYaml,
+        private readonly LoadFile $loadFile,
+        private readonly BuildParams $buildParams,
+        private readonly ConvertYaml $convertYaml,
         private readonly LoadFileParams $currentParams,
-        private ?string                 $currentFile = null,
-    )
-    {
+        private ?string $currentFile = null,
+    ) {
     }
 
     public function __invoke(string $path): mixed
@@ -107,10 +106,9 @@ class IncludeRelativeHelper
      * @return array Helper overrides for nested parsing
      */
     private function createUpdatedHelpers(
-        string         $newCurrentFile,
+        string $newCurrentFile,
         LoadFileParams $newParams
-    ): array
-    {
+    ): array {
         // Create updated helper instances with new current file context
         // These will override the base helpers from ConvertYaml for this nested parse
         // Pass current depth to new instances so they continue tracking from this level

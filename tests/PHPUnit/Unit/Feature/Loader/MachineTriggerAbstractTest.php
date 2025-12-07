@@ -19,24 +19,24 @@ class MachineTriggerAbstractTest extends TestCase
     public function testTriggerMethodIsAbstract(): void
     {
         $reflection = new ReflectionClass(Machine::class);
-        
+
         $this->assertTrue(
             $reflection->isAbstract(),
             'Machine class should be abstract'
         );
-        
+
         $method = $reflection->getMethod('trigger');
-        
+
         $this->assertTrue(
             $method->isAbstract(),
             'trigger() method should be abstract'
         );
-        
+
         $this->assertTrue(
             $method->isPublic(),
             'trigger() method should be public'
         );
-        
+
         // Verify return type is object
         $returnType = $method->getReturnType();
         $this->assertNotNull($returnType, 'trigger() should have a return type');

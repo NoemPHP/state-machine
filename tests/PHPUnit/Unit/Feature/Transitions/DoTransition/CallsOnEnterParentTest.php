@@ -63,15 +63,15 @@ class CallsOnEnterParentTest extends TestCase
 
         \Mockery::close();
     }
-    
+
     public function testCallsOnEnterParentAfterExitBeforeEnter(): void
     {
         $parentRegion = (new RegionBuilder())
             ->setStates('a', 'b')
             ->build();
-        
+
         $callOrder = [];
-        
+
         $events = \Mockery::mock(Events::class);
         $events->shouldReceive('onExitState')
             ->andReturnUsing(function () use (&$callOrder) {
@@ -81,27 +81,27 @@ class CallsOnEnterParentTest extends TestCase
             ->andReturnUsing(function () use (&$callOrder) {
                 $callOrder[] = 'enter';
             });
-        
+
         $connectedRegions = \Mockery::mock(ConnectedRegions::class);
         $connectedRegions->shouldReceive('call')
             ->andReturnUsing(function () use (&$callOrder) {
                 $callOrder[] = 'connected';
                 return [];
             });
-        
+
         $doTransition = new DoTransition($connectedRegions, $events);
-        
+
         $payload = new stdClass();
         $context = new Transition($parentRegion, $payload, 'a');
-        
+
         $doTransition->call($context);
-        
+
         // Verify order: exit, then connected regions, then enter
         $this->assertEquals(['exit', 'connected', 'enter'], $callOrder);
-        
+
         \Mockery::close();
     }
-    
+
     protected function tearDown(): void
     {
         \Mockery::close();

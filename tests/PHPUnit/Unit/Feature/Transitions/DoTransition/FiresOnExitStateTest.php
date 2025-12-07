@@ -22,7 +22,7 @@ class FiresOnExitStateTest extends TestCase
     {
         $exitFired = false;
         $trigger = new stdClass();
-        
+
         $region = (new RegionBuilder())
             ->enableFeatures(new TransitionsFeature())
             ->setStates('start', 'end')
@@ -31,9 +31,9 @@ class FiresOnExitStateTest extends TestCase
             })
             ->addBuildStep(new AddTransition('start', 'end'))
             ->build();
-        
+
         $region->trigger($trigger);
-        
+
         $this->assertTrue($exitFired);
         $this->assertTrue($region->isInState('end'));
     }

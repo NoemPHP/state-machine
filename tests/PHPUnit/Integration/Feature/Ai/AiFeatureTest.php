@@ -28,7 +28,6 @@ use PHPUnit\Framework\TestCase;
 
 class AiFeatureTest extends RegionBuilderTestCase
 {
-
     protected ChainMail $chainmail;
 
     protected InvokeCallback $invokeCallback;
@@ -142,7 +141,6 @@ class AiFeatureTest extends RegionBuilderTestCase
 Create a list containing only the words "cat", "dog", "bird"!{{capture list}}
 {{#each list}}{{this}}{{/each}}
 PROMPT
-
         );
         $generator = $template();
 
@@ -166,7 +164,6 @@ PROMPT
 {{#capture list}}Create a list containing only the words "cat", "dog", "bird"!{{/capture}}
 {{#each list}}{{this}}{{/each}}
 PROMPT
-
         );
         $generator = $template();
 

@@ -22,20 +22,20 @@ class ReceivesHandlerTest extends TestCase
         $region = (new RegionBuilder())->setStates('a', 'b')->build();
         $trigger = new stdClass();
         $handler = fn(object $t): bool => true;
-        
+
         $context = new Guard($region, 'a', 'b', $handler, $trigger);
-        
+
         $this->assertSame($handler, $context->handler);
     }
-    
+
     public function testGuardContextHandlerIsCallable(): void
     {
         $region = (new RegionBuilder())->setStates('start', 'end')->build();
         $trigger = new stdClass();
         $handler = fn(object $t): bool => $t->ready ?? false;
-        
+
         $context = new Guard($region, 'start', 'end', $handler, $trigger);
-        
+
         $this->assertTrue(is_callable($context->handler));
     }
 }

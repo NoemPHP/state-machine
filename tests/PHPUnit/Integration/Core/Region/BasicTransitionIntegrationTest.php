@@ -27,7 +27,7 @@ class BasicTransitionIntegrationTest extends RegionBuilderTestCase
             ->setStates('one', 'two')
             ->markInitial('one')
             ->addBuildStep(
-                new AddTransition('one', 'two', function(object $t) use (&$guardCalled): bool {
+                new AddTransition('one', 'two', function (object $t) use (&$guardCalled): bool {
                     $guardCalled = true;
                     return true;
                 })
@@ -48,7 +48,7 @@ class BasicTransitionIntegrationTest extends RegionBuilderTestCase
 
         $r = $r
             ->setStates('one', 'two')
-            ->onEnter('two', function(object $t) use (&$enterCalled) {
+            ->onEnter('two', function (object $t) use (&$enterCalled) {
                 $enterCalled = true;
             })
             ->markInitial('one')
@@ -71,7 +71,7 @@ class BasicTransitionIntegrationTest extends RegionBuilderTestCase
 
         $r = $r
             ->setStates('one', 'two')
-            ->onExit('one', function(object $t) use (&$exitCalled) {
+            ->onExit('one', function (object $t) use (&$exitCalled) {
                 $exitCalled = true;
             })
             ->markInitial('one')
@@ -94,15 +94,15 @@ class BasicTransitionIntegrationTest extends RegionBuilderTestCase
 
         $r = $r
             ->setStates('one', 'two')
-            ->onExit('one', function(object $t) use (&$sequence) {
+            ->onExit('one', function (object $t) use (&$sequence) {
                 $sequence[] = 'exit-one';
             })
-            ->onEnter('two', function(object $t) use (&$sequence) {
+            ->onEnter('two', function (object $t) use (&$sequence) {
                 $sequence[] = 'enter-two';
             })
             ->markInitial('one')
             ->addBuildStep(
-                new AddTransition('one', 'two', function(object $t) use (&$sequence): bool {
+                new AddTransition('one', 'two', function (object $t) use (&$sequence): bool {
                     $sequence[] = 'guard';
                     return true;
                 })

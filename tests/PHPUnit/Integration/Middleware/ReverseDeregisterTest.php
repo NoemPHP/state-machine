@@ -259,7 +259,7 @@ class ReverseDeregisterTest extends TestCase
 
         // Full execution
         $chain->call('test');
-        $expectedEnter = ['enter-J', 'enter-I', 'enter-H', 'enter-G', 'enter-F', 
+        $expectedEnter = ['enter-J', 'enter-I', 'enter-H', 'enter-G', 'enter-F',
                           'enter-E', 'enter-D', 'enter-C', 'enter-B', 'enter-A'];
         $expectedExit = ['exit-A', 'exit-B', 'exit-C', 'exit-D', 'exit-E',
                          'exit-F', 'exit-G', 'exit-H', 'exit-I', 'exit-J'];
@@ -269,7 +269,7 @@ class ReverseDeregisterTest extends TestCase
         foreach (array_reverse(range('A', 'J')) as $letter) {
             $log = [];
             $deregisters[$letter]();
-            
+
             // Each deregister should remove one layer
             if ($letter > 'A') {
                 $chain->call('test');

@@ -21,9 +21,9 @@ class HasDelegatesToBuildParamsTest extends TestCase
         $builder = new RegionBuilder();
         $config = ['test' => 'value'];
         $params = new BuildParams($builder, $config);
-        
+
         $accessor = $params->config(HasTestAccessor::class);
-        
+
         $this->assertTrue($accessor->testHas());
         $this->assertFalse($accessor->testHasNonExistent());
     }
@@ -35,7 +35,7 @@ class HasTestAccessor extends ConfigAccessor
     {
         return $this->has('test');
     }
-    
+
     public function testHasNonExistent(): bool
     {
         return $this->has('nonexistent');

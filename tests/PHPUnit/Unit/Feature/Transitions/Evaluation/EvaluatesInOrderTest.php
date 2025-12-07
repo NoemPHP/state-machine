@@ -21,10 +21,10 @@ class EvaluatesInOrderTest extends TestCase
     public function testEvaluatesGuardsInRegistrationOrder(): void
     {
         $evaluationOrder = [];
-        
+
         $trigger = new stdClass();
         $trigger->value = 'second';
-        
+
         $region = (new RegionBuilder())
             ->enableFeatures(new TransitionsFeature())
             ->setStates('start', 'first', 'second', 'third')
@@ -41,9 +41,9 @@ class EvaluatesInOrderTest extends TestCase
                 return $t->value === 'third';
             }))
             ->build();
-        
+
         $region->trigger($trigger);
-        
+
         // Guards are evaluated in reverse registration order (LIFO)
         // Third is checked first (false), then second (true), evaluation stops
         $this->assertEquals(['third', 'second'], $evaluationOrder);

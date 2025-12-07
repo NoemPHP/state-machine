@@ -13,9 +13,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Acceptance Criterion: RegionLoader configures spawn steps with connection flags and shared data defaults
- * 
+ *
  * Intent: Applies standard connection behavior (DYNAMIC, RECEIVE_EVENTS, RECEIVE_ACTIONS) and metadata sharing with user override capability
- * 
+ *
  * Replaces 4 specs from spawn-processing:
  * - RegionLoader merges spawn shared config with default sharing
  * - RegionLoader sets default meta sharing to true
@@ -31,7 +31,7 @@ class ConnectionFlagsTest extends TestCase
     {
         // Tests: RegionLoader applies DYNAMIC, RECEIVE_EVENTS, and RECEIVE_ACTIONS flags by default
         $flagsVerified = false;
-        
+
         $config = [
             'states' => [
                 [
@@ -159,7 +159,7 @@ class ConnectionFlagsTest extends TestCase
         // Tests that DYNAMIC, RECEIVE_EVENTS, RECEIVE_ACTIONS are always applied
         // regardless of shared config
         $eventReceived = false;
-        
+
         $config = [
             'states' => [
                 [

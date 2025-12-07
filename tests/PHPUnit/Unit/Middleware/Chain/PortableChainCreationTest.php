@@ -42,7 +42,7 @@ class PortableChainCreationTest extends TestCase
     {
         $chain = new Chain(fn($c) => strtoupper($c));
 
-        $this->assertTrue(method_exists($chain,'call'));
+        $this->assertTrue(method_exists($chain, 'call'));
         $this->assertEquals('HELLO', $chain->call('hello'));
     }
 }

@@ -25,10 +25,13 @@ class MultipleIndependentInstancesTest extends TestCase
 
         $invocationsPerInstance = [];
 
-        $feature = new class($invocationsPerInstance) implements Feature {
-            public function __construct(private &$invocationsPerInstance) {}
+        $feature = new class ($invocationsPerInstance) implements Feature {
+            public function __construct(private &$invocationsPerInstance)
+            {
+            }
 
-            public function __invoke(ChainMail $chainMail): void {
+            public function __invoke(ChainMail $chainMail): void
+            {
                 $id = spl_object_id($chainMail);
                 $this->invocationsPerInstance[$id] = true;
             }
@@ -42,8 +45,11 @@ class MultipleIndependentInstancesTest extends TestCase
         $resultC = $registry->resolve($chainMailC);
 
         // Each should have been invoked
-        $this->assertCount(3, $invocationsPerInstance,
-            'Feature should be invoked once for each independent ChainMail instance');
+        $this->assertCount(
+            3,
+            $invocationsPerInstance,
+            'Feature should be invoked once for each independent ChainMail instance'
+        );
 
         $this->assertArrayHasKey(spl_object_id($chainMailA), $invocationsPerInstance);
         $this->assertArrayHasKey(spl_object_id($chainMailB), $invocationsPerInstance);
@@ -57,7 +63,9 @@ class MultipleIndependentInstancesTest extends TestCase
         $chainMailB = new ChainMail();
 
         $feature = new class implements Feature {
-            public function __invoke(ChainMail $chainMail): void {}
+            public function __invoke(ChainMail $chainMail): void
+            {
+            }
         };
 
         $registry->register($feature);
@@ -69,10 +77,16 @@ class MultipleIndependentInstancesTest extends TestCase
         $resultB2 = $registry->resolve($chainMailB);
 
         // Same instance should share cache
-        $this->assertSame($resultA1, $resultA2,
-            'Same ChainMail instance should return cached result');
-        $this->assertSame($resultB1, $resultB2,
-            'Same ChainMail instance should return cached result');
+        $this->assertSame(
+            $resultA1,
+            $resultA2,
+            'Same ChainMail instance should return cached result'
+        );
+        $this->assertSame(
+            $resultB1,
+            $resultB2,
+            'Same ChainMail instance should return cached result'
+        );
 
         // The important behavior: each instance processes features independently
         $this->assertCount(1, $resultA1);
@@ -87,10 +101,13 @@ class MultipleIndependentInstancesTest extends TestCase
 
         $invocationLog = [];
 
-        $feature = new class($invocationLog) implements Feature {
-            public function __construct(private &$invocationLog) {}
+        $feature = new class ($invocationLog) implements Feature {
+            public function __construct(private &$invocationLog)
+            {
+            }
 
-            public function __invoke(ChainMail $chainMail): void {
+            public function __invoke(ChainMail $chainMail): void
+            {
                 $id = spl_object_id($chainMail);
                 $this->invocationLog[] = "invoked_$id";
             }
@@ -106,8 +123,11 @@ class MultipleIndependentInstancesTest extends TestCase
         $registry->resolve($chainMailA);  // Third A: cached
 
         // Should only have two invocations (one per instance)
-        $this->assertCount(2, $invocationLog,
-            'Should only invoke once per ChainMail instance despite interleaved calls');
+        $this->assertCount(
+            2,
+            $invocationLog,
+            'Should only invoke once per ChainMail instance despite interleaved calls'
+        );
 
         $this->assertStringContainsString('invoked_', $invocationLog[0]);
         $this->assertStringContainsString('invoked_', $invocationLog[1]);
@@ -120,11 +140,15 @@ class MultipleIndependentInstancesTest extends TestCase
         $chainMailB = new ChainMail();
 
         $featureA = new class implements Feature {
-            public function __invoke(ChainMail $chainMail): void {}
+            public function __invoke(ChainMail $chainMail): void
+            {
+            }
         };
 
         $featureB = new class implements Feature {
-            public function __invoke(ChainMail $chainMail): void {}
+            public function __invoke(ChainMail $chainMail): void
+            {
+            }
         };
 
         $registry->register($featureA);

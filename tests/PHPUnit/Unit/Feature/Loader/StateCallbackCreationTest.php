@@ -20,19 +20,19 @@ class StateCallbackCreationTest extends TestCase
     public function testCreatesStateCallbackFromRunDefinition(): void
     {
         $processor = new ProcessArray(new Schema(), new TransformArray());
-        
+
         $called = false;
         $definition = [
-            'run' => function(object $t) use (&$called) {
+            'run' => function (object $t) use (&$called) {
                 $called = true;
                 return $t->value * 2;
             }
         ];
-        
+
         $callback = $processor->createStateCallback($definition);
-        
+
         $this->assertInstanceOf(\Closure::class, $callback);
-        
+
         $result = $callback((object)['value' => 5]);
         $this->assertTrue($called);
         $this->assertEquals(10, $result);

@@ -22,7 +22,7 @@ class HasPathHandlesNonArraysTest extends TestCase
             'a' => 'string_value'
         ];
         $params = new BuildParams($builder, $config);
-        
+
         $this->assertFalse($params->hasPath('a.b.c'));
     }
 }

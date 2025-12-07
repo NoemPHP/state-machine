@@ -20,9 +20,9 @@ class CreatesSchedulerPerRegionTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new AsyncFeature());
-        
+
         $generatorInvoked = false;
-        
+
         $region = $builder
             ->setStates('idle', 'processing')
             ->onAction('idle', function (object $trigger) use (&$generatorInvoked) {
@@ -30,24 +30,24 @@ class CreatesSchedulerPerRegionTest extends TestCase
                 yield 'value1';
             })
             ->build();
-        
+
         $this->assertFalse($generatorInvoked, 'Generator should not be invoked before trigger');
-        
+
         // Trigger the action which returns a generator
         $region->trigger(new \stdClass());
-        
+
         $this->assertTrue($generatorInvoked, 'Generator-based callback should have been invoked');
         // The scheduler is created lazily, and we can verify it works by checking that async callbacks function
     }
-    
+
     public function testCreatesSchedulerOnlyOncePerRegion(): void
     {
         $this->markTestSkipped('I need to reconsider this functionality. maybe coroutines should rather run once and vanish');
         $builder = new RegionBuilder();
         $builder->enableFeatures(new AsyncFeature());
-        
+
         $callCount = 0;
-        
+
         $region = $builder
             ->setStates('idle')
             ->onAction('idle', function (object $trigger) use (&$callCount) {
@@ -55,11 +55,11 @@ class CreatesSchedulerPerRegionTest extends TestCase
                 yield 'value';
             })
             ->build();
-        
+
         // First trigger - scheduler should be created
         $region->trigger(new \stdClass());
         $this->assertSame(1, $callCount);
-        
+
         // Second trigger - should reuse existing scheduler
         $region->trigger(new \stdClass());
         $this->assertSame(2, $callCount);

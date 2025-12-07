@@ -19,36 +19,36 @@ class DefaultConstructorTest extends TestCase
     public function testBuilderCanBeInstantiatedWithoutParameters(): void
     {
         $builder = new RegionBuilder();
-        
+
         $this->assertInstanceOf(RegionBuilder::class, $builder);
     }
-    
+
     public function testDefaultConstructorCreatesChainMail(): void
     {
         $builder = new RegionBuilder();
-        
+
         $this->assertInstanceOf(ChainMail::class, $builder->chainMail);
     }
-    
+
     public function testDefaultChainMailIsConfiguredWithServices(): void
     {
         $builder = new RegionBuilder();
-        
+
         // Verify that default services are registered
         $this->assertInstanceOf(ChainMail::class, $builder->chainMail);
-        
+
         // ChainMail should have standard services registered
         $regionBuilder = $builder->chainMail->get(RegionBuilder::class);
         $this->assertSame($builder, $regionBuilder, 'Builder should be registered in its own ChainMail');
     }
-    
+
     public function testBuilderCanBuildRegionWithDefaultConfiguration(): void
     {
         $builder = new RegionBuilder();
         $builder->setStates('idle');
-        
+
         $region = $builder->build();
-        
+
         $this->assertInstanceOf(\Noem\State\Region::class, $region);
     }
 }

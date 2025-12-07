@@ -19,7 +19,7 @@ class MemoizationTest extends TestCase
     {
         $callCount = 0;
         $data = [];
-        
+
         $mesh = new Mesh(
             data: $data,
             offsetGet: function ($offset) use (&$callCount) {
@@ -27,17 +27,17 @@ class MemoizationTest extends TestCase
                 return "computed-{$offset}";
             }
         );
-        
+
         $mesh->memoize();
-        
+
         // First call
         $result1 = $mesh['key'];
         $this->assertSame(1, $callCount);
-        
+
         // Second call should use cache
         $result2 = $mesh['key'];
         $this->assertSame(1, $callCount, 'Should not call offsetGet again');
-        
+
         $this->assertSame($result1, $result2);
     }
 
@@ -45,7 +45,7 @@ class MemoizationTest extends TestCase
     {
         $callCount = [];
         $data = [];
-        
+
         $mesh = new Mesh(
             data: $data,
             offsetGet: function ($offset) use (&$callCount) {
@@ -53,23 +53,23 @@ class MemoizationTest extends TestCase
                 return "value-{$offset}";
             }
         );
-        
+
         $mesh->memoize();
-        
+
         // Access key1 three times in a row
         $mesh['key1'];
         $mesh['key1'];
         $mesh['key1'];
-        
+
         // The first call executes, subsequent calls use the cached result
         $this->assertSame(1, $callCount['key1']);
-        
+
         // Access key2 (invalidates cache for key1)
         $mesh['key2'];
-        
+
         // Access key1 again (cache was invalidated, so it calls again)
         $mesh['key2'];
-        
+
         // key1 was called once initially
         $this->assertSame(1, $callCount['key1']);
         // key2 was called once (first access), second access used cache
@@ -80,7 +80,7 @@ class MemoizationTest extends TestCase
     {
         $computationCount = 0;
         $data = [];
-        
+
         $mesh = new Mesh(
             data: $data,
             offsetGet: function ($offset) use (&$computationCount) {
@@ -89,13 +89,13 @@ class MemoizationTest extends TestCase
                 return md5($offset);
             }
         );
-        
+
         $mesh->memoize();
-        
+
         $result1 = $mesh['test'];
         $result2 = $mesh['test'];
         $result3 = $mesh['test'];
-        
+
         $this->assertSame(1, $computationCount);
         $this->assertSame($result1, $result2);
         $this->assertSame($result2, $result3);
@@ -106,13 +106,13 @@ class MemoizationTest extends TestCase
         $data = ['key' => 'value1'];
         $mesh = new Mesh(data: $data);
         $mesh->memoize();
-        
+
         $result1 = $mesh['key'];
         $this->assertSame('value1', $result1);
-        
+
         // Directly modify the underlying data
         $data['key'] = 'value2';
-        
+
         // Memoization caches the get operation, so it still returns the cached value
         $result2 = $mesh['key'];
         $this->assertSame('value1', $result2, 'Memoization caches the get result');
@@ -122,13 +122,13 @@ class MemoizationTest extends TestCase
     {
         $mesh = new Mesh();
         $mesh['computed'] = 'expensive-result';
-        
+
         $mesh->memoize();
-        
+
         // Should still work normally
         $result1 = $mesh['computed'];
         $result2 = $mesh['computed'];
-        
+
         $this->assertSame('expensive-result', $result1);
         $this->assertSame($result1, $result2);
     }

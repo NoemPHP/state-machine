@@ -20,14 +20,14 @@ class YamlHelperProcessingTest extends TestCase
         $yaml = <<<YAML
         value: !double "5"
         YAML;
-        
+
         $helpers = [
             'double' => fn(string $value) => (int)$value * 2,
         ];
-        
+
         $converter = new ConvertYaml();
         $result = $converter->fromString($yaml, $helpers);
-        
+
         $this->assertArrayHasKey('value', $result);
         $this->assertEquals(10, $result['value']);
     }

@@ -19,9 +19,9 @@ class ExtendWithTest extends TestCase
     {
         $mesh = new Mesh();
         $extension = ['extendedKey' => 'extendedValue'];
-        
+
         $mesh->extendWith($extension);
-        
+
         $this->assertTrue(isset($mesh['extendedKey']));
         $this->assertSame('extendedValue', $mesh['extendedKey']);
     }
@@ -30,9 +30,9 @@ class ExtendWithTest extends TestCase
     {
         $mesh = new Mesh();
         $arrayObject = new \ArrayObject(['key' => 'value']);
-        
+
         $mesh->extendWith($arrayObject);
-        
+
         $this->assertTrue(isset($mesh['key']));
         $this->assertSame('value', $mesh['key']);
     }
@@ -41,10 +41,10 @@ class ExtendWithTest extends TestCase
     {
         $mesh = new Mesh();
         $mesh['original'] = 'data';
-        
+
         $extension = ['extended' => 'value'];
         $mesh->extendWith($extension);
-        
+
         $this->assertSame('data', $mesh['original']);
         $this->assertSame('value', $mesh['extended']);
     }
@@ -53,10 +53,10 @@ class ExtendWithTest extends TestCase
     {
         $mesh = new Mesh();
         $mesh['key'] = 'original';
-        
+
         $extension = ['key' => 'extended'];
         $mesh->extendWith($extension);
-        
+
         // Extension should have priority
         $this->assertSame('extended', $mesh['key']);
     }
@@ -64,13 +64,13 @@ class ExtendWithTest extends TestCase
     public function testExtendWithMultipleExtensions(): void
     {
         $mesh = new Mesh();
-        
+
         $firstExtension = ['first' => 'one'];
         $secondExtension = ['second' => 'two'];
-        
+
         $mesh->extendWith($firstExtension);
         $mesh->extendWith($secondExtension);
-        
+
         $this->assertSame('one', $mesh['first']);
         $this->assertSame('two', $mesh['second']);
     }
@@ -79,10 +79,10 @@ class ExtendWithTest extends TestCase
     {
         $mesh = new Mesh();
         $extension = [];
-        
+
         $mesh->extendWith($extension);
         $mesh['newKey'] = 'newValue';
-        
+
         // The extension should be modified too
         $this->assertArrayHasKey('newKey', $extension);
         $this->assertSame('newValue', $extension['newKey']);
@@ -92,10 +92,10 @@ class ExtendWithTest extends TestCase
     {
         $mesh = new Mesh();
         $arrayObject = new \ArrayObject();
-        
+
         $mesh->extendWith($arrayObject);
         $mesh['test'] = 'value';
-        
+
         $this->assertSame('value', $arrayObject['test']);
     }
 }

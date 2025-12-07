@@ -20,33 +20,33 @@ class DefaultTrueGuardTest extends TestCase
     {
         $registry = new TransitionRegistry();
         $region = (new RegionBuilder())->setStates('a', 'b')->build();
-        
+
         // Push transition without guard (null)
         $registry->pushTransition($region, 'a', 'b', null);
-        
+
         $transitions = $registry->getTransitionsForState($region, 'a');
-        
+
         $this->assertArrayHasKey('b', $transitions);
         $this->assertCount(1, $transitions['b']);
-        
+
         // The default guard should be callable and return true
         $defaultGuard = $transitions['b'][0];
         $this->assertIsCallable($defaultGuard);
-        
+
         $trigger = (object)['test' => 'data'];
         $this->assertTrue($defaultGuard($trigger));
     }
-    
+
     public function testDefaultGuardAlwaysReturnsTrue(): void
     {
         $registry = new TransitionRegistry();
         $region = (new RegionBuilder())->setStates('x', 'y')->build();
-        
+
         $registry->pushTransition($region, 'x', 'y');
-        
+
         $transitions = $registry->getTransitionsForState($region, 'x');
         $guard = $transitions['y'][0];
-        
+
         // Test with various trigger types
         $this->assertTrue($guard((object)[]));
         $this->assertTrue($guard((object)['foo' => 'bar']));

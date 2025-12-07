@@ -21,17 +21,19 @@ class FactorySettingTest extends TestCase
     public function testSetsFactoryWhenSpecified(): void
     {
         $processor = new ProcessArray(new Schema(), new TransformArray());
-        
-        $factory = function() { return new \stdClass(); };
-        
+
+        $factory = function () {
+            return new \stdClass();
+        };
+
         $config = [
             'states' => [['name' => 'idle']],
             'factory' => $factory,
         ];
-        
+
         $builder = new RegionBuilder();
         $result = $processor->fromData($config, $builder);
-        
+
         $this->assertInstanceOf(RegionBuilder::class, $result);
     }
 }

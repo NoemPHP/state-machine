@@ -48,7 +48,8 @@ YAML
                             ],
                         ],
                     ],
-                ]);
+                ]
+            );
 
             // Verify the build succeeded, which means LoadFile chain was used
             $this->assertInstanceOf(\Noem\State\Region::class, $result, 'LoadFile chain should have been called by include helper');

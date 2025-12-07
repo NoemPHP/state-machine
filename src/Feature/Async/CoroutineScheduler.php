@@ -93,7 +93,7 @@ class CoroutineScheduler
             $this->currentTask = $task;
 
             if ($task->isFinished()) {
-                $finished[]=$task;
+                $finished[] = $task;
                 continue;
             }
 

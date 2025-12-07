@@ -21,7 +21,7 @@ class SpawnStepRegistryRetrievalTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader());
-        
+
         $array = [
             'states' => [
                 [
@@ -41,14 +41,14 @@ class SpawnStepRegistryRetrievalTest extends TestCase
             ],
             'initial' => 'parent',
         ];
-        
+
         // Build the region - the BuildStep should retrieve the registry
         $region = $builder->build([
             'loader' => [
                 'array' => $array,
             ],
         ]);
-        
+
         // Verify that the registry was retrieved and used by checking that records exist
         $registry = $builder->chainMail->invoke(fn(RegionSpawnRegistry $r) => $r);
         $this->assertNotEmpty($registry->records, 'Registry should have spawn records, proving it was retrieved');

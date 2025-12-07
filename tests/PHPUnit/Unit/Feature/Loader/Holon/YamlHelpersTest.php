@@ -23,29 +23,29 @@ class YamlHelpersTest extends TestCase
         $reflection = new ReflectionClass(Holon::class);
         $method = $reflection->getMethod('getYamlHelpers');
         $method->setAccessible(true);
-        
+
         $buildContainer = $reflection->getMethod('buildContainer');
         $buildContainer->setAccessible(true);
         $container = $buildContainer->invoke(null, ['services' => []]);
-        
+
         // Act
         $helpers = $method->invoke(null, $container);
-        
+
         // Assert - should include all bootstrap helpers
         $this->assertArrayHasKey('php', $helpers);
         $this->assertArrayHasKey('env', $helpers);
         $this->assertArrayHasKey('constant', $helpers);
-        
+
         $this->assertInstanceOf(PhpEvalHelper::class, $helpers['php']);
     }
-    
+
     public function testAddsGetHelperForContainerAccess(): void
     {
         // Arrange
         $reflection = new ReflectionClass(Holon::class);
         $method = $reflection->getMethod('getYamlHelpers');
         $method->setAccessible(true);
-        
+
         $buildContainer = $reflection->getMethod('buildContainer');
         $buildContainer->setAccessible(true);
         $container = $buildContainer->invoke(null, [
@@ -53,26 +53,26 @@ class YamlHelpersTest extends TestCase
                 'test.service' => ['value' => 'test_value']
             ]
         ]);
-        
+
         // Act
         $helpers = $method->invoke(null, $container);
-        
+
         // Assert
         $this->assertArrayHasKey('get', $helpers);
         $this->assertIsCallable($helpers['get']);
-        
+
         // Verify get helper accesses container
         $result = $helpers['get']('test.service');
         $this->assertEquals('test_value', $result);
     }
-    
+
     public function testAddsServiceHelperForContainerAccess(): void
     {
         // Arrange
         $reflection = new ReflectionClass(Holon::class);
         $method = $reflection->getMethod('getYamlHelpers');
         $method->setAccessible(true);
-        
+
         $buildContainer = $reflection->getMethod('buildContainer');
         $buildContainer->setAccessible(true);
         $container = $buildContainer->invoke(null, [
@@ -80,33 +80,33 @@ class YamlHelpersTest extends TestCase
                 'my.service' => ['value' => 'service_value']
             ]
         ]);
-        
+
         // Act
         $helpers = $method->invoke(null, $container);
-        
+
         // Assert
         $this->assertArrayHasKey('service', $helpers);
         $this->assertIsCallable($helpers['service']);
-        
+
         // Verify service helper accesses container
         $result = $helpers['service']('my.service');
         $this->assertEquals('service_value', $result);
     }
-    
+
     public function testProvidesAllFiveHelpers(): void
     {
         // Arrange
         $reflection = new ReflectionClass(Holon::class);
         $method = $reflection->getMethod('getYamlHelpers');
         $method->setAccessible(true);
-        
+
         $buildContainer = $reflection->getMethod('buildContainer');
         $buildContainer->setAccessible(true);
         $container = $buildContainer->invoke(null, ['services' => []]);
-        
+
         // Act
         $helpers = $method->invoke(null, $container);
-        
+
         // Assert
         $this->assertIsArray($helpers);
         $this->assertArrayHasKey('php', $helpers);

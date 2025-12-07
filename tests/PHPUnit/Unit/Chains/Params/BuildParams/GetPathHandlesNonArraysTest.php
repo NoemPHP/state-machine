@@ -22,12 +22,12 @@ class GetPathHandlesNonArraysTest extends TestCase
             'a' => 'string_value'
         ];
         $params = new BuildParams($builder, $config);
-        
+
         $result = $params->getPath('a.b.c', 'default');
-        
+
         $this->assertSame('default', $result);
     }
-    
+
     public function testGetPathHandlesNullIntermediateValue(): void
     {
         $builder = new RegionBuilder();
@@ -35,9 +35,9 @@ class GetPathHandlesNonArraysTest extends TestCase
             'a' => null
         ];
         $params = new BuildParams($builder, $config);
-        
+
         $result = $params->getPath('a.b', 'default');
-        
+
         $this->assertSame('default', $result);
     }
 }

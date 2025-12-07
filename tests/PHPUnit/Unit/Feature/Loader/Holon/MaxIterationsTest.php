@@ -18,7 +18,7 @@ class MaxIterationsTest extends TestCase
     {
         // Arrange
         $iterationCount = 0;
-        
+
         $yaml = <<<YAML
 machine:
   eventLoop:
@@ -34,10 +34,10 @@ YAML;
         // Act & Assert - should throw exception when max iterations reached
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('maximum iterations (5)');
-        
+
         Holon::fromYaml($yaml);
     }
-    
+
     public function testUsesDefaultMaxIterationsWhenNotSpecified(): void
     {
         // Arrange - machine that will loop indefinitely without max iterations
@@ -55,10 +55,10 @@ YAML;
         // Act & Assert - should eventually hit default limit (10000)
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('maximum iterations (10000)');
-        
+
         Holon::fromYaml($yaml);
     }
-    
+
     public function testCompletesBeforeMaxIterations(): void
     {
         // Arrange
@@ -83,11 +83,11 @@ YAML;
 
         // Act
         $result = Holon::fromYaml($yaml);
-        
+
         // Assert - should complete successfully without hitting limit
         $this->assertNotNull($result);
     }
-    
+
     public function testMaxIterationsAppliesToEachIteration(): void
     {
         // Arrange - configure a very low limit
@@ -117,7 +117,7 @@ YAML;
         // Act & Assert - should fail at 2 iterations (before reaching s4)
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('maximum iterations (2)');
-        
+
         Holon::fromYaml($yaml);
     }
 }

@@ -13,9 +13,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Acceptance Criterion: SpawnRegion tracks spawned regions and returns spawned region or null based on guard evaluation
- * 
+ *
  * Intent: Provides spawn outcome visibility through return values and maintains spawn records for runtime behavior
- * 
+ *
  * Replaces 10 specs:
  * - spawn-execution (1 spec): Return value
  * - spawn-registry (3 specs): Registry storage
@@ -30,7 +30,7 @@ class TrackingTest extends TestCase
     {
         // Tests: SpawnRegion returns spawned region when successful
         $childSpawned = false;
-        
+
         $config = [
             'states' => [
                 [
@@ -72,7 +72,7 @@ class TrackingTest extends TestCase
     {
         // Tests: SpawnRegion returns null when guard returns false
         $childSpawned = false;
-        
+
         $config = [
             'states' => [
                 [
@@ -114,7 +114,7 @@ class TrackingTest extends TestCase
     {
         // Tests: SpawnRegion returns null when parameter types incompatible
         $childSpawned = false;
-        
+
         $config = [
             'states' => [
                 [
@@ -190,7 +190,7 @@ class TrackingTest extends TestCase
 
         // Verify registry contains spawn records
         $registry = $builder->chainMail->invoke(fn(RegionSpawnRegistry $r) => $r);
-        
+
         $this->assertCount(
             2,
             $registry->records,
@@ -207,7 +207,7 @@ class TrackingTest extends TestCase
         // - region factory closure
         // - guard closure
         // - connection flags
-        
+
         $config = [
             'states' => [
                 [
@@ -247,10 +247,10 @@ class TrackingTest extends TestCase
         // Tests: RegionSpawnRegistry initializes with empty records array
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader());
-        
+
         // Get registry before any spawn definitions
         $registry = $builder->chainMail->invoke(fn(RegionSpawnRegistry $r) => $r);
-        
+
         $this->assertCount(
             0,
             $registry->records,
@@ -297,7 +297,7 @@ class TrackingTest extends TestCase
 
         // Verify registry accumulated all records
         $registry = $builder->chainMail->invoke(fn(RegionSpawnRegistry $r) => $r);
-        
+
         $this->assertCount(
             3,
             $registry->records,
@@ -389,7 +389,7 @@ class TrackingTest extends TestCase
     {
         // Tests: Guard stored in record evaluates properly
         $guardEvaluated = false;
-        
+
         $config = [
             'states' => [
                 [

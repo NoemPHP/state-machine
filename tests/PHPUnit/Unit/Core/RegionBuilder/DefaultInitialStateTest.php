@@ -18,26 +18,26 @@ class DefaultInitialStateTest extends TestCase
     public function testFirstStateIsDefaultInitial(): void
     {
         $builder = new RegionBuilder();
-        
+
         $builder->setStates('first', 'second', 'third');
-        
+
         $region = $builder->build();
-        
+
         $this->assertTrue($region->isInState('first'), 'Region should default to first state as initial');
         $this->assertFalse($region->isInState('second'));
         $this->assertFalse($region->isInState('third'));
     }
-    
+
     public function testDefaultInitialStateWithAddState(): void
     {
         $builder = new RegionBuilder();
-        
+
         $builder->addState('alpha')
                 ->addState('beta')
                 ->addState('gamma');
-        
+
         $region = $builder->build();
-        
+
         $this->assertTrue($region->isInState('alpha'));
     }
 }

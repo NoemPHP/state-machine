@@ -20,7 +20,7 @@ class SpawnRegionSchemaTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader());
-        
+
         $yaml = <<<YAML
         states:
           - name: parent
@@ -34,11 +34,11 @@ class SpawnRegionSchemaTest extends TestCase
                   final: child2
         initial: parent
         YAML;
-        
+
         $helpers = [
             'php' => fn(string $code) => eval("return $code;"),
         ];
-        
+
         // Should build successfully with region property as array
         $region = $builder->build([
             'loader' => [
@@ -46,7 +46,7 @@ class SpawnRegionSchemaTest extends TestCase
                 'yamlHelpers' => $helpers,
             ],
         ]);
-        
+
         $this->assertTrue($region->isInState('parent'));
     }
 }

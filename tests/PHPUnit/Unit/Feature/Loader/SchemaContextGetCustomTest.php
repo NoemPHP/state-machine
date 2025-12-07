@@ -23,25 +23,25 @@ class SchemaContextGetCustomTest extends TestCase
         $actionSchema = Expect::structure([]);
         $stateSchema = Expect::structure([]);
         $regionSchema = Expect::structure([]);
-        
+
         $context = new SchemaContext(
             $callbackSchema,
             $actionSchema,
             $stateSchema,
             $regionSchema
         );
-        
+
         $customSchema = Expect::array();
         $context->addCustomSchema('testType', $customSchema);
-        
+
         $retrieved = $context->getCustomSchema('testType');
-        
+
         $this->assertInstanceOf(
             Schema::class,
             $retrieved,
             'getCustomSchema should return a Schema instance'
         );
-        
+
         $this->assertSame(
             $customSchema,
             $retrieved,

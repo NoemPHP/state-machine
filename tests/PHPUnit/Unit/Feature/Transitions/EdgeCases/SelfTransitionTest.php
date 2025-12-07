@@ -24,34 +24,34 @@ class SelfTransitionTest extends TestCase
             ->markInitial('active')
             ->addBuildStep(new AddTransition('active', 'active', fn(object $t): bool => isset($t->refresh)))
             ->build();
-        
+
         $this->assertEquals('active', $region->currentState());
-        
+
         $trigger = (object)['refresh' => true];
         $region->trigger($trigger);
-        
+
         // Still in active after self-transition
         $this->assertEquals('active', $region->currentState());
     }
-    
+
     public function testSelfTransitionFiresLifecycleEvents(): void
     {
         $exitCalled = false;
         $enterCalled = false;
-        
+
         $region = (new RegionBuilder())
             ->setStates('state')
-            ->onExit('state', function(object $t) use (&$exitCalled) {
+            ->onExit('state', function (object $t) use (&$exitCalled) {
                 $exitCalled = true;
             })
-            ->onEnter('state', function(object $t) use (&$enterCalled) {
+            ->onEnter('state', function (object $t) use (&$enterCalled) {
                 $enterCalled = true;
             })
             ->addBuildStep(new AddTransition('state', 'state'))
             ->build();
-        
+
         $region->trigger(new stdClass());
-        
+
         // Self-transitions do NOT fire lifecycle events in the current implementation
         // because the state doesn't actually change (newState === currentState)
         $this->assertFalse($exitCalled, 'Exit event should NOT fire for self-transition');

@@ -20,11 +20,11 @@ class FactoryClosureCreationTest extends TestCase
     public function testCreatesFactoryClosureFromCallable(): void
     {
         $processor = new ProcessArray(new Schema(), new TransformArray());
-        
+
         $factoryDefinition = fn() => 'factory_result';
-        
+
         $factory = $processor->createFactoryCallback($factoryDefinition);
-        
+
         $this->assertInstanceOf(\Closure::class, $factory);
         $this->assertEquals('factory_result', $factory());
     }

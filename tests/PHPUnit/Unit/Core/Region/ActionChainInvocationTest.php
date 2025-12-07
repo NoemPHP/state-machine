@@ -83,7 +83,7 @@ class ActionChainInvocationTest extends TestCase
         );
 
         $region->trigger((object)['id' => 1], false);
-        
+
         $this->assertEquals(1, $callCount);
     }
 

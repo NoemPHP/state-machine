@@ -21,7 +21,7 @@ class FinalStateMarkingTest extends TestCase
     public function testMarksFinalStateWhenSpecified(): void
     {
         $processor = new ProcessArray(new Schema(), new TransformArray());
-        
+
         $config = [
             'states' => [
                 ['name' => 'idle'],
@@ -29,12 +29,12 @@ class FinalStateMarkingTest extends TestCase
             ],
             'final' => 'done',
         ];
-        
+
         $builder = new RegionBuilder();
         $processor->fromData($config, $builder);
-        
+
         $region = $builder->build();
-        
+
         // Can verify final state was marked (isFinal checks current state)
         $this->assertFalse($region->isFinal());
     }

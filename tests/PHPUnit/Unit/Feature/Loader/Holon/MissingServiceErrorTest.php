@@ -22,77 +22,77 @@ class MissingServiceErrorTest extends TestCase
         $reflection = new ReflectionClass(Holon::class);
         $method = $reflection->getMethod('buildContainer');
         $method->setAccessible(true);
-        
+
         $containerConfig = [
             'services' => [
                 'existing.service' => ['value' => 'exists']
             ]
         ];
-        
+
         $container = $method->invoke(null, $containerConfig);
-        
+
         // Assert
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage("Service 'nonexistent.service' not found in container");
-        
+
         // Act
         $container->get('nonexistent.service');
     }
-    
+
     public function testHasReturnsFalseForMissingService(): void
     {
         // Arrange
         $reflection = new ReflectionClass(Holon::class);
         $method = $reflection->getMethod('buildContainer');
         $method->setAccessible(true);
-        
+
         $containerConfig = [
             'services' => [
                 'existing.service' => ['value' => 'exists']
             ]
         ];
-        
+
         $container = $method->invoke(null, $containerConfig);
-        
+
         // Act
         $result = $container->has('nonexistent.service');
-        
+
         // Assert
         $this->assertFalse($result);
     }
-    
+
     public function testThrowsExceptionEvenIfServiceDefinedButFactoryIsNotCallable(): void
     {
         // Arrange
         $reflection = new ReflectionClass(Holon::class);
         $method = $reflection->getMethod('buildContainer');
         $method->setAccessible(true);
-        
+
         // Manually create a broken configuration (factory that's not callable)
         $containerConfig = [
             'services' => [
                 'broken.service' => ['factory' => 'not_a_callable']
             ]
         ];
-        
+
         $container = $method->invoke(null, $containerConfig);
-        
+
         // Assert
         $this->expectException(RuntimeException::class);
-        
+
         // Act - should fail because factory is not callable
         $container->get('broken.service');
     }
-    
+
     public function testExceptionMessageIncludesServiceId(): void
     {
         // Arrange
         $reflection = new ReflectionClass(Holon::class);
         $method = $reflection->getMethod('buildContainer');
         $method->setAccessible(true);
-        
+
         $container = $method->invoke(null, ['services' => []]);
-        
+
         // Assert
         try {
             $container->get('my.custom.service');

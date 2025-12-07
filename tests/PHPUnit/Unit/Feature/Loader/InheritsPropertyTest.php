@@ -21,15 +21,15 @@ class InheritsPropertyTest extends TestCase
     public function testSetsInheritsPropertyWhenSpecified(): void
     {
         $processor = new ProcessArray(new Schema(), new TransformArray());
-        
+
         $config = [
             'states' => [['name' => 'idle']],
             'inherits' => ['template1', 'template2'],
         ];
-        
+
         $builder = new RegionBuilder();
         $result = $processor->fromData($config, $builder);
-        
+
         $this->assertInstanceOf(RegionBuilder::class, $result);
     }
 }

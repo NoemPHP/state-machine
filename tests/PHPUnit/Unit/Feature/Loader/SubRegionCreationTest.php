@@ -21,7 +21,7 @@ class SubRegionCreationTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader());
-        
+
         $array = [
             'states' => [
                 [
@@ -42,25 +42,25 @@ class SubRegionCreationTest extends TestCase
             ],
             'initial' => 'parent',
         ];
-        
+
         // Build the region
         $region = $builder->build([
             'loader' => [
                 'array' => $array,
             ],
         ]);
-        
+
         // Get the spawn registry and invoke the factory
         $registry = $builder->chainMail->invoke(fn(RegionSpawnRegistry $r) => $r);
         $spawnRecord = $registry->records[0];
-        
+
         // Invoke the factory to create the sub-region
         $subRegion = ($spawnRecord->regionFactory)();
-        
+
         // Verify the sub-region was created with the correct configuration
         $this->assertNotNull($subRegion, 'Factory should create a sub-region');
         $this->assertTrue($subRegion->isInState('child_state_1'), 'Sub-region should start in initial state child_state_1');
-        
+
         // Verify it's a valid Region instance
         $this->assertInstanceOf(\Noem\State\Region::class, $subRegion);
     }

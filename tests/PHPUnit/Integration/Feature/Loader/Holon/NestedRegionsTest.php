@@ -36,12 +36,12 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert
         $this->assertInstanceOf(Region::class, $region);
         $this->assertEquals('parent', $region->currentState());
     }
-    
+
     public function testExecutesHierarchicalMachine(): void
     {
         // Arrange
@@ -66,19 +66,19 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert
         $this->assertEquals('level1', $region->currentState());
-        
+
         // Trigger to complete nested region
         $region->trigger(new \stdClass());
-        
+
         // Trigger to move to complete state
         $region->trigger(new \stdClass());
         $this->assertEquals('complete', $region->currentState());
         $this->assertTrue($region->isFinal());
     }
-    
+
     public function testMultipleNestedRegions(): void
     {
         // Arrange
@@ -103,12 +103,12 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert
         $this->assertInstanceOf(Region::class, $region);
         $this->assertEquals('parallel', $region->currentState());
     }
-    
+
     public function testDeeplyNestedHierarchy(): void
     {
         // Arrange
@@ -134,12 +134,12 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert
         $this->assertInstanceOf(Region::class, $region);
         $this->assertEquals('root', $region->currentState());
     }
-    
+
     public function testNestedRegionsWithAutoRun(): void
     {
         // Arrange

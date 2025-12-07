@@ -18,7 +18,7 @@ class SpawnRegistryInitializationTest extends TestCase
     public function testRegistryInitializesWithEmptyRecords(): void
     {
         $registry = new RegionSpawnRegistry();
-        
+
         $this->assertIsArray($registry->records);
         $this->assertEmpty($registry->records);
         $this->assertCount(0, $registry->records);

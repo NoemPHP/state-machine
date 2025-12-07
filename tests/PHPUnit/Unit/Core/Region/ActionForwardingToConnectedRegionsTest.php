@@ -111,8 +111,11 @@ class ActionForwardingToConnectedRegionsTest extends TestCase
         $context = new Action($parentRegion, new stdClass());
         $result = $dispatchAction->call($context);
 
-        $this->assertEquals('idle', $result,
-            'DispatchAction should return the current state name');
+        $this->assertEquals(
+            'idle',
+            $result,
+            'DispatchAction should return the current state name'
+        );
 
         \Mockery::close();
     }

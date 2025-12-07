@@ -22,7 +22,7 @@ class FiresOnEnterStateTest extends TestCase
     {
         $enterFired = false;
         $trigger = new stdClass();
-        
+
         $region = (new RegionBuilder())
             ->enableFeatures(new TransitionsFeature())
             ->setStates('start', 'end')
@@ -31,9 +31,9 @@ class FiresOnEnterStateTest extends TestCase
             })
             ->addBuildStep(new AddTransition('start', 'end'))
             ->build();
-        
+
         $region->trigger($trigger);
-        
+
         $this->assertTrue($enterFired);
         $this->assertTrue($region->isInState('end'));
     }

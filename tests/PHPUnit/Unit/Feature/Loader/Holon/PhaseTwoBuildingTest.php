@@ -34,15 +34,15 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert - Features were enabled
         $this->assertInstanceOf(Region::class, $region);
-        
+
         // Verify TransitionsFeature works (automatic transition)
         $region->trigger(new \stdClass());
         $this->assertEquals('done', $region->currentState());
     }
-    
+
     public function testBuildsRegionWithContainer(): void
     {
         // Arrange - Container with services
@@ -64,11 +64,11 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert - Container was built and used
         $this->assertInstanceOf(Region::class, $region);
     }
-    
+
     public function testAppliesYamlHelpersInPhaseTwo(): void
     {
         // Arrange - Use service helper (phase 2 with container access)
@@ -103,7 +103,7 @@ YAML;
         // Assert - Phase 2 helpers with container access worked
         $this->assertInstanceOf(Region::class, $region);
     }
-    
+
     public function testAddsRegionLoaderWhenNotPresent(): void
     {
         // Arrange - No RegionLoader specified in features
@@ -119,7 +119,7 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert - RegionLoader was added automatically
         $this->assertInstanceOf(Region::class, $region);
     }

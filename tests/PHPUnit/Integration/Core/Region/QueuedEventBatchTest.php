@@ -26,10 +26,10 @@ class QueuedEventBatchTest extends RegionBuilderTestCase
         $r = $r
             ->setStates('one', 'two', 'three')
             ->markInitial('one')
-            ->onAction('one', function(object $t) use (&$processedPayloads) {
+            ->onAction('one', function (object $t) use (&$processedPayloads) {
                 $processedPayloads[] = $t->id;
             })
-            ->onAction('two', function(object $t) use (&$processedPayloads) {
+            ->onAction('two', function (object $t) use (&$processedPayloads) {
                 $processedPayloads[] = $t->id;
             })
             ->addBuildStep(new AddTransition('one', 'two', fn(object $t): bool => $t->id >= 3))
@@ -61,7 +61,7 @@ class QueuedEventBatchTest extends RegionBuilderTestCase
         $r = $r
             ->setStates('active')
             ->markInitial('active')
-            ->onAction('active', function(object $t) use (&$sequence) {
+            ->onAction('active', function (object $t) use (&$sequence) {
                 $sequence[] = $t->step;
             })
             ->build();
@@ -83,7 +83,7 @@ class QueuedEventBatchTest extends RegionBuilderTestCase
         $r = $r
             ->setStates('state')
             ->markInitial('state')
-            ->onAction('state', function(object $t) use (&$order) {
+            ->onAction('state', function (object $t) use (&$order) {
                 $order[] = $t->value;
             })
             ->build();
@@ -108,7 +108,7 @@ class QueuedEventBatchTest extends RegionBuilderTestCase
         $r = $r
             ->setStates('state')
             ->markInitial('state')
-            ->onAction('state', function(object $t) use (&$callCount) {
+            ->onAction('state', function (object $t) use (&$callCount) {
                 $callCount++;
             })
             ->build();
@@ -134,9 +134,15 @@ class QueuedEventBatchTest extends RegionBuilderTestCase
         $r = $r
             ->setStates('one', 'two', 'three')
             ->markInitial('one')
-            ->onEnter('one', function(object $t) use (&$states) { $states[] = 'one'; })
-            ->onEnter('two', function(object $t) use (&$states) { $states[] = 'two'; })
-            ->onEnter('three', function(object $t) use (&$states) { $states[] = 'three'; })
+            ->onEnter('one', function (object $t) use (&$states) {
+                $states[] = 'one';
+            })
+            ->onEnter('two', function (object $t) use (&$states) {
+                $states[] = 'two';
+            })
+            ->onEnter('three', function (object $t) use (&$states) {
+                $states[] = 'three';
+            })
             ->addBuildStep(new AddTransition('one', 'two', fn(object $t): bool => $t->step === 1))
             ->addBuildStep(new AddTransition('two', 'three', fn(object $t): bool => $t->step === 2))
             ->build();
@@ -162,9 +168,9 @@ class QueuedEventBatchTest extends RegionBuilderTestCase
         $r = $builder
             ->setStates('state')
             ->markInitial('state')
-            ->onAction('state', function(object $t) use (&$processed, &$r) {
+            ->onAction('state', function (object $t) use (&$processed, &$r) {
                 $processed[] = $t->id;
-                
+
                 // Trigger another event during processing
                 if ($t->id === 1) {
                     $r->trigger((object)['id' => 2], true);
@@ -174,13 +180,13 @@ class QueuedEventBatchTest extends RegionBuilderTestCase
 
         // Process first event which triggers second
         $r->trigger((object)['id' => 1], false);
-        
+
         // At this point, event 2 is queued but not processed
         $this->assertEquals([1], $processed);
 
         // Process queue
         $r->trigger((object)['id' => 3], false);
-        
+
         // Now both event 2 (queued earlier) and event 3 should be processed
         $this->assertEquals([1, 2, 3], $processed);
     }

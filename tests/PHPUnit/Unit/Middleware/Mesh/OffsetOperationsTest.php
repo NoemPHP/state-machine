@@ -18,9 +18,9 @@ class OffsetOperationsTest extends TestCase
     public function testOffsetExists(): void
     {
         $mesh = new Mesh();
-        
+
         $mesh['key'] = 'value';
-        
+
         $this->assertTrue(isset($mesh['key']));
         $this->assertFalse(isset($mesh['non_existent']));
     }
@@ -28,35 +28,35 @@ class OffsetOperationsTest extends TestCase
     public function testOffsetGet(): void
     {
         $mesh = new Mesh();
-        
+
         $mesh['key'] = 'value';
-        
+
         $this->assertSame('value', $mesh['key']);
     }
 
     public function testOffsetGetReturnsNullForNonExistent(): void
     {
         $mesh = new Mesh();
-        
+
         $this->assertNull($mesh['non_existent']);
     }
 
     public function testOffsetSet(): void
     {
         $mesh = new Mesh();
-        
+
         $mesh['key'] = 'value';
-        
+
         $this->assertSame('value', $mesh['key']);
     }
 
     public function testOffsetUnset(): void
     {
         $mesh = new Mesh();
-        
+
         $mesh['key'] = 'value';
         $this->assertTrue(isset($mesh['key']));
-        
+
         unset($mesh['key']);
         $this->assertFalse(isset($mesh['key']));
     }
@@ -64,19 +64,19 @@ class OffsetOperationsTest extends TestCase
     public function testAllOperationsTogether(): void
     {
         $mesh = new Mesh();
-        
+
         // Set
         $mesh['first'] = 'one';
         $mesh['second'] = 'two';
-        
+
         // Exists
         $this->assertTrue(isset($mesh['first']));
         $this->assertTrue(isset($mesh['second']));
-        
+
         // Get
         $this->assertSame('one', $mesh['first']);
         $this->assertSame('two', $mesh['second']);
-        
+
         // Unset
         unset($mesh['first']);
         $this->assertFalse(isset($mesh['first']));
@@ -86,10 +86,10 @@ class OffsetOperationsTest extends TestCase
     public function testOffsetSetOverwrite(): void
     {
         $mesh = new Mesh();
-        
+
         $mesh['key'] = 'original';
         $mesh['key'] = 'updated';
-        
+
         $this->assertSame('updated', $mesh['key']);
     }
 }

@@ -21,7 +21,7 @@ class ActionRegistrationTest extends TestCase
     public function testRegistersActionCallbacksWithBuilder(): void
     {
         $processor = new ProcessArray(new Schema(), new TransformArray());
-        
+
         $config = [
             'states' => [
                 [
@@ -32,10 +32,10 @@ class ActionRegistrationTest extends TestCase
                 ],
             ],
         ];
-        
+
         $builder = new RegionBuilder();
         $result = $processor->fromData($config, $builder);
-        
+
         $this->assertInstanceOf(RegionBuilder::class, $result);
     }
 }

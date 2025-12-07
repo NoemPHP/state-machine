@@ -20,21 +20,21 @@ class DefaultHelpersTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader());
-        
+
         $yaml = <<<YAML
         states:
           - name: idle
           - name: active
         initial: idle
         YAML;
-        
+
         // Build without yamlHelpers - should use empty array by default
         $region = $builder->build([
             'loader' => [
                 'yaml' => $yaml,
             ],
         ]);
-        
+
         $this->assertTrue($region->isInState('idle'));
     }
 }

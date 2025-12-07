@@ -19,25 +19,25 @@ class ImplementsBuildStepTest extends TestCase
     public function testImplementsBuildStepInterface(): void
     {
         $addTransition = new AddTransition('from', 'to');
-        
+
         $this->assertInstanceOf(BuildStep::class, $addTransition);
     }
-    
+
     public function testHasCallbackMethod(): void
     {
         $addTransition = new AddTransition('from', 'to');
-        
+
         $this->assertTrue(method_exists($addTransition, 'callback'));
     }
-    
+
     public function testCallbackAcceptsCorrectParameters(): void
     {
         $addTransition = new AddTransition('from', 'to');
         $reflection = new \ReflectionMethod($addTransition, 'callback');
-        
+
         $parameters = $reflection->getParameters();
         $this->assertCount(3, $parameters);
-        
+
         $this->assertEquals('builder', $parameters[0]->getName());
         $this->assertEquals('next', $parameters[1]->getName());
         $this->assertEquals('first', $parameters[2]->getName());

@@ -22,7 +22,7 @@ class YamlToRegionTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader(), new TransitionsFeature());
-        
+
         // Use a global array to track callbacks since eval'd closures can't capture test variables
         $GLOBALS['test_logs'] = [
             'enter' => [],
@@ -111,12 +111,12 @@ class YamlToRegionTest extends TestCase
         // Cleanup
         unset($GLOBALS['test_logs']);
     }
-    
+
     public function testLoadsYamlFromFile(): void
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader(), new TransitionsFeature());
-        
+
         $yamlFile = tempnam(sys_get_temp_dir(), 'test_yaml_');
         $yaml = <<<YAML
         states:
@@ -127,16 +127,16 @@ class YamlToRegionTest extends TestCase
         initial: start
         final: end
         YAML;
-        
+
         file_put_contents($yamlFile, $yaml);
-        
+
         try {
             $region = $builder->build([
                 'loader' => [
                     'yaml' => $yamlFile,
                 ],
             ]);
-            
+
             $this->assertTrue($region->isInState('start'));
             $region->trigger(new stdClass());
             $this->assertTrue($region->isInState('end'));

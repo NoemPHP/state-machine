@@ -24,7 +24,7 @@ class ExtendedStateAccessTest extends TestCase
             ->enableFeatures(new ExtendedState())
             ->setStates('idle', 'processing', 'complete')
             ->markInitial('idle')
-            ->addBuildStep(new AddTransition('idle', 'processing', function(object $t): bool {
+            ->addBuildStep(new AddTransition('idle', 'processing', function (object $t): bool {
                 // Guards can access extended state via $this->get() when bound
                 // For this test, we just check trigger properties
                 return isset($t->start);
@@ -45,16 +45,16 @@ class ExtendedStateAccessTest extends TestCase
             ->enableFeatures(new ExtendedState())
             ->setStates('counting', 'done')
             ->markInitial('counting')
-            ->addBuildStep(new AddTransition('counting', 'done', function(object $t): bool {
+            ->addBuildStep(new AddTransition('counting', 'done', function (object $t): bool {
                 // Guard evaluates trigger properties
                 return ($t->count ?? 0) >= 10;
             }))
             ->build();
-        
+
         // Try transition with low count
         $region->trigger((object)['count' => 5]);
         $this->assertEquals('counting', $region->currentState());
-        
+
         // Try with sufficient count
         $region->trigger((object)['count' => 10]);
         $this->assertEquals('done', $region->currentState());

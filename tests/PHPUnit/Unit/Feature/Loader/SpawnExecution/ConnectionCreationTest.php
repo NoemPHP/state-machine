@@ -11,9 +11,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Acceptance Criterion: SpawnRegion creates connections with configured flags and state-based predicates
- * 
+ *
  * Intent: Establishes event propagation between parent and spawned regions with connection active only while parent is in spawning state
- * 
+ *
  * Replaces 4 specs from spawn-execution:
  * - SpawnRegion creates Connection with parent region and sub-region
  * - SpawnRegion uses connection flags from spawn record
@@ -29,7 +29,7 @@ class ConnectionCreationTest extends TestCase
     {
         // Tests: SpawnRegion creates Connection with parent region and sub-region
         $childReceivedTrigger = false;
-        
+
         $config = [
             'states' => [
                 [
@@ -78,7 +78,7 @@ class ConnectionCreationTest extends TestCase
         // Tests: SpawnRegion uses connection flags from spawn record
         // Default flags include RECEIVE_EVENTS and RECEIVE_ACTIONS
         $childReceivedEvent = false;
-        
+
         $config = [
             'states' => [
                 [
@@ -123,9 +123,9 @@ class ConnectionCreationTest extends TestCase
     {
         // Tests: SpawnRegion creates connection predicate tied to parent state
         // Connection should only be active when parent is in spawning state
-        
+
         $childActionCount = 0;
-        
+
         $config = [
             'states' => [
                 [
@@ -177,7 +177,7 @@ class ConnectionCreationTest extends TestCase
     {
         // Tests: SpawnRegion adds connection to ConnectedRegions
         $childReceived = false;
-        
+
         $config = [
             'states' => [
                 [
@@ -225,7 +225,7 @@ class ConnectionCreationTest extends TestCase
     {
         // Tests event propagation through connection
         $events = [];
-        
+
         $config = [
             'states' => [
                 [
@@ -272,7 +272,7 @@ class ConnectionCreationTest extends TestCase
         // Tests: Multiple spawned regions can connect to same parent
         $child1Received = false;
         $child2Received = false;
-        
+
         $config = [
             'states' => [
                 [
@@ -338,7 +338,7 @@ class ConnectionCreationTest extends TestCase
     {
         // Tests: Connection uses RECEIVE_ACTIONS flag from configuration
         $childActionFired = false;
-        
+
         $config = [
             'states' => [
                 [
@@ -387,9 +387,9 @@ class ConnectionCreationTest extends TestCase
     {
         // Tests: Predicate controls when connection is active
         // (This is a more comprehensive test of the predicate behavior)
-        
+
         $actionCount = 0;
-        
+
         $config = [
             'states' => [
                 [

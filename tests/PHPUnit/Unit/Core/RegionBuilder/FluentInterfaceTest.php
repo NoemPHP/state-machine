@@ -21,11 +21,13 @@ class FluentInterfaceTest extends TestCase
     public function testAllBuilderMethodsReturnSelf(): void
     {
         $builder = new RegionBuilder();
-        
+
         $feature = new class implements Feature {
-            public function __invoke(ChainMail $chainMail): void {}
+            public function __invoke(ChainMail $chainMail): void
+            {
+            }
         };
-        
+
         // Test all methods that should return $this
         $this->assertSame($builder, $builder->setStates('a', 'b'));
         $this->assertSame($builder, $builder->addState('c'));
@@ -37,15 +39,17 @@ class FluentInterfaceTest extends TestCase
         $this->assertSame($builder, $builder->onEnter('a', fn() => null));
         $this->assertSame($builder, $builder->onExit('a', fn() => null));
     }
-    
+
     public function testComplexMethodChaining(): void
     {
         $builder = new RegionBuilder();
-        
+
         $feature = new class implements Feature {
-            public function __invoke(ChainMail $chainMail): void {}
+            public function __invoke(ChainMail $chainMail): void
+            {
+            }
         };
-        
+
         // Test complex chaining scenario
         $region = $builder
             ->enableFeatures($feature)
@@ -57,7 +61,7 @@ class FluentInterfaceTest extends TestCase
             ->onExit('processing', fn() => null)
             ->setMetaData(['key' => 'value'], ContextMetaType::get())
             ->build();
-        
+
         $this->assertTrue($region->isInState('idle'));
     }
 }

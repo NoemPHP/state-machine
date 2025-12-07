@@ -9,22 +9,22 @@ use Noem\State\Test\E2E\Support\MockSocket;
 
 /**
  * Base test case for machines with network operations.
- * 
+ *
  * Provides mock socket infrastructure for testing without real I/O.
  */
 abstract class NetworkMachineTestCase extends AsyncMachineTestCase
 {
     protected MockSocket $mockSocket;
-    
+
     protected function setUp(): void
     {
         parent::setUp();
         $this->mockSocket = MockSocket::createServer('tcp://0.0.0.0:8080');
     }
-    
+
     /**
      * Create and queue a mock HTTP connection.
-     * 
+     *
      * @param string $method HTTP method
      * @param string $uri Request URI
      * @param array $headers HTTP headers
@@ -39,13 +39,13 @@ abstract class NetworkMachineTestCase extends AsyncMachineTestCase
     ): MockConnection {
         $connection = MockConnection::createHttpRequest($method, $uri, $headers, $body);
         $this->mockSocket->queueConnection($connection);
-        
+
         return $connection;
     }
-    
+
     /**
      * Assert that a mock connection has been closed.
-     * 
+     *
      * @param MockConnection $connection
      * @param string $message
      */
@@ -56,10 +56,10 @@ abstract class NetworkMachineTestCase extends AsyncMachineTestCase
             $message ?: 'Expected connection to be closed'
         );
     }
-    
+
     /**
      * Assert that a mock connection is still open.
-     * 
+     *
      * @param MockConnection $connection
      * @param string $message
      */
@@ -70,10 +70,10 @@ abstract class NetworkMachineTestCase extends AsyncMachineTestCase
             $message ?: 'Expected connection to be open'
         );
     }
-    
+
     /**
      * Assert that data was written to a connection.
-     * 
+     *
      * @param MockConnection $connection
      * @param string $expected Expected data (or substring)
      * @param string $message
@@ -90,10 +90,10 @@ abstract class NetworkMachineTestCase extends AsyncMachineTestCase
             $message ?: "Expected connection to receive '{$expected}'"
         );
     }
-    
+
     /**
      * Assert that the mock server socket is non-blocking.
-     * 
+     *
      * @param string $message
      */
     protected function assertSocketNonBlocking(string $message = ''): void
@@ -103,10 +103,10 @@ abstract class NetworkMachineTestCase extends AsyncMachineTestCase
             $message ?: 'Expected socket to be non-blocking'
         );
     }
-    
+
     /**
      * Get the mock socket for direct manipulation.
-     * 
+     *
      * @return MockSocket
      */
     protected function getMockSocket(): MockSocket

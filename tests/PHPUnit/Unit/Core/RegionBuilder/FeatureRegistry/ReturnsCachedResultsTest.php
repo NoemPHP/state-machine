@@ -22,10 +22,13 @@ class ReturnsCachedResultsTest extends TestCase
         $chainMail = new ChainMail();
         $invocationCount = 0;
 
-        $feature = new class($invocationCount) implements Feature {
-            public function __construct(private &$invocationCount) {}
+        $feature = new class ($invocationCount) implements Feature {
+            public function __construct(private &$invocationCount)
+            {
+            }
 
-            public function __invoke(ChainMail $chainMail): void {
+            public function __invoke(ChainMail $chainMail): void
+            {
                 $this->invocationCount++;
             }
         };
@@ -55,11 +58,15 @@ class ReturnsCachedResultsTest extends TestCase
         $chainMail = new ChainMail();
 
         $featureA = new class implements Feature {
-            public function __invoke(ChainMail $chainMail): void {}
+            public function __invoke(ChainMail $chainMail): void
+            {
+            }
         };
 
         $featureB = new class implements Feature {
-            public function __invoke(ChainMail $chainMail): void {}
+            public function __invoke(ChainMail $chainMail): void
+            {
+            }
         };
 
         $registry->register($featureA);
@@ -79,10 +86,13 @@ class ReturnsCachedResultsTest extends TestCase
         $chainMail = new ChainMail();
         $middlewareRegistrations = [];
 
-        $feature = new class($middlewareRegistrations) implements Feature {
-            public function __construct(private &$middlewareRegistrations) {}
+        $feature = new class ($middlewareRegistrations) implements Feature {
+            public function __construct(private &$middlewareRegistrations)
+            {
+            }
 
-            public function __invoke(ChainMail $chainMail): void {
+            public function __invoke(ChainMail $chainMail): void
+            {
                 // Simulate middleware registration
                 $this->middlewareRegistrations[] = 'middleware_registered';
             }
@@ -96,7 +106,10 @@ class ReturnsCachedResultsTest extends TestCase
         $registry->resolve($chainMail);
 
         // Should only register middleware once
-        $this->assertEquals(['middleware_registered'], $middlewareRegistrations,
-            'Middleware should only be registered once despite multiple resolve calls');
+        $this->assertEquals(
+            ['middleware_registered'],
+            $middlewareRegistrations,
+            'Middleware should only be registered once despite multiple resolve calls'
+        );
     }
 }

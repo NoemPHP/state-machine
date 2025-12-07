@@ -114,11 +114,11 @@ class OneShotMiddlewareTest extends TestCase
         $deregister = $chain->link(function ($c, $next) use (&$executions, &$conditionMet, &$deregister) {
             $executions++;
             $result = $next($c);
-            
+
             if ($conditionMet) {
                 $deregister();
             }
-            
+
             return $result;
         });
 

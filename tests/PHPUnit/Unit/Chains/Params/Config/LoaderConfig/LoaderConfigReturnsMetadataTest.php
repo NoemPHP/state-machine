@@ -24,32 +24,32 @@ class LoaderConfigReturnsMetadataTest extends TestCase
             'schema' => 'custom-schema',
             'options' => ['strict' => true]
         ];
-        
+
         $paramsArray = [
             'loader' => [
                 'loaderConfig' => $metadata
             ]
         ];
         $params = new BuildParams($builder, $paramsArray);
-        
+
         $loaderConfig = $params->config(LoaderConfig::class);
-        
+
         $this->assertSame($metadata, $loaderConfig->loaderConfig());
     }
-    
+
     public function testLoaderConfigReturnsNullWhenNotSet(): void
     {
         $builder = new RegionBuilder();
-        
+
         $paramsArray = [
             'loader' => [
                 'array' => ['states' => ['a']]
             ]
         ];
         $params = new BuildParams($builder, $paramsArray);
-        
+
         $loaderConfig = $params->config(LoaderConfig::class);
-        
+
         $this->assertNull($loaderConfig->loaderConfig());
     }
 }

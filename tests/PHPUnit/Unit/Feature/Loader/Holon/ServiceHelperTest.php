@@ -33,17 +33,17 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert - region built successfully (proves service helper works)
         $this->assertNotNull($region);
         $this->assertEquals('start', $region->currentState());
     }
-    
+
     public function testServiceHelperUsedInYamlCallbacks(): void
     {
         // Arrange
         $serviceValue = null;
-        
+
         $yaml = <<<YAML
 machine:
   container:
@@ -65,12 +65,12 @@ YAML;
         $region = Holon::fromYaml($yaml);
         $trigger = new \stdClass();
         $region->trigger($trigger);
-        
+
         // Assert
         $this->assertEquals('end', $region->currentState());
         $this->assertEquals('processed', $trigger->result);
     }
-    
+
     public function testServiceHelperAccessibleInStateCallbacks(): void
     {
         // Arrange - we'll use a more complex example with actual service usage
@@ -88,11 +88,11 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert - proves container is built and accessible
         $this->assertEquals('active', $region->currentState());
     }
-    
+
     public function testServiceHelperDifferentiatesFromGetHelper(): void
     {
         // Arrange
@@ -110,7 +110,7 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert - both 'service' and 'get' helpers should work
         // They're functionally equivalent but provide different naming
         $this->assertEquals('idle', $region->currentState());

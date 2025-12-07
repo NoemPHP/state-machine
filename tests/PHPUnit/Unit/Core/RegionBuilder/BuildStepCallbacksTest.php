@@ -21,82 +21,93 @@ class BuildStepCallbacksTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->setStates('idle');
-        
+
         $receivedBuilder = null;
-        
-        $buildStep = new class($receivedBuilder) implements BuildStep {
-            public function __construct(private mixed &$received) {}
-            
+
+        $buildStep = new class ($receivedBuilder) implements BuildStep {
+            public function __construct(private mixed &$received)
+            {
+            }
+
             public function callback(RegionBuilder $builder, callable $next, callable $first): Region
             {
                 $this->received = $builder;
                 return $next($builder);
             }
         };
-        
+
         $builder->addBuildStep($buildStep);
         $builder->build();
-        
-        $this->assertInstanceOf(RegionBuilder::class, $receivedBuilder, 
-            'Build step should receive RegionBuilder instance');
+
+        $this->assertInstanceOf(
+            RegionBuilder::class,
+            $receivedBuilder,
+            'Build step should receive RegionBuilder instance'
+        );
     }
-    
+
     public function testBuildStepReceivesNextCallback(): void
     {
         $builder = new RegionBuilder();
         $builder->setStates('idle');
-        
+
         $receivedNext = null;
-        
-        $buildStep = new class($receivedNext) implements BuildStep {
-            public function __construct(private mixed &$received) {}
-            
+
+        $buildStep = new class ($receivedNext) implements BuildStep {
+            public function __construct(private mixed &$received)
+            {
+            }
+
             public function callback(RegionBuilder $builder, callable $next, callable $first): Region
             {
                 $this->received = $next;
                 return $next($builder);
             }
         };
-        
+
         $builder->addBuildStep($buildStep);
         $builder->build();
-        
+
         $this->assertIsCallable($receivedNext, 'Build step should receive callable next parameter');
     }
-    
+
     public function testBuildStepReceivesFirstCallback(): void
     {
         $builder = new RegionBuilder();
         $builder->setStates('idle');
-        
+
         $receivedFirst = null;
-        
-        $buildStep = new class($receivedFirst) implements BuildStep {
-            public function __construct(private mixed &$received) {}
-            
+
+        $buildStep = new class ($receivedFirst) implements BuildStep {
+            public function __construct(private mixed &$received)
+            {
+            }
+
             public function callback(RegionBuilder $builder, callable $next, callable $first): Region
             {
                 $this->received = $first;
                 return $next($builder);
             }
         };
-        
+
         $builder->addBuildStep($buildStep);
         $builder->build();
-        
+
         $this->assertIsCallable($receivedFirst, 'Build step should receive callable first parameter');
     }
-    
+
     public function testNextCallbackContinuesChain(): void
     {
         $builder = new RegionBuilder();
         $builder->setStates('idle');
-        
+
         $nextCalled = false;
-        
-        $buildStep = new class($nextCalled) implements BuildStep {
-            public function __construct(private bool &$called) {}
-            
+
+        $buildStep = new class ($nextCalled) implements BuildStep {
+            public function __construct(private bool &$called)
+            {
+            }
+
             public function callback(RegionBuilder $builder, callable $next, callable $first): Region
             {
                 $result = $next($builder);
@@ -104,10 +115,10 @@ class BuildStepCallbacksTest extends TestCase
                 return $result;
             }
         };
-        
+
         $builder->addBuildStep($buildStep);
         $region = $builder->build();
-        
+
         $this->assertTrue($nextCalled, 'Calling next should continue the build chain');
         $this->assertInstanceOf(Region::class, $region);
     }

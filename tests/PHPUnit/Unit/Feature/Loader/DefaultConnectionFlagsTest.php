@@ -22,7 +22,7 @@ class DefaultConnectionFlagsTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader());
-        
+
         $array = [
             'states' => [
                 [
@@ -42,18 +42,18 @@ class DefaultConnectionFlagsTest extends TestCase
             ],
             'initial' => 'parent',
         ];
-        
+
         // Build the region
         $region = $builder->build([
             'loader' => [
                 'array' => $array,
             ],
         ]);
-        
+
         // Get the spawn registry
         $registry = $builder->chainMail->invoke(fn(RegionSpawnRegistry $r) => $r);
         $spawnRecord = $registry->records[0];
-        
+
         // Verify that DYNAMIC, RECEIVE_EVENTS, and RECEIVE_ACTIONS flags are set
         $this->assertTrue(
             ($spawnRecord->connectionFlags & Connection::DYNAMIC) === Connection::DYNAMIC,

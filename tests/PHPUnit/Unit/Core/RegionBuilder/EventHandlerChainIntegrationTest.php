@@ -19,11 +19,11 @@ class EventHandlerChainIntegrationTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->setStates('idle', 'processing');
-        
+
         $actionCalled = false;
         $enterCalled = false;
         $exitCalled = false;
-        
+
         $builder->onAction('idle', function (object $trigger) use (&$actionCalled): void {
             $actionCalled = true;
         });
@@ -45,25 +45,25 @@ class EventHandlerChainIntegrationTest extends TestCase
         // Note: Initial state entry handlers may or may not be called depending on implementation
         // For now, just verify the region was built successfully
     }
-    
+
     public function testBuildChainPreservesHandlerExecutionOrder(): void
     {
         $builder = new RegionBuilder();
         $builder->setStates('idle');
-        
+
         $callOrder = [];
-        
+
         $builder->onAction('idle', function (object $trigger) use (&$callOrder): void {
             $callOrder[] = 'action1';
         });
-        
+
         $builder->onAction('idle', function (object $trigger) use (&$callOrder): void {
             $callOrder[] = 'action2';
         });
-        
+
         $region = $builder->build();
         $region->trigger((object)[]);
-        
+
         // Handlers execute in LIFO order (last registered executes first) due to build chain middleware pattern
         $this->assertEquals(['action2', 'action1'], $callOrder, 'Handlers should execute in LIFO order');
     }

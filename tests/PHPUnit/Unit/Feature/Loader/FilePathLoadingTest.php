@@ -20,7 +20,7 @@ class FilePathLoadingTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader());
-        
+
         // Create a temporary YAML file
         $tempFile = tempnam(sys_get_temp_dir(), 'yaml_test_');
         $yaml = <<<YAML
@@ -30,14 +30,14 @@ class FilePathLoadingTest extends TestCase
         initial: idle
         YAML;
         file_put_contents($tempFile, $yaml);
-        
+
         try {
             $region = $builder->build([
                 'loader' => [
                     'yaml' => $tempFile,
                 ]
             ]);
-            
+
             $this->assertInstanceOf(\Noem\State\Region::class, $region);
             $this->assertTrue($region->isInState('idle'));
         } finally {

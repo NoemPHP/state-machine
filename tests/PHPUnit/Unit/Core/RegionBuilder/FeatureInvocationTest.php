@@ -41,8 +41,10 @@ class FeatureInvocationTest extends TestCase
 
         $receivedChainMail = null;
 
-        $feature = new class($receivedChainMail) implements Feature {
-            public function __construct(private mixed &$receivedChainMail) {}
+        $feature = new class ($receivedChainMail) implements Feature {
+            public function __construct(private mixed &$receivedChainMail)
+            {
+            }
 
             public function __invoke(ChainMail $chainMail): void
             {
@@ -64,33 +66,42 @@ class FeatureInvocationTest extends TestCase
             'Feature should receive the exact ChainMail instance passed to builder'
         );
     }
-    
+
     public function testFeatureInvocationOrder(): void
     {
         $builder = new RegionBuilder();
         $order = [];
 
         // Create three distinct feature classes (not instances of the same class)
-        $featureA = new class($order) implements Feature {
-            public function __construct(private array &$order) {}
+        $featureA = new class ($order) implements Feature {
+            public function __construct(private array &$order)
+            {
+            }
 
-            public function __invoke(ChainMail $chainMail): void {
+            public function __invoke(ChainMail $chainMail): void
+            {
                 $this->order[] = 'A';
             }
         };
 
-        $featureB = new class($order) implements Feature {
-            public function __construct(private array &$order) {}
+        $featureB = new class ($order) implements Feature {
+            public function __construct(private array &$order)
+            {
+            }
 
-            public function __invoke(ChainMail $chainMail): void {
+            public function __invoke(ChainMail $chainMail): void
+            {
                 $this->order[] = 'B';
             }
         };
 
-        $featureC = new class($order) implements Feature {
-            public function __construct(private array &$order) {}
+        $featureC = new class ($order) implements Feature {
+            public function __construct(private array &$order)
+            {
+            }
 
-            public function __invoke(ChainMail $chainMail): void {
+            public function __invoke(ChainMail $chainMail): void
+            {
                 $this->order[] = 'C';
             }
         };

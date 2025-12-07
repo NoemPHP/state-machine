@@ -22,7 +22,7 @@ class SpawnSharedMergingTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader());
-        
+
         // Test with partial shared config (only specifying meta: false)
         $array = [
             'states' => [
@@ -46,28 +46,28 @@ class SpawnSharedMergingTest extends TestCase
             ],
             'initial' => 'parent',
         ];
-        
+
         // Build the region
         $region = $builder->build([
             'loader' => [
                 'array' => $array,
             ],
         ]);
-        
+
         // Get the spawn registry
         $registry = $builder->chainMail->invoke(fn(RegionSpawnRegistry $r) => $r);
         $spawnRecord = $registry->records[0];
-        
+
         // Verify that when meta is false, RECEIVE_META flag is not set
         $expectedFlags = Connection::DYNAMIC | Connection::RECEIVE_EVENTS | Connection::RECEIVE_ACTIONS;
         $this->assertEquals($expectedFlags, $spawnRecord->connectionFlags, 'Should not include RECEIVE_META when meta is false');
     }
-    
+
     public function testUsesDefaultMetaSharingWhenNotSpecified(): void
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader());
-        
+
         // Test without shared config at all
         $array = [
             'states' => [
@@ -89,18 +89,18 @@ class SpawnSharedMergingTest extends TestCase
             ],
             'initial' => 'parent',
         ];
-        
+
         // Build the region
         $region = $builder->build([
             'loader' => [
                 'array' => $array,
             ],
         ]);
-        
+
         // Get the spawn registry
         $registry = $builder->chainMail->invoke(fn(RegionSpawnRegistry $r) => $r);
         $spawnRecord = $registry->records[0];
-        
+
         // Verify that RECEIVE_META flag is set by default
         $expectedFlags = Connection::DYNAMIC | Connection::RECEIVE_EVENTS | Connection::RECEIVE_ACTIONS | Connection::RECEIVE_META;
         $this->assertEquals($expectedFlags, $spawnRecord->connectionFlags, 'Should include RECEIVE_META by default');

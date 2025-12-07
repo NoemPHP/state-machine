@@ -26,7 +26,7 @@ class FirstTrueWinsTest extends TestCase
             ->markInitial('start')
             // Guards are evaluated in REVERSE order (LIFO)
             // Add pathA first (will be evaluated SECOND)
-            ->addBuildStep(new AddTransition('start', 'pathA', function(object $t) use (&$secondGuardCalled): bool {
+            ->addBuildStep(new AddTransition('start', 'pathA', function (object $t) use (&$secondGuardCalled): bool {
                 $secondGuardCalled = true;
                 return true;
             }))
@@ -49,19 +49,19 @@ class FirstTrueWinsTest extends TestCase
             ->setStates('start', 'end')
             ->markInitial('start')
             // Guards are evaluated in REVERSE registration order (LIFO)
-            ->addBuildStep(new AddTransition('start', 'end', function(object $t) use (&$callOrder): bool {
+            ->addBuildStep(new AddTransition('start', 'end', function (object $t) use (&$callOrder): bool {
                 $callOrder[] = 'guard1'; // This will be evaluated FOURTH (in reverse)
                 return false;
             }))
-            ->addBuildStep(new AddTransition('start', 'end', function(object $t) use (&$callOrder): bool {
+            ->addBuildStep(new AddTransition('start', 'end', function (object $t) use (&$callOrder): bool {
                 $callOrder[] = 'guard2'; // Third
                 return false;
             }))
-            ->addBuildStep(new AddTransition('start', 'end', function(object $t) use (&$callOrder): bool {
+            ->addBuildStep(new AddTransition('start', 'end', function (object $t) use (&$callOrder): bool {
                 $callOrder[] = 'guard3'; // Second
                 return false;
             }))
-            ->addBuildStep(new AddTransition('start', 'end', function(object $t) use (&$callOrder): bool {
+            ->addBuildStep(new AddTransition('start', 'end', function (object $t) use (&$callOrder): bool {
                 $callOrder[] = 'guard4'; // First - this one returns true
                 return true;
             }))
@@ -73,11 +73,11 @@ class FirstTrueWinsTest extends TestCase
         // Guards are evaluated in reverse order, stopping at first true
         $this->assertEquals(['guard4'], $callOrder);
     }
-    
+
     public function testMultipleTransitionsToSameTarget(): void
     {
         $builder = new RegionBuilder();
-        
+
         $region = $builder
             ->setStates('start', 'finish')
             ->markInitial('start')
@@ -86,10 +86,10 @@ class FirstTrueWinsTest extends TestCase
             ->addBuildStep(new AddTransition('start', 'finish', fn(object $t): bool => isset($t->condition2)))
             ->addBuildStep(new AddTransition('start', 'finish', fn(object $t): bool => isset($t->condition3)))
             ->build();
-        
+
         // Trigger with condition2 set
         $region->trigger((object)['condition2' => true]);
-        
+
         $this->assertTrue($region->isInState('finish'));
     }
 }

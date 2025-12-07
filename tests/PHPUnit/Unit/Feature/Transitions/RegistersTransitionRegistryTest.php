@@ -21,9 +21,9 @@ class RegistersTransitionRegistryTest extends TestCase
     {
         $chainMail = new ChainMail();
         $feature = new TransitionsFeature();
-        
+
         $feature($chainMail);
-        
+
         $registry = $chainMail->get(TransitionRegistry::class);
         $this->assertInstanceOf(TransitionRegistry::class, $registry);
     }

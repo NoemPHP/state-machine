@@ -31,7 +31,7 @@ class RegistersGuardChainTest extends TestCase
 
         $feature = new TransitionsFeature();
         $feature($chainMail);
-        
+
         $guard = $chainMail->get(Guard::class);
         $this->assertInstanceOf(Guard::class, $guard);
     }

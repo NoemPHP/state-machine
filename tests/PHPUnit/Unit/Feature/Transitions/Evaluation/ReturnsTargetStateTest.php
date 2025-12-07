@@ -21,15 +21,15 @@ class ReturnsTargetStateTest extends TestCase
     public function testReturnsTargetStateWhenGuardMatches(): void
     {
         $trigger = new stdClass();
-        
+
         $region = (new RegionBuilder())
             ->enableFeatures(new TransitionsFeature())
             ->setStates('start', 'end')
             ->addBuildStep(new AddTransition('start', 'end', fn(object $t): bool => true))
             ->build();
-        
+
         $region->trigger($trigger);
-        
+
         $this->assertTrue($region->isInState('end'));
     }
 }

@@ -21,7 +21,7 @@ class ResolversReturnsArrayTest extends TestCase
         $builder = new RegionBuilder();
         $resolver1 = fn() => 'value1';
         $resolver2 = fn() => 'value2';
-        
+
         $paramsArray = [
             'loader' => [
                 'array' => [
@@ -35,9 +35,9 @@ class ResolversReturnsArrayTest extends TestCase
             ]
         ];
         $params = new BuildParams($builder, $paramsArray);
-        
+
         $asyncConfig = $params->config(AsyncConfig::class);
-        
+
         $resolvers = $asyncConfig->resolvers();
         $this->assertCount(2, $resolvers);
         $this->assertSame('first', $resolvers[0]['name']);

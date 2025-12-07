@@ -23,12 +23,12 @@ class NestedBuilderIsolationTest extends TestCase
         // This test verifies that the recursion flag causes newInstance to be called
         // The actual isolation is tested in integration tests
         $processor = new ProcessArray(new Schema(), new TransformArray());
-        
+
         $config = ['states' => [['name' => 'idle']]];
-        
+
         $builder = new RegionBuilder();
         $result = $processor->fromData($config, $builder);
-        
+
         // First call uses the same builder
         $this->assertSame($builder, $result);
     }

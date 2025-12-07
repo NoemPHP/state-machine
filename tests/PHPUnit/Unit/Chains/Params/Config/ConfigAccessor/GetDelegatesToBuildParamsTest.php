@@ -21,9 +21,9 @@ class GetDelegatesToBuildParamsTest extends TestCase
         $builder = new RegionBuilder();
         $config = ['test' => ['nested' => 'value']];
         $params = new BuildParams($builder, $config);
-        
+
         $accessor = $params->config(GetTestAccessor::class);
-        
+
         $this->assertSame('value', $accessor->testGet());
     }
 }

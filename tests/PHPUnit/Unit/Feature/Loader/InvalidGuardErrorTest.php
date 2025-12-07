@@ -20,15 +20,15 @@ class InvalidGuardErrorTest extends TestCase
     public function testThrowsRuntimeExceptionForInvalidGuard(): void
     {
         $processor = new ProcessArray(new Schema(), new TransformArray());
-        
+
         $transition = [
             'target' => 'nextState',
             'guard' => 'not_a_callable',
         ];
-        
+
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Invalid "guard" callback');
-        
+
         $processor->createTransitionGuard($transition);
     }
 }

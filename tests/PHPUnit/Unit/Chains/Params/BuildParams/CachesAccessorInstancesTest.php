@@ -21,10 +21,10 @@ class CachesAccessorInstancesTest extends TestCase
         $builder = new RegionBuilder();
         $config = [];
         $params = new BuildParams($builder, $config);
-        
+
         $accessor1 = $params->config(CachedTestAccessor::class);
         $accessor2 = $params->config(CachedTestAccessor::class);
-        
+
         $this->assertSame($accessor1, $accessor2, 'Should return same instance on repeated calls');
     }
 }

@@ -11,9 +11,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Acceptance Criterion: RegionLoader processes spawn definitions from state configuration with guards and sub-region factories
- * 
+ *
  * Intent: Enables declarative sub-region spawning through YAML/array configuration with conditional guards and structured region definitions
- * 
+ *
  * Replaces 8 specs:
  * - spawn-schema-extension (5 specs): Schema structure validation
  * - spawn-processing (2 specs): Definition extraction
@@ -172,7 +172,7 @@ class DefinitionProcessingTest extends TestCase
     {
         // Tests: RegionLoader creates sub-region from region definition
         $subRegionCreated = false;
-        
+
         $config = [
             'states' => [
                 [
@@ -259,7 +259,7 @@ class DefinitionProcessingTest extends TestCase
         // Schema extension happens during feature registration
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader());
-        
+
         // If schema is extended, this should not throw validation error
         $region = $builder->build(['loader' => ['array' => $config]]);
 

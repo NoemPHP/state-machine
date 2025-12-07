@@ -22,8 +22,10 @@ class DeferredFeatureInvocationTest extends TestCase
         $builder = new RegionBuilder();
         $invoked = false;
 
-        $feature = new class($invoked) implements Feature {
-            public function __construct(private bool &$invoked) {}
+        $feature = new class ($invoked) implements Feature {
+            public function __construct(private bool &$invoked)
+            {
+            }
 
             public function __invoke(ChainMail $chainMail): void
             {
@@ -41,8 +43,10 @@ class DeferredFeatureInvocationTest extends TestCase
         $builder = new RegionBuilder();
         $invoked = false;
 
-        $feature = new class($invoked) implements Feature {
-            public function __construct(private bool &$invoked) {}
+        $feature = new class ($invoked) implements Feature {
+            public function __construct(private bool &$invoked)
+            {
+            }
 
             public function __invoke(ChainMail $chainMail): void
             {

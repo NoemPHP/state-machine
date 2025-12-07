@@ -46,7 +46,7 @@ class MetaDataFlagsTest extends TestCase
         $builder->setMetaData(['cached' => true], ContextMetaType::get(), $cacheableFlag);
         $builder->setMetaData(['persist' => true], ContextMetaType::get(), $persistentFlag);
         $builder->setMetaData(['combined' => true], ContextMetaType::get(), $readOnlyFlag | $cacheableFlag);
-        
+
         $region = $builder->build();
         $this->assertInstanceOf(\Noem\State\Region::class, $region);
     }

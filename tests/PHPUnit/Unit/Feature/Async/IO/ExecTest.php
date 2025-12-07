@@ -18,29 +18,29 @@ class ExecTest extends TestCase
     {
         $exec = new Exec('echo "test"');
         $generator = $exec();
-        
+
         $this->assertInstanceOf(\Generator::class, $generator, 'Exec should return a generator');
     }
-    
+
     public function testExecutesSimpleCommand(): void
     {
         $exec = new Exec('echo "hello"');
         $generator = $exec();
-        
+
         $output = '';
         foreach ($generator as $chunk) {
             $output .= $chunk;
         }
-        
+
         $this->assertStringContainsString('hello', $output, 'Should execute echo command');
     }
-    
+
     public function testConstructsWithCommand(): void
     {
         $exec = new Exec('pwd');
         $this->assertInstanceOf(Exec::class, $exec);
     }
-    
+
     public function testConstructsWithTimeout(): void
     {
         $exec = new Exec('sleep 1', 5);

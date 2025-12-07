@@ -19,19 +19,19 @@ class ChainMailAccessTest extends TestCase
     public function testBuilderExposesChainMailProperty(): void
     {
         $builder = new RegionBuilder();
-        
+
         $this->assertInstanceOf(
             ChainMail::class,
             $builder->chainMail,
             'Builder should expose ChainMail instance'
         );
     }
-    
+
     public function testChainMailPropertyIsReadonly(): void
     {
         $builder = new RegionBuilder();
         $chainMail = $builder->chainMail;
-        
+
         // Attempt to set should fail (PHP 8.4 private(set) property)
         try {
             $builder->chainMail = new ChainMail();
@@ -42,11 +42,11 @@ class ChainMailAccessTest extends TestCase
                 $e->getMessage()
             );
         }
-        
+
         // ChainMail should still be the same instance
         $this->assertSame($chainMail, $builder->chainMail);
     }
-    
+
     public function testCustomChainMailIsExposed(): void
     {
         // Create a custom ChainMail with required services
@@ -55,9 +55,9 @@ class ChainMailAccessTest extends TestCase
             fn(): \Noem\State\Chains\ConnectedRegions => new \Noem\State\Chains\ConnectedRegions(),
             fn(\Noem\State\Chains\ConnectedRegions $connections): \Noem\State\Chains\Meta => new \Noem\State\Chains\Meta($connections)
         );
-        
+
         $builder = new RegionBuilder($customChainMail);
-        
+
         $this->assertSame(
             $customChainMail,
             $builder->chainMail,

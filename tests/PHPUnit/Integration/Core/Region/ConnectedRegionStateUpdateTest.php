@@ -55,7 +55,7 @@ class ConnectedRegionStateUpdateTest extends TestCase
                                         ['target' => 'child2', 'guard' => fn($t) => true],
                                     ],
                                     'onExit' => [
-                                        ['run' => function($t) use (&$transitionLog) {
+                                        ['run' => function ($t) use (&$transitionLog) {
                                             $transitionLog[] = 'exit_child1';
                                         }],
                                     ],
@@ -63,7 +63,7 @@ class ConnectedRegionStateUpdateTest extends TestCase
                                 [
                                     'name' => 'child2',
                                     'onEnter' => [
-                                        ['run' => function($t) use (&$transitionLog) {
+                                        ['run' => function ($t) use (&$transitionLog) {
                                             $transitionLog[] = 'enter_child2';
                                         }],
                                     ],
@@ -85,9 +85,12 @@ class ConnectedRegionStateUpdateTest extends TestCase
         $parentRegion->trigger(new stdClass());
 
         // FIXED: Transition callbacks now fire because DoTransition IS called on child
-        $this->assertEquals(['exit_child1', 'enter_child2'], $transitionLog,
+        $this->assertEquals(
+            ['exit_child1', 'enter_child2'],
+            $transitionLog,
             'Child transition lifecycle callbacks (onExit/onEnter) execute correctly! ' .
-            'This confirms DoTransition chain is properly called on child regions.');
+            'This confirms DoTransition chain is properly called on child regions.'
+        );
     }
 
     public function testChildRegionActionsFireButStateDoesNotChange(): void
@@ -110,7 +113,7 @@ class ConnectedRegionStateUpdateTest extends TestCase
                                         ['target' => 'child2', 'guard' => fn($t) => true],
                                     ],
                                     'action' => [
-                                        ['run' => function($t) use (&$actionLog) {
+                                        ['run' => function ($t) use (&$actionLog) {
                                             $actionLog[] = 'child1';
                                             return 'child1';
                                         }],
@@ -119,7 +122,7 @@ class ConnectedRegionStateUpdateTest extends TestCase
                                 [
                                     'name' => 'child2',
                                     'action' => [
-                                        ['run' => function($t) use (&$actionLog) {
+                                        ['run' => function ($t) use (&$actionLog) {
                                             $actionLog[] = 'child2';
                                             return 'child2';
                                         }],
@@ -146,9 +149,12 @@ class ConnectedRegionStateUpdateTest extends TestCase
         $parentRegion->trigger(new stdClass());
 
         // FIXED: child2 action fires because transition properly occurred
-        $this->assertEquals(['child1', 'child2'], $actionLog,
+        $this->assertEquals(
+            ['child1', 'child2'],
+            $actionLog,
             'Child properly transitioned to child2, so child2 action fires! ' .
-            'This confirms child state IS updated when triggered through parent.');
+            'This confirms child state IS updated when triggered through parent.'
+        );
     }
 
     public function testChildRegionWithConditionalTransitionNowWorksCorrectly(): void
@@ -175,13 +181,13 @@ class ConnectedRegionStateUpdateTest extends TestCase
                                         ],
                                     ],
                                     'action' => [
-                                        ['run' => function($t) use (&$actionLog) {
+                                        ['run' => function ($t) use (&$actionLog) {
                                             $actionLog[] = 'waiting';
                                             return 'waiting';
                                         }],
                                     ],
                                     'onExit' => [
-                                        ['run' => function($t) use (&$transitionLog) {
+                                        ['run' => function ($t) use (&$transitionLog) {
                                             $transitionLog[] = 'exit_waiting';
                                         }],
                                     ],
@@ -189,13 +195,13 @@ class ConnectedRegionStateUpdateTest extends TestCase
                                 [
                                     'name' => 'active',
                                     'action' => [
-                                        ['run' => function($t) use (&$actionLog) {
+                                        ['run' => function ($t) use (&$actionLog) {
                                             $actionLog[] = 'active';
                                             return 'active';
                                         }],
                                     ],
                                     'onEnter' => [
-                                        ['run' => function($t) use (&$transitionLog) {
+                                        ['run' => function ($t) use (&$transitionLog) {
                                             $transitionLog[] = 'enter_active';
                                         }],
                                     ],
@@ -225,14 +231,23 @@ class ConnectedRegionStateUpdateTest extends TestCase
         $parentRegion->trigger($trigger2);
 
         // Note: waiting action fires BEFORE transition, then transition happens
-        $this->assertEquals(['waiting', 'waiting'], $actionLog,
-            'Second trigger: waiting action fires before transition');
-        $this->assertEquals(['exit_waiting', 'enter_active'], $transitionLog,
-            'Transition callbacks fire: exit waiting, enter active');
+        $this->assertEquals(
+            ['waiting', 'waiting'],
+            $actionLog,
+            'Second trigger: waiting action fires before transition'
+        );
+        $this->assertEquals(
+            ['exit_waiting', 'enter_active'],
+            $transitionLog,
+            'Transition callbacks fire: exit waiting, enter active'
+        );
 
         // Third trigger - now active state's action should fire
         $parentRegion->trigger(new stdClass());
-        $this->assertEquals(['waiting', 'waiting', 'active'], $actionLog,
-            'Third trigger: active action fires, confirming successful transition');
+        $this->assertEquals(
+            ['waiting', 'waiting', 'active'],
+            $actionLog,
+            'Third trigger: active action fires, confirming successful transition'
+        );
     }
 }

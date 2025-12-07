@@ -23,9 +23,9 @@ class SpawnRecordDefaultFlagsTest extends TestCase
         $parentRegion = (new RegionBuilder())->setStates('parent')->build();
         $guard = fn(object $t): bool => true;
         $factory = fn(): Region => (new RegionBuilder())->setStates('child')->build();
-        
+
         $record = new RegionSpawnRecord($parentRegion, 'parent', $factory, $guard);
-        
+
         $expectedFlags = Connection::DYNAMIC | Connection::RECEIVE_EVENTS | Connection::RECEIVE_ACTIONS;
         $this->assertSame($expectedFlags, $record->connectionFlags);
     }
@@ -35,9 +35,9 @@ class SpawnRecordDefaultFlagsTest extends TestCase
         $parentRegion = (new RegionBuilder())->setStates('parent')->build();
         $guard = fn(object $t): bool => true;
         $factory = fn(): Region => (new RegionBuilder())->setStates('child')->build();
-        
+
         $record = new RegionSpawnRecord($parentRegion, 'parent', $factory, $guard);
-        
+
         $this->assertTrue(($record->connectionFlags & Connection::DYNAMIC) === Connection::DYNAMIC);
     }
 
@@ -46,9 +46,9 @@ class SpawnRecordDefaultFlagsTest extends TestCase
         $parentRegion = (new RegionBuilder())->setStates('parent')->build();
         $guard = fn(object $t): bool => true;
         $factory = fn(): Region => (new RegionBuilder())->setStates('child')->build();
-        
+
         $record = new RegionSpawnRecord($parentRegion, 'parent', $factory, $guard);
-        
+
         $this->assertTrue(($record->connectionFlags & Connection::RECEIVE_EVENTS) === Connection::RECEIVE_EVENTS);
     }
 
@@ -57,9 +57,9 @@ class SpawnRecordDefaultFlagsTest extends TestCase
         $parentRegion = (new RegionBuilder())->setStates('parent')->build();
         $guard = fn(object $t): bool => true;
         $factory = fn(): Region => (new RegionBuilder())->setStates('child')->build();
-        
+
         $record = new RegionSpawnRecord($parentRegion, 'parent', $factory, $guard);
-        
+
         $this->assertTrue(($record->connectionFlags & Connection::RECEIVE_ACTIONS) === Connection::RECEIVE_ACTIONS);
     }
 
@@ -68,9 +68,9 @@ class SpawnRecordDefaultFlagsTest extends TestCase
         $parentRegion = (new RegionBuilder())->setStates('parent')->build();
         $guard = fn(object $t): bool => true;
         $factory = fn(): Region => (new RegionBuilder())->setStates('child')->build();
-        
+
         $record = new RegionSpawnRecord($parentRegion, 'parent', $factory, $guard);
-        
+
         $this->assertFalse(($record->connectionFlags & Connection::RECEIVE_META) === Connection::RECEIVE_META);
     }
 }

@@ -22,29 +22,29 @@ class MissingTriggerParameterTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Required Parameter 0 not declared');
-        
+
         $region = (new RegionBuilder())
             ->setStates('start', 'end')
             ->markInitial('start')
             // Guard without trigger parameter - invalid!
             ->addBuildStep(new AddTransition('start', 'end', fn(): bool => true))
             ->build();
-        
+
         $region->trigger(new stdClass());
     }
-    
+
     public function testGuardWithoutParametersThrowsDescriptiveError(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        
+
         $region = (new RegionBuilder())
             ->setStates('a', 'b')
             ->markInitial('a')
-            ->addBuildStep(new AddTransition('a', 'b', function() {
+            ->addBuildStep(new AddTransition('a', 'b', function () {
                 return true;
             }))
             ->build();
-        
+
         $region->trigger(new stdClass());
     }
 }

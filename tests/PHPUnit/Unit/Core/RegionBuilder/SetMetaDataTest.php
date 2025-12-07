@@ -54,7 +54,7 @@ class SetMetaDataTest extends TestCase
         $builder->setMetaData(['first' => 1], ContextMetaType::get())
                 ->setMetaData(['second' => 2], ContextMetaType::get())
                 ->setMetaData(['third' => 3], ContextMetaType::get());
-        
+
         $region = $builder->build();
         $this->assertInstanceOf(\Noem\State\Region::class, $region);
     }

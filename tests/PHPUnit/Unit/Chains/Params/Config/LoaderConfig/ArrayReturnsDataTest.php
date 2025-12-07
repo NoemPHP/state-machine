@@ -23,7 +23,7 @@ class ArrayReturnsDataTest extends TestCase
             'states' => ['a', 'b'],
             'context' => ['key' => 'value']
         ];
-        
+
         $config = [
             'loader' => [
                 'array' => $loaderData
@@ -31,9 +31,9 @@ class ArrayReturnsDataTest extends TestCase
         ];
 
         $params = new BuildParams($builder, $config);
-        
+
         $loaderConfig = $params->config(LoaderConfig::class);
-        
+
         $this->assertSame($loaderData, $loaderConfig->array());
     }
 }

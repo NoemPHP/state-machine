@@ -18,18 +18,18 @@ class PhpEvalErrorFragmentTest extends TestCase
     public function testIncludesCodeFragmentInExceptionMessage(): void
     {
         $helper = new PhpEvalHelper();
-        
+
         $code = "return \$undefined";
-        
+
         try {
             $helper($code);
             $this->fail('Expected RuntimeException to be thrown');
         } catch (\RuntimeException $e) {
             $message = $e->getMessage();
-            
+
             // The fragment should include the code
             $this->assertStringContainsString('return $undefined', $message);
-            
+
             // The fragment should include line numbers
             $this->assertStringContainsString('0 |', $message);
         }

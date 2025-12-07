@@ -32,7 +32,7 @@ class StateCallbackEmitTest extends TestCase
             ->setStates('idle', 'firing', 'done')
             ->addBuildStep(new AddTransition('idle', 'firing'))
             ->addBuildStep(new AddTransition('firing', 'done'))
-            ->onAction('firing', function(object $t) {
+            ->onAction('firing', function (object $t) {
                 // When: State action emits event via this.notificationChain
                 // This tests the observer pattern capability within state machine transitions
                 try {
@@ -52,7 +52,7 @@ class StateCallbackEmitTest extends TestCase
 
         // Create custom event to listen for
         $received = false;
-        $region->on(function(\stdClass $event, ?Region $source = null) use (&$received) {
+        $region->on(function (\stdClass $event, ?Region $source = null) use (&$received) {
             $received = true;
             $this->assertInstanceOf(Region::class, $source);
         });

@@ -23,7 +23,7 @@ class StateExtractionTest extends TestCase
         $schema = new Schema();
         $transformArray = new TransformArray();
         $processor = new ProcessArray($schema, $transformArray);
-        
+
         $config = [
             'states' => [
                 ['name' => 'idle'],
@@ -31,12 +31,12 @@ class StateExtractionTest extends TestCase
                 ['name' => 'done'],
             ],
         ];
-        
+
         $builder = new RegionBuilder();
         $processor->fromData($config, $builder);
-        
+
         $region = $builder->build();
-        
+
         // Verify states were extracted and applied - region starts in first state
         $this->assertTrue($region->isInState('idle'));
     }

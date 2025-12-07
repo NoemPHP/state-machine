@@ -56,19 +56,19 @@ class CreatesOrnamentsForResolversTest extends TestCase
                     ],
                 ],
             ]);
-        
+
         $this->assertFalse($resolverCalled, 'Resolver should not be called before access');
-        
+
         // Trigger to enter active state
         $region->trigger(new \stdClass());
-        
+
         $this->assertTrue($callbackExecuted, 'onEnter callback should have been executed');
-        
+
         // After multiple ticks, resolver should have been called
         for ($i = 0; $i < 5; $i++) {
             $region->trigger(new \stdClass());
         }
-        
+
         $this->assertTrue($resolverCalled, 'Resolver should be called when property is accessed');
     }
 }

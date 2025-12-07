@@ -20,14 +20,14 @@ class InvalidCallbackErrorTest extends TestCase
     public function testThrowsRuntimeExceptionForInvalidRunCallback(): void
     {
         $processor = new ProcessArray(new Schema(), new TransformArray());
-        
+
         $definition = [
             'run' => 'not_a_callable',
         ];
-        
+
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Invalid "run" callback');
-        
+
         $processor->createStateCallback($definition);
     }
 }

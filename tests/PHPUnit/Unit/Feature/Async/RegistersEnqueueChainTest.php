@@ -34,7 +34,7 @@ class RegistersEnqueueChainTest extends TestCase
 
         $feature = new AsyncFeature();
         $feature($chainMail);
-        
+
         $enqueue = $chainMail->get(Enqueue::class);
         $this->assertInstanceOf(Enqueue::class, $enqueue);
     }

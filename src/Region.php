@@ -24,15 +24,14 @@ class Region
 
 
     public function __construct(
-        private readonly Events                $events,
-        string                                 $initial,
-        private readonly string                $final,
+        private readonly Events $events,
+        string $initial,
+        private readonly string $final,
         private readonly Chains\DispatchAction $actionChain,
-        private readonly Chains\DoTransition   $transitionChain,
-        private readonly Chains\Path           $path,
-        public readonly Chains\Notification    $notificationChain,
-    )
-    {
+        private readonly Chains\DoTransition $transitionChain,
+        private readonly Chains\Path $path,
+        public readonly Chains\Notification $notificationChain,
+    ) {
         $this->currentState = $initial;
         /**
          * Register a self-destructing one-shot middleware.
@@ -40,7 +39,7 @@ class Region
          * the Region's lifetime.
          */
         $onFirstDispatch = $this->actionChain->link(
-            function (Action $action, callable $next) use(&$onFirstDispatch){
+            function (Action $action, callable $next) use (&$onFirstDispatch) {
                 $this->events->onEnterState($this, $this->currentState, $action->payload);
                 $onFirstDispatch();
                 return $next($action);

@@ -22,38 +22,38 @@ class SchemaContextGetCustomNullTest extends TestCase
         $actionSchema = Expect::structure([]);
         $stateSchema = Expect::structure([]);
         $regionSchema = Expect::structure([]);
-        
+
         $context = new SchemaContext(
             $callbackSchema,
             $actionSchema,
             $stateSchema,
             $regionSchema
         );
-        
+
         $result = $context->getCustomSchema('nonExistentType');
-        
+
         $this->assertNull(
             $result,
             'getCustomSchema should return null for unknown schema names'
         );
     }
-    
+
     public function testGetCustomSchemaReturnsNullWhenNoCustomSchemasAdded(): void
     {
         $callbackSchema = Expect::anyOf(Expect::string(), Expect::array());
         $actionSchema = Expect::structure([]);
         $stateSchema = Expect::structure([]);
         $regionSchema = Expect::structure([]);
-        
+
         $context = new SchemaContext(
             $callbackSchema,
             $actionSchema,
             $stateSchema,
             $regionSchema
         );
-        
+
         $result = $context->getCustomSchema('anyName');
-        
+
         $this->assertNull($result);
     }
 }

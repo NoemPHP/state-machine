@@ -20,12 +20,12 @@ class UndefinedHelperErrorTest extends TestCase
         $yaml = <<<YAML
         value: !unknown "test"
         YAML;
-        
+
         $converter = new ConvertYaml();
-        
+
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage("Undefined helper 'unknown'");
-        
+
         $converter->fromString($yaml, []);
     }
 }

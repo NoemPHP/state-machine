@@ -21,10 +21,10 @@ class DefaultInitializeNoOpTest extends TestCase
         $builder = new RegionBuilder();
         $config = [];
         $params = new BuildParams($builder, $config);
-        
+
         // Simply instantiating should not throw or cause side effects
         $accessor = $params->config(NoOpInitializeAccessor::class);
-        
+
         $this->assertInstanceOf(NoOpInitializeAccessor::class, $accessor);
     }
 }

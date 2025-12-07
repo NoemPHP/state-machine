@@ -22,10 +22,13 @@ class ExactlyOncePerInstanceTest extends TestCase
         $chainMail = new ChainMail();
         $invocationCount = 0;
 
-        $feature = new class($invocationCount) implements Feature {
-            public function __construct(private &$invocationCount) {}
+        $feature = new class ($invocationCount) implements Feature {
+            public function __construct(private &$invocationCount)
+            {
+            }
 
-            public function __invoke(ChainMail $chainMail): void {
+            public function __invoke(ChainMail $chainMail): void
+            {
                 $this->invocationCount++;
             }
         };
@@ -37,8 +40,11 @@ class ExactlyOncePerInstanceTest extends TestCase
             $registry->resolve($chainMail);
         }
 
-        $this->assertEquals(1, $invocationCount,
-            'Feature should be invoked exactly once regardless of number of resolve calls');
+        $this->assertEquals(
+            1,
+            $invocationCount,
+            'Feature should be invoked exactly once regardless of number of resolve calls'
+        );
     }
 
     public function testMultipleFeaturesEachInvokedExactlyOnce(): void
@@ -47,23 +53,32 @@ class ExactlyOncePerInstanceTest extends TestCase
         $chainMail = new ChainMail();
         $invocations = ['A' => 0, 'B' => 0, 'C' => 0];
 
-        $featureA = new class($invocations) implements Feature {
-            public function __construct(private &$invocations) {}
-            public function __invoke(ChainMail $chainMail): void {
+        $featureA = new class ($invocations) implements Feature {
+            public function __construct(private &$invocations)
+            {
+            }
+            public function __invoke(ChainMail $chainMail): void
+            {
                 $this->invocations['A']++;
             }
         };
 
-        $featureB = new class($invocations) implements Feature {
-            public function __construct(private &$invocations) {}
-            public function __invoke(ChainMail $chainMail): void {
+        $featureB = new class ($invocations) implements Feature {
+            public function __construct(private &$invocations)
+            {
+            }
+            public function __invoke(ChainMail $chainMail): void
+            {
                 $this->invocations['B']++;
             }
         };
 
-        $featureC = new class($invocations) implements Feature {
-            public function __construct(private &$invocations) {}
-            public function __invoke(ChainMail $chainMail): void {
+        $featureC = new class ($invocations) implements Feature {
+            public function __construct(private &$invocations)
+            {
+            }
+            public function __invoke(ChainMail $chainMail): void
+            {
                 $this->invocations['C']++;
             }
         };
@@ -77,8 +92,11 @@ class ExactlyOncePerInstanceTest extends TestCase
         $registry->resolve($chainMail);
         $registry->resolve($chainMail);
 
-        $this->assertEquals(['A' => 1, 'B' => 1, 'C' => 1], $invocations,
-            'Each feature should be invoked exactly once');
+        $this->assertEquals(
+            ['A' => 1, 'B' => 1, 'C' => 1],
+            $invocations,
+            'Each feature should be invoked exactly once'
+        );
     }
 
     public function testExactlyOnceGuaranteePreventsDuplicateMiddleware(): void
@@ -87,10 +105,13 @@ class ExactlyOncePerInstanceTest extends TestCase
         $chainMail = new ChainMail();
         $middlewareStack = [];
 
-        $feature = new class($middlewareStack) implements Feature {
-            public function __construct(private &$middlewareStack) {}
+        $feature = new class ($middlewareStack) implements Feature {
+            public function __construct(private &$middlewareStack)
+            {
+            }
 
-            public function __invoke(ChainMail $chainMail): void {
+            public function __invoke(ChainMail $chainMail): void
+            {
                 // Simulate registering middleware on a chain
                 $this->middlewareStack[] = 'middleware_layer';
             }
@@ -104,8 +125,11 @@ class ExactlyOncePerInstanceTest extends TestCase
         $registry->resolve($chainMail);  // Second build (child)
 
         // Should only have one middleware layer, not two
-        $this->assertEquals(['middleware_layer'], $middlewareStack,
-            'Exactly-once guarantee prevents duplicate middleware registration in shared ChainMail');
+        $this->assertEquals(
+            ['middleware_layer'],
+            $middlewareStack,
+            'Exactly-once guarantee prevents duplicate middleware registration in shared ChainMail'
+        );
     }
 
     public function testDifferentInstancesGetIndependentExactlyOnceGuarantee(): void
@@ -116,10 +140,13 @@ class ExactlyOncePerInstanceTest extends TestCase
 
         $invocationsPerInstance = [];
 
-        $feature = new class($invocationsPerInstance) implements Feature {
-            public function __construct(private &$invocationsPerInstance) {}
+        $feature = new class ($invocationsPerInstance) implements Feature {
+            public function __construct(private &$invocationsPerInstance)
+            {
+            }
 
-            public function __invoke(ChainMail $chainMail): void {
+            public function __invoke(ChainMail $chainMail): void
+            {
                 $id = spl_object_id($chainMail);
                 $this->invocationsPerInstance[$id] = ($this->invocationsPerInstance[$id] ?? 0) + 1;
             }
@@ -137,9 +164,15 @@ class ExactlyOncePerInstanceTest extends TestCase
         $registry->resolve($chainMailB);
 
         // Each instance should have exactly one invocation
-        $this->assertEquals(1, $invocationsPerInstance[spl_object_id($chainMailA)],
-            'ChainMail A should have exactly one invocation');
-        $this->assertEquals(1, $invocationsPerInstance[spl_object_id($chainMailB)],
-            'ChainMail B should have exactly one invocation');
+        $this->assertEquals(
+            1,
+            $invocationsPerInstance[spl_object_id($chainMailA)],
+            'ChainMail A should have exactly one invocation'
+        );
+        $this->assertEquals(
+            1,
+            $invocationsPerInstance[spl_object_id($chainMailB)],
+            'ChainMail B should have exactly one invocation'
+        );
     }
 }

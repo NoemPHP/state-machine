@@ -37,7 +37,7 @@ class RegistersDoTransitionTest extends TestCase
 
         $feature = new TransitionsFeature();
         $feature($chainMail);
-        
+
         $doTransition = $chainMail->get(DoTransition::class);
         $this->assertInstanceOf(DoTransition::class, $doTransition);
     }

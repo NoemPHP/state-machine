@@ -44,7 +44,7 @@ context:
             return 'yaml-resolved';
           };
 YAML;
-        
+
         $builder = new \Noem\State\RegionBuilder();
         $builder->enableFeatures(
             new RegionLoader(),
@@ -62,14 +62,14 @@ YAML;
                 'yamlHelpers' => $helpers,
             ],
         ]);
-        
+
         $this->assertInstanceOf(\Noem\State\Region::class, $region);
-        
+
         // Trigger to active state to test resolver
         for ($i = 0; $i < 20; $i++) {
             $region->trigger(new \stdClass());
         }
-        
+
         // If we reach here without errors, the YAML loading worked
         $this->assertTrue(true);
     }

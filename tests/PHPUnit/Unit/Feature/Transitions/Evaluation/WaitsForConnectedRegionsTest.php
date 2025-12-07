@@ -35,9 +35,9 @@ class WaitsForConnectedRegionsTest extends TestCase
             ->connect($childRegion)
             ->addBuildStep(new AddTransition('parent_start', 'parent_end'))
             ->build();
-        
+
         $trigger = new stdClass();
-        
+
         // Parent should not transition while child is not in final state
         $parentRegion->trigger($trigger);
         $this->assertTrue($parentRegion->isInState('parent_start'), 'Parent should wait for child to finish');

@@ -25,16 +25,16 @@ class NoMatchingGuardsTest extends TestCase
             ->addBuildStep(new AddTransition('start', 'pathA', fn(object $t): bool => isset($t->goA)))
             ->addBuildStep(new AddTransition('start', 'pathB', fn(object $t): bool => isset($t->goB)))
             ->build();
-        
+
         $this->assertEquals('start', $region->currentState());
-        
+
         // Trigger without matching conditions
         $region->trigger(new stdClass());
-        
+
         // State should remain unchanged
         $this->assertEquals('start', $region->currentState());
     }
-    
+
     public function testAllGuardsFalseKeepsCurrentState(): void
     {
         $region = (new RegionBuilder())
@@ -43,9 +43,9 @@ class NoMatchingGuardsTest extends TestCase
             ->addBuildStep(new AddTransition('idle', 'processing', fn(object $t): bool => false))
             ->addBuildStep(new AddTransition('idle', 'complete', fn(object $t): bool => false))
             ->build();
-        
+
         $region->trigger(new stdClass());
-        
+
         // No transition should occur
         $this->assertEquals('idle', $region->currentState());
     }

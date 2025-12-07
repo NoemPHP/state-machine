@@ -20,7 +20,7 @@ class SkipsOnFinalStateTest extends TestCase
     {
         $builder = new RegionBuilder();
         $guardCalled = false;
-        
+
         $region = $builder
             ->setStates('one', 'two', 'final')
             ->markInitial('one')
@@ -28,51 +28,51 @@ class SkipsOnFinalStateTest extends TestCase
             ->addBuildStep(new AddTransition('one', 'two'))
             ->addBuildStep(new AddTransition('two', 'final'))
             // This transition should never be evaluated
-            ->addBuildStep(new AddTransition('final', 'one', function(object $t) use (&$guardCalled): bool {
+            ->addBuildStep(new AddTransition('final', 'one', function (object $t) use (&$guardCalled): bool {
                 $guardCalled = true;
                 return true;
             }))
             ->build();
-        
+
         // Transition to final state
         $region->trigger((object)[]);
         $region->trigger((object)[]);
-        
+
         $this->assertTrue($region->isFinal());
         $this->assertTrue($region->isInState('final'));
-        
+
         // Try to trigger again - should stay in final
         $region->trigger((object)[]);
-        
+
         $this->assertTrue($region->isInState('final'));
         $this->assertFalse($guardCalled, 'Guard should not be called from final state');
     }
-    
+
     public function testMultipleTriggersOnFinalStateDoNothing(): void
     {
         $builder = new RegionBuilder();
         $enterFinalCount = 0;
-        
+
         $region = $builder
             ->setStates('start', 'end')
             ->markInitial('start')
             ->markFinal('end')
             ->addBuildStep(new AddTransition('start', 'end'))
-            ->onEnter('end', function(object $t) use (&$enterFinalCount) {
+            ->onEnter('end', function (object $t) use (&$enterFinalCount) {
                 $enterFinalCount++;
             })
             ->build();
-        
+
         $region->trigger((object)[]);
-        
+
         $this->assertTrue($region->isFinal());
         $this->assertEquals(1, $enterFinalCount);
-        
+
         // Multiple triggers should do nothing
         $region->trigger((object)[]);
         $region->trigger((object)[]);
         $region->trigger((object)[]);
-        
+
         $this->assertTrue($region->isFinal());
         $this->assertEquals(1, $enterFinalCount, 'Should only enter final state once');
     }

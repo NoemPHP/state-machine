@@ -20,20 +20,20 @@ class InlineYamlLoadingTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader());
-        
+
         $yaml = <<<YAML
         states:
           - name: idle
           - name: active
         initial: idle
         YAML;
-        
+
         $region = $builder->build([
             'loader' => [
                 'yaml' => $yaml,
             ]
         ]);
-        
+
         $this->assertInstanceOf(\Noem\State\Region::class, $region);
         $this->assertTrue($region->isInState('idle'));
     }

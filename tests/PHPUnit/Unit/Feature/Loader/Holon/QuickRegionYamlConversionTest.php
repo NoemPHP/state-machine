@@ -22,15 +22,15 @@ class QuickRegionYamlConversionTest extends TestCase
             ['name' => 'first', 'initial' => true],
             ['name' => 'second', 'final' => true],
         ];
-        
+
         // Act
         $region = Holon::quickRegion($states);
-        
+
         // Assert - if YAML conversion worked, region should be created
         $this->assertInstanceOf(Region::class, $region);
         $this->assertEquals('first', $region->currentState());
     }
-    
+
     public function testReusesFromYamlMethod(): void
     {
         // Arrange
@@ -47,16 +47,16 @@ class QuickRegionYamlConversionTest extends TestCase
                 'final' => true
             ],
         ];
-        
+
         // Act
         $region = Holon::quickRegion($states);
-        
+
         // Assert - complex structures should work (proving YAML pipeline used)
         $region->trigger(new \stdClass());
         $this->assertEquals('b', $region->currentState());
         $this->assertTrue($region->isFinal());
     }
-    
+
     public function testHandlesNestedStructures(): void
     {
         // Arrange
@@ -77,15 +77,15 @@ class QuickRegionYamlConversionTest extends TestCase
                 'final' => true
             ],
         ];
-        
+
         // Act
         $region = Holon::quickRegion($states);
-        
+
         // Assert - nested regions should be handled
         $this->assertInstanceOf(Region::class, $region);
         $this->assertEquals('parent', $region->currentState());
     }
-    
+
     public function testPreservesAllArrayStructure(): void
     {
         // Arrange
@@ -105,10 +105,10 @@ class QuickRegionYamlConversionTest extends TestCase
                 'final' => true
             ],
         ];
-        
+
         // Act
         $region = Holon::quickRegion($states);
-        
+
         // Assert - all array data preserved through YAML conversion
         $this->assertEquals('state1', $region->currentState());
         $region->trigger(new \stdClass());

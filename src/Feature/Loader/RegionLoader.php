@@ -68,18 +68,17 @@ class RegionLoader implements Feature
      */
     public function convertYaml(
         EnhanceRegionBuilder $builderEnhancer,
-        Schema               $schema,
-        TransformArray       $transformArray,
+        Schema $schema,
+        TransformArray $transformArray,
         LoadFile $loadFile,
         ConvertYaml $convertYaml,
         YamlHelpers $yamlHelpers,
-    ): void
-    {
+    ): void {
         // Register include helpers in the registry so they're available recursively
         $builderEnhancer->link(
             function (
                 Params\BuildParams $args,
-                callable           $next,
+                callable $next,
             ) use (
                 $schema,
                 $transformArray,
@@ -138,8 +137,7 @@ class RegionLoader implements Feature
         Params\BuildParams $buildParams,
         ConvertYaml $convertYaml,
         LoadFileParams $currentParams
-    ): void
-    {
+    ): void {
         // Check if already registered to avoid duplicate registration errors
         $existingHelpers = $yamlHelpers->getHelpers();
 
@@ -168,8 +166,7 @@ class RegionLoader implements Feature
      */
     public function extendLoaderSchemaForSpawnerSupport(
         Schema $schema,
-    ): void
-    {
+    ): void {
         $schema->link(function (SchemaContext $context, callable $next) {
             $spawnSchemaHandle = 'spawn';
             $subRegionSpawnerSchema = Expect::structure([
@@ -185,7 +182,7 @@ class RegionLoader implements Feature
             $context->state = $context->state->extend([
                 $spawnSchemaHandle => $spawnSchema,
             ]);
-            
+
             /**
              * Update the region schema to use the extended state schema
              */
@@ -202,12 +199,11 @@ class RegionLoader implements Feature
      */
     public function processSpawnerSchema(
         EnhanceRegionBuilder $builderEnhancer
-    ): void
-    {
+    ): void {
         $builderEnhancer->link(
             function (
                 Params\BuildParams $context,
-                callable           $next
+                callable $next
             ) {
                 $builder = $next($context);
                 assert($builder instanceof RegionBuilder);
@@ -238,7 +234,7 @@ class RegionLoader implements Feature
                             $flags = $flags | Connection::RECEIVE_META;
                         }
                         $builder->addBuildStep(
-                            new class(
+                            new class (
                                 $stateName,
                                 fn() => $builder->newInstance()->build([
                                     'loader' => [
@@ -247,16 +243,13 @@ class RegionLoader implements Feature
                                 ]),
                                 $guard,
                                 $flags
-
                             ) implements BuildStep {
                                 public function __construct(
                                     private $stateName,
                                     private $regionFactory,
                                     private $guard,
                                     private $connectionFlags,
-                                )
-                                {
-
+                                ) {
                                 }
 
                                 public function callback(RegionBuilder $builder, callable $next, callable $first): Region
@@ -276,7 +269,6 @@ class RegionLoader implements Feature
                                     return $region;
                                 }
                             }
-
                         );
                     }
                 }
@@ -287,25 +279,23 @@ class RegionLoader implements Feature
     }
 
     public static function regionSpawnStep(
-        string   $stateName,
+        string $stateName,
         callable $regionFactory,
         callable $guard,
-        int      $connectionFlags = C::DYNAMIC | C::RECEIVE_EVENTS | C::RECEIVE_ACTIONS
-    ): BuildStep
-    {
-        return new class(
+        int $connectionFlags = C::DYNAMIC | C::RECEIVE_EVENTS | C::RECEIVE_ACTIONS
+    ): BuildStep {
+        return new class (
             $stateName,
             $regionFactory,
             $guard,
             $connectionFlags
         ) implements BuildStep {
             public function __construct(
-                private string   $stateName,
-                private          $regionFactory,
-                private          $guard,
-                private int      $connectionFlags,
-            )
-            {
+                private string $stateName,
+                private $regionFactory,
+                private $guard,
+                private int $connectionFlags,
+            ) {
             }
 
             public function callback(RegionBuilder $builder, callable $next, callable $first): Region
@@ -328,11 +318,10 @@ class RegionLoader implements Feature
     }
 
     public function spawnRegionsOnActions(
-        DispatchAction           $dispatchAction,
-        RegionSpawnRegistry      $spawnRegistry,
+        DispatchAction $dispatchAction,
+        RegionSpawnRegistry $spawnRegistry,
         LoaderChains\SpawnRegion $spawnRegion
-    ): void
-    {
+    ): void {
         $dispatchAction->link(
             function (Params\Action $action, callable $next) use ($spawnRegistry, $spawnRegion): string {
                 foreach ($spawnRegistry->records as $record) {

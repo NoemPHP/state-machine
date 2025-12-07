@@ -19,19 +19,19 @@ class DebugTest extends TestCase
         $region = $builder
             ->setStates('start', 'end')
             ->markInitial('start')
-            ->addBuildStep(new AddTransition('start', 'end', function(object $t) use (&$callOrder): bool {
+            ->addBuildStep(new AddTransition('start', 'end', function (object $t) use (&$callOrder): bool {
                 $callOrder[] = 'guard1';
                 return false;
             }))
-            ->addBuildStep(new AddTransition('start', 'end', function(object $t) use (&$callOrder): bool {
+            ->addBuildStep(new AddTransition('start', 'end', function (object $t) use (&$callOrder): bool {
                 $callOrder[] = 'guard2';
                 return false;
             }))
-            ->addBuildStep(new AddTransition('start', 'end', function(object $t) use (&$callOrder): bool {
+            ->addBuildStep(new AddTransition('start', 'end', function (object $t) use (&$callOrder): bool {
                 $callOrder[] = 'guard3';
                 return false;
             }))
-            ->addBuildStep(new AddTransition('start', 'end', function(object $t) use (&$callOrder): bool {
+            ->addBuildStep(new AddTransition('start', 'end', function (object $t) use (&$callOrder): bool {
                 $callOrder[] = 'guard4';
                 return true;
             }))
@@ -40,7 +40,7 @@ class DebugTest extends TestCase
         // Get the registry from the builder's ChainMail
         $registry = $builder->chainMail->get(TransitionRegistry::class);
         $transitions = $registry->getTransitionsForState($region, 'start');
-        
+
         echo "\n=== DEBUG INFO ===\n";
         echo "Transitions structure:\n";
         var_dump($transitions);
@@ -52,14 +52,14 @@ class DebugTest extends TestCase
 
         $this->assertArrayHasKey('end', $transitions);
         $this->assertCount(4, $transitions['end'], 'Should have 4 guards');
-        
+
         // Now trigger and see what happens
         $region->trigger((object)[]);
-        
+
         echo "\n=== CALL ORDER ===\n";
         var_dump($callOrder);
         echo "==================\n\n";
-        
+
         $this->assertEquals(['guard1', 'guard2', 'guard3', 'guard4'], $callOrder);
     }
 }

@@ -31,11 +31,11 @@ YAML;
         // Assert
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage("Class 'stdClass' must implement Feature interface");
-        
+
         // Act
         Holon::fromYaml($yaml);
     }
-    
+
     public function testExceptionIdentifiesInvalidClass(): void
     {
         // Arrange
@@ -58,7 +58,7 @@ YAML;
             $this->assertStringContainsString('Feature interface', $e->getMessage());
         }
     }
-    
+
     public function testValidatesAllFeaturesInList(): void
     {
         // Arrange - First valid, second invalid
@@ -76,11 +76,11 @@ YAML;
         // Assert - should fail on second feature
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage("Class 'DateTime' must implement Feature interface");
-        
+
         // Act
         Holon::fromYaml($yaml);
     }
-    
+
     public function testAcceptsValidFeatureImplementation(): void
     {
         // Arrange
@@ -96,7 +96,7 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert - no exception thrown
         $this->assertNotNull($region);
     }

@@ -31,11 +31,11 @@ YAML;
         // Assert
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage("Feature class 'Noem\\State\\Feature\\NonExistentFeature' does not exist");
-        
+
         // Act
         Holon::fromYaml($yaml);
     }
-    
+
     public function testExceptionIncludesFeatureClassName(): void
     {
         // Arrange
@@ -58,7 +58,7 @@ YAML;
             $this->assertStringContainsString('does not exist', $e->getMessage());
         }
     }
-    
+
     public function testThrowsExceptionForEmptyFeatureClass(): void
     {
         // Arrange
@@ -74,11 +74,11 @@ YAML;
 
         // Assert
         $this->expectException(RuntimeException::class);
-        
+
         // Act
         Holon::fromYaml($yaml);
     }
-    
+
     public function testAcceptsValidFeatureClass(): void
     {
         // Arrange
@@ -94,7 +94,7 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert - no exception thrown
         $this->assertNotNull($region);
     }

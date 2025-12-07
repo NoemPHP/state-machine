@@ -19,10 +19,10 @@ class EnqueuesNewGeneratorsTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new AsyncFeature());
-        
+
         $generatorCreated = false;
         $yieldExecuted = false;
-        
+
         $region = $builder
             ->setStates('idle')
             ->onAction('idle', function (object $trigger) use (&$generatorCreated, &$yieldExecuted) {
@@ -31,24 +31,24 @@ class EnqueuesNewGeneratorsTest extends TestCase
                 yield 'value';
             })
             ->build();
-        
+
         $this->assertFalse($generatorCreated);
         $this->assertFalse($yieldExecuted);
-        
+
         // Trigger should enqueue the generator as a task
         $region->trigger(new \stdClass());
-        
+
         $this->assertTrue($generatorCreated, 'Generator should have been created');
         $this->assertTrue($yieldExecuted, 'Yield should have been executed');
     }
-    
+
     public function testEnqueuesMultipleGenerators(): void
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new AsyncFeature());
-        
+
         $executionLog = [];
-        
+
         $region = $builder
             ->setStates('idle')
             ->onAction('idle', function (object $trigger) use (&$executionLog) {
@@ -66,10 +66,10 @@ class EnqueuesNewGeneratorsTest extends TestCase
                 $executionLog[] = 'gen2-end';
             })
             ->build();
-        
+
         // Both generators should be enqueued and execute cooperatively
         $region->trigger(new \stdClass());
-        
+
         // After one trigger, both should have started
         $this->assertContains('gen1-start', $executionLog);
         $this->assertContains('gen2-start', $executionLog);

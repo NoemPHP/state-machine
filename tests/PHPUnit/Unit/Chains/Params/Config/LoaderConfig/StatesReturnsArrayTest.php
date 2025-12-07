@@ -27,9 +27,9 @@ class StatesReturnsArrayTest extends TestCase
             ]
         ];
         $params = new BuildParams($builder, $paramsArray);
-        
+
         $loaderConfig = $params->config(LoaderConfig::class);
-        
+
         $this->assertSame(['idle', 'active', 'done'], $loaderConfig->states());
     }
 }

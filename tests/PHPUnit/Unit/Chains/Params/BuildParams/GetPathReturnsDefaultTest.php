@@ -20,20 +20,20 @@ class GetPathReturnsDefaultTest extends TestCase
         $builder = new RegionBuilder();
         $config = ['existing' => 'value'];
         $params = new BuildParams($builder, $config);
-        
+
         $result = $params->getPath('non.existent.path', 'default_value');
-        
+
         $this->assertSame('default_value', $result);
     }
-    
+
     public function testGetPathReturnsNullByDefault(): void
     {
         $builder = new RegionBuilder();
         $config = [];
         $params = new BuildParams($builder, $config);
-        
+
         $result = $params->getPath('non.existent');
-        
+
         $this->assertNull($result);
     }
 }

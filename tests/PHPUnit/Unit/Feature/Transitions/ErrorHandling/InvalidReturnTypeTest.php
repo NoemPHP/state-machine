@@ -22,42 +22,42 @@ class InvalidReturnTypeTest extends TestCase
     {
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessageMatches('/Invalid guard callback/');
-        
+
         $region = (new RegionBuilder())
             ->setStates('start', 'end')
             ->markInitial('start')
             // Guard without bool return type - invalid!
             ->addBuildStep(new AddTransition('start', 'end', fn(object $t) => 'not a bool'))
             ->build();
-        
+
         $region->trigger(new stdClass());
     }
-    
+
     public function testErrorMessageIncludesTransitionContext(): void
     {
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessageMatches("/from 'start' to 'end'/");
-        
+
         $region = (new RegionBuilder())
             ->setStates('start', 'end')
             ->markInitial('start')
             ->addBuildStep(new AddTransition('start', 'end', fn(object $t): int => 1))
             ->build();
-        
+
         $region->trigger(new stdClass());
     }
-    
+
     public function testGuardMustReturnBool(): void
     {
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessageMatches('/must return bool/');
-        
+
         $region = (new RegionBuilder())
             ->setStates('a', 'b')
             ->markInitial('a')
             ->addBuildStep(new AddTransition('a', 'b', fn(object $t): string => 'true'))
             ->build();
-        
+
         $region->trigger(new stdClass());
     }
 }

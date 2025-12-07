@@ -37,7 +37,7 @@ class ExtendsMeshTest extends TestCase
         $mesh = new Mesh($data);
         $resolved = false;
 
-        new Ornament($mesh, 'computed', function(OrnamentResolver $r) use (&$resolved) {
+        new Ornament($mesh, 'computed', function (OrnamentResolver $r) use (&$resolved) {
             $resolved = true;
             $r->resolve('resolved');
         });
@@ -66,7 +66,7 @@ class ExtendsMeshTest extends TestCase
         $mesh = new Mesh($data);
 
         // Create ornament that depends on 'dep'
-        new Ornament($mesh, 'computed', function(OrnamentResolver $r) {
+        new Ornament($mesh, 'computed', function (OrnamentResolver $r) {
             $value = $r->get('dep');
             $r->resolve($value . '_computed');
         });
@@ -85,19 +85,19 @@ class ExtendsMeshTest extends TestCase
     {
         $data = ['dep' => 'value'];
         $mesh = new Mesh($data);
-        
+
         // Create ornament that depends on 'dep'
-        new Ornament($mesh, 'computed', function(OrnamentResolver $r) {
+        new Ornament($mesh, 'computed', function (OrnamentResolver $r) {
             $value = $r->has('dep') ? $r->get('dep') : 'default';
             $r->resolve($value . '_computed');
         });
-        
+
         // First access
         $this->assertSame('value_computed', $mesh['computed']);
-        
+
         // Unset dependency
         unset($mesh['dep']);
-        
+
         // Should recompute without 'dep'
         $this->assertSame('default_computed', $mesh['computed']);
     }

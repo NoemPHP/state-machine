@@ -20,7 +20,7 @@ class ContextReturnsKeyTest extends TestCase
     {
         $builder = new RegionBuilder();
         $resolvers = [['name' => 'test1'], ['name' => 'test2']];
-        
+
         $paramsArray = [
             'loader' => [
                 'array' => [
@@ -32,9 +32,9 @@ class ContextReturnsKeyTest extends TestCase
             ]
         ];
         $params = new BuildParams($builder, $paramsArray);
-        
+
         $loaderConfig = $params->config(LoaderConfig::class);
-        
+
         $this->assertSame($resolvers, $loaderConfig->context('resolvers'));
         $this->assertSame('otherValue', $loaderConfig->context('otherKey'));
     }

@@ -18,7 +18,7 @@ class ConstructorIsFinalTest extends TestCase
     {
         $reflection = new \ReflectionClass(ConfigAccessor::class);
         $constructor = $reflection->getConstructor();
-        
+
         $this->assertTrue($constructor->isFinal(), 'Constructor must be final to prevent signature breaking');
     }
 }

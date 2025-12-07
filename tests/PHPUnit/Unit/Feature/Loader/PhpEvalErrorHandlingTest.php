@@ -18,9 +18,9 @@ class PhpEvalErrorHandlingTest extends TestCase
     public function testConvertsPhpErrorsToErrorException(): void
     {
         $helper = new PhpEvalHelper();
-        
+
         $this->expectException(\RuntimeException::class);
-        
+
         // This should trigger a PHP error (undefined variable) which gets converted to ErrorException
         // and then wrapped in RuntimeException
         $helper('return $undefinedVariable');

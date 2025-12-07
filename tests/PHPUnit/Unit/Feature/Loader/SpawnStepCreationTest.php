@@ -21,7 +21,7 @@ class SpawnStepCreationTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader());
-        
+
         // Configuration with multiple spawn definitions
         $array = [
             'states' => [
@@ -47,17 +47,17 @@ class SpawnStepCreationTest extends TestCase
             ],
             'initial' => 'parent',
         ];
-        
+
         // Build the region
         $region = $builder->build([
             'loader' => [
                 'array' => $array,
             ],
         ]);
-        
+
         // Get the spawn registry from the builder's ChainMail
         $registry = $builder->chainMail->invoke(fn(RegionSpawnRegistry $r) => $r);
-        
+
         // Verify that a spawn record was created for each spawn definition
         $this->assertCount(2, $registry->records, 'Should have two spawn records for two spawn definitions');
     }

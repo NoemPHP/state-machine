@@ -34,7 +34,7 @@ class RegistersResolversServiceTest extends TestCase
 
         $feature = new AsyncFeature();
         $feature($chainMail);
-        
+
         $resolvers = $chainMail->get(Resolvers::class);
         $this->assertInstanceOf(Resolvers::class, $resolvers);
     }

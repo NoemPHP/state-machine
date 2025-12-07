@@ -27,23 +27,23 @@ class ThrowsOnInvalidReturnTypeTest extends TestCase
         $region = (new RegionBuilder())->setStates('start', 'end')->build();
         $trigger = new stdClass();
         $handler = fn(object $t): string => 'invalid';
-        
+
         $context = new Params\Guard($region, 'start', 'end', $handler, $trigger);
-        
+
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage("Invalid guard callback for a transition from 'start' to 'end'");
         $guard->call($context);
     }
-    
+
     public function testThrowsForNoReturnType(): void
     {
         $guard = new Guard(new InvokeCallback(), new PrepareInvokable());
         $region = (new RegionBuilder())->setStates('start', 'end')->build();
         $trigger = new stdClass();
         $handler = fn(object $t) => true;
-        
+
         $context = new Params\Guard($region, 'start', 'end', $handler, $trigger);
-        
+
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage("Invalid guard callback for a transition from 'start' to 'end'");
         $guard->call($context);

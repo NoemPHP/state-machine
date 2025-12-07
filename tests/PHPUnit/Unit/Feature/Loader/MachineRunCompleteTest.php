@@ -19,12 +19,12 @@ class MachineRunCompleteTest extends TestCase
     public function testRunExecutesUntilFinalStateAndReturnsLastResult(): void
     {
         $triggerCount = 0;
-        
-        $machine = new class($triggerCount) extends Machine {
+
+        $machine = new class ($triggerCount) extends Machine {
             public function __construct(private int &$count)
             {
             }
-            
+
             public function yaml(): string
             {
                 return <<<YAML
@@ -40,7 +40,7 @@ class MachineRunCompleteTest extends TestCase
                 final: end
                 YAML;
             }
-            
+
             public function trigger(): object
             {
                 $this->count++;
@@ -49,7 +49,7 @@ class MachineRunCompleteTest extends TestCase
                 $trigger->step = "step-{$this->count}";
                 return $trigger;
             }
-            
+
             public function features(): iterable
             {
                 return [
@@ -58,19 +58,19 @@ class MachineRunCompleteTest extends TestCase
                 ];
             }
         };
-        
+
         // Use the static run method
         $result = Machine::run($machine);
-        
+
         // Verify result is the last trigger
         $this->assertIsObject($result);
         $this->assertObjectHasProperty('id', $result);
         $this->assertObjectHasProperty('step', $result);
-        
+
         // Should be the last trigger object
         $this->assertSame($triggerCount, $result->id);
         $this->assertSame("step-{$triggerCount}", $result->step);
-        
+
         // Should have triggered multiple times to reach final state
         $this->assertGreaterThanOrEqual(2, $triggerCount, 'Should trigger multiple times');
     }

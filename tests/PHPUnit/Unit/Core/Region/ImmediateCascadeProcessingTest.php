@@ -74,7 +74,7 @@ class ImmediateCascadeProcessingTest extends TestCase
         $notificationChain = \Mockery::mock(Notification::class);
 
         $sequence = [];
-        
+
         $events->shouldReceive('onEnterState')
             ->once()
             ->andReturnUsing(function ($r, $state, $trigger) use (&$sequence) {

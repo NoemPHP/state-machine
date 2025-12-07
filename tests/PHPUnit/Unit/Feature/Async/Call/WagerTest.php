@@ -17,12 +17,12 @@ class WagerTest extends TestCase
     public function testWagerCreatesCallObject(): void
     {
         $eventClass = \stdClass::class;
-        
+
         $wagerCall = Call::wager($eventClass);
-        
+
         $this->assertInstanceOf(Call::class, $wagerCall, 'Call.wager should return a Call object');
     }
-    
+
     public function testWagerAcceptsMatcherAndDare(): void
     {
         $eventClass = \stdClass::class;
@@ -30,12 +30,12 @@ class WagerTest extends TestCase
         $dare = fn($event) => (function () {
             yield 'replacement';
         })();
-        
+
         $wagerCall = Call::wager($eventClass, $matcher, $dare);
-        
+
         $this->assertInstanceOf(Call::class, $wagerCall, 'Call.wager should accept matcher and dare parameters');
     }
-    
+
     public function testWagerRequiresListenerProvider(): void
     {
         // Note: Full testing of wager() functionality requires listener provider infrastructure

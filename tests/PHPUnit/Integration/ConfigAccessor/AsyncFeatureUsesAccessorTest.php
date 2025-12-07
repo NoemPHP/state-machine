@@ -23,7 +23,7 @@ class AsyncFeatureUsesAccessorTest extends TestCase
             new AsyncFeature(),
             new ExtendedState()
         );
-        
+
         $resolverCalled = false;
         $resolvedValue = null;
 
@@ -51,12 +51,12 @@ class AsyncFeatureUsesAccessorTest extends TestCase
                     ],
                 ],
             ]);
-        
+
         // Trigger several times to progress async tasks
         for ($i = 0; $i < 10; $i++) {
             $region->trigger(new \stdClass());
         }
-        
+
         $this->assertTrue($resolverCalled, 'Resolver should have been called via AsyncConfig accessor');
         $this->assertSame('resolved_value', $resolvedValue);
     }

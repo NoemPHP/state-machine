@@ -24,20 +24,20 @@ class SchemaContextCallbackTest extends TestCase
         $actionSchema = Expect::structure([]);
         $stateSchema = Expect::structure([]);
         $regionSchema = Expect::structure([]);
-        
+
         $context = new SchemaContext(
             $callbackSchema,
             $actionSchema,
             $stateSchema,
             $regionSchema
         );
-        
+
         $this->assertInstanceOf(
             Schema::class,
             $context->callback,
             'SchemaContext should store callback schema'
         );
-        
+
         $this->assertSame(
             $callbackSchema,
             $context->callback,

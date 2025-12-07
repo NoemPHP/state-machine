@@ -34,11 +34,11 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert
         $this->assertInstanceOf(Region::class, $region);
     }
-    
+
     public function testSupportsStatesSection(): void
     {
         // Arrange
@@ -53,12 +53,12 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert
         $this->assertInstanceOf(Region::class, $region);
         $this->assertEquals('first', $region->currentState());
     }
-    
+
     public function testSupportsRegionsSection(): void
     {
         // Arrange - Nested regions
@@ -76,11 +76,11 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert
         $this->assertInstanceOf(Region::class, $region);
     }
-    
+
     public function testHandlesAllSectionsTogether(): void
     {
         // Arrange - Complete configuration with all sections
@@ -108,12 +108,12 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert
         $this->assertInstanceOf(Region::class, $region);
         $this->assertEquals('root', $region->currentState());
     }
-    
+
     public function testWorksWithMinimalConfiguration(): void
     {
         // Arrange - Minimal config (just states)
@@ -126,7 +126,7 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert
         $this->assertInstanceOf(Region::class, $region);
     }

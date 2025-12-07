@@ -21,34 +21,40 @@ class EnableMultipleFeaturesTest extends TestCase
     {
         $builder = new RegionBuilder();
         $invocations = [];
-        
-        $feature1 = new class($invocations) implements Feature {
-            public function __construct(private array &$invocations) {}
-            
+
+        $feature1 = new class ($invocations) implements Feature {
+            public function __construct(private array &$invocations)
+            {
+            }
+
             public function __invoke(ChainMail $chainMail): void
             {
                 $this->invocations[] = 'feature1';
             }
         };
-        
-        $feature2 = new class($invocations) implements Feature {
-            public function __construct(private array &$invocations) {}
-            
+
+        $feature2 = new class ($invocations) implements Feature {
+            public function __construct(private array &$invocations)
+            {
+            }
+
             public function __invoke(ChainMail $chainMail): void
             {
                 $this->invocations[] = 'feature2';
             }
         };
-        
-        $feature3 = new class($invocations) implements Feature {
-            public function __construct(private array &$invocations) {}
-            
+
+        $feature3 = new class ($invocations) implements Feature {
+            public function __construct(private array &$invocations)
+            {
+            }
+
             public function __invoke(ChainMail $chainMail): void
             {
                 $this->invocations[] = 'feature3';
             }
         };
-        
+
         $builder->enableFeatures($feature1, $feature2, $feature3);
 
         // Features not yet invoked during enableFeatures()
@@ -62,30 +68,34 @@ class EnableMultipleFeaturesTest extends TestCase
         $this->assertContains('feature2', $invocations);
         $this->assertContains('feature3', $invocations);
     }
-    
+
     public function testEnableFeaturesCanBeCalledMultipleTimes(): void
     {
         $builder = new RegionBuilder();
         $invocations = [];
-        
-        $feature1 = new class($invocations) implements Feature {
-            public function __construct(private array &$invocations) {}
-            
+
+        $feature1 = new class ($invocations) implements Feature {
+            public function __construct(private array &$invocations)
+            {
+            }
+
             public function __invoke(ChainMail $chainMail): void
             {
                 $this->invocations[] = 'first-call';
             }
         };
-        
-        $feature2 = new class($invocations) implements Feature {
-            public function __construct(private array &$invocations) {}
-            
+
+        $feature2 = new class ($invocations) implements Feature {
+            public function __construct(private array &$invocations)
+            {
+            }
+
             public function __invoke(ChainMail $chainMail): void
             {
                 $this->invocations[] = 'second-call';
             }
         };
-        
+
         $builder->enableFeatures($feature1)
                 ->enableFeatures($feature2);
 

@@ -18,33 +18,33 @@ class SetStatesTest extends TestCase
     public function testSetStatesAcceptsVariadicParameters(): void
     {
         $builder = new RegionBuilder();
-        
+
         $result = $builder->setStates('idle', 'processing', 'complete');
-        
+
         $this->assertSame($builder, $result, 'setStates should return builder for chaining');
-        
+
         $region = $builder->build();
-        
+
         $this->assertTrue($region->isInState('idle'), 'Region should start in first state');
     }
-    
+
     public function testSetStatesWithSingleState(): void
     {
         $builder = new RegionBuilder();
-        
+
         $builder->setStates('single');
         $region = $builder->build();
-        
+
         $this->assertTrue($region->isInState('single'));
     }
-    
+
     public function testSetStatesWithMultipleStates(): void
     {
         $builder = new RegionBuilder();
-        
+
         $builder->setStates('one', 'two', 'three', 'four', 'five');
         $region = $builder->build();
-        
+
         $this->assertTrue($region->isInState('one'));
     }
 }

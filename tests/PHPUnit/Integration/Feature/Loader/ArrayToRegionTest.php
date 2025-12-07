@@ -22,11 +22,11 @@ class ArrayToRegionTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader(), new TransitionsFeature());
-        
+
         $enterLog = [];
         $exitLog = [];
         $actionLog = [];
-        
+
         $config = [
             'states' => [
                 [
@@ -38,13 +38,13 @@ class ArrayToRegionTest extends TestCase
                         ],
                     ],
                     'onEnter' => [
-                        ['run' => function(object $t) use (&$enterLog) {
+                        ['run' => function (object $t) use (&$enterLog) {
                             $enterLog[] = 'idle';
                             return 'idle';
                         }],
                     ],
                     'onExit' => [
-                        ['run' => function(object $t) use (&$exitLog) {
+                        ['run' => function (object $t) use (&$exitLog) {
                             $exitLog[] = 'idle';
                         }],
                     ],
@@ -58,18 +58,18 @@ class ArrayToRegionTest extends TestCase
                         ],
                     ],
                     'onEnter' => [
-                        ['run' => function(object $t) use (&$enterLog) {
+                        ['run' => function (object $t) use (&$enterLog) {
                             $enterLog[] = 'processing';
                             return 'processing';
                         }],
                     ],
                     'onExit' => [
-                        ['run' => function(object $t) use (&$exitLog) {
+                        ['run' => function (object $t) use (&$exitLog) {
                             $exitLog[] = 'processing';
                         }],
                     ],
                     'action' => [
-                        ['run' => function(object $t) use (&$actionLog) {
+                        ['run' => function (object $t) use (&$actionLog) {
                             $actionLog[] = 'work';
                             return 'processing';
                         }],
@@ -78,7 +78,7 @@ class ArrayToRegionTest extends TestCase
                 [
                     'name' => 'done',
                     'onEnter' => [
-                        ['run' => function(object $t) use (&$enterLog) {
+                        ['run' => function (object $t) use (&$enterLog) {
                             $enterLog[] = 'done';
                             return 'done';
                         }],
@@ -88,24 +88,24 @@ class ArrayToRegionTest extends TestCase
             'initial' => 'idle',
             'final' => 'done',
         ];
-        
+
         $region = $builder->build([
             'loader' => [
                 'array' => $config,
             ],
         ]);
-        
+
         // Verify initial state
         $this->assertTrue($region->isInState('idle'), 'Should start in idle state');
         $this->assertFalse($region->isFinal(), 'Should not be in final state initially');
         $this->assertEmpty($enterLog, 'onEnter not called until first trigger');
-        
+
         // Trigger without guard condition - should stay in idle (this fires initial onEnter)
         $region->trigger(new stdClass());
         $this->assertTrue($region->isInState('idle'), 'Should remain in idle without guard match');
         $this->assertEquals(['idle'], $enterLog, 'Initial onEnter called on first trigger');
         $this->assertCount(0, $actionLog, 'No actions should fire in idle state');
-        
+
         // Transition to processing
         $trigger1 = new stdClass();
         $trigger1->startProcessing = true;
@@ -113,16 +113,16 @@ class ArrayToRegionTest extends TestCase
         $this->assertTrue($region->isInState('processing'), 'Should transition to processing');
         $this->assertEquals(['idle', 'processing'], $enterLog, 'Should have entered processing');
         $this->assertEquals(['idle'], $exitLog, 'Should have exited idle');
-        
+
         // Trigger action in processing state
         $region->trigger(new stdClass());
         $this->assertTrue($region->isInState('processing'), 'Should remain in processing');
         $this->assertEquals(['work'], $actionLog, 'Action should have been executed');
-        
+
         // Another action
         $region->trigger(new stdClass());
         $this->assertEquals(['work', 'work'], $actionLog, 'Action should execute multiple times');
-        
+
         // Transition to done
         $trigger2 = new stdClass();
         $trigger2->complete = true;
@@ -132,7 +132,7 @@ class ArrayToRegionTest extends TestCase
         $this->assertEquals(['idle', 'processing', 'done'], $enterLog, 'Should have entered all states');
         $this->assertEquals(['idle', 'processing'], $exitLog, 'Should have exited non-final states');
     }
-    
+
     public function testArrayConfigWithMultipleStates(): void
     {
         $builder = new RegionBuilder();
@@ -151,7 +151,7 @@ class ArrayToRegionTest extends TestCase
                         ],
                     ],
                     'action' => [
-                        ['run' => function(object $t) use (&$log) {
+                        ['run' => function (object $t) use (&$log) {
                             $log[] = 'start';
                             return 'start';
                         }],
@@ -166,7 +166,7 @@ class ArrayToRegionTest extends TestCase
                         ],
                     ],
                     'action' => [
-                        ['run' => function(object $t) use (&$log) {
+                        ['run' => function (object $t) use (&$log) {
                             $log[] = 'middle';
                             return 'middle';
                         }],

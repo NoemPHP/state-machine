@@ -19,7 +19,7 @@ class ConditionalTransitionsTest extends TestCase
     public function testConditionalBranchingWithMultipleGuards(): void
     {
         $builder = new RegionBuilder();
-        
+
         $region = $builder
             ->setStates('start', 'pathA', 'pathB', 'pathC', 'end')
             ->markInitial('start')
@@ -33,19 +33,19 @@ class ConditionalTransitionsTest extends TestCase
             ->addBuildStep(new AddTransition('pathB', 'end'))
             ->addBuildStep(new AddTransition('pathC', 'end'))
             ->build();
-        
+
         // Test path A
         $region->trigger((object)['priority' => 1]);
         $this->assertTrue($region->isInState('pathA'));
-        
+
         $region->trigger((object)[]);
         $this->assertTrue($region->isInState('end'));
     }
-    
+
     public function testFallbackGuardPattern(): void
     {
         $builder = new RegionBuilder();
-        
+
         $region = $builder
             ->setStates('start', 'special', 'default', 'end')
             ->markInitial('start')
@@ -55,39 +55,39 @@ class ConditionalTransitionsTest extends TestCase
             // Add special SECOND (will be checked FIRST)
             ->addBuildStep(new AddTransition('start', 'special', fn(object $t): bool => isset($t->specialCondition) && $t->specialCondition))
             ->build();
-        
+
         // Without special condition, should go to default
         $region->trigger((object)[]);
         $this->assertTrue($region->isInState('default'));
-        
+
         // Reset for second test
         $region2 = $builder->build();
-        
+
         // With special condition, should go to special
         $region2->trigger((object)['specialCondition' => true]);
         $this->assertTrue($region2->isInState('special'));
     }
-    
+
     public function testComplexConditionInGuard(): void
     {
         $builder = new RegionBuilder();
-        
+
         $region = $builder
             ->setStates('idle', 'processing', 'complete')
             ->markInitial('idle')
-            ->addBuildStep(new AddTransition('idle', 'processing', function(object $t): bool {
-                return isset($t->data) 
-                    && is_array($t->data) 
-                    && count($t->data) > 0 
+            ->addBuildStep(new AddTransition('idle', 'processing', function (object $t): bool {
+                return isset($t->data)
+                    && is_array($t->data)
+                    && count($t->data) > 0
                     && $t->ready === true;
             }))
             ->addBuildStep(new AddTransition('processing', 'complete'))
             ->build();
-        
+
         // Should not transition with incomplete trigger
         $region->trigger((object)['data' => []]);
         $this->assertTrue($region->isInState('idle'));
-        
+
         // Should transition with complete trigger
         $region->trigger((object)['data' => [1, 2, 3], 'ready' => true]);
         $this->assertTrue($region->isInState('processing'));

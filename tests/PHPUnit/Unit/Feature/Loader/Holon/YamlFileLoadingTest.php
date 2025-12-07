@@ -26,11 +26,11 @@ states:
     final: true
 YAML;
         file_put_contents($tempFile, $yaml);
-        
+
         try {
             // Act
             $region = Holon::fromYaml($tempFile);
-            
+
             // Assert
             $this->assertInstanceOf(Region::class, $region);
             $this->assertEquals('loaded', $region->currentState());
@@ -40,7 +40,7 @@ YAML;
             unlink($tempFile);
         }
     }
-    
+
     public function testDetectsFilePathWithoutNewlines(): void
     {
         // Arrange - file path has no newlines, so should be detected as file
@@ -52,11 +52,11 @@ states:
     final: true
 YAML;
         file_put_contents($tempFile, $yaml);
-        
+
         try {
             // Act - the path has no newlines, triggering file read
             $region = Holon::fromYaml($tempFile);
-            
+
             // Assert
             $this->assertInstanceOf(Region::class, $region);
             $this->assertEquals('fromfile', $region->currentState());

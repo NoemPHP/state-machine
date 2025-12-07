@@ -19,9 +19,9 @@ class ConcurrentActionsTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new AsyncFeature());
-        
+
         $log = [];
-        
+
         $region = $builder
             ->setStates('active')
             ->onAction('active', function (object $trigger) use (&$log) {
@@ -39,33 +39,33 @@ class ConcurrentActionsTest extends TestCase
                 $log[] = 'task2-end';
             })
             ->build();
-        
+
         // First trigger - both tasks start
         $region->trigger(new \stdClass());
         $this->assertContains('task1-start', $log);
         $this->assertContains('task2-start', $log);
         $this->assertCount(2, $log);
-        
+
         // Second trigger - both tasks progress
         $region->trigger(new \stdClass());
         $this->assertContains('task1-middle', $log);
         $this->assertContains('task2-middle', $log);
         $this->assertCount(4, $log);
-        
+
         // Third trigger - both tasks end
         $region->trigger(new \stdClass());
         $this->assertContains('task1-end', $log);
         $this->assertContains('task2-end', $log);
         $this->assertCount(6, $log);
     }
-    
+
     public function testTasksInterleaveDuringExecution(): void
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new AsyncFeature());
-        
+
         $interleaveLog = [];
-        
+
         $region = $builder
             ->setStates('work')
             ->onAction('work', function (object $trigger) use (&$interleaveLog) {
@@ -87,19 +87,19 @@ class ConcurrentActionsTest extends TestCase
                 yield;
             })
             ->build();
-        
+
         // Execute triggers to see interleaving
         $region->trigger(new \stdClass());
         $firstTick = $interleaveLog;
-        
+
         $region->trigger(new \stdClass());
         $secondTick = array_slice($interleaveLog, count($firstTick));
-        
+
         // All three tasks should have started in first tick
         $this->assertContains('A1', $firstTick);
         $this->assertContains('B1', $firstTick);
         $this->assertContains('C1', $firstTick);
-        
+
         // All three tasks should progress in second tick
         $this->assertContains('A2', $secondTick);
         $this->assertContains('B2', $secondTick);

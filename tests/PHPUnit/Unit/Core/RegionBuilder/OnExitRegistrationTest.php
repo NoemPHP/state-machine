@@ -20,38 +20,38 @@ class OnExitRegistrationTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->setStates('idle', 'processing');
-        
+
         $handler = function (object $trigger): void {
         };
-        
+
         $result = $builder->onExit('idle', $handler);
-        
+
         $this->assertSame($builder, $result, 'onExit should return builder for chaining');
     }
-    
+
     public function testOnExitHandlerIsInvokedWhenLeavingState(): void
     {
         $builder = new RegionBuilder();
         $builder->setStates('idle', 'processing')
                 ->markInitial('idle');
-        
+
         $exitCalled = false;
         $receivedTrigger = null;
-        
+
         $builder->onExit('idle', function (object $trigger) use (&$exitCalled, &$receivedTrigger): void {
             $exitCalled = true;
             $receivedTrigger = $trigger;
         });
-        
+
         $builder->addBuildStep(new AddTransition('idle', 'processing', fn(object $t): bool => true));
-        
+
         $region = $builder->build();
-        
+
         $this->assertFalse($exitCalled, 'Handler should not be called before transition');
-        
+
         $trigger = (object)['data' => 'test'];
         $region->trigger($trigger);
-        
+
         $this->assertTrue($exitCalled, 'onExit handler should be called when leaving idle state');
         $this->assertSame($trigger, $receivedTrigger, 'Handler should receive trigger object');
     }

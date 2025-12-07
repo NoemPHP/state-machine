@@ -21,39 +21,39 @@ class ReceivesTransitionContextTest extends TestCase
     {
         $region = (new RegionBuilder())->setStates('a', 'b')->build();
         $payload = new stdClass();
-        
+
         $context = new Transition($region, $payload, 'a');
-        
+
         $this->assertSame($region, $context->region);
     }
-    
+
     public function testTransitionContextContainsPreviousState(): void
     {
         $region = (new RegionBuilder())->setStates('start', 'end')->build();
         $payload = new stdClass();
-        
+
         $context = new Transition($region, $payload, 'start');
-        
+
         $this->assertEquals('start', $context->previousState);
     }
-    
+
     public function testTransitionContextContainsPayload(): void
     {
         $region = (new RegionBuilder())->setStates('a', 'b')->build();
         $payload = (object)['data' => 'test'];
-        
+
         $context = new Transition($region, $payload, 'a');
-        
+
         $this->assertSame($payload, $context->payload);
     }
-    
+
     public function testTransitionContextCurrentStateReflectsRegion(): void
     {
         $region = (new RegionBuilder())->setStates('idle', 'processing')->build();
         $payload = new stdClass();
-        
+
         $context = new Transition($region, $payload, 'idle');
-        
+
         // currentState is a computed property from region
         $this->assertEquals($region->currentState(), $context->currentState);
     }

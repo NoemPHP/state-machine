@@ -22,86 +22,86 @@ class MissingClassErrorTest extends TestCase
         $reflection = new ReflectionClass(Holon::class);
         $method = $reflection->getMethod('instantiateFeatures');
         $method->setAccessible(true);
-        
+
         $buildContainer = $reflection->getMethod('buildContainer');
         $buildContainer->setAccessible(true);
         $container = $buildContainer->invoke(null, ['services' => []]);
-        
+
         $nonExistentClass = 'Noem\\State\\Feature\\NonExistentFeature';
         $featuresConfig = [
             ['class' => $nonExistentClass]
         ];
-        
+
         // Assert
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage("Feature class '$nonExistentClass' does not exist");
-        
+
         // Act
         $method->invoke(null, $featuresConfig, $container);
     }
-    
+
     public function testThrowsExceptionWhenClassKeyMissing(): void
     {
         // Arrange
         $reflection = new ReflectionClass(Holon::class);
         $method = $reflection->getMethod('instantiateFeatures');
         $method->setAccessible(true);
-        
+
         $buildContainer = $reflection->getMethod('buildContainer');
         $buildContainer->setAccessible(true);
         $container = $buildContainer->invoke(null, ['services' => []]);
-        
+
         // Config without 'class' key
         $featuresConfig = [
             ['config' => ['some' => 'config']]
         ];
-        
+
         // Assert
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage("Feature configuration missing 'class' key");
-        
+
         // Act
         $method->invoke(null, $featuresConfig, $container);
     }
-    
+
     public function testThrowsExceptionForEmptyClassName(): void
     {
         // Arrange
         $reflection = new ReflectionClass(Holon::class);
         $method = $reflection->getMethod('instantiateFeatures');
         $method->setAccessible(true);
-        
+
         $buildContainer = $reflection->getMethod('buildContainer');
         $buildContainer->setAccessible(true);
         $container = $buildContainer->invoke(null, ['services' => []]);
-        
+
         $featuresConfig = [
             ['class' => '']
         ];
-        
+
         // Assert
         $this->expectException(RuntimeException::class);
-        
+
         // Act
         $method->invoke(null, $featuresConfig, $container);
     }
-    
+
     public function testExceptionIncludesClassName(): void
     {
         // Arrange
         $reflection = new ReflectionClass(Holon::class);
         $method = $reflection->getMethod('instantiateFeatures');
         $method->setAccessible(true);
-        
+
         $buildContainer = $reflection->getMethod('buildContainer');
         $buildContainer->setAccessible(true);
         $container = $buildContainer->invoke(null, ['services' => []]);
-        
+
         $nonExistentClass = 'My\\Custom\\MissingFeature';
         $featuresConfig = [
             ['class' => $nonExistentClass]
         ];
-        
+
         // Act & Assert
         try {
             $method->invoke(null, $featuresConfig, $container);

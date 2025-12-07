@@ -19,11 +19,11 @@ class MultipleHandlersSameStateTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->setStates('idle');
-        
+
         $firstCalled = false;
         $secondCalled = false;
         $thirdCalled = false;
-        
+
         $builder->onAction('idle', function (object $trigger) use (&$firstCalled): void {
             $firstCalled = true;
         });
@@ -35,22 +35,22 @@ class MultipleHandlersSameStateTest extends TestCase
         $builder->onAction('idle', function (object $trigger) use (&$thirdCalled): void {
             $thirdCalled = true;
         });
-        
+
         $region = $builder->build();
         $region->trigger((object)[]);
-        
+
         $this->assertTrue($firstCalled, 'First action handler should be called');
         $this->assertTrue($secondCalled, 'Second action handler should be called');
         $this->assertTrue($thirdCalled, 'Third action handler should be called');
     }
-    
+
     public function testMultipleEnterHandlersForSameState(): void
     {
         $builder = new RegionBuilder();
         $builder->setStates('idle', 'processing');
-        
+
         $callCount = 0;
-        
+
         $builder->onEnter('processing', function (object $trigger) use (&$callCount): void {
             $callCount++;
         });
@@ -58,38 +58,38 @@ class MultipleHandlersSameStateTest extends TestCase
         $builder->onEnter('processing', function (object $trigger) use (&$callCount): void {
             $callCount++;
         });
-        
+
         $builder->addBuildStep(new \Noem\State\Feature\Transitions\AddTransition('idle', 'processing', fn(object $t): bool => true));
-        
+
         $region = $builder->build();
-        
+
         $this->assertEquals(0, $callCount, 'Handlers should not be called before transition');
-        
+
         $region->trigger((object)[]);
-        
+
         $this->assertEquals(2, $callCount, 'Both enter handlers should be called when entering processing state');
     }
-    
+
     public function testMultipleExitHandlersForSameState(): void
     {
         $builder = new RegionBuilder();
         $builder->setStates('idle', 'processing');
-        
+
         $callCount = 0;
-        
+
         $builder->onExit('idle', function (object $trigger) use (&$callCount): void {
             $callCount++;
         });
-        
+
         $builder->onExit('idle', function (object $trigger) use (&$callCount): void {
             $callCount++;
         });
-        
+
         $builder->addBuildStep(new \Noem\State\Feature\Transitions\AddTransition('idle', 'processing', fn(object $t): bool => true));
-        
+
         $region = $builder->build();
         $region->trigger((object)[]);
-        
+
         $this->assertEquals(2, $callCount, 'Both exit handlers should be called during transition');
     }
 }

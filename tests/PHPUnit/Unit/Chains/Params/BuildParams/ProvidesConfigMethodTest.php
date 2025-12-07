@@ -21,9 +21,9 @@ class ProvidesConfigMethodTest extends TestCase
         $builder = new RegionBuilder();
         $config = ['test' => 'value'];
         $params = new BuildParams($builder, $config);
-        
+
         $accessor = $params->config(TestAccessor::class);
-        
+
         $this->assertInstanceOf(TestAccessor::class, $accessor);
         $this->assertInstanceOf(ConfigAccessor::class, $accessor);
     }

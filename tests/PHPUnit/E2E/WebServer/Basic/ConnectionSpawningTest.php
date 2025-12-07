@@ -41,25 +41,25 @@ class ConnectionSpawningTest extends NetworkMachineTestCase
         // Arrange - Create region and queue a connection
         $region = $this->region();
         $connection = $this->queueHttpRequest();
-        
+
         // Track spawned regions
         $spawnedRegions = [];
-        
+
         // Act - Simulate server accepting connection and dispatching ServerConnection trigger
         // We need to manually dispatch since we're not running the full server loop
         $serverConnection = new \ServerConnection($connection, $connection->getRequest());
         $region->dispatch($serverConnection);
-        
+
         // Give scheduler time to process spawning
         $this->tickN($region, 5);
-        
+
         // Assert - A child region should have been spawned
         // We verify this by checking if the region has orthogonal children
         $reflection = new \ReflectionClass($region);
         $property = $reflection->getProperty('orthogonalRegions');
         $property->setAccessible(true);
         $orthogonalRegions = $property->getValue($region);
-        
+
         $this->assertNotEmpty(
             $orthogonalRegions,
             'Server should spawn a child region when ServerConnection is dispatched'

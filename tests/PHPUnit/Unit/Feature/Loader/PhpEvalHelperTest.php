@@ -18,18 +18,18 @@ class PhpEvalHelperTest extends TestCase
     public function testEvaluatesPhpCodeAndReturnsResult(): void
     {
         $helper = new PhpEvalHelper();
-        
+
         $result = $helper('return 1 + 1');
-        
+
         $this->assertEquals(2, $result);
     }
-    
+
     public function testEvaluatesComplexExpressions(): void
     {
         $helper = new PhpEvalHelper();
-        
+
         $result = $helper('return "Hello " . "World"');
-        
+
         $this->assertEquals("Hello World", $result);
     }
 }

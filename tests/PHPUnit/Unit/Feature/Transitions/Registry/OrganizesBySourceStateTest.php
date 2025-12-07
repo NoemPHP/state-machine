@@ -20,32 +20,32 @@ class OrganizesBySourceStateTest extends TestCase
     {
         $registry = new TransitionRegistry();
         $region = (new RegionBuilder())->setStates('a', 'b', 'c', 'd')->build();
-        
+
         $registry->pushTransition($region, 'a', 'b');
         $registry->pushTransition($region, 'a', 'c');
         $registry->pushTransition($region, 'b', 'd');
-        
+
         $transitionsFromA = $registry->getTransitionsForState($region, 'a');
         $transitionsFromB = $registry->getTransitionsForState($region, 'b');
-        
+
         $this->assertArrayHasKey('b', $transitionsFromA);
         $this->assertArrayHasKey('c', $transitionsFromA);
         $this->assertCount(2, $transitionsFromA);
-        
+
         $this->assertArrayHasKey('d', $transitionsFromB);
         $this->assertCount(1, $transitionsFromB);
     }
-    
+
     public function testRetrievesOnlyTransitionsForSpecificState(): void
     {
         $registry = new TransitionRegistry();
         $region = (new RegionBuilder())->setStates('one', 'two', 'three')->build();
-        
+
         $registry->pushTransition($region, 'one', 'two');
         $registry->pushTransition($region, 'two', 'three');
-        
+
         $transitionsFromOne = $registry->getTransitionsForState($region, 'one');
-        
+
         $this->assertArrayHasKey('two', $transitionsFromOne);
         $this->assertArrayNotHasKey('three', $transitionsFromOne);
     }

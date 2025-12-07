@@ -32,12 +32,12 @@ class MachineExecuteWithRegionTest extends TestCase
                 final: end
                 YAML;
             }
-            
+
             public function trigger(): object
             {
                 return new \stdClass();
             }
-            
+
             public function features(): iterable
             {
                 return [
@@ -46,18 +46,18 @@ class MachineExecuteWithRegionTest extends TestCase
                 ];
             }
         };
-        
+
         // Build a region externally
         $builder = new RegionBuilder();
         $externalRegion = $builder
             ->enableFeatures(...$machine->features())
             ->build($machine->builderArgs());
-        
+
         $this->assertFalse($externalRegion->isFinal());
-        
+
         // Pass the external region to execute
         $result = $machine->execute($externalRegion);
-        
+
         $this->assertTrue($externalRegion->isFinal());
         $this->assertIsObject($result);
     }

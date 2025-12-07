@@ -22,7 +22,9 @@ class ResolveWithChainMailTest extends TestCase
         $chainMail = new ChainMail();
 
         $featureA = new class implements Feature {
-            public function __invoke(ChainMail $chainMail): void {}
+            public function __invoke(ChainMail $chainMail): void
+            {
+            }
         };
 
         $registry->register($featureA);
@@ -39,11 +41,15 @@ class ResolveWithChainMailTest extends TestCase
         $chainMail = new ChainMail();
 
         $featureA = new class implements Feature {
-            public function __invoke(ChainMail $chainMail): void {}
+            public function __invoke(ChainMail $chainMail): void
+            {
+            }
         };
 
         $featureB = new class implements Feature {
-            public function __invoke(ChainMail $chainMail): void {}
+            public function __invoke(ChainMail $chainMail): void
+            {
+            }
         };
 
         $registry->register($featureA);
@@ -62,16 +68,22 @@ class ResolveWithChainMailTest extends TestCase
 
         $order = [];
 
-        $featureB = new class($order) implements Feature {
-            public function __construct(private &$order) {}
-            public function __invoke(ChainMail $chainMail): void {
+        $featureB = new class ($order) implements Feature {
+            public function __construct(private &$order)
+            {
+            }
+            public function __invoke(ChainMail $chainMail): void
+            {
                 $this->order[] = 'B';
             }
         };
 
-        $featureA = new class($order) implements Feature {
-            public function __construct(private &$order) {}
-            public function __invoke(ChainMail $chainMail): void {
+        $featureA = new class ($order) implements Feature {
+            public function __construct(private &$order)
+            {
+            }
+            public function __invoke(ChainMail $chainMail): void
+            {
                 $this->order[] = 'A';
             }
         };

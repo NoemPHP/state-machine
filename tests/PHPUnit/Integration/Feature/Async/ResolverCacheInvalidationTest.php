@@ -25,10 +25,10 @@ class ResolverCacheInvalidationTest extends TestCase
             new AsyncFeature(),
             new TransitionsFeature()
         );
-        
+
         $computationCount = 0;
         $results = [];
-        
+
         $region = $builder
             ->setStates('idle', 'step1', 'step2', 'step3')
             ->addBuildStep(new \Noem\State\Feature\Transitions\AddTransition(
@@ -81,12 +81,12 @@ class ResolverCacheInvalidationTest extends TestCase
                     ],
                 ],
             ]);
-        
+
         // Execute through all states and allow async operations to complete
         for ($i = 0; $i < 30; $i++) {
             $region->trigger(new \stdClass());
         }
-        
+
         // Resolver should have computed exactly twice: once for value1, once for value2 after invalidation
         $this->assertSame(2, $computationCount, 'Resolver should recompute after dependency change');
     }

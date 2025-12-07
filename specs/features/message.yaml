@@ -1,0 +1,200 @@
+name: message
+group: features
+description: Call-response messaging pipeline with UUID-based correlation, promise-like API, and automatic subscription management built on SubscriptionFeature infrastructure
+
+features:
+  - name: message-dispatch
+    description: Action middleware registration and Message payload interception
+    specs:
+      - acceptanceCriteria: MessageFeature registers middleware on DispatchAction chain
+        criticality: contract
+        intent: Enables automatic interception of Message payloads during action dispatch to trigger messaging pipeline
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/ActionMiddlewareRegistrationTest.php
+
+      - acceptanceCriteria: MessageFeature intercepts Message payloads in DispatchAction chain
+        criticality: contract
+        intent: Detects when dispatched actions contain Message instances and routes them through correlation pipeline
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/MessageInterceptionTest.php
+
+      - acceptanceCriteria: MessageFeature passes non-Message payloads through unchanged
+        criticality: contract
+        intent: Ensures messaging middleware only affects Message instances without interfering with normal action dispatch
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/PassthroughTest.php
+
+  - name: uuid-correlation
+    description: Unique correlation ID generation and matching
+    specs:
+      - acceptanceCriteria: Message instances generate unique UUID correlation IDs on construction
+        criticality: contract
+        intent: Ensures each message has globally unique identifier for request-response correlation without collisions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/UuidGenerationTest.php
+
+      - acceptanceCriteria: Message.correlationId() returns readonly UUID string
+        criticality: contract
+        intent: Provides immutable access to correlation identifier for matching request-response pairs
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/CorrelationIdAccessTest.php
+
+      - acceptanceCriteria: Messages created via createResponse() inherit parent correlation ID
+        criticality: contract
+        intent: Ensures response messages carry same correlation ID as originating request for automatic matching
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/InheritedCorrelationTest.php
+
+      - acceptanceCriteria: Message.repliesTo() returns true when correlation IDs match
+        criticality: contract
+        intent: Provides explicit correlation checking method for response validation and routing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/RepliesToMatchingTest.php
+
+  - name: promise-api
+    description: Promise-like then() method for response handling
+    specs:
+      - acceptanceCriteria: Message.then() registers response handler callbacks
+        criticality: contract
+        intent: Provides fluent API for attaching response handlers without manual subscription setup
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/ThenRegistrationTest.php
+
+      - acceptanceCriteria: Message.then() returns self for method chaining
+        criticality: contract
+        intent: Enables fluent interface for attaching multiple handlers or chaining configuration methods
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/ThenChainingTest.php
+
+      - acceptanceCriteria: Multiple then() handlers execute in registration order
+        criticality: contract
+        intent: Supports multiple observers per message with predictable execution sequence
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/MultipleHandlersTest.php
+
+      - acceptanceCriteria: Message.deliverResponse() invokes registered then() handlers with response
+        criticality: contract
+        intent: Executes all registered handlers when matching response arrives, completing request-response cycle
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/DeliveryExecutionTest.php
+
+  - name: correlation-matching
+    description: Automatic response delivery and subscription management
+    specs:
+      - acceptanceCriteria: MessageFeature creates temporary subscription when Message dispatched
+        criticality: contract
+        intent: Sets up correlation-based listener immediately on message dispatch to capture matching responses
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/TemporarySubscriptionTest.php
+
+      - acceptanceCriteria: Temporary subscription delivers responses with matching correlation ID to then() handlers
+        criticality: contract
+        intent: Completes request-response cycle by routing correlated responses to registered handlers automatically
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/CorrelationDeliveryTest.php
+
+      - acceptanceCriteria: Temporary subscription ignores responses with non-matching correlation IDs
+        criticality: contract
+        intent: Prevents cross-contamination between concurrent messages with different correlation identifiers
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/NonMatchingIgnoredTest.php
+
+      - acceptanceCriteria: Temporary subscription ignores non-Message events
+        criticality: contract
+        intent: Ensures message pipeline only processes Message instances without interfering with other event types
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/NonMessageIgnoredTest.php
+
+      - acceptanceCriteria: Temporary subscription auto-unsubscribes after first matching response
+        criticality: contract
+        intent: Implements first-response-wins pattern and prevents memory leaks from persistent subscriptions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/AutoCleanupTest.php
+
+      - acceptanceCriteria: Second response with same correlation ID does not trigger then() handlers
+        criticality: contract
+        intent: Enforces single-response semantics by ignoring duplicate responses after subscription cleanup
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/DuplicateResponseIgnoredTest.php
+
+  - name: correlation-filtering-optimization
+    description: Pre-filtering message listeners by correlation ID via middleware
+    specs:
+      - acceptanceCriteria: MessageFeature installs middleware on NotificationChain for Message event optimization
+        criticality: detail
+        intent: Adds correlation-aware filtering layer to avoid invoking listeners for unmatched Message events
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/NotificationMiddlewareInstallTest.php
+
+      - acceptanceCriteria: Correlation middleware pre-filters Message events by correlation ID before type filtering
+        criticality: detail
+        intent: Optimizes message delivery by checking correlation IDs early, skipping type inspection for mismatched messages
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/CorrelationPrefilteringTest.php
+
+      - acceptanceCriteria: Correlation middleware passes non-Message events through unchanged
+        criticality: detail
+        intent: Ensures optimization only affects Message instances without interfering with normal event notification
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/NonMessagePassthroughTest.php
+
+  - name: json-serialization
+    description: JSON serialization with custom and reflection-based implementations
+    specs:
+      - acceptanceCriteria: Message class implements JsonSerializable interface
+        criticality: contract
+        intent: Ensures all messages can be serialized to JSON for persistence, transmission, and logging
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/JsonSerializableInterfaceTest.php
+
+      - acceptanceCriteria: Message subclasses must implement jsonSerialize() method
+        criticality: contract
+        intent: Forces explicit serialization strategy per message type for type-specific formatting control
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/JsonSerializeRequiredTest.php
+
+      - acceptanceCriteria: Message.jsonSerialize() includes correlation ID in serialized output
+        criticality: contract
+        intent: Preserves correlation context during JSON round-trip for distributed messaging scenarios
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/CorrelationInSerializationTest.php
+
+      - acceptanceCriteria: Message.fromJson() reconstructs message from JSON-decoded array
+        criticality: contract
+        intent: Enables bidirectional JSON serialization for message persistence and transmission
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/FromJsonReconstructionTest.php
+
+      - acceptanceCriteria: Message.fromJson() uses type field to instantiate correct subclass
+        criticality: contract
+        intent: Restores original message type during deserialization for polymorphic message handling
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/TypeBasedReconstructionTest.php
+
+      - acceptanceCriteria: Message.fromJson() falls back to anonymous class when type unknown
+        criticality: contract
+        intent: Provides graceful degradation for unrecognized message types instead of failing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/AnonymousFallbackTest.php
+
+      - acceptanceCriteria: ReflectiveMessageSerialization trait provides automatic jsonSerialize() implementation
+        criticality: detail
+        intent: Offers zero-boilerplate serialization for simple message types via reflection
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/ReflectionSerializeTest.php
+
+      - acceptanceCriteria: ReflectiveMessageSerialization trait provides automatic fromData() implementation
+        criticality: detail
+        intent: Enables automatic deserialization via constructor parameter reflection for simple messages
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/ReflectionFromDataTest.php
+
+      - acceptanceCriteria: ReflectiveMessageSerialization.fromData() requires array payload
+        criticality: contract
+        intent: Enforces consistent data format for reflection-based deserialization with clear error messages
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/ReflectionArrayRequiredTest.php
+
+      - acceptanceCriteria: ReflectiveMessageSerialization excludes correlationId from data payload
+        criticality: detail
+        intent: Prevents duplicate correlation ID in serialized output since already included at top level
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/ReflectionExcludesCorrelationTest.php
+
+  - name: response-creation
+    description: Type-safe response creation with automatic correlation
+    specs:
+      - acceptanceCriteria: Message.createResponse() creates new message instance with same correlation ID
+        criticality: contract
+        intent: Provides type-safe API for generating correlated responses without manual ID management
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/CreateResponseCorrelationTest.php
+
+      - acceptanceCriteria: Message.createResponse() validates response class extends Message
+        criticality: contract
+        intent: Ensures type safety by rejecting invalid response types at runtime with clear error messages
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/CreateResponseTypeValidationTest.php
+
+      - acceptanceCriteria: Message.createResponse() calls target class fromData() method with payload
+        criticality: contract
+        intent: Delegates construction to response class for proper initialization and validation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/CreateResponseFromDataTest.php
+
+      - acceptanceCriteria: Message.createResponse() passes correlation ID to fromData() method
+        criticality: contract
+        intent: Ensures response inherits request correlation automatically during construction
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/CreateResponseIdPassingTest.php
+
+      - acceptanceCriteria: Message.createResponse() supports array payload format
+        criticality: contract
+        intent: Enforces consistent payload structure aligned with JSON serialization format
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/CreateResponseArrayPayloadTest.php

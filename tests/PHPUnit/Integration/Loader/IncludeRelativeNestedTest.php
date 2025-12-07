@@ -38,7 +38,6 @@ class IncludeRelativeNestedTest extends TestCase
             /** @lang yaml */ <<<YAML
 - target: !includeRelative level2/deep.yaml
 YAML
-
         );
 
         // Top file - includes relative to its own directory
@@ -49,7 +48,7 @@ YAML
 - name: 'foo'
   transitions: !includeRelative level1/middle.yaml
 YAML
-);
+        );
 
         try {
             $yaml = "states: !includeRelative top.yaml";

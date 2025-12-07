@@ -19,7 +19,7 @@ class HasTypeChecksExistenceTest extends TestCase
     public function testHasTypeChecksExistence(): void
     {
         $builder = new RegionBuilder();
-        
+
         $paramsArray = [
             'loader' => [
                 'array' => ['states' => ['a']],
@@ -28,9 +28,9 @@ class HasTypeChecksExistenceTest extends TestCase
             ]
         ];
         $params = new BuildParams($builder, $paramsArray);
-        
+
         $loaderConfig = $params->config(LoaderConfig::class);
-        
+
         $this->assertTrue($loaderConfig->hasType('array'));
         $this->assertTrue($loaderConfig->hasType('loaderConfig'));
         $this->assertTrue($loaderConfig->hasType('customType'));

@@ -18,7 +18,7 @@ class ExecutionTest extends TestCase
     {
         // Arrange
         $executionLog = [];
-        
+
         $yaml = <<<YAML
 machine:
   eventLoop:
@@ -43,11 +43,11 @@ YAML;
 
         // Act
         $result = Holon::fromYaml($yaml);
-        
+
         // Assert - completed execution
         $this->assertNotNull($result);
     }
-    
+
     public function testMachineExecutesWithActions(): void
     {
         // Arrange
@@ -74,11 +74,11 @@ YAML;
 
         // Act
         $result = Holon::fromYaml($yaml);
-        
+
         // Assert
         $this->assertNotNull($result);
     }
-    
+
     public function testMachineExecutesWithGuards(): void
     {
         // Arrange
@@ -103,11 +103,11 @@ YAML;
 
         // Act
         $result = Holon::fromYaml($yaml);
-        
+
         // Assert
         $this->assertNotNull($result);
     }
-    
+
     public function testManualExecutionWorkflow(): void
     {
         // Arrange
@@ -128,18 +128,18 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert - manual control
         $this->assertEquals('idle', $region->currentState());
-        
+
         $region->trigger(new \stdClass());
         $this->assertEquals('processing', $region->currentState());
-        
+
         $region->trigger(new \stdClass());
         $this->assertEquals('complete', $region->currentState());
         $this->assertTrue($region->isFinal());
     }
-    
+
     public function testExecutionWithContainerServices(): void
     {
         // Arrange
@@ -163,7 +163,7 @@ YAML;
 
         // Act
         $result = Holon::fromYaml($yaml);
-        
+
         // Assert - completed with container available
         $this->assertNotNull($result);
     }

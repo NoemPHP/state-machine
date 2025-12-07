@@ -20,7 +20,7 @@ class SpawnGuardSchemaTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader());
-        
+
         $yaml = <<<YAML
         states:
           - name: parent
@@ -32,11 +32,11 @@ class SpawnGuardSchemaTest extends TestCase
                   initial: child
         initial: parent
         YAML;
-        
+
         $helpers = [
             'php' => fn(string $code) => eval("return $code;"),
         ];
-        
+
         // Should build successfully with guard property
         $region = $builder->build([
             'loader' => [
@@ -44,7 +44,7 @@ class SpawnGuardSchemaTest extends TestCase
                 'yamlHelpers' => $helpers,
             ],
         ]);
-        
+
         $this->assertTrue($region->isInState('parent'));
     }
 }

@@ -21,7 +21,7 @@ class SpawnSkippingTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader());
-        
+
         $array = [
             'states' => [
                 [
@@ -36,17 +36,17 @@ class SpawnSkippingTest extends TestCase
             ],
             'initial' => 'idle',
         ];
-        
+
         // Build the region
         $region = $builder->build([
             'loader' => [
                 'array' => $array,
             ],
         ]);
-        
+
         // Get the spawn registry from the builder's ChainMail
         $registry = $builder->chainMail->invoke(fn(RegionSpawnRegistry $r) => $r);
-        
+
         // Verify that no spawn records were created
         $this->assertCount(0, $registry->records, 'Should have no spawn records for states without spawn definitions');
     }

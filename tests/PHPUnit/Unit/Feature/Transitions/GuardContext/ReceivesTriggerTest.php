@@ -23,20 +23,20 @@ class ReceivesTriggerTest extends TestCase
         $trigger = new stdClass();
         $trigger->data = 'test';
         $handler = fn(object $t): bool => true;
-        
+
         $context = new Guard($region, 'a', 'b', $handler, $trigger);
-        
+
         $this->assertSame($trigger, $context->trigger);
     }
-    
+
     public function testGuardContextTriggerIsAccessible(): void
     {
         $region = (new RegionBuilder())->setStates('start', 'end')->build();
         $trigger = (object)['id' => 123, 'value' => 'test'];
         $handler = fn(object $t): bool => true;
-        
+
         $context = new Guard($region, 'start', 'end', $handler, $trigger);
-        
+
         $this->assertEquals(123, $context->trigger->id);
         $this->assertEquals('test', $context->trigger->value);
     }

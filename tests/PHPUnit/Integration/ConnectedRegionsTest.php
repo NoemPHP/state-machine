@@ -6,7 +6,6 @@ namespace Noem\State\Test\Integration;
 
 use Noem\State\Feature\ExtendedState\ContextMetaType;
 use PHPUnit\Framework\TestCase;
-
 use Noem\State\Chains\ConnectedRegions;
 use Noem\State\Chains\Params;
 use Noem\State\Chains\Meta;
@@ -16,7 +15,6 @@ use Noem\State\Record;
 
 class ConnectedRegionsTest extends TestCase
 {
-
     public function testConnectedRegionsReceiveSharedMetadataMesh()
     {
         // Create regions

@@ -73,7 +73,7 @@ class ConditionalMetaDataTest extends TestCase
             $flags,
             $condition
         );
-        
+
         $region = $builder->build();
         $this->assertInstanceOf(\Noem\State\Region::class, $region);
     }

@@ -18,18 +18,18 @@ class ContainerGetHelperDefaultTest extends TestCase
     public function testInitializesWithEmptyContainer(): void
     {
         $helper = new ContainerGetHelper();
-        
+
         // Should not throw an exception when created without container
         $this->assertInstanceOf(ContainerGetHelper::class, $helper);
     }
-    
+
     public function testDefaultContainerReturnsNullForNonExistentKeys(): void
     {
         $helper = new ContainerGetHelper();
-        
+
         // Default empty container returns null for non-existent keys
         $result = $helper('nonExistentKey');
-        
+
         $this->assertNull($result);
     }
 }

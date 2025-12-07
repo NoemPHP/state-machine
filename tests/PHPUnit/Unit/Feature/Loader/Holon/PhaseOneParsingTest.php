@@ -34,11 +34,11 @@ YAML;
 
         // Act - Phase 1 happens internally, but we verify by successful Region creation
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert - If phase 1 parsing failed, we'd get an exception
         $this->assertInstanceOf(Region::class, $region);
     }
-    
+
     public function testExtractsMachineConfiguration(): void
     {
         // Arrange - YAML with machine section
@@ -58,12 +58,12 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert - Region was built with features from machine config
         $this->assertInstanceOf(Region::class, $region);
         $this->assertEquals('ready', $region->currentState());
     }
-    
+
     public function testHandlesYamlWithBootstrapHelpers(): void
     {
         // Arrange - YAML using php helper (bootstrap phase)
@@ -81,7 +81,7 @@ YAML;
 
         // Act - Bootstrap helpers should process !php tag
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert
         $this->assertInstanceOf(Region::class, $region);
     }

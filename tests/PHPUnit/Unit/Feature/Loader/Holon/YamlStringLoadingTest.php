@@ -30,26 +30,26 @@ YAML;
 
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert
         $this->assertInstanceOf(Region::class, $region);
         $this->assertEquals('start', $region->currentState());
         $this->assertFalse($region->isFinal());
-        
+
         // Verify the machine actually works
         $region->trigger(new \stdClass());
         $this->assertEquals('end', $region->currentState());
         $this->assertTrue($region->isFinal());
     }
-    
+
     public function testHandlesMultilineYamlString(): void
     {
         // Arrange - YAML with newlines (detecting inline vs file)
         $yaml = "states:\n  - name: active\n    initial: true\n    final: true";
-        
+
         // Act
         $region = Holon::fromYaml($yaml);
-        
+
         // Assert
         $this->assertInstanceOf(Region::class, $region);
         $this->assertEquals('active', $region->currentState());

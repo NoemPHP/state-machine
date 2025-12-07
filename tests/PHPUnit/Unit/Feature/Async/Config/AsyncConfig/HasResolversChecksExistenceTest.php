@@ -19,7 +19,7 @@ class HasResolversChecksExistenceTest extends TestCase
     public function testHasResolversReturnsTrueWhenDefined(): void
     {
         $builder = new RegionBuilder();
-        
+
         $paramsArray = [
             'loader' => [
                 'array' => [
@@ -70,9 +70,9 @@ class HasResolversChecksExistenceTest extends TestCase
             ]
         ];
         $params = new BuildParams($builder, $paramsArray);
-        
+
         $asyncConfig = $params->config(AsyncConfig::class);
-        
+
         $this->assertFalse($asyncConfig->hasResolvers());
     }
 }

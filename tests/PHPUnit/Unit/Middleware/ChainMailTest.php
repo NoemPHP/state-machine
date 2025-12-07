@@ -16,7 +16,6 @@ use function PHPUnit\Framework\assertInstanceOf;
 
 class ChainMailTest extends TestCase
 {
-
     #[Test] public function factory()
     {
         $chain = new ChainMail();

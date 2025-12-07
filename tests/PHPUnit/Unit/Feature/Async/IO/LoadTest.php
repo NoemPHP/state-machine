@@ -15,50 +15,50 @@ use PHPUnit\Framework\TestCase;
 class LoadTest extends TestCase
 {
     private string $testFile;
-    
+
     protected function setUp(): void
     {
         $this->testFile = sys_get_temp_dir() . '/load_test_' . uniqid() . '.txt';
     }
-    
+
     protected function tearDown(): void
     {
         if (file_exists($this->testFile)) {
             unlink($this->testFile);
         }
     }
-    
+
     public function testCreatesGenerator(): void
     {
         file_put_contents($this->testFile, 'test content');
-        
+
         $load = new Load($this->testFile);
         $generator = $load();
-        
+
         $this->assertInstanceOf(\Generator::class, $generator, 'Load should return a generator');
     }
-    
+
     public function testReadsFileContent(): void
     {
         $content = 'Hello, World!';
         file_put_contents($this->testFile, $content);
-        
+
         $load = new Load($this->testFile);
         $generator = $load();
-        
+
         $result = '';
         foreach ($generator as $char) {
             $result .= $char;
         }
-        
+
         $this->assertSame($content, $result, 'Should read entire file content');
     }
-    
+
     public function testConstructsWithFilePath(): void
     {
         file_put_contents($this->testFile, 'test');
         $load = new Load($this->testFile);
-        
+
         $this->assertInstanceOf(Load::class, $load);
     }
 }

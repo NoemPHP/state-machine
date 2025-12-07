@@ -18,7 +18,7 @@ class TransformArrayDefaultTest extends TestCase
     public function testTransformArrayPassesThroughByDefault(): void
     {
         $chain = new TransformArray();
-        
+
         $input = [
             'states' => [
                 ['name' => 'idle'],
@@ -26,16 +26,16 @@ class TransformArrayDefaultTest extends TestCase
             ],
             'initial' => 'idle',
         ];
-        
+
         $result = $chain->call($input);
-        
+
         $this->assertSame($input, $result, 'TransformArray should pass through array unchanged by default');
     }
-    
+
     public function testTransformArrayPreservesArrayStructure(): void
     {
         $chain = new TransformArray();
-        
+
         $input = [
             'nested' => [
                 'deep' => [
@@ -43,9 +43,9 @@ class TransformArrayDefaultTest extends TestCase
                 ],
             ],
         ];
-        
+
         $result = $chain->call($input);
-        
+
         $this->assertSame($input, $result);
     }
 }

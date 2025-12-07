@@ -23,20 +23,20 @@ class SchemaContextActionTest extends TestCase
         $actionSchema = Expect::structure([]);
         $stateSchema = Expect::structure([]);
         $regionSchema = Expect::structure([]);
-        
+
         $context = new SchemaContext(
             $callbackSchema,
             $actionSchema,
             $stateSchema,
             $regionSchema
         );
-        
+
         $this->assertInstanceOf(
             Structure::class,
             $context->action,
             'SchemaContext should store action structure'
         );
-        
+
         $this->assertSame(
             $actionSchema,
             $context->action,

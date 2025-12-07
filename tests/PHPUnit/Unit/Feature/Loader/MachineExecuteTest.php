@@ -20,12 +20,12 @@ class MachineExecuteTest extends TestCase
     public function testExecuteRunsUntilFinalState(): void
     {
         $triggerCount = 0;
-        
-        $machine = new class($triggerCount) extends Machine {
+
+        $machine = new class ($triggerCount) extends Machine {
             public function __construct(private int &$count)
             {
             }
-            
+
             public function yaml(): string
             {
                 return <<<YAML
@@ -41,7 +41,7 @@ class MachineExecuteTest extends TestCase
                 final: end
                 YAML;
             }
-            
+
             public function trigger(): object
             {
                 $this->count++;
@@ -49,7 +49,7 @@ class MachineExecuteTest extends TestCase
                 $trigger->id = $this->count;
                 return $trigger;
             }
-            
+
             public function features(): iterable
             {
                 return [
@@ -58,14 +58,14 @@ class MachineExecuteTest extends TestCase
                 ];
             }
         };
-        
+
         $builder = new RegionBuilder();
         $region = $builder
             ->enableFeatures(...$machine->features())
             ->build($machine->builderArgs());
-        
+
         $result = $machine->execute($region);
-        
+
         $this->assertTrue($region->isFinal());
         $this->assertIsObject($result);
         $this->assertObjectHasProperty('id', $result);

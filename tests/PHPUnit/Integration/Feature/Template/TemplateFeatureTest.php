@@ -13,7 +13,6 @@ use PHPUnit\Framework\Attributes\Test;
 
 class TemplateFeatureTest extends RegionBuilderTestCase
 {
-
     public function setUp(): void
     {
         parent::setUp();

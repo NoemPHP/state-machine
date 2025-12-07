@@ -18,39 +18,39 @@ class FetchSupportsMethodsTest extends TestCase
     {
         $fetch = new Fetch('data://text/plain,test', 'GET');
         $generator = $fetch();
-        
+
         $this->assertInstanceOf(\Generator::class, $generator);
     }
-    
+
     public function testSupportsPostMethod(): void
     {
         $fetch = new Fetch('data://text/plain,test', 'POST', [], '{"key": "value"}');
         $generator = $fetch();
-        
+
         $this->assertInstanceOf(\Generator::class, $generator);
     }
-    
+
     public function testSupportsPutMethod(): void
     {
         $fetch = new Fetch('data://text/plain,test', 'PUT', [], '{"key": "updated"}');
         $generator = $fetch();
-        
+
         $this->assertInstanceOf(\Generator::class, $generator);
     }
-    
+
     public function testSupportsDeleteMethod(): void
     {
         $fetch = new Fetch('data://text/plain,test', 'DELETE');
         $generator = $fetch();
-        
+
         $this->assertInstanceOf(\Generator::class, $generator);
     }
-    
+
     public function testSupportsPatchMethod(): void
     {
         $fetch = new Fetch('data://text/plain,test', 'PATCH', [], '{"key": "patched"}');
         $generator = $fetch();
-        
+
         $this->assertInstanceOf(\Generator::class, $generator);
     }
 }

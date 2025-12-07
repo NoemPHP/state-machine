@@ -46,7 +46,7 @@ class NoActionDuplicationWithSharedChainMailTest extends TestCase
                                 [
                                     'name' => 'child1',
                                     'action' => [
-                                        ['run' => function($t) use (&$actionLog) {
+                                        ['run' => function ($t) use (&$actionLog) {
                                             $actionLog[] = 'child1';
                                             return 'child1';
                                         }],
@@ -69,8 +69,11 @@ class NoActionDuplicationWithSharedChainMailTest extends TestCase
         $parentRegion->trigger(new stdClass());
 
         // Action should fire exactly once, not twice
-        $this->assertEquals(['child1'], $actionLog,
-            'Child action callback should fire exactly once despite shared ChainMail');
+        $this->assertEquals(
+            ['child1'],
+            $actionLog,
+            'Child action callback should fire exactly once despite shared ChainMail'
+        );
     }
 
     public function testChildRegionLifecycleCallbacksFireOnlyOnce(): void
@@ -93,7 +96,7 @@ class NoActionDuplicationWithSharedChainMailTest extends TestCase
                                         ['target' => 'child2', 'guard' => fn($t) => true],
                                     ],
                                     'onExit' => [
-                                        ['run' => function($t) use (&$lifecycleLog) {
+                                        ['run' => function ($t) use (&$lifecycleLog) {
                                             $lifecycleLog[] = 'exit_child1';
                                         }],
                                     ],
@@ -101,7 +104,7 @@ class NoActionDuplicationWithSharedChainMailTest extends TestCase
                                 [
                                     'name' => 'child2',
                                     'onEnter' => [
-                                        ['run' => function($t) use (&$lifecycleLog) {
+                                        ['run' => function ($t) use (&$lifecycleLog) {
                                             $lifecycleLog[] = 'enter_child2';
                                         }],
                                     ],
@@ -123,8 +126,11 @@ class NoActionDuplicationWithSharedChainMailTest extends TestCase
         $parentRegion->trigger(new stdClass());
 
         // Lifecycle callbacks should fire exactly once each
-        $this->assertEquals(['exit_child1', 'enter_child2'], $lifecycleLog,
-            'Lifecycle callbacks should fire exactly once despite shared ChainMail');
+        $this->assertEquals(
+            ['exit_child1', 'enter_child2'],
+            $lifecycleLog,
+            'Lifecycle callbacks should fire exactly once despite shared ChainMail'
+        );
     }
 
     public function testMultipleChildRegionsEachReceiveActionsOnce(): void
@@ -144,7 +150,7 @@ class NoActionDuplicationWithSharedChainMailTest extends TestCase
                                 [
                                     'name' => 'childA',
                                     'action' => [
-                                        ['run' => function($t) use (&$actionLog) {
+                                        ['run' => function ($t) use (&$actionLog) {
                                             $actionLog[] = 'childA';
                                             return 'childA';
                                         }],
@@ -158,7 +164,7 @@ class NoActionDuplicationWithSharedChainMailTest extends TestCase
                                 [
                                     'name' => 'childB',
                                     'action' => [
-                                        ['run' => function($t) use (&$actionLog) {
+                                        ['run' => function ($t) use (&$actionLog) {
                                             $actionLog[] = 'childB';
                                             return 'childB';
                                         }],
@@ -181,12 +187,21 @@ class NoActionDuplicationWithSharedChainMailTest extends TestCase
         $parentRegion->trigger(new stdClass());
 
         // Each child should receive action exactly once (order may vary)
-        $this->assertCount(2, $actionLog,
-            'Both children should receive actions');
-        $this->assertContains('childA', $actionLog,
-            'ChildA should receive action exactly once');
-        $this->assertContains('childB', $actionLog,
-            'ChildB should receive action exactly once');
+        $this->assertCount(
+            2,
+            $actionLog,
+            'Both children should receive actions'
+        );
+        $this->assertContains(
+            'childA',
+            $actionLog,
+            'ChildA should receive action exactly once'
+        );
+        $this->assertContains(
+            'childB',
+            $actionLog,
+            'ChildB should receive action exactly once'
+        );
     }
 
     public function testDeeplyNestedRegionsNoActionDuplication(): void
@@ -206,7 +221,7 @@ class NoActionDuplicationWithSharedChainMailTest extends TestCase
                                 [
                                     'name' => 'level2',
                                     'action' => [
-                                        ['run' => function($t) use (&$actionLog) {
+                                        ['run' => function ($t) use (&$actionLog) {
                                             $actionLog[] = 'level2';
                                             return 'level2';
                                         }],
@@ -217,7 +232,7 @@ class NoActionDuplicationWithSharedChainMailTest extends TestCase
                                                 [
                                                     'name' => 'level3',
                                                     'action' => [
-                                                        ['run' => function($t) use (&$actionLog) {
+                                                        ['run' => function ($t) use (&$actionLog) {
                                                             $actionLog[] = 'level3';
                                                             return 'level3';
                                                         }],
@@ -245,11 +260,20 @@ class NoActionDuplicationWithSharedChainMailTest extends TestCase
         $parentRegion->trigger(new stdClass());
 
         // Each level should receive action exactly once (order may vary)
-        $this->assertCount(2, $actionLog,
-            'Both nested levels should receive actions');
-        $this->assertContains('level2', $actionLog,
-            'Level 2 should receive action exactly once');
-        $this->assertContains('level3', $actionLog,
-            'Level 3 should receive action exactly once');
+        $this->assertCount(
+            2,
+            $actionLog,
+            'Both nested levels should receive actions'
+        );
+        $this->assertContains(
+            'level2',
+            $actionLog,
+            'Level 2 should receive action exactly once'
+        );
+        $this->assertContains(
+            'level3',
+            $actionLog,
+            'Level 3 should receive action exactly once'
+        );
     }
 }

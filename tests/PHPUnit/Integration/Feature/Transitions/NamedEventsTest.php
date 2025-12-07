@@ -24,13 +24,13 @@ class NamedEventsTest extends TestCase
             ->markInitial('idle')
             ->addBuildStep(new AddTransition('idle', 'active', fn(object $t): bool => isset($t->activate)))
             ->build();
-        
+
         // Trigger with object payload
         $region->trigger((object)['activate' => true]);
-        
+
         $this->assertEquals('active', $region->currentState());
     }
-    
+
     public function testTransitionWithTypedTrigger(): void
     {
         // Create a custom event class
@@ -38,20 +38,20 @@ class NamedEventsTest extends TestCase
             public string $type = 'start';
             public array $data = [];
         };
-        
+
         $region = (new RegionBuilder())
             ->setStates('waiting', 'running')
             ->markInitial('waiting')
-            ->addBuildStep(new AddTransition('waiting', 'running', function(object $t): bool {
+            ->addBuildStep(new AddTransition('waiting', 'running', function (object $t): bool {
                 return property_exists($t, 'type') && $t->type === 'start';
             }))
             ->build();
-        
+
         $region->trigger($eventClass);
-        
+
         $this->assertEquals('running', $region->currentState());
     }
-    
+
     public function testTransitionWithMultipleEventTypes(): void
     {
         $region = (new RegionBuilder())
@@ -60,11 +60,11 @@ class NamedEventsTest extends TestCase
             ->addBuildStep(new AddTransition('idle', 'processing', fn(object $t): bool => ($t->action ?? '') === 'start'))
             ->addBuildStep(new AddTransition('processing', 'complete', fn(object $t): bool => ($t->action ?? '') === 'finish'))
             ->build();
-        
+
         // Start processing
         $region->trigger((object)['action' => 'start']);
         $this->assertEquals('processing', $region->currentState());
-        
+
         // Complete processing
         $region->trigger((object)['action' => 'finish']);
         $this->assertEquals('complete', $region->currentState());

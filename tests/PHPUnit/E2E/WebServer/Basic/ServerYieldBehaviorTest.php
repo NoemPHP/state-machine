@@ -41,22 +41,22 @@ class ServerYieldBehaviorTest extends NetworkMachineTestCase
         // Arrange
         $region = $this->region();
         $yieldCount = 0;
-        
+
         // Act - Trigger server to start accepting (this should enqueue a generator)
         $region->trigger(new \stdClass());
-        
+
         // Give the async action time to start
         $this->tickN($region, 1);
-        
+
         // Assert - Server should have an active task (the accept loop generator)
         $this->assertHasActiveTasks(
             $region,
             'Server accept loop should be running as an active async task'
         );
-        
+
         // Act - Tick several times
         $this->tickN($region, 5);
-        
+
         // Assert - Task should still be active (not completed)
         // This proves the generator yields control instead of blocking
         $this->assertHasActiveTasks(
@@ -79,20 +79,20 @@ YAML;
     public function container(): iterable
     {
         $mockSocket = $this->mockSocket;
-        
+
         return [
             'server.starting.accept' => function (object $trigger) use ($mockSocket) {
                 // Simulate the accept loop that yields
                 yield; // Initial yield
-                
+
                 for ($i = 0; $i < 10; $i++) {
                     // Simulate checking for connections
                     $client = $mockSocket->accept();
-                    
+
                     if ($client !== null) {
                         // Would dispatch ServerConnection here
                     }
-                    
+
                     yield; // Yield control back to scheduler
                 }
             },

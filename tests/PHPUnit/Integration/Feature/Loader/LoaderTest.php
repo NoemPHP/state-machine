@@ -24,7 +24,6 @@ use Psr\Container\NotFoundExceptionInterface;
 
 class LoaderTest extends RegionBuilderTestCase
 {
-
     public function setUp(): void
     {
         parent::setUp();
@@ -373,7 +372,6 @@ YAML;
     private function createContainer(array $data)
     {
         return new class ($data) implements ContainerInterface {
-
             public function __construct(private array $data)
             {
             }
@@ -382,8 +380,8 @@ YAML;
             {
                 if (!$this->has($id)) {
                     throw new class ("ID {$id} not found in container") extends \Exception implements
-                        NotFoundExceptionInterface {
-
+                        NotFoundExceptionInterface
+                    {
                     };
                 }
 

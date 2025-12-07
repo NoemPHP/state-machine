@@ -35,15 +35,15 @@ class UsesInvokeCallbackTest extends TestCase
                 });
             }
         };
-        
+
         $guard = new Guard($invokeCallback, new PrepareInvokable());
         $region = (new RegionBuilder())->setStates('a', 'b')->build();
         $trigger = new stdClass();
         $handler = fn(object $t): bool => true;
-        
+
         $context = new Params\Guard($region, 'a', 'b', $handler, $trigger);
         $guard->call($context);
-        
+
         $this->assertTrue($invoked);
     }
 }

@@ -19,7 +19,7 @@ class HasContextChecksKeyTest extends TestCase
     public function testHasContextChecksFullContext(): void
     {
         $builder = new RegionBuilder();
-        
+
         $paramsArrayWith = [
             'loader' => [
                 'array' => [
@@ -37,18 +37,18 @@ class HasContextChecksKeyTest extends TestCase
             ]
         ];
         $paramsWithoutContext = new BuildParams($builder, $paramsArrayWithout);
-        
+
         $configWith = $paramsWithContext->config(LoaderConfig::class);
         $configWithout = $paramsWithoutContext->config(LoaderConfig::class);
-        
+
         $this->assertTrue($configWith->hasContext());
         $this->assertFalse($configWithout->hasContext());
     }
-    
+
     public function testHasContextChecksSpecificKey(): void
     {
         $builder = new RegionBuilder();
-        
+
         $paramsArray = [
             'loader' => [
                 'array' => [
@@ -60,9 +60,9 @@ class HasContextChecksKeyTest extends TestCase
             ]
         ];
         $params = new BuildParams($builder, $paramsArray);
-        
+
         $loaderConfig = $params->config(LoaderConfig::class);
-        
+
         $this->assertTrue($loaderConfig->hasContext('resolvers'));
         $this->assertTrue($loaderConfig->hasContext('variables'));
         $this->assertFalse($loaderConfig->hasContext('nonExistent'));

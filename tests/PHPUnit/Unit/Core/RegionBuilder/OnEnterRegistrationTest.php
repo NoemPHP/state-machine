@@ -20,38 +20,38 @@ class OnEnterRegistrationTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->setStates('idle', 'processing');
-        
+
         $handler = function (object $trigger): void {
         };
-        
+
         $result = $builder->onEnter('processing', $handler);
-        
+
         $this->assertSame($builder, $result, 'onEnter should return builder for chaining');
     }
-    
+
     public function testOnEnterHandlerIsInvokedWhenEnteringState(): void
     {
         $builder = new RegionBuilder();
         $builder->setStates('idle', 'processing')
                 ->markInitial('idle');
-        
+
         $enterCalled = false;
         $receivedTrigger = null;
-        
+
         $builder->onEnter('processing', function (object $trigger) use (&$enterCalled, &$receivedTrigger): void {
             $enterCalled = true;
             $receivedTrigger = $trigger;
         });
-        
+
         $builder->addBuildStep(new AddTransition('idle', 'processing', fn(object $t): bool => true));
-        
+
         $region = $builder->build();
-        
+
         $this->assertFalse($enterCalled, 'Handler should not be called before transition');
-        
+
         $trigger = (object)['data' => 'test'];
         $region->trigger($trigger);
-        
+
         $this->assertTrue($enterCalled, 'onEnter handler should be called when entering processing state');
         $this->assertSame($trigger, $receivedTrigger, 'Handler should receive trigger object');
     }

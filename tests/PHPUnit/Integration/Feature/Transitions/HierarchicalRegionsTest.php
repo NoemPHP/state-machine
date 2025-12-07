@@ -20,45 +20,45 @@ class HierarchicalRegionsTest extends TestCase
     public function testParentWaitsForChildToComplete(): void
     {
         $parentBuilder = new RegionBuilder();
-        
+
         $childRegion = $parentBuilder
             ->newInstance()
             ->setStates('child_start', 'child_end')
             ->markFinal('child_end')
             ->addBuildStep(new AddTransition('child_start', 'child_end'))
             ->build();
-        
+
         $parentRegion = $parentBuilder
             ->setStates('parent_start', 'parent_end')
             ->markFinal('parent_end')
             ->connect($childRegion)
             ->addBuildStep(new AddTransition('parent_start', 'parent_end'))
             ->build();
-        
+
         // Parent cannot transition while child is not final
         $parentRegion->trigger(new stdClass());
         $this->assertEquals('parent_start', $parentRegion->currentState());
-        
+
         // Complete child
         $childRegion->trigger(new stdClass());
         $this->assertTrue($childRegion->isFinal());
-        
+
         // Now parent can transition
         $parentRegion->trigger(new stdClass());
         $this->assertEquals('parent_end', $parentRegion->currentState());
     }
-    
+
     public function testOnEnterParentPropagation(): void
     {
         $childEntered = false;
-        
+
         $parentBuilder = new RegionBuilder();
-        
+
         // Child starts in finished state so parent can transition
         $childRegion = $parentBuilder
             ->newInstance()
             ->setStates('child_a')  // Single state - immediately finished
-            ->onEnter('child_a', function(object $t) use (&$childEntered) {
+            ->onEnter('child_a', function (object $t) use (&$childEntered) {
                 $childEntered = true;
             })
             ->build();

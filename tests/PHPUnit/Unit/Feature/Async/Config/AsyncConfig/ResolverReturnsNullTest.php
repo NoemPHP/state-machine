@@ -19,7 +19,7 @@ class ResolverReturnsNullTest extends TestCase
     public function testResolverReturnsNullWhenNotFound(): void
     {
         $builder = new RegionBuilder();
-        
+
         $paramsArray = [
             'loader' => [
                 'array' => [
@@ -54,9 +54,9 @@ class ResolverReturnsNullTest extends TestCase
             ]
         ];
         $params = new BuildParams($builder, $paramsArray);
-        
+
         $asyncConfig = $params->config(AsyncConfig::class);
-        
+
         $this->assertNull($asyncConfig->resolver('anyName'));
     }
 }

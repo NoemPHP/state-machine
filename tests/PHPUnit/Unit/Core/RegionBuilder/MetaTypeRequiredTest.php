@@ -36,7 +36,7 @@ class MetaTypeRequiredTest extends TestCase
         // Different metadata types should be handled appropriately
         $builder->setMetaData(['context_data' => 'main'], ContextMetaType::get());
         $builder->setMetaData(['state_data' => 'idle'], ContextMetaType::get());
-        
+
         $region = $builder->build();
         $this->assertInstanceOf(\Noem\State\Region::class, $region);
     }

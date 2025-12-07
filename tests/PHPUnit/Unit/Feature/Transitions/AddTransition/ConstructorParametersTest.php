@@ -18,22 +18,22 @@ class ConstructorParametersTest extends TestCase
     public function testAcceptsFromToStatesWithoutGuard(): void
     {
         $addTransition = new AddTransition('start', 'end');
-        
+
         $this->assertInstanceOf(AddTransition::class, $addTransition);
     }
-    
+
     public function testAcceptsFromToStatesWithGuard(): void
     {
         $guard = fn(object $trigger): bool => true;
         $addTransition = new AddTransition('start', 'end', $guard);
-        
+
         $this->assertInstanceOf(AddTransition::class, $addTransition);
     }
-    
+
     public function testAcceptsFromToStatesWithNullGuard(): void
     {
         $addTransition = new AddTransition('start', 'end', null);
-        
+
         $this->assertInstanceOf(AddTransition::class, $addTransition);
     }
 }

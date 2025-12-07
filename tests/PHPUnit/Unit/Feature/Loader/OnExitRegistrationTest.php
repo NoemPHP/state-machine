@@ -21,7 +21,7 @@ class OnExitRegistrationTest extends TestCase
     public function testRegistersOnExitCallbacksWithBuilder(): void
     {
         $processor = new ProcessArray(new Schema(), new TransformArray());
-        
+
         $config = [
             'states' => [
                 [
@@ -32,10 +32,10 @@ class OnExitRegistrationTest extends TestCase
                 ],
             ],
         ];
-        
+
         $builder = new RegionBuilder();
         $result = $processor->fromData($config, $builder);
-        
+
         // Verify builder is returned (callbacks are registered internally)
         $this->assertInstanceOf(RegionBuilder::class, $result);
     }

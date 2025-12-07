@@ -24,15 +24,15 @@ class MachineYamlHelpersTest extends TestCase
             {
                 return 'states: [{name: test}]';
             }
-            
+
             public function trigger(): object
             {
                 return new \stdClass();
             }
         };
-        
+
         $helpers = $machine->yamlHelpers();
-        
+
         $this->assertIsArray($helpers);
         $this->assertArrayHasKey('php', $helpers);
         $this->assertArrayHasKey('get', $helpers);

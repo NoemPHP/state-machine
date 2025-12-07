@@ -23,10 +23,10 @@ class RegistersResolversFromConfigTest extends TestCase
             new AsyncFeature(),
             new ExtendedState()
         );
-        
+
         $resolver1Called = false;
         $resolver2Called = false;
-        
+
         $region = $builder
             ->setStates('idle', 'active')
             ->markInitial('idle')
@@ -62,20 +62,20 @@ class RegistersResolversFromConfigTest extends TestCase
                     ],
                 ],
             ]);
-        
+
         $this->assertFalse($resolver1Called);
         $this->assertFalse($resolver2Called);
-        
+
         // Execute ticks until the region reaches final state and beyond
         // to allow async resolvers to complete
         for ($i = 0; $i < 20; $i++) {
             $region->trigger(new \stdClass());
         }
-        
+
         $this->assertTrue($resolver1Called, 'First resolver should be registered and callable');
         $this->assertTrue($resolver2Called, 'Second resolver should be registered and callable');
     }
-    
+
     public function testResolversRegisteredDuringBuildPhase(): void
     {
         $builder = new RegionBuilder();
@@ -83,28 +83,31 @@ class RegistersResolversFromConfigTest extends TestCase
             new AsyncFeature(),
             new ExtendedState()
         );
-        
+
         $buildStepExecuted = false;
-        
+
         // Create a simple BuildStep to verify build phase execution
-        $testBuildStep = new class($buildStepExecuted) implements \Noem\State\BuildStep {
+        $testBuildStep = new class ($buildStepExecuted) implements \Noem\State\BuildStep {
             private bool $executed = false;
-            
-            public function __construct(private $executedRef) {}
-            
+
+            public function __construct(private $executedRef)
+            {
+            }
+
             public function callback(\Noem\State\RegionBuilder $builder, callable $next, callable $first): \Noem\State\Region
             {
                 $this->executed = true;
                 return $next($builder);
             }
-            
-            public function wasExecuted(): bool {
+
+            public function wasExecuted(): bool
+            {
                 return $this->executed;
             }
         };
-        
+
         $builder->addBuildStep($testBuildStep);
-        
+
         $region = $builder
             ->setStates('idle')
             ->build([
@@ -124,7 +127,7 @@ class RegistersResolversFromConfigTest extends TestCase
                     ],
                 ],
             ]);
-        
+
         $this->assertTrue($testBuildStep->wasExecuted());
         $this->assertInstanceOf(\Noem\State\Region::class, $region);
     }

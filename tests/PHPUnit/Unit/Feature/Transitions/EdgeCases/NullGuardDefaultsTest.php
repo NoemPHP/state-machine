@@ -24,14 +24,14 @@ class NullGuardDefaultsTest extends TestCase
             ->markInitial('start')
             ->addBuildStep(new AddTransition('start', 'end')) // No guard specified
             ->build();
-        
+
         $this->assertEquals('start', $region->currentState());
-        
+
         $region->trigger(new stdClass());
-        
+
         $this->assertEquals('end', $region->currentState());
     }
-    
+
     public function testTransitionWithoutGuardAlwaysSucceeds(): void
     {
         $region = (new RegionBuilder())
@@ -40,11 +40,11 @@ class NullGuardDefaultsTest extends TestCase
             ->addBuildStep(new AddTransition('a', 'b'))
             ->addBuildStep(new AddTransition('b', 'c'))
             ->build();
-        
+
         // First transition
         $region->trigger(new stdClass());
         $this->assertEquals('b', $region->currentState());
-        
+
         // Second transition
         $region->trigger(new stdClass());
         $this->assertEquals('c', $region->currentState());

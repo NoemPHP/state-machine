@@ -22,7 +22,9 @@ class RegistersFeaturesByClassTest extends TestCase
         $registry = new FeatureRegistry();
 
         $feature = new class implements Feature {
-            public function __invoke(ChainMail $chainMail): void {}
+            public function __invoke(ChainMail $chainMail): void
+            {
+            }
         };
 
         $registry->register($feature);
@@ -38,11 +40,15 @@ class RegistersFeaturesByClassTest extends TestCase
         $registry = new FeatureRegistry();
 
         $feature1 = new class implements Feature {
-            public function __invoke(ChainMail $chainMail): void {}
+            public function __invoke(ChainMail $chainMail): void
+            {
+            }
         };
 
         $feature2 = new class implements Feature {
-            public function __invoke(ChainMail $chainMail): void {}
+            public function __invoke(ChainMail $chainMail): void
+            {
+            }
         };
 
         $registry->register($feature1);

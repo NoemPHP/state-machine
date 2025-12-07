@@ -28,15 +28,15 @@ class HooksIntoInvokeCallbackTest extends TestCase
         // Get the InvokeCallback chain before feature registration
         $invokeCallback = $chainMail->get(\Noem\State\Chains\InvokeCallback::class);
         $this->assertInstanceOf(\Noem\State\Chains\InvokeCallback::class, $invokeCallback);
-        
+
         // Register AsyncFeature which should hook into InvokeCallback
         $feature = new \Noem\State\Feature\Async\AsyncFeature();
         $feature($chainMail);
-        
+
         // Verify the chain still exists and is functional after feature registration
         $invokeCallbackAfter = $chainMail->get(\Noem\State\Chains\InvokeCallback::class);
         $this->assertInstanceOf(\Noem\State\Chains\InvokeCallback::class, $invokeCallbackAfter);
-        
+
         // The test confirms AsyncFeature can hook into InvokeCallback chain
         // Full generator detection behavior is tested in integration tests.
         $this->assertTrue(true);

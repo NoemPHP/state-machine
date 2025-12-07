@@ -20,7 +20,7 @@ class FinalStateBoundaryTest extends TestCase
     {
         $builder = new RegionBuilder();
         $enterCount = 0;
-        
+
         $region = $builder
             ->setStates('one', 'two', 'three', 'final')
             ->markInitial('one')
@@ -30,11 +30,11 @@ class FinalStateBoundaryTest extends TestCase
             ->addBuildStep(new AddTransition('three', 'final'))
             // This should never happen
             ->addBuildStep(new AddTransition('final', 'one'))
-            ->onEnter('one', function(object $t) use (&$enterCount) {
+            ->onEnter('one', function (object $t) use (&$enterCount) {
                 $enterCount++;
             })
             ->build();
-        
+
         // Initial state entry doesn't fire onEnter during build
         $this->assertEquals(0, $enterCount);
 
@@ -53,30 +53,30 @@ class FinalStateBoundaryTest extends TestCase
         $this->assertTrue($region->isInState('final'));
         $this->assertEquals(1, $enterCount, 'Should not re-enter initial state from final');
     }
-    
+
     public function testWorkflowCompletionDetection(): void
     {
         $builder = new RegionBuilder();
         $completionCallbackCalled = false;
-        
+
         $region = $builder
             ->setStates('pending', 'processing', 'complete')
             ->markInitial('pending')
             ->markFinal('complete')
             ->addBuildStep(new AddTransition('pending', 'processing'))
             ->addBuildStep(new AddTransition('processing', 'complete'))
-            ->onEnter('complete', function(object $t) use (&$completionCallbackCalled) {
+            ->onEnter('complete', function (object $t) use (&$completionCallbackCalled) {
                 $completionCallbackCalled = true;
             })
             ->build();
-        
+
         $this->assertFalse($region->isFinal());
         $this->assertFalse($completionCallbackCalled);
-        
+
         // Progress through workflow
         $region->trigger((object)[]);
         $this->assertFalse($region->isFinal());
-        
+
         $region->trigger((object)[]);
         $this->assertTrue($region->isFinal());
         $this->assertTrue($completionCallbackCalled);

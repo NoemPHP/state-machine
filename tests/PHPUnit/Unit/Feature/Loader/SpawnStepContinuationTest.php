@@ -20,7 +20,7 @@ class SpawnStepContinuationTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader());
-        
+
         $array = [
             'states' => [
                 [
@@ -40,14 +40,14 @@ class SpawnStepContinuationTest extends TestCase
             ],
             'initial' => 'parent',
         ];
-        
+
         // Build the region - the BuildStep must call next() to complete the build chain
         $region = $builder->build([
             'loader' => [
                 'array' => $array,
             ],
         ]);
-        
+
         // If next() wasn't called, the region wouldn't be properly built
         $this->assertNotNull($region, 'Region should be built, proving next() was called');
         $this->assertTrue($region->isInState('parent'), 'Region should be in initial state');

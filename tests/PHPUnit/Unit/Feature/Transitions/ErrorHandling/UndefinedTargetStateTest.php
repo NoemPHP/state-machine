@@ -25,17 +25,17 @@ class UndefinedTargetStateTest extends TestCase
             // Target state 'undefined' doesn't exist
             ->addBuildStep(new AddTransition('start', 'undefined'))
             ->build();
-        
+
         $this->assertEquals('start', $region->currentState());
-        
+
         // Trigger transition
         $region->trigger(new stdClass());
-        
+
         // State should remain unchanged or be handled gracefully
         // The actual behavior depends on implementation - the system handles it without crashing
         $this->assertTrue(true); // Test passes if no exception thrown
     }
-    
+
     public function testMultipleTransitionsWithInvalidTarget(): void
     {
         $region = (new RegionBuilder())
@@ -44,11 +44,11 @@ class UndefinedTargetStateTest extends TestCase
             ->addBuildStep(new AddTransition('a', 'b'))
             ->addBuildStep(new AddTransition('b', 'nonexistent'))
             ->build();
-        
+
         // First transition should work
         $region->trigger(new stdClass());
         $this->assertEquals('b', $region->currentState());
-        
+
         // Second transition to undefined state is handled gracefully
         $region->trigger(new stdClass());
         // System doesn't crash - state is handled appropriately

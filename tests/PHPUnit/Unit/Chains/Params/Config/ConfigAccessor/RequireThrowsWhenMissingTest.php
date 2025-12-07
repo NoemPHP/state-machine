@@ -21,12 +21,12 @@ class RequireThrowsWhenMissingTest extends TestCase
         $builder = new RegionBuilder();
         $config = [];
         $params = new BuildParams($builder, $config);
-        
+
         $accessor = $params->config(RequireTestAccessor::class);
-        
+
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Required config missing: non.existent.path');
-        
+
         $accessor->testRequire();
     }
 }

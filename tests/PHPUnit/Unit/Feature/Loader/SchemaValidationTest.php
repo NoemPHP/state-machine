@@ -23,7 +23,7 @@ class SchemaValidationTest extends TestCase
         $schema = new Schema();
         $transformArray = new TransformArray();
         $processor = new ProcessArray($schema, $transformArray);
-        
+
         $validConfig = [
             'states' => [
                 ['name' => 'idle'],
@@ -31,12 +31,12 @@ class SchemaValidationTest extends TestCase
             ],
             'initial' => 'idle',
         ];
-        
+
         $builder = new RegionBuilder();
-        
+
         // Should not throw exception for valid config
         $result = $processor->fromData($validConfig, $builder);
-        
+
         $this->assertInstanceOf(RegionBuilder::class, $result);
     }
 }

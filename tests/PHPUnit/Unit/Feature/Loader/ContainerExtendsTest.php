@@ -19,13 +19,13 @@ class ContainerExtendsTest extends TestCase
     public function testContainerExtendsMesh(): void
     {
         $container = new Container();
-        
+
         $this->assertInstanceOf(
             Mesh::class,
             $container,
             'Container should extend Mesh'
         );
-        
+
         // Verify it inherits Mesh functionality
         $this->assertInstanceOf(\ArrayAccess::class, $container);
         $this->assertInstanceOf(\Iterator::class, $container);

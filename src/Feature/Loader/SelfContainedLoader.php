@@ -13,7 +13,7 @@ use RuntimeException;
 
 /**
  * SelfContainedLoader enables bootstrapping complete state machines from a single YAML file.
- * 
+ *
  * This solves the chicken/egg problem by using a two-phase bootstrap:
  * 1. Phase 1: Parse machine configuration and setup container
  * 2. Phase 2: Build the actual state machine with all features
@@ -21,10 +21,10 @@ use RuntimeException;
 class SelfContainedLoader
 {
     private const DEFAULT_MAX_ITERATIONS = 10000;
-    
+
     /**
      * Bootstrap a complete state machine from YAML
-     * 
+     *
      * @param string $yaml The YAML content or file path
      * @param array $options Additional options for bootstrapping
      * @return Region|mixed Returns Region or event loop result if autoRun is true
@@ -35,38 +35,38 @@ class SelfContainedLoader
         if (!str_contains($yaml, "\n") && is_readable($yaml)) {
             $yaml = file_get_contents($yaml);
         }
-        
+
         // Phase 1: Parse the YAML to extract machine configuration
         $converter = new ConvertYaml();
         $config = $converter->fromString($yaml, self::getBootstrapHelpers());
-        
+
         // Extract machine configuration
         $machineConfig = $config['machine'] ?? [];
         $statesConfig = $config['states'] ?? [];
         $regionsConfig = $config['regions'] ?? [];
-        
+
         // Build the container
         $container = self::buildContainer($machineConfig['container'] ?? []);
-        
+
         // Setup features
         $features = self::instantiateFeatures($machineConfig['features'] ?? [], $container);
-        
+
         // Add RegionLoader if not already present
         if (!self::hasRegionLoader($features)) {
             $features[] = new RegionLoader();
         }
-        
+
         // Phase 2: Build the region with full feature support
         $builder = new RegionBuilder();
-        
+
         // Enable all features
         foreach ($features as $feature) {
             $builder->enableFeatures($feature);
         }
-        
+
         // Setup YAML helpers with container access
         $yamlHelpers = self::getYamlHelpers($container);
-        
+
         // Build the region with the states configuration
         $builderArgs = [
             'loader' => [
@@ -74,24 +74,24 @@ class SelfContainedLoader
                 'yamlHelpers' => $yamlHelpers,
             ],
         ];
-        
+
         // Merge any additional options
         if (isset($options['builderArgs'])) {
             $builderArgs = array_merge_recursive($builderArgs, $options['builderArgs']);
         }
-        
+
         $region = $builder->build($builderArgs);
-        
+
         // Handle event loop configuration
         $eventLoopConfig = $machineConfig['eventLoop'] ?? [];
-        
+
         if ($eventLoopConfig['autoRun'] ?? false) {
             return self::runEventLoop($region, $eventLoopConfig, $container);
         }
-        
+
         return $region;
     }
-    
+
     /**
      * Build a container from configuration
      */
@@ -99,7 +99,7 @@ class SelfContainedLoader
     {
         $services = [];
         $factories = [];
-        
+
         foreach ($containerConfig['services'] ?? [] as $id => $definition) {
             if (isset($definition['factory'])) {
                 // Factory-based service
@@ -114,29 +114,29 @@ class SelfContainedLoader
                 $factories[$id] = fn() => new $class(...$args);
             }
         }
-        
+
         // Create a simple container implementation
-        return new class($services, $factories) implements ContainerInterface {
+        return new class ($services, $factories) implements ContainerInterface {
             private array $services;
             private array $factories;
             private array $resolved = [];
-            
+
             public function __construct(array $services, array $factories)
             {
                 $this->services = $services;
                 $this->factories = $factories;
             }
-            
+
             public function get(string $id): mixed
             {
                 if (isset($this->services[$id])) {
                     return $this->services[$id];
                 }
-                
+
                 if (isset($this->resolved[$id])) {
                     return $this->resolved[$id];
                 }
-                
+
                 if (isset($this->factories[$id])) {
                     $factory = $this->factories[$id];
                     if (is_callable($factory)) {
@@ -144,42 +144,42 @@ class SelfContainedLoader
                         return $this->resolved[$id];
                     }
                 }
-                
+
                 throw new RuntimeException("Service '$id' not found in container");
             }
-            
+
             public function has(string $id): bool
             {
                 return isset($this->services[$id]) || isset($this->factories[$id]);
             }
         };
     }
-    
+
     /**
      * Instantiate features from configuration
      */
     private static function instantiateFeatures(array $featuresConfig, ContainerInterface $container): array
     {
         $features = [];
-        
+
         foreach ($featuresConfig as $featureConfig) {
             if (is_string($featureConfig)) {
                 // Simple class name
                 $featureConfig = ['class' => $featureConfig];
             }
-            
+
             $class = $featureConfig['class'] ?? null;
             if (!$class) {
                 throw new RuntimeException("Feature configuration missing 'class' key");
             }
-            
+
             if (!class_exists($class)) {
                 throw new RuntimeException("Feature class '$class' does not exist");
             }
-            
+
             // Check if feature needs configuration
             $config = $featureConfig['config'] ?? [];
-            
+
             // Instantiate the feature
             if ($config) {
                 // If feature accepts configuration in constructor
@@ -187,17 +187,17 @@ class SelfContainedLoader
             } else {
                 $feature = new $class();
             }
-            
+
             if (!$feature instanceof Feature) {
                 throw new RuntimeException("Class '$class' must implement Feature interface");
             }
-            
+
             $features[] = $feature;
         }
-        
+
         return $features;
     }
-    
+
     /**
      * Check if RegionLoader is already in features list
      */
@@ -210,7 +210,7 @@ class SelfContainedLoader
         }
         return false;
     }
-    
+
     /**
      * Get bootstrap helpers for initial YAML parsing
      */
@@ -222,7 +222,7 @@ class SelfContainedLoader
             'constant' => fn($name) => constant($name),
         ];
     }
-    
+
     /**
      * Get YAML helpers with container access
      */
@@ -236,40 +236,40 @@ class SelfContainedLoader
             'service' => fn($id) => $container->get($id),
         ];
     }
-    
+
     /**
      * Run the event loop based on configuration
      */
     private static function runEventLoop(
-        Region $region, 
-        array $config, 
+        Region $region,
+        array $config,
         ContainerInterface $container
     ): mixed {
         $maxIterations = $config['maxIterations'] ?? self::DEFAULT_MAX_ITERATIONS;
         $triggerFactory = $config['trigger'] ?? fn() => new \stdClass();
         $onIteration = $config['onIteration'] ?? null;
-        
+
         $iteration = 0;
         $lastResult = null;
-        
+
         while (!$region->isFinal() && $iteration < $maxIterations) {
             $trigger = is_callable($triggerFactory) ? $triggerFactory($iteration, $region, $container) : $triggerFactory;
-            
+
             if ($onIteration && is_callable($onIteration)) {
                 $onIteration($region, $trigger, $iteration);
             }
-            
+
             $lastResult = $region->trigger($trigger);
             $iteration++;
         }
-        
+
         if ($iteration >= $maxIterations) {
             throw new RuntimeException("Event loop reached maximum iterations ($maxIterations)");
         }
-        
+
         return $lastResult;
     }
-    
+
     /**
      * Quick factory method for creating regions from simple state arrays
      * This provides backward compatibility with existing code
@@ -279,13 +279,13 @@ class SelfContainedLoader
         $yaml = [
             'states' => $states,
         ];
-        
+
         if ($features) {
             $yaml['machine'] = ['features' => $features];
         }
-        
+
         $yamlString = \Symfony\Component\Yaml\Yaml::dump($yaml, 10);
-        
+
         return self::fromYaml($yamlString);
     }
 }

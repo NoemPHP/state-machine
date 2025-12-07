@@ -19,7 +19,7 @@ class ResolversReturnsEmptyTest extends TestCase
     public function testResolversReturnsEmptyWhenNotDefined(): void
     {
         $builder = new RegionBuilder();
-        
+
         $paramsArray = [
             'loader' => [
                 'array' => [
@@ -48,9 +48,9 @@ class ResolversReturnsEmptyTest extends TestCase
             ]
         ];
         $params = new BuildParams($builder, $paramsArray);
-        
+
         $asyncConfig = $params->config(AsyncConfig::class);
-        
+
         $this->assertSame([], $asyncConfig->resolvers());
     }
 }

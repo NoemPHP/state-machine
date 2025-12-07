@@ -56,7 +56,7 @@ YAML
 
         // Define include helper that recursively uses itself
         $includeHelper = null;
-        $includeHelper = function(string $path) use ($converter, &$includeHelper) {
+        $includeHelper = function (string $path) use ($converter, &$includeHelper) {
             $content = file_get_contents($this->tempDir . '/' . $path);
             // Pass the include helper recursively so nested includes work
             return $converter->fromString($content, ['include' => $includeHelper]);

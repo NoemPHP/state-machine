@@ -22,7 +22,7 @@ class TypeReturnsDataTest extends TestCase
         $arrayData = ['states' => ['a', 'b']];
         $configData = ['version' => '1.0'];
         $customData = ['custom' => 'value'];
-        
+
         $paramsArray = [
             'loader' => [
                 'array' => $arrayData,
@@ -31,27 +31,27 @@ class TypeReturnsDataTest extends TestCase
             ]
         ];
         $params = new BuildParams($builder, $paramsArray);
-        
+
         $loaderConfig = $params->config(LoaderConfig::class);
-        
+
         $this->assertSame($arrayData, $loaderConfig->type('array'));
         $this->assertSame($configData, $loaderConfig->type('loaderConfig'));
         $this->assertSame($customData, $loaderConfig->type('customType'));
     }
-    
+
     public function testTypeReturnsDefaultWhenMissing(): void
     {
         $builder = new RegionBuilder();
-        
+
         $paramsArray = [
             'loader' => [
                 'array' => ['states' => ['a']]
             ]
         ];
         $params = new BuildParams($builder, $paramsArray);
-        
+
         $loaderConfig = $params->config(LoaderConfig::class);
-        
+
         $this->assertNull($loaderConfig->type('nonExistent'));
         $this->assertSame([], $loaderConfig->type('nonExistent', []));
         $this->assertSame('default', $loaderConfig->type('nonExistent', 'default'));

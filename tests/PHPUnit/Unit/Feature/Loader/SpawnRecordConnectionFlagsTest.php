@@ -23,10 +23,10 @@ class SpawnRecordConnectionFlagsTest extends TestCase
         $parentRegion = (new RegionBuilder())->setStates('parent')->build();
         $guard = fn(object $t): bool => true;
         $factory = fn(): Region => (new RegionBuilder())->setStates('child')->build();
-        
+
         $flags = Connection::RECEIVE_ACTIONS | Connection::RECEIVE_EVENTS;
         $record = new RegionSpawnRecord($parentRegion, 'parent', $factory, $guard, $flags);
-        
+
         $this->assertSame($flags, $record->connectionFlags);
     }
 
@@ -35,10 +35,10 @@ class SpawnRecordConnectionFlagsTest extends TestCase
         $parentRegion = (new RegionBuilder())->setStates('parent')->build();
         $guard = fn(object $t): bool => true;
         $factory = fn(): Region => (new RegionBuilder())->setStates('child')->build();
-        
+
         $customFlags = Connection::RECEIVE_META | Connection::DYNAMIC;
         $record = new RegionSpawnRecord($parentRegion, 'parent', $factory, $guard, $customFlags);
-        
+
         $this->assertSame($customFlags, $record->connectionFlags);
     }
 
@@ -47,14 +47,14 @@ class SpawnRecordConnectionFlagsTest extends TestCase
         $parentRegion = (new RegionBuilder())->setStates('parent')->build();
         $guard = fn(object $t): bool => true;
         $factory = fn(): Region => (new RegionBuilder())->setStates('child')->build();
-        
-        $flags = Connection::DYNAMIC 
-            | Connection::RECEIVE_EVENTS 
-            | Connection::RECEIVE_ACTIONS 
+
+        $flags = Connection::DYNAMIC
+            | Connection::RECEIVE_EVENTS
+            | Connection::RECEIVE_ACTIONS
             | Connection::RECEIVE_META;
-        
+
         $record = new RegionSpawnRecord($parentRegion, 'parent', $factory, $guard, $flags);
-        
+
         $this->assertSame($flags, $record->connectionFlags);
     }
 
@@ -63,9 +63,9 @@ class SpawnRecordConnectionFlagsTest extends TestCase
         $parentRegion = (new RegionBuilder())->setStates('parent')->build();
         $guard = fn(object $t): bool => true;
         $factory = fn(): Region => (new RegionBuilder())->setStates('child')->build();
-        
+
         $record = new RegionSpawnRecord($parentRegion, 'parent', $factory, $guard, 42);
-        
+
         $this->assertIsInt($record->connectionFlags);
         $this->assertSame(42, $record->connectionFlags);
     }

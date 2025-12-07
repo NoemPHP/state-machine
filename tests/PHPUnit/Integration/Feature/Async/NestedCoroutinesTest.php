@@ -20,15 +20,15 @@ class NestedCoroutinesTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new AsyncFeature());
-        
+
         $log = [];
-        
+
         $region = $builder
             ->setStates('active')
             ->onAction('active', function (object $event) use (&$log) {
                 $log[] = 'parent-start';
                 yield;
-                
+
                 $result = yield Call::call(function () use (&$log) {
                     $log[] = 'child-start';
                     yield;
@@ -37,30 +37,30 @@ class NestedCoroutinesTest extends TestCase
                     $log[] = 'child-end';
                     return 'child-result';
                 });
-                
+
                 $log[] = 'parent-resume';
                 $event->result = $result;
                 yield;
             })
             ->build();
-        
+
         $event = (object)['result' => null];
-        
+
         // Execute multiple triggers to progress through nested coroutines
         for ($i = 0; $i < 10; $i++) {
             $region->trigger($event);
         }
-        
+
         // Verify execution order
         $this->assertContains('parent-start', $log);
         $this->assertContains('child-start', $log);
         $this->assertContains('child-middle', $log);
         $this->assertContains('child-end', $log);
         $this->assertContains('parent-resume', $log);
-        
+
         // Verify child result was returned to parent
         $this->assertSame('child-result', $event->result);
-        
+
         // Verify parent resumed after child completed
         $childEndIndex = array_search('child-end', $log);
         $parentResumeIndex = array_search('parent-resume', $log);

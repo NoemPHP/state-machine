@@ -39,7 +39,7 @@ class LazyResolverTest extends TestCase
             ->addBuildStep(new \Noem\State\Feature\Transitions\AddTransition(
                 'active',
                 'done',
-                function(object $trigger) use (&$triggerCount): bool {
+                function (object $trigger) use (&$triggerCount): bool {
                     // Only transition after we've been in active for at least 6 triggers
                     return $triggerCount >= 6;
                 }
@@ -81,12 +81,12 @@ class LazyResolverTest extends TestCase
 
         // Resolver should NOT have executed yet since we didn't access the property
         $this->assertFalse($resolverExecuted, 'Resolver should not execute until property is accessed');
-        
+
         // Trigger to enter done state where property is accessed
         for ($i = 0; $i < 10; $i++) {
             $region->trigger(new \stdClass());
         }
-        
+
         // Now resolver should have executed
         $this->assertTrue($resolverExecuted, 'Resolver should execute when property is accessed');
     }

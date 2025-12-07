@@ -27,18 +27,18 @@ class RecursiveHelperProcessingTest extends TestCase
               deep:
                 value: !triple "3"
         YAML;
-        
+
         $helpers = [
             'double' => fn(string $value) => (int)$value * 2,
             'triple' => fn(string $value) => (int)$value * 3,
         ];
-        
+
         $converter = new ConvertYaml();
         $result = $converter->fromString($yaml, $helpers);
-        
+
         // Check first level nesting
         $this->assertEquals(10, $result['states'][0]['data']['count']);
-        
+
         // Check deep nesting
         $this->assertEquals(9, $result['states'][1]['nested']['deep']['value']);
     }

@@ -32,11 +32,11 @@ YAML;
 
         // Assert
         $this->expectException(RuntimeException::class);
-        
+
         // Act
         Holon::fromYaml($yaml);
     }
-    
+
     public function testExceptionMessageIncludesIterationCount(): void
     {
         // Arrange
@@ -61,7 +61,7 @@ YAML;
             $this->assertStringContainsString('maximum iterations', $e->getMessage());
         }
     }
-    
+
     public function testExceptionIndicatesEventLoopContext(): void
     {
         // Arrange
@@ -85,7 +85,7 @@ YAML;
             $this->assertStringContainsString('Event loop', $e->getMessage());
         }
     }
-    
+
     public function testNoExceptionWhenMachineCompletesNormally(): void
     {
         // Arrange
@@ -106,7 +106,7 @@ YAML;
 
         // Act
         $result = Holon::fromYaml($yaml);
-        
+
         // Assert - no exception thrown
         $this->assertNotNull($result);
     }

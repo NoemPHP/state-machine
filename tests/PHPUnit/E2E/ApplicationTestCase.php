@@ -11,7 +11,6 @@ use Noem\State\Test\Integration\RegionBuilderTestCase;
 
 abstract class ApplicationTestCase extends RegionBuilderTestCase
 {
-
     public function builderArgs(): array
     {
         return [

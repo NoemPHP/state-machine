@@ -24,7 +24,7 @@ class SpawnStepInterfaceTest extends TestCase
     {
         $builder = new RegionBuilder();
         $builder->enableFeatures(new RegionLoader());
-        
+
         $array = [
             'states' => [
                 [
@@ -44,21 +44,21 @@ class SpawnStepInterfaceTest extends TestCase
             ],
             'initial' => 'parent',
         ];
-        
+
         // Build the region - this creates and adds the BuildStep
         $region = $builder->build([
             'loader' => [
                 'array' => $array,
             ],
         ]);
-        
+
         // Verify that the BuildStep implements the correct interface
         // We can't directly access the build steps, but we can verify that
         // the build process succeeded, which means the BuildStep's callback
         // method was called with builder and next parameters
-        
+
         $this->assertInstanceOf(Region::class, $region, 'BuildStep callback should return a Region');
-        
+
         // Verify the region was built correctly, proving the callback worked
         $this->assertTrue($region->isInState('parent'));
     }

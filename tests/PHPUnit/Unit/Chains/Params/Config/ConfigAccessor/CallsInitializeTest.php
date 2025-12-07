@@ -21,9 +21,9 @@ class CallsInitializeTest extends TestCase
         $builder = new RegionBuilder();
         $config = [];
         $params = new BuildParams($builder, $config);
-        
+
         $accessor = $params->config(InitializeTrackingAccessor::class);
-        
+
         $this->assertTrue($accessor->initializeCalled());
     }
 }
@@ -31,12 +31,12 @@ class CallsInitializeTest extends TestCase
 class InitializeTrackingAccessor extends ConfigAccessor
 {
     private bool $initialized = false;
-    
+
     protected function initialize(): void
     {
         $this->initialized = true;
     }
-    
+
     public function initializeCalled(): bool
     {
         return $this->initialized;

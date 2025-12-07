@@ -21,7 +21,7 @@ class ClassServiceTest extends TestCase
         $reflection = new ReflectionClass(Holon::class);
         $method = $reflection->getMethod('buildContainer');
         $method->setAccessible(true);
-        
+
         $containerConfig = [
             'services' => [
                 'class.service' => [
@@ -29,22 +29,22 @@ class ClassServiceTest extends TestCase
                 ]
             ]
         ];
-        
+
         // Act
         $container = $method->invoke(null, $containerConfig);
         $instance = $container->get('class.service');
-        
+
         // Assert
         $this->assertInstanceOf(\stdClass::class, $instance);
     }
-    
+
     public function testRegistersClassServiceWithArguments(): void
     {
         // Arrange
         $reflection = new ReflectionClass(Holon::class);
         $method = $reflection->getMethod('buildContainer');
         $method->setAccessible(true);
-        
+
         $containerConfig = [
             'services' => [
                 'class.service' => [
@@ -53,23 +53,23 @@ class ClassServiceTest extends TestCase
                 ]
             ]
         ];
-        
+
         // Act
         $container = $method->invoke(null, $containerConfig);
         $instance = $container->get('class.service');
-        
+
         // Assert
         $this->assertInstanceOf(\ArrayObject::class, $instance);
         $this->assertEquals('value', $instance['key']);
     }
-    
+
     public function testClassServiceSupportsMultipleArguments(): void
     {
         // Arrange
         $reflection = new ReflectionClass(Holon::class);
         $method = $reflection->getMethod('buildContainer');
         $method->setAccessible(true);
-        
+
         // Use DateTime which takes string constructor arg
         $containerConfig = [
             'services' => [
@@ -79,23 +79,23 @@ class ClassServiceTest extends TestCase
                 ]
             ]
         ];
-        
+
         // Act
         $container = $method->invoke(null, $containerConfig);
         $instance = $container->get('class.service');
-        
+
         // Assert
         $this->assertInstanceOf(\DateTime::class, $instance);
         $this->assertEquals('2024-01-01', $instance->format('Y-m-d'));
     }
-    
+
     public function testClassServiceCreatesNewInstanceOnEachGet(): void
     {
         // Arrange
         $reflection = new ReflectionClass(Holon::class);
         $method = $reflection->getMethod('buildContainer');
         $method->setAccessible(true);
-        
+
         $containerConfig = [
             'services' => [
                 'class.service' => [
@@ -103,12 +103,12 @@ class ClassServiceTest extends TestCase
                 ]
             ]
         ];
-        
+
         // Act
         $container = $method->invoke(null, $containerConfig);
         $instance1 = $container->get('class.service');
         $instance2 = $container->get('class.service');
-        
+
         // Assert - class services are NOT cached, they create new instances
         // Actually, looking at the implementation, class services ARE treated as factories
         // and factories ARE cached. Let me verify the behavior.
