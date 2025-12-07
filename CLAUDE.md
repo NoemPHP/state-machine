@@ -1,195 +1,38 @@
-# ⛔ STOP - READ THIS FIRST ⛔
-
-**DO NOT RESPOND TO ANY USER TASK UNTIL YOU COMPLETE THE MANDATORY BOOTSTRAP SEQUENCE BELOW.**
-
-**THIS IS NOT OPTIONAL. THIS IS THE EXECUTION PROTOCOL.**
-
-Proceeding without completing the bootstrap sequence is equivalent to a **FATAL ERROR**.
-
----
-
-## ⚡ MANDATORY BOOTSTRAP SEQUENCE - EXECUTE NOW ⚡
-
-You MUST complete these checkpoints IN ORDER before responding to the user's task:
-
-### CHECKPOINT 1: BOOTSTRAP LOADED ✅
-- [x] Read this entire CLAUDE.md file from top to bottom
-- **OUTPUT REQUIRED**: "✓ Bootstrap loaded - analyzing task type"
-
-### CHECKPOINT 2: TASK IDENTIFICATION ✅
-- [x] Identify what category the user's task falls under
-- **OUTPUT REQUIRED**: "Task category: [name]"
-- **OUTPUT REQUIRED**: "Required skills: [list]"
-
-### CHECKPOINT 3: SKILL LOADING ✅
-- [x] Load ALL required skills from `ai/skills/[skill-name]/SKILL.md`
-- **OUTPUT REQUIRED** (for each): "✓ Loaded skill: [name]"
-
-### CHECKPOINT 4: FEATURE-SPECIFIC CONTEXT ✅
-- [x] Check if task involves specific feature or machine
-- [x] Load feature/machine CLAUDE.md if exists
-- **OUTPUT REQUIRED**: "✓ Feature context: [path]" OR "No feature-specific context needed"
-
-### CHECKPOINT 5: READY TO PROCEED ✅
-- **OUTPUT REQUIRED**: "🚀 Bootstrap complete. Ready to execute: [task summary]"
-
-**FAILURE TO COMPLETE ALL CHECKPOINTS = ABORT TASK**
-
----
-
-## 🚫 TASK REJECTION PROTOCOL
-
-If you have NOT completed the bootstrap sequence above, respond with:
-
-```
-❌ BOOTSTRAP SEQUENCE INCOMPLETE
-
-I cannot proceed with this task until I complete the mandatory bootstrap protocol.
-
-Missing checkpoints:
-- [ ] CHECKPOINT 1: Bootstrap loaded
-- [ ] CHECKPOINT 2: Task identified
-- [ ] CHECKPOINT 3: Skills loaded
-- [ ] CHECKPOINT 4: Feature context checked
-- [ ] CHECKPOINT 5: Ready acknowledgment
-
-Executing bootstrap sequence now...
-```
-
-Then STOP and execute the bootstrap sequence.
-
----
-
-# Agentic Coding Guidelines - Noem State Machine
+# Noem State Machine - AI Agent Instructions
 
 ## 📋 Project Overview
 
-Event-based finite state machines with hierarchical states, middleware systems, and extensive feature architecture. Built with PHP 8.4+, containerized development via DDEV, and spec-driven development methodology.
+Event-based finite state machines with hierarchical states, middleware systems, and extensive feature architecture. Built with PHP 8.4+, containerized development via DDEV, and **spec-driven development methodology**.
 
 **Core Philosophy**: Specifications define WHAT (intent, behavior, API), not HOW (implementation, internals). Specs are executable contracts - when tests fail, fix code, never specs (unless user approves).
 
 ---
 
-## 🎯 SKILL LOADING DECISION TREE
+## 🚨 SPEC-FIRST DEVELOPMENT - ABSOLUTE RULE
 
-**YOU MUST USE THIS DECISION TREE TO LOAD SKILLS**
+**NEVER write code without specifications first.**
 
-Start at the top and follow the tree based on your task:
-
-```
-📍 START HERE → What is the primary task category?
-
-├─ 📋 PLANNING NEW FEATURES?
-│  ├─ MANDATORY FIRST: Load `ai/skills/specification/SKILL.md`
-│  ├─ OUTPUT: "Loading specification skill (mandatory for planning)"
-│  └─ THEN: Determine additional skills needed after spec planning
-│
-├─ 🧪 WRITING OR RUNNING TESTS?
-│  ├─ LOAD: `ai/skills/testing/SKILL.md`
-│  └─ OUTPUT: "Loading testing skill for test operations"
-│
-├─ 🔧 CORE DEVELOPMENT (Chain/Middleware/Features/RegionBuilder)?
-│  ├─ LOAD: `ai/skills/core-development/SKILL.md`
-│  └─ OUTPUT: "Loading core-development skill for internal architecture work"
-│
-├─ 🎰 STATE MACHINES (YAML definitions/machines/)?
-│  ├─ LOAD: `ai/skills/region-development/SKILL.md`
-│  └─ OUTPUT: "Loading region-development skill for state machine work"
-│
-└─ 📝 DOCUMENTATION (CLAUDE.md/README/docs)?
-   ├─ LOAD: `ai/skills/documentation/SKILL.md`
-   └─ OUTPUT: "Loading documentation skill for documentation work"
-```
-
-### Multiple Skills Required
-
-Some tasks require loading MULTIPLE skills in sequence:
-
-**Adding New Feature (MANDATORY SEQUENCE):**
-1. LOAD `specification` - Plan specs first (NEVER skip)
-2. LOAD `testing` - Create tests (red phase)
-3. LOAD `core-development` - Implement feature
-4. OUTPUT: "Loaded skills in sequence: specification → testing → core-development"
-
-**Creating New Machine:**
-1. LOAD `region-development` - Write YAML definition
-2. LOAD `specification` - Create machine specs
-3. LOAD `testing` - Write E2E tests
-4. OUTPUT: "Loaded skills in sequence: region-development → specification → testing"
-
-**Bug Fixes:**
-1. LOAD `specification` - Create spec for bug (MANDATORY)
-2. LOAD `testing` - Write failing test
-3. LOAD appropriate development skill based on component
-4. OUTPUT: "Loaded skills in sequence: specification → testing → [development skill]"
-
----
-
-## 🔍 FEATURE/MACHINE-SPECIFIC CONTEXT PROTOCOL
-
-**EXECUTE THIS PROTOCOL AFTER LOADING SKILLS:**
-
-### STEP 1: Identify Component Type
-
-**If task mentions a feature (e.g., "AsyncFeature", "TransitionsFeature", "RegionLoader"):**
-
-```bash
-# Check for feature-specific CLAUDE.md
-# Pattern: /home/biont/Development/state-machine/src/Feature/{FeatureName}/CLAUDE.md
-# Example: /home/biont/Development/state-machine/src/Feature/Async/CLAUDE.md
-
-# Execute this command:
-test -f /home/biont/Development/state-machine/src/Feature/{FeatureName}/CLAUDE.md && echo "EXISTS" || echo "NOT FOUND"
-```
-
-**If task mentions a machine (e.g., "webserver", "middleware-test-runner"):**
-
-```bash
-# Check for machine-specific CLAUDE.md
-# Pattern: /home/biont/Development/state-machine/machines/{machine-name}/CLAUDE.md
-# Example: /home/biont/Development/state-machine/machines/webserver/CLAUDE.md
-
-# Execute this command:
-test -f /home/biont/Development/state-machine/machines/{machine-name}/CLAUDE.md && echo "EXISTS" || echo "NOT FOUND"
-```
-
-### STEP 2: Load If Found
+### Mandatory Workflow
 
 ```
-IF file EXISTS:
-  ├─ LOAD using Read tool with absolute path
-  ├─ OUTPUT: "✓ Loaded component context: [absolute-path]"
-  └─ FOLLOW instructions in that file (they OVERRIDE general guidance)
-
-ELSE:
-  └─ OUTPUT: "No component-specific context needed"
+User Request
+    ↓
+spec-planner agent → Creates YAML specs → User approves
+    ↓
+HANDOVER (JSON payload)
+    ↓
+core-development-expert agent → Implements from specs
+    ↓
+Tests (red) → Code (green) → Quality checks
+    ↓
+Done
 ```
 
-### STEP 3: Quick Discovery Commands
-
-**List all features with CLAUDE.md:**
-```bash
-find /home/biont/Development/state-machine/src/Feature -name "CLAUDE.md"
-```
-
-**List all machines with CLAUDE.md:**
-```bash
-find /home/biont/Development/state-machine/machines -name "CLAUDE.md"
-```
-
-**⚠️ CRITICAL**: Component-level CLAUDE.md files OVERRIDE general guidance. Always prioritize component-specific instructions.
-
----
-
-## 🚨 CRITICAL DEVELOPMENT RULES - NEVER VIOLATE
-
-These rules are **NON-NEGOTIABLE**:
-
-### 🔴 SPEC-FIRST PARADIGM (ABSOLUTE)
+### Critical Rules
 
 1. ⛔ **NEVER write code without specs first**
-   - Violation = STOP and create specs
    - No exceptions, no shortcuts
+   - If specs don't exist, use `spec-planner` agent first
 
 2. ⛔ **NEVER modify specs without user approval**
    - Specs are contracts, not suggestions
@@ -205,102 +48,144 @@ These rules are **NON-NEGOTIABLE**:
    - Bug reported → create spec
    - Spec created → write failing test
    - Test failing → fix code
-   - No bug fix without specification
 
 5. ⛔ **NEVER modify /vendor/ directory**
    - External dependencies are read-only
    - Never patch packages directly
-   - Ask user before modifying any dependency
-
-### 🟡 MANDATORY WORKFLOW (ENFORCE STRICTLY)
-
-```
-User Request
-    ↓
-STOP: Plan Specs (get user approval)
-    ↓
-Create Tests (red phase - tests must fail)
-    ↓
-Implement (iterate until tests pass)
-    ↓
-All Tests Pass (green phase)
-    ↓
-Quality Check (composer quality)
-    ↓
-Done
-```
-
-**You MUST NOT skip any step in this workflow.**
 
 ---
 
-## 🏗️ Main Building Blocks
+## 🤖 Sub-Agent Usage
 
-### Architecture & Stack
+This project uses specialized sub-agents for different phases of development:
 
-- **PHP 8.4+** - Primary programming language with modern features
-- **DDEV** - Containerized local development environment (prefix all commands with `ddev exec`)
-- **PSR-4** - Autoloading standards
+### spec-planner (Planning Phase)
+
+**Use for**: Creating or modifying specifications
+
+**When to invoke**:
+- New features or enhancements
+- Bug fixes (create spec for expected behavior)
+- Refactoring that changes behavior
+- Any task requiring new specifications
+
+**Example**:
+```
+User: "Add a MessageFeature for request-response patterns"
+→ Launch spec-planner agent to create specifications
+```
+
+**Output**: Approved spec files + JSON handover payload for core-development-expert
+
+### core-development-expert (Implementation Phase)
+
+**Use for**: Implementing code from approved specifications
+
+**When to invoke**:
+- After spec-planner completes and provides handover payload
+- When specs already exist and are approved
+
+**Requires**: JSON handover payload containing:
+- Spec file paths
+- Component type
+- Test directory
+- Implementation files
+- Critical notes
+
+**Example**:
+```
+spec-planner completes → Generates handover payload
+→ Launch core-development-expert with payload
+```
+
+**NEVER invoke without handover payload** - agent will refuse to proceed
+
+### Handover Protocol
+
+See `.claude/AGENT_HANDOVER_PROTOCOL.md` for complete handover protocol between agents.
+
+**Key principle**: spec-planner creates specs, core-development-expert implements code. Clear separation of responsibilities.
+
+---
+
+## 🏗️ Architecture Overview
+
+### Technology Stack
+
+- **PHP 8.4+** - Modern PHP with strict types
+- **DDEV** - Containerized development (prefix all commands with `ddev exec`)
 - **Composer** - Dependency management
-- **PHPUnit** - Testing framework with custom spec runners
-- **Middleware Pattern** - Extensible processing chains
+- **PHPUnit** - Testing framework with spec runners
+- **Psalm** - Static analysis (level 1)
+- **PHPCS** - Code style (PSR-12)
 
 ### Directory Structure
 
 ```
 /
-├── src/                    # Source code (✅ ALLOWED: modify freely)
+├── src/                    # Source code (✅ modify freely)
 │   ├── Region.php         # State machine runtime
 │   ├── RegionBuilder.php  # Fluent construction API
 │   ├── Feature/           # Modular feature extensions
 │   ├── Chains/            # Middleware pipelines
 │   └── Middleware/        # ChainMail, Chain, Mesh
-├── specs/                  # YAML acceptance criteria (⛔ USER APPROVAL REQUIRED)
+├── specs/                  # YAML specifications (⛔ USER APPROVAL REQUIRED)
 │   ├── core/              # Region, RegionBuilder
 │   ├── chain/             # Middleware
-│   ├── features/          # Features (Transitions, Loader, etc.)
-│   └── machines/          # Complete applications (E2E)
-├── tests/PHPUnit/         # Test suite (✅ ALLOWED: create/modify)
+│   ├── features/          # Features
+│   └── machines/          # End-to-end scenarios
+├── tests/PHPUnit/         # Test suite (✅ create/modify)
 │   ├── Unit/              # Unit tests
 │   ├── Integration/       # Integration tests
-│   └── E2E/               # Machine tests (end-to-end)
-├── machines/              # Example state machine applications
-├── ai/skills/             # Specialized skill documentation (📖 READ ONLY)
-├── docs/                  # Additional documentation
+│   └── E2E/               # End-to-end tests
+├── machines/              # Example state machines
+├── .claude/               # Agent configurations
+│   └── agents/            # Sub-agent definitions
 └── vendor/                # Dependencies (🚫 NEVER MODIFY)
 ```
 
-### Key Configuration Files
+### Key Commands
 
-- `composer.json` - Dependencies and scripts
-- `phpunit.xml.dist` - PHPUnit configuration
-- `phpcs.xml.dist` - Code style standards
-- `psalm.xml` - Static analysis configuration
-- `.ddev/config.yaml` - DDEV environment setup
+```bash
+# Run all tests
+ddev atlas
+
+# Run spec-specific tests
+ddev exec composer spec tests/PHPUnit/[TestClass].php
+
+# Quality checks (style + static analysis + tests)
+ddev exec composer quality
+
+# Code style only
+ddev exec composer cs
+
+# Static analysis only
+ddev exec composer psalm
+```
 
 ---
 
-## 🎛️ Feature Overview
+## 🎛️ Feature System
 
-The project uses a modular feature system where features extend RegionBuilder capabilities:
+Features extend RegionBuilder capabilities through wrapper pattern:
 
-| Feature                  | Purpose                                                 | Critical Notes                   |
-|--------------------------|---------------------------------------------------------|----------------------------------|
-| **TransitionsFeature**   | Automatic state transitions with guard conditions       | Enabled by default               |
-| **ExtendedState**        | Context data scoped to states/regions                   | ⚠️ MUST load before AsyncFeature |
-| **AsyncFeature**         | Coroutine-based async operations with task scheduling   | Requires ExtendedState first     |
-| **RegionLoader**         | Load machines from YAML/array configurations            | Often loaded first; includes spawn functionality |
-| **Holon**                | Complete machine bootstrap from YAML (one-liner)        | Formerly SelfContainedLoader     |
-| **OrthogonalRegions**    | Parallel state execution via nested regions within states | Enables complex hierarchical machines |
-| **EventHooks**           | Before/After event hooks using PHP attributes           | Dispatches additional events around actions |
-| **NamedEvents**          | Named event subscriptions using PHP attributes          | Fine-grained event filtering     |
-| **ComponentsFeature**    | Entity/Component/System pattern for states              | Attach reusable behavior to states |
-| **JsonSchemaFeature**    | JSON schema validation for context configuration        | Extends context schema           |
-| **TemplateFeature**      | Dynamic content generation from templates               | Mustache-style templating        |
-| **AiFeature**            | AI integration for dynamic content generation           | Claude API integration           |
-| **ImperativeStateFeature** | ⚠️ NOT IMPLEMENTED - Placeholder for future feature   | -                                |
+| Feature | Purpose | Critical Notes |
+|---------|---------|----------------|
+| **TransitionsFeature** | Automatic state transitions with guards | Default enabled |
+| **ExtendedState** | Context data scoped to states/regions | ⚠️ Load before AsyncFeature |
+| **AsyncFeature** | Coroutine-based async operations | Requires ExtendedState |
+| **RegionLoader** | Load machines from YAML/arrays | Often loaded first |
+| **Holon** | Complete machine bootstrap from YAML | One-liner setup |
+| **OrthogonalRegions** | Parallel state execution | Hierarchical composition |
+| **SubscriptionFeature** | Global event listeners with type filtering | For cross-region communication |
+| **EventHooks** | Before/After hooks via attributes | Event interception |
+| **NamedEvents** | Named subscriptions via attributes | Fine-grained filtering |
+| **ComponentsFeature** | Entity/Component/System pattern | Attach behavior to states |
+| **JsonSchemaFeature** | JSON schema validation | Context validation |
+| **TemplateFeature** | Dynamic content generation | Mustache-style |
+| **AiFeature** | AI integration | Claude API |
 
-**⚠️ CRITICAL**: Feature order matters! Features wrap each other in LIFO order. ExtendedState MUST come before AsyncFeature.
+**⚠️ CRITICAL**: Feature order matters! Features wrap each other in LIFO order.
 
 ---
 
@@ -308,156 +193,129 @@ The project uses a modular feature system where features extend RegionBuilder ca
 
 ### ALLOWED - Internal Code
 - ✅ Modify any code in `/src/` directory
-- ✅ Update internal dependencies
-- ✅ Add new features, middleware, or components
-- ✅ Create machine-specific implementations
 - ✅ Create/modify tests in `/tests/PHPUnit/`
+- ✅ Add new features, middleware, components
+- ✅ Update internal dependencies
 
-### PROHIBITED - External Code
-- 🚫 Modify code in `/vendor/` directory
-- 🚫 Patch external packages directly
-- 🚫 Change package code without user approval
+### PROHIBITED
+- 🚫 Modify `/vendor/` directory
+- 🚫 Patch external packages
+- 🚫 Run commands without `ddev exec` prefix
 
 ### REQUIRES USER APPROVAL
 - ⚠️ Modifying any YAML file in `/specs/`
-- ⚠️ Changing spec behavior or acceptance criteria
+- ⚠️ Changing acceptance criteria
 - ⚠️ Removing or consolidating specs
+- ⚠️ Breaking API changes
 
 ---
 
-## 🎓 Additional Resources
+## 📚 Component-Specific Context
 
-After loading skills, you can reference these for deeper context:
+Some features and machines have their own CLAUDE.md files with specialized instructions:
 
-- [Project README](./README.md) - Setup and quick start
-- [Core Development Skill](ai/skills/core-development/SKILL.md) - Chain, Middleware, Features
-- [Region Development Skill](ai/skills/region-development/SKILL.md) - YAML, RegionBuilder, machines
-- [Specification Skill](ai/skills/specification/SKILL.md) - Spec-driven workflow
-- [Testing Skill](ai/skills/testing/SKILL.md) - Test infrastructure and patterns
-- [Documentation Skill](ai/skills/documentation/SKILL.md) - Documentation standards
+**Check for component context**:
+```bash
+# Features
+test -f src/Feature/{FeatureName}/CLAUDE.md && echo "EXISTS"
+
+# Machines
+test -f machines/{machine-name}/CLAUDE.md && echo "EXISTS"
+```
+
+**⚠️ Component-level CLAUDE.md files OVERRIDE general guidance.**
 
 ---
 
-## 🤖 AI Agent Protocol
+## 🎯 Quality Standards
 
-**These are your operating instructions:**
+### Before Marking Task Complete
 
-### MANDATORY PROTOCOLS
+- [ ] Specs exist and approved by user
+- [ ] Test class maps 1:1 to spec
+- [ ] Tests failed initially (red phase verified)
+- [ ] All tests now pass (green phase)
+- [ ] `ddev exec composer quality` passes
+- [ ] No modifications to `/vendor/`
+- [ ] No spec changes without approval
 
-1. ✅ **Always complete bootstrap sequence first**
-   - Never respond to tasks without completing checkpoints
-   - Output required acknowledgments at each checkpoint
-   - Load skills using the decision tree above
+### Code Style
+- PSR-12 compliance
+- Type declarations on all functions/methods
+- Descriptive variable names
+- Comprehensive docblocks for public APIs
 
-2. ✅ **Load skills based on task type**
-   - Use decision tree, not guesses
-   - Load multiple skills when needed
-   - Output which skills you're loading and why
+### Testing
+- Unit tests for isolated logic
+- Integration tests for feature interactions
+- 100% coverage of public APIs
+- Edge cases and error conditions tested
 
-3. ✅ **Check for component-specific CLAUDE.md**
-   - Execute the feature/machine context protocol
-   - Load and follow component-specific instructions
-   - These override general guidance
-
-4. ✅ **Respect spec-first paradigm**
-   - Workflow: Plan Specs → Get Approval → Test → Implement
-   - Never skip planning phase
-   - Never modify specs without approval
-
-5. ✅ **Maintain ONE SPEC = ONE TEST CLASS**
-   - Never consolidate specs
-   - Never split specs
-   - Maintain strict 1:1 mapping
-
-6. ✅ **Use DDEV for all commands**
-   - Prefix with `ddev exec`
-   - Never run commands outside container
-   - Ensure consistency across environments
-
-7. ✅ **Quality before completion**
-   - Run `ddev exec composer quality`
-   - Fix all issues before marking task complete
-   - No exceptions
-
-8. ✅ **When stuck, ASK**
-   - Don't guess implementation details
-   - Don't assume user requirements
-   - Ask for clarification explicitly
-
-9. ✅ **Skills are HOW, CLAUDE.md is WHAT**
-   - Skills provide procedural guides
-   - CLAUDE.md provides context and constraints
-   - Follow both together
-
-10. ✅ **Load multiple skills when needed**
-    - Complex tasks require multiple perspectives
-    - Use the decision tree to identify all required skills
-    - Load them in logical sequence
-
-### STARTING NEW SESSION
-
-Execute this protocol at session start:
-
-```
-STEP 1: Review context
-  ├─ Run: git log --oneline -10
-  └─ OUTPUT: Brief summary of recent changes
-
-STEP 2: Baseline status
-  ├─ Run: ddev atlas
-  └─ OUTPUT: Current test status
-
-STEP 3: Ask user for context
-  └─ OUTPUT: "What would you like me to work on?"
-```
-
-### WHEN STUCK
-
-Execute this protocol when stuck:
-
-```
-STEP 1: Ask user for clarification
-  └─ Don't guess, don't assume, ASK
-
-STEP 2: Review existing patterns
-  ├─ Check specs for similar examples
-  └─ Check machines/ for usage patterns
-
-STEP 3: Load additional skills if needed
-  └─ Reassess which skills might help
-
-STEP 4: When in doubt
-  └─ Propose spec consolidation over adding specs
-```
+### Static Analysis
+- Psalm level 1 (strictest)
+- No `@psalm-suppress` without justification
+- Generic types properly annotated
 
 ---
 
-## 📊 Task Category Decision Guide
+## 🔍 Development Workflow Example
 
-Use this guide to identify task category for CHECKPOINT 2:
+### Scenario: User wants new feature
 
-| User Says... | Task Category | Required Skills |
-|--------------|---------------|-----------------|
-| "Add feature X" | Planning → Development | specification, testing, core-development |
-| "Fix bug in Y" | Planning → Development | specification, testing, [component skill] |
-| "Create machine for Z" | Machine Development | region-development, specification, testing |
-| "Run tests" | Testing | testing |
-| "Update docs" | Documentation | documentation |
-| "Refactor X" | Development | [component skill], testing |
-| "How does X work?" | Research | [component skill] |
-| "Write spec for X" | Specification | specification |
+1. **User**: "Add a CachingFeature that memoizes state computations"
+
+2. **You**: Launch `spec-planner` agent
+   - spec-planner creates YAML specs in `/specs/features/caching.yaml`
+   - Presents to user for approval
+   - User approves
+
+3. **spec-planner**: Generates handover payload
+   ```json
+   {
+     "agent": "core-development-expert",
+     "handover_type": "approved_specification",
+     "spec_files": ["specs/features/caching.yaml"],
+     "component_type": "feature",
+     "test_directory": "tests/PHPUnit/Unit/Feature/Caching/",
+     "implementation_files": ["src/Feature/Caching/CachingFeature.php"],
+     "summary": "CachingFeature - Memoize state computations",
+     "critical_notes": ["Consider cache invalidation strategy"]
+   }
+   ```
+
+4. **You**: Launch `core-development-expert` with handover payload
+   - Validates payload
+   - Creates failing tests (red phase)
+   - Implements code (green phase)
+   - Runs quality checks
+   - Reports completion
+
+### Scenario: Specs already exist
+
+1. **User**: "The specs are in specs/core/guards.yaml - implement this"
+
+2. **You**: Create handover payload from existing spec
+   - Read spec file
+   - Build handover payload
+   - Launch core-development-expert with payload
 
 ---
 
-## 🎯 Final Checkpoint Before Task Execution
+## 🚫 Anti-Patterns to Avoid
 
-Before you begin ANY task, verify:
+❌ Writing code before specs exist
+❌ Modifying specs when tests fail
+❌ Skipping spec-planner for new features
+❌ Invoking core-development-expert without handover
+❌ Running commands outside DDEV container
+❌ Consolidating or splitting specs without approval
+❌ Modifying vendor directory
 
-- [ ] Bootstrap sequence completed (all 5 checkpoints)
-- [ ] Required skills loaded and acknowledged
-- [ ] Feature/machine context checked
-- [ ] Critical rules reviewed
-- [ ] Workflow understood
-- [ ] Ready acknowledgment outputted
+---
 
-**If any box is unchecked → STOP and complete it now.**
+## 📖 Additional Resources
+
+- `.claude/AGENT_HANDOVER_PROTOCOL.md` - Complete handover protocol
+- `.claude/agents/spec-planner.md` - Specification agent definition
+- `.claude/agents/core-development-expert.md` - Implementation agent definition
+- `README.md` - Project setup and quick start
