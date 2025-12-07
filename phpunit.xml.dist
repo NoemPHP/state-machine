@@ -9,6 +9,7 @@
     displayDetailsOnTestsThatTriggerNotices="true"
     displayDetailsOnTestsThatTriggerWarnings="true"
     displayDetailsOnPhpunitDeprecations="true"
+    displayDetailsOnSkippedTests="true"
     xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd"
 >
   <testsuites>
