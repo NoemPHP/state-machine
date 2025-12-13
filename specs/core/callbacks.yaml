@@ -1,0 +1,184 @@
+name: callbacks
+group: core
+description: |
+  Generic callback type system providing infrastructure for feature-specific callback channels.
+  Enables features to register typed callbacks (sync, async, priority, deferred, etc.) through a
+  centralized registry with type-safe channel separation. Core provides the MECHANISM (how to register
+  and query callbacks), while features provide the POLICY (what callback types mean and how they behave).
+
+features:
+  - name: callback-type-system
+    description: Abstract type system for callback channels using MetaType pattern
+    specs:
+      - acceptanceCriteria: CallbackType extends MetaType for singleton pattern
+        criticality: contract
+        intent: Provides type-safe singleton instances for callback channels, enabling features to define custom callback types (async, sync, priority, etc.) with identity semantics
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/CallbackTypeExtendsMetaTypeTest.php
+
+      - acceptanceCriteria: CallbackType provides static get() method returning singleton instance
+        criticality: contract
+        intent: Ensures each callback type has exactly one instance for identity comparisons and efficient type checking
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/CallbackTypeSingletonTest.php
+
+      - acceptanceCriteria: CallbackType instances can be compared using is() method
+        criticality: contract
+        intent: Enables type-safe comparisons when filtering callbacks by channel type
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/CallbackTypeComparisonTest.php
+
+      - acceptanceCriteria: Multiple CallbackType subclasses can coexist independently
+        criticality: contract
+        intent: Allows features to define multiple callback channels without interference, supporting extensibility for future callback types
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/MultipleCallbackTypesTest.php
+
+  - name: callback-record
+    description: Immutable value object for storing callback metadata
+    specs:
+      - acceptanceCriteria: CallbackRecord stores region, type, event, state, and callback
+        criticality: contract
+        intent: Encapsulates all metadata needed to identify and invoke a callback, providing complete context for registry queries
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/CallbackRecordStorageTest.php
+
+      - acceptanceCriteria: CallbackRecord properties are readonly and immutable
+        criticality: constraint
+        intent: Prevents accidental modification after registration, ensuring registry integrity and predictable behavior
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/CallbackRecordImmutabilityTest.php
+
+      - acceptanceCriteria: CallbackRecord accepts optional metadata for feature-specific configuration
+        criticality: contract
+        intent: Enables features to attach custom configuration (e.g., AsyncConfig) without coupling core to specific feature implementations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/CallbackRecordMetadataTest.php
+
+      - acceptanceCriteria: CallbackRecord validates that callback is a Closure
+        criticality: constraint
+        intent: Ensures type safety by requiring closures, which are serializable and inspectable
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/CallbackRecordClosureValidationTest.php
+
+  - name: callback-registry
+    description: Centralized storage and querying for typed callbacks
+    specs:
+      - acceptanceCriteria: CallbackRegistry stores CallbackRecord instances
+        criticality: contract
+        intent: Provides centralized callback storage accessible to all features, enabling cross-cutting callback management
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/RegistryStoresRecordsTest.php
+
+      - acceptanceCriteria: CallbackRegistry can query callbacks by region and type
+        criticality: contract
+        intent: Enables features to retrieve only their channel's callbacks, preventing interference between callback types
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/QueryByRegionAndTypeTest.php
+
+      - acceptanceCriteria: CallbackRegistry can query callbacks by event name
+        criticality: contract
+        intent: Filters callbacks to specific lifecycle events (action, enter, exit), enabling efficient event-specific processing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/QueryByEventTest.php
+
+      - acceptanceCriteria: CallbackRegistry can query callbacks by state name
+        criticality: contract
+        intent: Retrieves callbacks registered for specific states, supporting state-scoped callback execution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/QueryByStateTest.php
+
+      - acceptanceCriteria: CallbackRegistry supports combined filtering by region, type, event, and state
+        criticality: contract
+        intent: Enables precise callback queries with multiple criteria, supporting complex filtering scenarios
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/CombinedFilteringTest.php
+
+      - acceptanceCriteria: CallbackRegistry returns empty array when no callbacks match query
+        criticality: constraint
+        intent: Provides consistent return type for non-matching queries, simplifying consumer code with null-safe iteration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/EmptyResultTest.php
+
+      - acceptanceCriteria: CallbackRegistry preserves insertion order within query results
+        criticality: constraint
+        intent: Ensures callbacks execute in registration order, providing predictable execution sequence for deterministic behavior
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/InsertionOrderPreservationTest.php
+
+  - name: add-callback-buildstep
+    description: BuildStep for declarative callback registration
+    specs:
+      - acceptanceCriteria: AddCallback implements BuildStep interface
+        criticality: contract
+        intent: Integrates callback registration into the fluent builder pipeline, enabling declarative configuration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/AddCallbackImplementsBuildStepTest.php
+
+      - acceptanceCriteria: AddCallback accepts event, state, callback, and optional type parameters
+        criticality: contract
+        intent: Provides flexible registration API supporting both default and custom callback types
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/AddCallbackParametersTest.php
+
+      - acceptanceCriteria: AddCallback registers callback in CallbackRegistry during build
+        criticality: contract
+        intent: Ensures callbacks are stored centrally and accessible to features during region construction
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/AddCallbackRegistrationTest.php
+
+      - acceptanceCriteria: AddCallback uses default callback type when type parameter is null
+        criticality: contract
+        intent: Enables backward compatibility by providing sensible defaults for callbacks without explicit type specification
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/DefaultCallbackTypeTest.php
+
+      - acceptanceCriteria: AddCallback accepts optional metadata for feature-specific configuration
+        criticality: contract
+        intent: Allows features to attach custom config (e.g., AsyncConfig) without modifying AddCallback signature
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/AddCallbackMetadataTest.php
+
+      - acceptanceCriteria: AddCallback validates event is one of action, enter, or exit
+        criticality: constraint
+        intent: Prevents invalid event registration, ensuring callbacks only attach to supported lifecycle events
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/EventValidationTest.php
+
+      - acceptanceCriteria: Multiple AddCallback steps can register different callbacks for same state
+        criticality: contract
+        intent: Supports multiple callback registration without conflicts, enabling modular feature composition
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/MultipleCallbacksPerStateTest.php
+
+  - name: chainmail-integration
+    description: DI container integration for CallbackRegistry
+    specs:
+      - acceptanceCriteria: CallbackRegistry is registered in ChainMail as singleton
+        criticality: contract
+        intent: Provides single registry instance shared across all features, ensuring consistent callback storage
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/ChainMailSingletonTest.php
+
+      - acceptanceCriteria: Features can retrieve CallbackRegistry via ChainMail.get()
+        criticality: contract
+        intent: Enables features to access centralized callback storage through dependency injection
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/FeatureAccessToRegistryTest.php
+
+      - acceptanceCriteria: CallbackRegistry is available during BuildStep.callback() execution
+        criticality: contract
+        intent: Ensures registry is accessible when AddCallback registers callbacks during build pipeline
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/RegistryAvailableDuringBuildTest.php
+
+  - name: region-builder-integration
+    description: Integration with RegionBuilder for backward compatibility
+    specs:
+      - acceptanceCriteria: RegionBuilder.onAction() delegates to AddCallback BuildStep
+        criticality: contract
+        intent: Maintains backward compatibility while transitioning to BuildStep-based API
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/OnActionDelegatesToAddCallbackTest.php
+
+      - acceptanceCriteria: RegionBuilder.onEnter() delegates to AddCallback BuildStep
+        criticality: contract
+        intent: Maintains backward compatibility for entry callbacks using new infrastructure
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/OnEnterDelegatesToAddCallbackTest.php
+
+      - acceptanceCriteria: RegionBuilder.onExit() delegates to AddCallback BuildStep
+        criticality: contract
+        intent: Maintains backward compatibility for exit callbacks using new infrastructure
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Callbacks/OnExitDelegatesToAddCallbackTest.php
+
+  - name: integration
+    description: End-to-end callback registration and retrieval
+    specs:
+      - acceptanceCriteria: Callbacks registered via AddCallback are queryable by features
+        criticality: contract
+        intent: Validates complete flow from registration to retrieval, ensuring features can access callbacks they need
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Core/Callbacks/RegistrationToRetrievalTest.php
+
+      - acceptanceCriteria: Multiple features can register different callback types without interference
+        criticality: contract
+        intent: Ensures callback type system supports feature composition, allowing independent feature operation
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Core/Callbacks/MultiFeatureCallbacksTest.php
+
+      - acceptanceCriteria: Callbacks registered for different regions remain isolated
+        criticality: contract
+        intent: Prevents callback leakage between region instances, ensuring encapsulation and correct scoping
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Core/Callbacks/RegionIsolationTest.php
