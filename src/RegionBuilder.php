@@ -58,7 +58,8 @@ class RegionBuilder
                 fn(): Chains\Get => new Chains\Get(),
                 fn(): Chains\Notification => new Chains\Notification(),
                 Events::conjure(),
-                fn(Chains\ConnectedRegions $connections): Chains\Path => new Chains\Path($connections)
+                fn(Chains\ConnectedRegions $connections): Chains\Path => new Chains\Path($connections),
+                fn(): Callbacks\CallbackRegistry => new Callbacks\CallbackRegistry()
             );
         }
         $this->chainMail = $chainMail;
@@ -176,49 +177,64 @@ class RegionBuilder
      *
      * @return self This builder instance, allowing chaining
      */
-    public function onAction(string $state, \Closure $callback): self
+    public function onAction(string $state, \Closure $callback, mixed $metadata = null): self
     {
-        $this->buildChain->link(
-            function (RegionBuilder $builder, callable $next) use ($state, $callback) {
-                $events = $this->chainMail->get(Events::class);
-                $region = $next($builder);
-                $events->addActionHandler($region, $state, $callback);
+        // Delegate to AddCallback BuildStep
+        // Determine type from metadata if it's AsyncConfig
+        $type = null;
+        if ($metadata instanceof \Noem\State\Feature\Async\AsyncConfig) {
+            $type = \Noem\State\Feature\Async\AsyncCallbackType::get();
+        }
 
-                return $region;
-            }
+        return $this->addBuildStep(
+            new Callbacks\AddCallback(
+                event: 'action',
+                state: $state,
+                callback: $callback,
+                type: $type,
+                metadata: $metadata
+            )
         );
-
-        return $this;
     }
 
-    public function onEnter(string $state, \Closure $callback): self
+    public function onEnter(string $state, \Closure $callback, mixed $metadata = null): self
     {
-        $this->buildChain->link(
-            function (RegionBuilder $builder, callable $next) use ($state, $callback) {
-                $events = $this->chainMail->get(Events::class);
-                $region = $next($builder);
-                $events->addEnterStateHandler($region, $state, $callback);
+        // Delegate to AddCallback BuildStep
+        // Determine type from metadata if it's AsyncConfig
+        $type = null;
+        if ($metadata instanceof \Noem\State\Feature\Async\AsyncConfig) {
+            $type = \Noem\State\Feature\Async\AsyncCallbackType::get();
+        }
 
-                return $region;
-            }
+        return $this->addBuildStep(
+            new Callbacks\AddCallback(
+                event: 'enter',
+                state: $state,
+                callback: $callback,
+                type: $type,
+                metadata: $metadata
+            )
         );
-
-        return $this;
     }
 
-    public function onExit(string $state, \Closure $callback): self
+    public function onExit(string $state, \Closure $callback, mixed $metadata = null): self
     {
-        $this->buildChain->link(
-            function (RegionBuilder $builder, callable $next) use ($state, $callback) {
-                $events = $this->chainMail->get(Events::class);
-                $region = $next($builder);
-                $events->addExitStateHandler($region, $state, $callback);
+        // Delegate to AddCallback BuildStep
+        // Determine type from metadata if it's AsyncConfig
+        $type = null;
+        if ($metadata instanceof \Noem\State\Feature\Async\AsyncConfig) {
+            $type = \Noem\State\Feature\Async\AsyncCallbackType::get();
+        }
 
-                return $region;
-            }
+        return $this->addBuildStep(
+            new Callbacks\AddCallback(
+                event: 'exit',
+                state: $state,
+                callback: $callback,
+                type: $type,
+                metadata: $metadata
+            )
         );
-
-        return $this;
     }
 
     /**

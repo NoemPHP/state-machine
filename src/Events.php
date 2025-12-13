@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Noem\State;
 
+use Noem\State\Callbacks\CallbackRecord;
+use Noem\State\Callbacks\CallbackRegistry;
+use Noem\State\Callbacks\DefaultCallbackType;
 use Noem\State\Chains\Params\Callback;
 use Noem\State\Chains\InvokeCallback;
 use Noem\State\Chains\PrepareInvokable;
@@ -15,12 +18,6 @@ use Throwable;
 
 class Events
 {
-    private \SplObjectStorage $onEnter;
-
-    private \SplObjectStorage $onExit;
-
-    private \SplObjectStorage $action;
-
     public function __construct(
         /**
          * Middleware chain responsible for inspecting a handler and returning
@@ -30,11 +27,9 @@ class Events
          */
         private readonly ValidateCallback $validateCallback,
         private readonly PrepareInvokable $prepareInvokable,
-        private readonly InvokeCallback $invokeCallback
+        private readonly InvokeCallback $invokeCallback,
+        private readonly CallbackRegistry $registry,
     ) {
-        $this->onEnter = new \SplObjectStorage();
-        $this->onExit = new \SplObjectStorage();
-        $this->action = new \SplObjectStorage();
     }
 
     public static function conjure(): \Closure
@@ -42,25 +37,37 @@ class Events
         return fn(
             Chains\ValidateCallback $v,
             Chains\PrepareInvokable $p,
-            Chains\InvokeCallback $i
+            Chains\InvokeCallback $i,
+            CallbackRegistry $r
         ): Events => new Events(
             $v,
             $p,
-            $i
+            $i,
+            $r
         );
     }
 
     /**
      * @throws Throwable
      */
-    private function doCall(Region $region, array $handlers, object $trigger): void
+    private function doCall(Region $region, string $event, string $state, object $trigger): void
     {
-        foreach ($handlers as $handler) {
+        // Query all callback types for this region/event/state
+        $records = $this->registry->query(
+            region: $region,
+            type: null, // Query all types
+            event: $event,
+            state: $state
+        );
+
+        foreach ($records as $record) {
+            $handler = $record->callback;
+
             /**
              * First we need to inspect the signature of the raw closure.
              * If it does not match the signature of the trigger, we skip it.
              */
-            $context = new Callback($region, $handler, $trigger);
+            $context = new Callback($region, $handler, $trigger, $event, $state);
             if (!$this->validateCallback->call($context)) {
                 continue;
             }
@@ -69,7 +76,7 @@ class Events
              * This might involve binding it to a new object or setting up some state.
              */
             $invokable = $this->prepareInvokable->call($context);
-            $context = new Callback($region, $invokable, $trigger);
+            $context = new Callback($region, $invokable, $trigger, $event, $state);
             /**
              * Finally, we can invoke the handler.
              */
@@ -77,49 +84,44 @@ class Events
         }
     }
 
-    /**
-     * @param \SplObjectStorage $collection
-     * @param Region $region
-     * @param string $state
-     * @param \Closure $handler
-     *
-     * @return $this
-     */
-    private function addHandler(\SplObjectStorage $collection, Region $region, string $state, \Closure $handler): self
+    private function addHandler(string $event, Region $region, string $state, \Closure $handler): self
     {
-        if (!$collection->contains($region)) {
-            $collection->attach($region, new \stdClass());
-        }
-        if (!isset($collection[$region]->$state)) {
-            $collection[$region]->$state = [];
-        }
-        $collection[$region]->$state[] = $handler;
+        $record = new CallbackRecord(
+            region: $region,
+            type: DefaultCallbackType::get(),
+            event: $event,
+            state: $state,
+            callback: $handler,
+            metadata: null
+        );
+
+        $this->registry->register($record);
 
         return $this;
     }
 
     public function addActionHandler(Region $region, string $state, \Closure $handler): self
     {
-        return $this->addHandler($this->action, $region, $state, $handler);
+        return $this->addHandler('action', $region, $state, $handler);
     }
 
     public function addEnterStateHandler(Region $region, string $state, \Closure $handler): self
     {
-        return $this->addHandler($this->onEnter, $region, $state, $handler);
+        return $this->addHandler('enter', $region, $state, $handler);
     }
 
     public function addExitStateHandler(Region $region, string $state, \Closure $handler): self
     {
-        return $this->addHandler($this->onExit, $region, $state, $handler);
+        return $this->addHandler('exit', $region, $state, $handler);
     }
 
     /**
      * Handles the transition into a new state
      *
-     * This function checks if the entry handler for the specified state exists, and if so, iterates through the list
-     * of entry handlers for that state. It checks the compatibility of the trigger parameter with each entry handler
-     * and, if compatible, calls the entry handler with the extended state and trigger objects as
-     * arguments. Any exceptions thrown during the call are handled by the extended state object.
+     * This function queries the CallbackRegistry for entry handlers for the specified state
+     * and invokes them with the trigger object. It checks the compatibility of the trigger
+     * parameter with each entry handler and, if compatible, calls the entry handler.
+     * Any exceptions thrown during the call are handled by the extended state object.
      *
      * @param Region $region The region or context within which the action is executed
      * @param string $state The name of the new state to enter
@@ -129,20 +131,17 @@ class Events
      */
     public function onEnterState(Region $region, string $state, object $trigger): void
     {
-        $handlers = $this->getHandlersForRegionAndState($this->onEnter, $region, $state);
-        if ($handlers) {
-            $this->doCall($region, $handlers, $trigger);
-        }
+        $this->doCall($region, 'enter', $state, $trigger);
     }
 
     /**
      * Handles an action within a state
      *
-     * This function checks if the action handler for the specified action exists and iterates through the list of
-     * action handlers associated with that action. It verifies the compatibility of the trigger parameter with each
-     * action handler, and if compatible, invokes it using the provided extended state and trigger objects.
-     * Any exceptions thrown during the execution of an action handler are managed by the corresponding extended
-     * state object to ensure robust error handling.
+     * This function queries the CallbackRegistry for action handlers for the specified state
+     * and invokes them with the trigger object. It verifies the compatibility of the trigger
+     * parameter with each action handler, and if compatible, invokes it.
+     * Any exceptions thrown during the execution are managed according to the extended
+     * state's exception handling strategy.
      *
      * @param Region $region The region or context within which the action is executed
      * @param string $state The specific action to be handled
@@ -153,19 +152,16 @@ class Events
      */
     public function onAction(Region $region, string $state, object $trigger): void
     {
-        $handlers = $this->getHandlersForRegionAndState($this->action, $region, $state);
-        if ($handlers) {
-            $this->doCall($region, $handlers, $trigger);
-        }
+        $this->doCall($region, 'action', $state, $trigger);
     }
 
     /**
      * Handles the transition out of a state
      *
-     * This function checks if the exit handler for the specified state exists, and if so, iterates through the list
-     * of exit handlers for that state. It checks the compatibility of the trigger parameter with each exit handler
-     * and, if compatible, calls the exit handler's `call()` method with the extended state and trigger objects as
-     * arguments. Any exceptions thrown during the call are handled by the extended state object.
+     * This function queries the CallbackRegistry for exit handlers for the specified state
+     * and invokes them with the trigger object. It checks the compatibility of the trigger
+     * parameter with each exit handler and, if compatible, calls the exit handler.
+     * Any exceptions thrown during the call are handled by the extended state object.
      *
      * @param Region $region The region or context within which the action is executed
      * @param string $state The name of the state being exited
@@ -175,30 +171,6 @@ class Events
      */
     public function onExitState(Region $region, string $state, object $trigger): void
     {
-        $handlers = $this->getHandlersForRegionAndState($this->onExit, $region, $state);
-        if ($handlers) {
-            $this->doCall($region, $handlers, $trigger);
-        }
-    }
-
-    /**
-     * Retrieves the handlers for a given region and state from an SplObjectStorage instance
-     *
-     * @param SplObjectStorage $storage The storage containing region-handler associations
-     * @param Region $region The specific region to look for
-     * @param string $state The state for which to find the associated handlers
-     *
-     * @return array|null An array of handlers if found, otherwise null
-     */
-    private function getHandlersForRegionAndState(SplObjectStorage $storage, Region $region, string $state): ?array
-    {
-        if (!$storage->contains($region)) {
-            return null;
-        }
-        if (!isset($storage[$region]->$state)) {
-            return null;
-        }
-
-        return $storage[$region]->$state;
+        $this->doCall($region, 'exit', $state, $trigger);
     }
 }

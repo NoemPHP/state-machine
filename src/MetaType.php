@@ -6,7 +6,7 @@ namespace Noem\State;
 
 abstract class MetaType
 {
-    private static ?self $instance = null;
+    private static array $instances = [];
 
     private function __construct()
     {
@@ -14,15 +14,19 @@ abstract class MetaType
 
     public static function get(): static
     {
-        if (self::$instance === null) {
-            self::$instance = new static();
+        $class = static::class;
+        if (!isset(self::$instances[$class])) {
+            self::$instances[$class] = new static();
         }
 
-        return self::$instance;
+        return self::$instances[$class];
     }
 
     public function is(string|MetaType $type): bool
     {
+        if ($type instanceof MetaType) {
+            return $this === $type;
+        }
         return is_a($this, $type);
     }
 
