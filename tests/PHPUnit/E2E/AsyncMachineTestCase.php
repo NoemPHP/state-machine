@@ -61,14 +61,9 @@ abstract class AsyncMachineTestCase extends ApplicationTestCase
      */
     protected function getScheduler(Region $region): CoroutineScheduler
     {
-        // Access the scheduler through the region's internal state
-        // This assumes AsyncFeature stores it in a predictable location
-        $reflection = new \ReflectionClass($region);
-        $property = $reflection->getProperty('chainMail');
-        $property->setAccessible(true);
-        $chainMail = $property->getValue($region);
-
-        return $chainMail->get(CoroutineScheduler::class);
+        // Access the scheduler through the builder's chainMail
+        // ChainMail is stored in the builder, not the region
+        return $this->builder->chainMail->get(CoroutineScheduler::class);
     }
 
     /**

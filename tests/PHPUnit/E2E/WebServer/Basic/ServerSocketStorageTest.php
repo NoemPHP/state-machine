@@ -38,8 +38,11 @@ class ServerSocketStorageTest extends NetworkMachineTestCase
     #[Test]
     public function serverStoresSocketInExtendedState(): void
     {
-        // Arrange & Act - Build the region (triggers onEnter)
+        // Arrange - Build the region
         $region = $this->region();
+
+        // Act - Trigger once to enter initial state and execute onEnter callback
+        $region->trigger(new \stdClass());
 
         // Assert - Socket should be accessible via extended state
         $this->assertRegionContext(

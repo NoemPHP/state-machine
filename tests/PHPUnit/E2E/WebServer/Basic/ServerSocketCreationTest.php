@@ -38,8 +38,11 @@ class ServerSocketCreationTest extends NetworkMachineTestCase
     #[Test]
     public function serverCreatesNonBlockingSocketOnStart(): void
     {
-        // Arrange - Build the region (entering starting state triggers onEnter)
+        // Arrange - Build the region
         $region = $this->region();
+
+        // Act - Trigger once to enter initial state and execute onEnter callback
+        $region->trigger(new \stdClass());
 
         // Assert - Socket should be non-blocking
         $this->assertSocketNonBlocking('Server socket should be non-blocking for cooperative multitasking');
