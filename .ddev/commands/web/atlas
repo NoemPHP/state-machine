@@ -62,7 +62,7 @@ for SPEC_FILE in $SPEC_FILES; do
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     
     # Run the test runner for this spec file
-    if /var/www/html/machines/middleware-test-runner/run.sh --spec="$SPEC_FILE" $OPTIONS; then
+    if /var/www/html/machines/middleware-test-runner-parallel/run.sh --spec="$SPEC_FILE" $OPTIONS; then
         PASSED_SPECS+=("$RELATIVE_PATH")
         echo -e "${GREEN}✓ Passed${NC}"
     else
@@ -113,7 +113,7 @@ if [ ${#FAILED_SPECS[@]} -gt 0 ]; then
     done
     echo ""
     echo -e "${YELLOW}⚠️  Run individual specs with:${NC}"
-    echo -e "   ${BLUE}ddev exec machines/middleware-test-runner/run.sh --spec=<path>${NC}"
+    echo -e "   ${BLUE}ddev exec machines/middleware-test-runner-parallel/run.sh --spec=<path>${NC}"
     echo ""
     exit 1
 fi
