@@ -106,8 +106,10 @@ states:
               //yield;
             }
             $this->set('result', $result);
-            
+
           }
+        async:
+          enabled: true
     transitions:
       - target: flush
         # language=injectablephp

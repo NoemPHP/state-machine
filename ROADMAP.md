@@ -46,14 +46,4 @@ We need an AbilityRegistry and a contract for individual Ability objects.
 Relevant BuildStep and ConfigAccessor objects make it straightforward to configure abilities.
 
 ## Create conversation Feature
-
-# Make Async callbacks explicit
-Instead of implicitly being treated async by being a Generator, we should introduce an 'async: {}' object to the YAML spec.
-The current paradigm of async actions mimicking synchronous execution (-> by always returning the last known yielded object) is cumbersome to maintain
-and confusing to understand. By explicitly opting into async functionality, we can afford to set different expectations to it.
-RegionBuilder's on*() methods must be replaced with BuildSteps that offer more configuration options.
-Much like Meta MetaData and MetaType allow us to create and access arbitrary data pools to use in Features, we need a similar
-mechanism for Callbacks: That way we can have one (default) channel for synchronous callbacks, and then a different channel
-which is registered and maintained by the AsyncFeature.
-The configuration options should cover things like debouncing/throttling and singleton behaviour (only enqueue new async task if the previous one has finished).
-Nice to have: add an option to define the priority of a task (low-priority async callbacks get invoked by the coroutine scheduler less often)
+tbd

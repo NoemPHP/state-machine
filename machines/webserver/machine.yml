@@ -84,9 +84,13 @@ states:
                 - target: processing
               action:
                 - run: !get request.action.accept
+                  async:
+                    enabled: true
             - name: processing
               action:
                 - run: !get request.action.processing
+                  async:
+                    enabled: true
               transitions:
                 - target: close
                   guard: !get transition.guard.processing.close
@@ -95,8 +99,12 @@ states:
                 - run: !get request.onEnter.close
     onEnter:
       - run: !get server.starting.onEnter
+        async:
+          enabled: true
     action:
       - run: !get server.starting.accept
+        async:
+          enabled: true
   #    transitions:
   #      - target: lol
 

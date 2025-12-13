@@ -6,6 +6,8 @@ states:
   - name: run_tests
     onEnter:
       - run: !get onEnter.run_tests
+        async:
+          enabled: true
     transitions:
       # If the tests pass, proceed to the goodbye state.
       - target: goodbye
@@ -16,12 +18,16 @@ states:
   - name: investigate
     onEnter:
       - run: !get onEnter.investigate
+        async:
+          enabled: true
     transitions:
       - target: run_tests
         guard: !get transition.guard.investigate.run_tests
   - name: goodbye
     onEnter:
       - run: !get onEnter.goodbye
+        async:
+          enabled: true
     transitions:
       - target: final
         guard: !get transition.guard.goodbye.final
