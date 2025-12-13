@@ -1,6 +1,10 @@
 name: async
 group: features
-description: The AsyncFeature enables asynchronous execution patterns within state machines through coroutines, providing cooperative multitasking with generators, automatic task scheduling, lazy resolution of context values with dependency tracking, and non-blocking I/O operations
+description: |
+  The AsyncFeature enables asynchronous execution patterns within state machines through coroutines with explicit
+  async configuration. Provides cooperative multitasking with generators, automatic task scheduling with priority-based
+  execution, debouncing/throttling/singleton behavior, lazy resolution of context values with dependency tracking,
+  and non-blocking I/O operations. Uses CallbackRegistry infrastructure for type-safe async/sync callback separation.
 
 features:
   - name: feature-registration
@@ -10,112 +14,363 @@ features:
         criticality: constraint
         intent: Provides the task enqueueing mechanism through Enqueue chain registration, enabling tasks to be added to the scheduler for regions
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/RegistersEnqueueChainTest.php
-        
+
       - acceptanceCriteria: AsyncFeature registers Resolvers service in ChainMail
         criticality: constraint
         intent: Provides centralized resolver storage through Resolvers service registration, enabling per-region resolver management and lazy evaluation of context properties
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/RegistersResolversServiceTest.php
-        
-      - acceptanceCriteria: AsyncFeature hooks into InvokeCallback chain to detect generators
+
+      - acceptanceCriteria: AsyncFeature registers CallbackRegistry singleton in ChainMail
         criticality: contract
-        intent: Intercepts callback invocation to detect generator-based async functions, automatically converting them to managed coroutines and returning yielded values to maintain transparent async behavior
-        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/HooksIntoInvokeCallbackTest.php
-        
+        intent: Provides centralized callback storage accessible to all features, enabling type-safe callback channel separation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/RegistersCallbackRegistryTest.php
+
+      - acceptanceCriteria: AsyncFeature registers AsyncCallbackType in ChainMail for async callbacks
+        criticality: contract
+        intent: Makes async callback type available for registration and querying, enabling explicit async callback separation from sync callbacks
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/RegistersCallbackTypesTest.php
+
+      - acceptanceCriteria: AsyncFeature queries CallbackRegistry for AsyncCallbackType on trigger
+        criticality: contract
+        intent: Retrieves only async callbacks from registry eliminating runtime Generator detection, enabling zero-overhead sync callbacks
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/QueriesAsyncCallbacksTest.php
+
       - acceptanceCriteria: AsyncFeature hooks into Meta chain to trigger resolver evaluation
         criticality: contract
         intent: Intercepts metadata access to initialize lazy resolvers when context properties are accessed, enabling on-demand computation while tracking dependencies for cache invalidation
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/HooksIntoMetaChainTest.php
-        
+
       - acceptanceCriteria: AsyncFeature extends loader schema to accept resolver definitions
         criticality: contract
         intent: Enables YAML-based resolver configuration by extending RegionLoader schema with resolvers field, allowing declarative async property definitions alongside states and transitions
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/ExtendsLoaderSchemaTest.php
 
+  - name: async-callback-types
+    description: Concrete callback type implementations for async channels
+    specs:
+      - acceptanceCriteria: AsyncCallbackType extends CallbackType
+        criticality: contract
+        intent: Defines dedicated channel for async callbacks, enabling separate code paths for async execution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/AsyncCallbackTypeExtendsTest.php
+
+      - acceptanceCriteria: AsyncCallbackType is singleton instance
+        criticality: contract
+        intent: Ensures type identity for efficient channel filtering and type comparisons
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/CallbackTypeSingletonsTest.php
+
+  - name: async-config
+    description: Immutable configuration object for async callback behavior
+    specs:
+      - acceptanceCriteria: AsyncConfig is immutable with readonly properties
+        criticality: contract
+        intent: Prevents configuration modification after creation, ensuring predictable async behavior
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/AsyncConfigImmutabilityTest.php
+
+      - acceptanceCriteria: AsyncConfig accepts debounce duration in seconds
+        criticality: contract
+        intent: Enables delayed execution until trigger activity stops, supporting debounced user interactions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/AsyncConfigDebounceTest.php
+
+      - acceptanceCriteria: AsyncConfig accepts throttle duration in seconds
+        criticality: contract
+        intent: Limits execution frequency, preventing excessive API calls or resource usage
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/AsyncConfigThrottleTest.php
+
+      - acceptanceCriteria: AsyncConfig accepts singleton boolean flag
+        criticality: contract
+        intent: Prevents concurrent task execution, ensuring only one instance runs at a time
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/AsyncConfigSingletonTest.php
+
+      - acceptanceCriteria: AsyncConfig accepts Priority enum value
+        criticality: contract
+        intent: Enables priority-based scheduling, allowing critical tasks to execute more frequently
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/AsyncConfigPriorityTest.php
+
+      - acceptanceCriteria: AsyncConfig accepts timeout duration in seconds
+        criticality: contract
+        intent: Prevents runaway tasks, ensuring async operations complete within time bounds
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/AsyncConfigTimeoutTest.php
+
+      - acceptanceCriteria: AsyncConfig validates debounce is non-negative
+        criticality: constraint
+        intent: Prevents invalid configuration, ensuring debounce values make semantic sense
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/DebounceValidationTest.php
+
+      - acceptanceCriteria: AsyncConfig validates throttle is non-negative
+        criticality: constraint
+        intent: Prevents invalid configuration, ensuring throttle values make semantic sense
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/ThrottleValidationTest.php
+
+      - acceptanceCriteria: AsyncConfig validates timeout is positive if specified
+        criticality: constraint
+        intent: Prevents invalid configuration, ensuring timeout values are meaningful
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/TimeoutValidationTest.php
+
+      - acceptanceCriteria: AsyncConfig provides sensible defaults when options are null
+        criticality: contract
+        intent: Enables minimal configuration while supporting full customization when needed
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/AsyncConfigDefaultsTest.php
+
+  - name: priority-enum
+    description: Type-safe priority levels for scheduler execution
+    specs:
+      - acceptanceCriteria: Priority enum defines LOW, NORMAL, and HIGH cases
+        criticality: contract
+        intent: Provides type-safe priority levels preventing invalid priority values
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/PriorityEnumCasesTest.php
+
+      - acceptanceCriteria: Priority enum has integer backing values (LOW=1, NORMAL=5, HIGH=10)
+        criticality: contract
+        intent: Enables arithmetic operations for scheduler tick budget calculations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/PriorityBackingValuesTest.php
+
+      - acceptanceCriteria: Priority values are ordered LOW < NORMAL < HIGH
+        criticality: constraint
+        intent: Ensures priority semantics match intuitive expectations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/PriorityOrderingTest.php
+
   - name: coroutine-scheduler
-    description: Task scheduling and cooperative multitasking
+    description: Task scheduling and cooperative multitasking with priority-based execution
     specs:
       - acceptanceCriteria: CoroutineScheduler enqueues generators as tasks
         criticality: contract
         intent: Wraps generators in Task objects and adds them to execution queue, enabling cooperative multitasking where generators yield control back to scheduler
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Scheduler/EnqueuesGeneratorsTest.php
-        
+
       - acceptanceCriteria: CoroutineScheduler prevents duplicate task enqueueing for same generator
         criticality: constraint
         intent: Returns existing task when generator is already enqueued, preventing duplicate execution of same coroutine and maintaining task identity across multiple enqueue calls
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Scheduler/PreventsDuplicateEnqueueTest.php
-        
+
       - acceptanceCriteria: CoroutineScheduler executes tasks cooperatively during tick
         criticality: contract
         intent: Advances each enqueued task by one step during tick cycle, implementing cooperative multitasking where tasks voluntarily yield control enabling interleaved execution
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Scheduler/ExecutesTasksCooperativelyTest.php
-        
+
       - acceptanceCriteria: CoroutineScheduler skips paused tasks during tick
         criticality: contract
         intent: Excludes paused tasks from execution cycle, enabling controlled suspension for async operations like I/O or event waiting without blocking other tasks
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Scheduler/SkipsPausedTasksTest.php
-        
+
       - acceptanceCriteria: CoroutineScheduler removes completed tasks from queue
         criticality: constraint
         intent: Automatically dequeues finished tasks to prevent unnecessary iteration and free resources, while triggering registered completion callbacks
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Scheduler/RemovesCompletedTasksTest.php
-        
-      - acceptanceCriteria: CoroutineScheduler stores last yielded value per task
-        criticality: contract
-        intent: Caches most recent yielded value enabling synchronous retrieval after tick, supporting scenarios where caller needs immediate access to task progress
-        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Scheduler/StoresLastYieldedValueTest.php
-        
+
       - acceptanceCriteria: CoroutineScheduler supports task pause and resume
         criticality: contract
         intent: Enables explicit task suspension through pause/resume API, supporting async operations that need to wait for external events or conditions before continuing
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Scheduler/SupportsPauseResumeTest.php
-        
+
       - acceptanceCriteria: CoroutineScheduler tracks completion callbacks per task
         criticality: contract
         intent: Allows registration of callbacks executed when task finishes, enabling cleanup logic and dependent task chaining without polling task state
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Scheduler/TracksCompletionCallbacksTest.php
-        
+
       - acceptanceCriteria: CoroutineScheduler prevents reentrant tick execution
         criticality: constraint
         intent: Guards against nested tick calls using busy flag, preventing stack overflow and maintaining predictable execution order when ticks are triggered within callbacks
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Scheduler/PreventsReentrantTickTest.php
-        
+
       - acceptanceCriteria: CoroutineScheduler handles Call objects during task execution
         criticality: contract
         intent: Invokes Call objects with task and scheduler when yielded, enabling control flow operations like fork, wait, cancel that require scheduler access
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Scheduler/HandlesCallObjectsTest.php
 
+      - acceptanceCriteria: CoroutineScheduler uses SplPriorityQueue for task storage
+        criticality: contract
+        intent: Enables priority-based task ordering for responsive high-priority execution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Scheduler/UsesPriorityQueueTest.php
+
+      - acceptanceCriteria: CoroutineScheduler accepts AsyncConfig parameter in enqueue
+        criticality: contract
+        intent: Receives configuration for debounce, throttle, singleton, priority, timeout behavior
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Scheduler/AcceptsAsyncConfigTest.php
+
+      - acceptanceCriteria: CoroutineScheduler tracks task to AsyncConfig mapping
+        criticality: constraint
+        intent: Associates configuration with tasks for applying async behavior during tick
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Scheduler/TracksTaskConfigTest.php
+
+      - acceptanceCriteria: CoroutineScheduler tracks debounce timers per task
+        criticality: contract
+        intent: Records enqueue time to enforce debounce delay before execution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Scheduler/TracksDebounceTimersTest.php
+
+      - acceptanceCriteria: CoroutineScheduler tracks throttle state per task
+        criticality: contract
+        intent: Records last execution time to enforce minimum interval between runs
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Scheduler/TracksThrottleStateTest.php
+
+      - acceptanceCriteria: CoroutineScheduler prevents singleton task creation when callback has running task
+        criticality: contract
+        intent: Implements mutex behavior, returning existing task instead of creating duplicate
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Scheduler/PreventsSingletonDuplicatesTest.php
+
+      - acceptanceCriteria: CoroutineScheduler tick executes tasks with priority-based step budgets
+        criticality: contract
+        intent: High-priority tasks advance more steps per tick for responsive execution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Scheduler/PriorityBasedTickBudgetTest.php
+
+      - acceptanceCriteria: CoroutineScheduler cancels tasks exceeding timeout duration
+        criticality: contract
+        intent: Prevents runaway tasks by enforcing execution time limits
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Scheduler/TimeoutCancellationTest.php
+
   - name: task-management
-    description: Task wrapping and state tracking
+    description: Task wrapping and state tracking with priority support
     specs:
       - acceptanceCriteria: Task wraps generator and tracks execution state
         criticality: contract
         intent: Encapsulates generator with execution state tracking, providing unified interface for scheduler to advance coroutines and check completion status
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Task/WrapsGeneratorTest.php
-        
+
       - acceptanceCriteria: Task advances generator on run call
         criticality: contract
         intent: Progresses generator by one yield on each run invocation, returning current yielded value to scheduler for processing
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Task/AdvancesOnRunTest.php
-        
+
       - acceptanceCriteria: Task sends values into generator via setSendValue
         criticality: contract
         intent: Enables bi-directional communication by injecting values at yield points, supporting coroutine patterns where async operations return results to generator
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Task/SendsValuesTest.php
-        
+
       - acceptanceCriteria: Task retrieves generator return value after completion
         criticality: contract
         intent: Exposes final generator return value through getReturn, enabling completed coroutines to provide results to dependent code
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Task/RetrievesReturnValueTest.php
-        
+
       - acceptanceCriteria: Task reports completion status via isFinished
         criticality: contract
         intent: Indicates when generator has completed execution through isFinished flag, allowing scheduler to detect and remove finished tasks
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Task/ReportsCompletionStatusTest.php
-        
+
       - acceptanceCriteria: Task handles initial yield without send
         criticality: constraint
         intent: Returns first yielded value using current() instead of send() on initial run, respecting generator protocol where send before first yield is invalid
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Task/HandlesInitialYieldTest.php
+
+      - acceptanceCriteria: Task stores priority as readonly property
+        criticality: contract
+        intent: Associates priority with task for scheduler to determine execution frequency
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Task/TaskPriorityStorageTest.php
+
+      - acceptanceCriteria: Task defaults to Priority NORMAL if not specified
+        criticality: contract
+        intent: Provides sensible default priority for tasks without explicit configuration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Task/TaskDefaultPriorityTest.php
+
+      - acceptanceCriteria: Task priority is immutable after creation
+        criticality: constraint
+        intent: Prevents priority changes during execution, ensuring predictable scheduling behavior
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Task/TaskPriorityImmutabilityTest.php
+
+  - name: debouncing
+    description: Delayed execution until trigger activity stops
+    specs:
+      - acceptanceCriteria: Debounced task does not execute until debounce period elapses
+        criticality: contract
+        intent: Prevents premature execution during rapid trigger bursts, waiting for quiet period
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/DebounceDelayTest.php
+
+      - acceptanceCriteria: Triggering during debounce period resets the timer
+        criticality: contract
+        intent: Extends quiet period on each trigger, ensuring execution only after final trigger
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/DebounceTimerResetTest.php
+
+      - acceptanceCriteria: Only most recent trigger payload is used after debounce period
+        criticality: contract
+        intent: Executes with final trigger data, discarding intermediate triggers during debounce
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/DebounceFinalPayloadTest.php
+
+      - acceptanceCriteria: Debounce timer starts when task is enqueued
+        criticality: constraint
+        intent: Establishes baseline for debounce delay measurement from enqueue time
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/DebounceTimerStartTest.php
+
+      - acceptanceCriteria: Scheduler skips debounced tasks until period elapses
+        criticality: constraint
+        intent: Prevents execution during debounce window, implementing delayed execution semantics
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/SchedulerSkipsDebounceTest.php
+
+  - name: throttling
+    description: Rate-limited execution with minimum interval between runs
+    specs:
+      - acceptanceCriteria: First throttled trigger executes immediately
+        criticality: contract
+        intent: Provides immediate response on initial trigger, applying throttle only to subsequent triggers
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/ThrottleFirstExecutionTest.php
+
+      - acceptanceCriteria: Triggers within throttle period are queued or dropped
+        criticality: contract
+        intent: Prevents excessive execution during high-frequency triggers, enforcing rate limit
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/ThrottleRateLimitTest.php
+
+      - acceptanceCriteria: After throttle period elapses, most recent trigger executes
+        criticality: contract
+        intent: Processes latest trigger after rate limit expires, discarding intermediate triggers
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/ThrottleExecuteLatestTest.php
+
+      - acceptanceCriteria: Scheduler tracks last execution time for throttling
+        criticality: constraint
+        intent: Records execution timestamps to enforce minimum interval between runs
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/ThrottleTimestampTrackingTest.php
+
+      - acceptanceCriteria: Scheduler skips throttled tasks until interval elapses
+        criticality: constraint
+        intent: Implements rate limiting by deferring execution until throttle period passes
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/SchedulerSkipsThrottleTest.php
+
+  - name: singleton-behavior
+    description: Prevention of concurrent task execution for same callback
+    specs:
+      - acceptanceCriteria: Singleton prevents new task when callback has running task
+        criticality: contract
+        intent: Implements mutex-like behavior, ensuring only one task per callback executes concurrently
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/SingletonPreventionTest.php
+
+      - acceptanceCriteria: Singleton returns existing task when preventing new task creation
+        criticality: contract
+        intent: Provides cached reference to running task, maintaining consistent return semantics
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/SingletonReturnsExistingTest.php
+
+      - acceptanceCriteria: New task can start after previous singleton task finishes
+        criticality: contract
+        intent: Releases lock when task completes, allowing subsequent triggers to create new tasks
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/SingletonReleaseTest.php
+
+      - acceptanceCriteria: Singleton check uses callback reference for identity
+        criticality: constraint
+        intent: Uses WeakMap keyed by callback for efficient singleton tracking without memory leaks
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/SingletonCallbackIdentityTest.php
+
+      - acceptanceCriteria: Finished singleton tasks are removed from tracking map
+        criticality: constraint
+        intent: Cleans up completed tasks to prevent memory accumulation and allow task recreation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/SingletonCleanupTest.php
+
+  - name: timeout-cancellation
+    description: Automatic task cancellation after timeout period
+    specs:
+      - acceptanceCriteria: Tasks exceeding timeout duration are cancelled
+        criticality: contract
+        intent: Prevents runaway tasks from consuming resources indefinitely, enforcing execution time limits
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/TimeoutCancellationTest.php
+
+      - acceptanceCriteria: Timeout is measured from task enqueue time
+        criticality: constraint
+        intent: Establishes baseline for timeout measurement, including debounce and throttle delays
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/TimeoutBaselineTest.php
+
+      - acceptanceCriteria: Scheduler checks timeout on each tick
+        criticality: constraint
+        intent: Implements periodic timeout monitoring to detect and cancel exceeded tasks
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/TimeoutCheckingTest.php
+
+      - acceptanceCriteria: Timed-out tasks are removed from scheduler queue
+        criticality: constraint
+        intent: Stops further execution of cancelled tasks, freeing scheduler resources
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/TimeoutRemovalTest.php
 
   - name: call-helpers
     description: Control flow helpers for async operations
@@ -124,37 +379,37 @@ features:
         criticality: contract
         intent: Enables time-based delays in coroutines by pausing task and spawning timer coroutine, supporting rate limiting and scheduled operations
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Call/WaitForSecsTest.php
-        
+
       - acceptanceCriteria: Call.call spawns nested coroutine and waits for completion
         criticality: contract
         intent: Enables coroutine composition by spawning child task, pausing parent until child completes, and injecting child return value supporting hierarchical async workflows
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Call/CallTest.php
-        
+
       - acceptanceCriteria: Call.fork spawns independent coroutine without waiting
         criticality: contract
         intent: Enables fire-and-forget async operations by spawning task without blocking parent, injecting forked task reference for optional tracking
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Call/ForkTest.php
-        
+
       - acceptanceCriteria: Call.cancel terminates specified task
         criticality: contract
         intent: Enables explicit task termination from other coroutines, supporting cancellation patterns and resource cleanup for obsolete operations
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Call/CancelTest.php
-        
+
       - acceptanceCriteria: Call.take pauses task until matching event occurs
         criticality: contract
         intent: Enables event-driven async by pausing task until listener receives matching event, injecting event to resume execution supporting reactive patterns
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Call/TakeTest.php
-        
+
       - acceptanceCriteria: Call.takeAny pauses task until any matching event occurs
         criticality: contract
         intent: Enables waiting for multiple event types by accepting multiple matchers, resuming on first match supporting flexible event handling
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Call/TakeAnyTest.php
-        
+
       - acceptanceCriteria: Call.wager registers task cancellation on matching event
         criticality: contract
         intent: Enables interrupt-driven patterns by registering event listener that cancels task when event matches, optionally spawning replacement task
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Call/WagerTest.php
-        
+
       - acceptanceCriteria: Call objects invoke callback with task and scheduler
         criticality: contract
         intent: Provides access to scheduler and current task when Call is yielded, enabling control flow operations to manipulate task state and spawn new tasks
@@ -167,42 +422,42 @@ features:
         criticality: contract
         intent: Intercepts mesh property access to trigger lazy evaluation, enabling computed properties that resolve only when accessed
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Ornament/ExtendsMeshTest.php
-        
+
       - acceptanceCriteria: Ornament tracks dependencies during resolution
         criticality: contract
         intent: Records which mesh properties are accessed during resolver execution, enabling automatic cache invalidation when dependencies change
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Ornament/TracksDependenciesTest.php
-        
+
       - acceptanceCriteria: Ornament caches resolved values
         criticality: contract
         intent: Stores computed result to avoid redundant resolution on subsequent access, improving performance for expensive computations until dependencies change
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Ornament/CachesResolvedValuesTest.php
-        
+
       - acceptanceCriteria: Ornament invalidates cache when dependencies change
         criticality: contract
         intent: Resets cached value when tracked dependency is modified via offsetSet or offsetUnset, ensuring stale computed values are never returned
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Ornament/InvalidatesCacheOnDependencyChangeTest.php
-        
+
       - acceptanceCriteria: Ornament prevents infinite resolution loops
         criticality: constraint
         intent: Uses resolving flag to prevent recursive resolution attempts when resolver accesses its own key, protecting against stack overflow
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Ornament/PreventsInfiniteLoopsTest.php
-        
+
       - acceptanceCriteria: Ornament returns cached value on repeat access
         criticality: contract
         intent: Immediately returns stored result on subsequent offsetGet without triggering resolver, enabling efficient repeated property access
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Ornament/ReturnsCachedValueTest.php
-        
+
       - acceptanceCriteria: Ornament handles synchronous resolution
         criticality: contract
         intent: Detects when resolver completes synchronously and immediately returns result, supporting both sync and async resolvers with same API
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Ornament/HandlesSyncResolutionTest.php
-        
+
       - acceptanceCriteria: OrnamentResolver provides mesh access during resolution
         criticality: contract
         intent: Exposes get and has methods to resolver callback, enabling resolvers to read mesh properties while tracking dependencies
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Ornament/ResolverProvidesMeshAccessTest.php
-        
+
       - acceptanceCriteria: OrnamentResolver triggers resolution callback with result
         criticality: contract
         intent: Invokes provided callback with computed value when resolver calls resolve method, enabling async resolution where resolver completes later
@@ -215,26 +470,31 @@ features:
         criticality: contract
         intent: Maintains mapping of resolver name to callback per region instance, enabling per-region resolver configurations
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Resolvers/StoresResolverRecordsTest.php
-        
+
       - acceptanceCriteria: Resolvers retrieves specific resolver by region and key
         criticality: contract
         intent: Enables lookup of resolver callback for specific property on specific region, supporting dynamic resolver retrieval during mesh access
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Resolvers/RetrievesResolverTest.php
-        
+
       - acceptanceCriteria: Resolvers checks resolver existence for region and key
         criticality: contract
         intent: Provides existence check before retrieval to avoid exceptions, enabling conditional resolver usage in middleware
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Resolvers/ChecksExistenceTest.php
-        
+
       - acceptanceCriteria: Resolvers retrieves all resolvers for a region
         criticality: contract
         intent: Returns complete resolver set for region enabling ornament creation for all configured lazy properties during meta chain processing
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Resolvers/RetrievesAllForRegionTest.php
-        
+
       - acceptanceCriteria: ResolverRecord stores region, key, and resolver callback
         criticality: contract
         intent: Encapsulates resolver metadata as immutable record with readonly properties, ensuring resolver configurations cannot be modified after registration
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Resolvers/ResolverRecordStructureTest.php
+
+      - acceptanceCriteria: ResolverRecord stores optional AsyncConfig
+        criticality: contract
+        intent: Associates async configuration with resolver for priority, singleton, timeout behavior
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/Resolvers/ResolverRecordStoresAsyncConfigTest.php
 
   - name: io-operations
     description: Non-blocking I/O operations with generators
@@ -243,94 +503,61 @@ features:
         criticality: contract
         intent: Enables non-blocking HTTP requests by yielding during I/O operations, supporting concurrent requests within single coroutine scheduler
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/FetchTest.php
-        
+
       - acceptanceCriteria: Fetch compiles custom headers into request
         criticality: contract
         intent: Allows custom HTTP headers to be specified via constructor, enabling authentication, content negotiation, and custom protocols
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/FetchCompilesHeadersTest.php
-        
+
       - acceptanceCriteria: Fetch supports different HTTP methods
         criticality: contract
         intent: Enables POST, PUT, DELETE operations via method parameter, supporting full REST API interactions beyond GET requests
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/FetchSupportsMethodsTest.php
-        
+
       - acceptanceCriteria: Fetch returns response wrapper data
         criticality: contract
         intent: Provides access to HTTP response headers and metadata via generator return value, enabling status code checking and header inspection
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/FetchReturnsMetadataTest.php
-        
+
       - acceptanceCriteria: Exec executes shell command as generator
         criticality: contract
         intent: Enables non-blocking command execution by yielding output as it arrives, supporting concurrent process execution
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/ExecTest.php
-        
+
       - acceptanceCriteria: Exec yields command output incrementally
         criticality: contract
         intent: Streams stdout as it becomes available through yields, enabling real-time output processing for long-running commands
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/ExecYieldsOutputTest.php
-        
+
       - acceptanceCriteria: Exec returns exit code after completion
         criticality: contract
         intent: Provides process exit status via generator return, enabling error detection and conditional logic based on command success
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/ExecReturnsExitCodeTest.php
-        
+
       - acceptanceCriteria: Exec respects timeout parameter
         criticality: contract
         intent: Terminates long-running processes after timeout expires, preventing resource exhaustion from hung commands
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/ExecRespectsTimeoutTest.php
-        
+
       - acceptanceCriteria: Load reads file as generator
         criticality: contract
         intent: Enables non-blocking file reading by yielding during I/O operations, supporting concurrent file processing
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/LoadTest.php
-        
+
       - acceptanceCriteria: StreamHandler reads resource incrementally
         criticality: contract
         intent: Yields each character or chunk from stream resource, enabling progressive processing of large streams without buffering entire content
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/StreamHandlerTest.php
-        
+
       - acceptanceCriteria: StreamHandler detects stream timeout
         criticality: constraint
         intent: Throws exception when stream read times out based on metadata, preventing indefinite hangs on stalled streams
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/StreamHandlerTimeoutTest.php
-        
+
       - acceptanceCriteria: StreamHandler returns wrapper metadata
         criticality: contract
         intent: Provides stream metadata via generator return, enabling access to protocol-specific information after stream completes
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/StreamHandlerMetadataTest.php
-
-  - name: async-callback-handling
-    description: Automatic detection and management of generator-based callbacks
-    specs:
-      - acceptanceCriteria: AsyncFeature creates CoroutineScheduler per region on first async callback
-        criticality: constraint
-        intent: Lazily initializes scheduler when async callback detected, avoiding overhead for regions that never use async operations
-        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/CreatesSchedulerPerRegionTest.php
-        
-      - acceptanceCriteria: AsyncFeature tracks Task-to-callback mapping
-        criticality: constraint
-        intent: Maintains weak reference between callback and its task enabling subsequent invocations to resume existing task rather than spawn duplicate
-        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/TracksCallbackTaskMappingTest.php
-        
-      - acceptanceCriteria: AsyncFeature resumes existing task on repeat callback invocation
-        criticality: contract
-        intent: Kicks scheduler and returns last yielded value when callback invoked again, supporting stateful async actions that progress over multiple triggers
-        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/ResumesExistingTaskTest.php
-        
-      - acceptanceCriteria: AsyncFeature enqueues new generators as tasks
-        criticality: contract
-        intent: Wraps generator in task and adds to scheduler when callback returns generator, initiating cooperative multitasking for async action
-        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/EnqueuesNewGeneratorsTest.php
-        
-      - acceptanceCriteria: AsyncFeature ticks scheduler after synchronous callbacks
-        criticality: constraint
-        intent: Progresses all enqueued tasks after normal callback completes, ensuring async tasks make progress even when callbacks are synchronous
-        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/TicksAfterSyncCallbackTest.php
-        
-      - acceptanceCriteria: AsyncFeature clears callback mapping on task completion
-        criticality: constraint
-        intent: Removes weak reference when task finishes to allow fresh task creation on next invocation, preventing completed tasks from blocking new executions
-        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/ClearsCompletedTaskMappingTest.php
 
   - name: resolver-integration
     description: Integration of async resolvers with state machine context
@@ -339,32 +566,116 @@ features:
         criticality: contract
         intent: Initializes lazy resolution for each configured resolver when context meta accessed, enabling automatic async property evaluation
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/CreatesOrnamentsForResolversTest.php
-        
+
       - acceptanceCriteria: AsyncFeature processes resolver callbacks through prepare and invoke chains
         criticality: contract
         intent: Applies middleware transformations to resolver callbacks ensuring consistent behavior with regular actions including parameter injection
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/ProcessesResolverCallbacksTest.php
-        
+
       - acceptanceCriteria: AsyncFeature wraps resolver in generator that waits for completion
         criticality: contract
         intent: Enqueues resolver as task and yields until complete, ensuring ornament resolution completes asynchronously when resolver is async
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/WrapsResolverInGeneratorTest.php
-        
+
       - acceptanceCriteria: AsyncFeature resolves ornament with task return value
         criticality: contract
         intent: Triggers ornament resolution callback with task result on completion, providing computed value to mesh for caching
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/ResolvesOrnamentWithResultTest.php
-        
+
       - acceptanceCriteria: AsyncFeature initializes ornaments once per region
         criticality: constraint
         intent: Uses observer storage to prevent redundant ornament creation on repeated meta access, optimizing for multiple context property reads
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/InitializesOrnamentsOnceTest.php
-        
+
       - acceptanceCriteria: AsyncFeature registers resolvers during build phase from loader config
         criticality: contract
         intent: Processes resolver definitions from YAML during region build, populating Resolvers service with configured callbacks
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/RegistersResolversFromConfigTest.php
 
+      - acceptanceCriteria: AddResolver BuildStep accepts optional AsyncConfig parameter
+        criticality: contract
+        intent: Enables async configuration for resolvers (priority, singleton, timeout)
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/AddResolverAcceptsAsyncConfigTest.php
+
+      - acceptanceCriteria: Resolver tasks execute with configured priority
+        criticality: contract
+        intent: Critical resolvers execute more frequently ensuring responsive data access
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/ResolverPriorityTest.php
+
+      - acceptanceCriteria: Resolver singleton prevents concurrent resolutions
+        criticality: contract
+        intent: Ensures only one resolution per property at a time, preventing duplicate work
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/ResolverSingletonTest.php
+
+      - acceptanceCriteria: Resolver timeout cancels runaway resolution tasks
+        criticality: contract
+        intent: Prevents indefinite blocking on unresponsive data sources
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/ResolverTimeoutTest.php
+
+  - name: yaml-schema-extensions
+    description: YAML support for async configuration
+    specs:
+      - acceptanceCriteria: State action accepts async object with configuration properties
+        criticality: contract
+        intent: Enables declarative async configuration in YAML specs, supporting infrastructure-as-code
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/YamlAsyncObjectTest.php
+
+      - acceptanceCriteria: Async object has optional enabled flag (default true)
+        criticality: contract
+        intent: Provides explicit opt-in for async behavior in YAML, preventing accidental async registration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/YamlEnabledFlagTest.php
+
+      - acceptanceCriteria: Async object accepts debounce as float in seconds
+        criticality: contract
+        intent: Configures debounce delay in YAML, supporting declarative debounced callbacks
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/YamlDebounceTest.php
+
+      - acceptanceCriteria: Async object accepts throttle as float in seconds
+        criticality: contract
+        intent: Configures throttle interval in YAML, supporting declarative rate limiting
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/YamlThrottleTest.php
+
+      - acceptanceCriteria: Async object accepts singleton as boolean
+        criticality: contract
+        intent: Configures singleton behavior in YAML, supporting declarative concurrency control
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/YamlSingletonTest.php
+
+      - acceptanceCriteria: Async object accepts priority as string enum (low, normal, high)
+        criticality: contract
+        intent: Configures task priority in YAML using human-readable values, supporting declarative scheduling
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/YamlPriorityTest.php
+
+      - acceptanceCriteria: Async object accepts timeout as float in seconds
+        criticality: contract
+        intent: Configures task timeout in YAML, supporting declarative timeout limits
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/YamlTimeoutTest.php
+
+      - acceptanceCriteria: Async object requires run property containing callback
+        criticality: contract
+        intent: Separates async configuration from callback logic in YAML structure
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/YamlRunPropertyTest.php
+
+      - acceptanceCriteria: YAML processor converts priority string to Priority enum
+        criticality: contract
+        intent: Translates human-readable priority values to type-safe enum instances
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/YamlPriorityConversionTest.php
+
+      - acceptanceCriteria: YAML processor creates AddCallback with AsyncCallbackType when async object present
+        criticality: contract
+        intent: Registers callbacks in async channel when configured, enabling async execution
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/YamlAsyncChannelRegistrationTest.php
+
+      - acceptanceCriteria: YAML processor creates AddCallback with DefaultCallbackType when no async object
+        criticality: contract
+        intent: Maintains backward compatibility by defaulting to sync callback type for legacy YAML
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/YamlSyncChannelDefaultTest.php
+
+      - acceptanceCriteria: YAML schema validates async configuration and provides clear error messages
+        criticality: constraint
+        intent: Catches malformed async configuration early, providing actionable feedback for YAML authors
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/YamlSchemaValidationTest.php
+
+  
   - name: integration
     description: Full async workflows combining multiple components
     specs:
@@ -372,38 +683,132 @@ features:
         criticality: contract
         intent: Demonstrates stateful async actions that resume on subsequent events, enabling multi-step operations spanning multiple state transitions
         test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/MultiStepAsyncActionTest.php
-        
+
       - acceptanceCriteria: Multiple concurrent async actions execute cooperatively
         criticality: contract
         intent: Validates concurrent task execution where multiple actions yield and resume interleaved, demonstrating cooperative multitasking
         test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/ConcurrentActionsTest.php
-        
+
       - acceptanceCriteria: Async resolver computes value only when property accessed
         criticality: contract
         intent: Confirms lazy evaluation where resolver does not execute until mesh property read, optimizing for unused computed properties
         test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/LazyResolverTest.php
-        
+
       - acceptanceCriteria: Resolver cache invalidates and recomputes on dependency change
         criticality: contract
         intent: Verifies dependency tracking where resolver recomputes when accessed properties change, ensuring fresh values
         test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/ResolverCacheInvalidationTest.php
-        
+
       - acceptanceCriteria: Call.call nests coroutines and returns child result to parent
         criticality: contract
         intent: Demonstrates coroutine composition where child completes, parent resumes with result, enabling hierarchical async workflows
         test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/NestedCoroutinesTest.php
-        
+
       - acceptanceCriteria: Call.fork spawns independent task without blocking parent
         criticality: contract
         intent: Shows fire-and-forget pattern where forked task runs concurrently while parent continues, enabling background operations
         test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/ForkIndependentTaskTest.php
-        
+
       - acceptanceCriteria: Region with async resolvers loads from YAML configuration
         criticality: contract
         intent: Validates end-to-end YAML loading with resolver definitions producing working async context properties
         test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/LoadsResolversFromYamlTest.php
-        
+
       - acceptanceCriteria: Async I/O operations complete without blocking scheduler
         criticality: contract
         intent: Confirms non-blocking I/O where file/HTTP operations yield allowing other tasks to progress during I/O waits
         test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/NonBlockingIOTest.php
+
+      - acceptanceCriteria: Debounced callback executes only after trigger activity stops
+        criticality: contract
+        intent: Validates debounce behavior in real state machine scenario
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/DebouncedCallbackTest.php
+
+      - acceptanceCriteria: Throttled callback respects minimum interval between executions
+        criticality: contract
+        intent: Validates throttle rate limiting in rapid trigger scenario
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/ThrottledCallbackTest.php
+
+      - acceptanceCriteria: Singleton callback prevents concurrent task execution
+        criticality: contract
+        intent: Validates singleton mutex behavior with overlapping triggers
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/SingletonCallbackTest.php
+
+      - acceptanceCriteria: High-priority tasks execute more frequently than low-priority
+        criticality: contract
+        intent: Validates priority-based scheduling in mixed-priority scenario
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/PrioritySchedulingTest.php
+
+      - acceptanceCriteria: YAML async configuration creates callbacks with correct AsyncConfig
+        criticality: contract
+        intent: Validates end-to-end YAML loading with async object parsing
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/YamlAsyncConfigTest.php
+
+      
+  - name: yaml-callback-extensions
+    description: Unified YAML syntax for async callback configuration in state definitions
+    specs:
+      - acceptanceCriteria: Callback schema accepts optional async property
+        criticality: contract
+        intent: Enables async configuration without breaking existing callback syntax
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/AcceptsAsyncPropertyTest.php
+
+      - acceptanceCriteria: Async property contains all AsyncConfig fields
+        criticality: contract
+        intent: Provides complete async configuration coverage in YAML
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/AsyncPropertySchemaTest.php
+
+      - acceptanceCriteria: Callbacks without async property work unchanged
+        criticality: contract
+        intent: Maintains backward compatibility with existing YAML configurations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/BackwardCompatibilityTest.php
+
+      - acceptanceCriteria: Action with async property registers as AsyncCallbackType
+        criticality: contract
+        intent: Enables async execution for configured actions
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Loader/ActionAsyncRegistrationTest.php
+
+      - acceptanceCriteria: Action without async property registers as DefaultCallbackType
+        criticality: contract
+        intent: Maintains sync execution for unconfigured actions
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Loader/ActionSyncDefaultTest.php
+
+      - acceptanceCriteria: Action with enabled=false processes as sync
+        criticality: contract
+        intent: Provides explicit async disable mechanism
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Loader/AsyncDisabledTest.php
+
+      - acceptanceCriteria: Transition guard with async property registers as AsyncCallbackType
+        criticality: contract
+        intent: Enables async guard evaluation
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Loader/TransitionGuardAsyncTest.php
+
+      - acceptanceCriteria: onEnter event with async property registers as AsyncCallbackType
+        criticality: contract
+        intent: Enables async event hook execution for state entry
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Loader/OnEnterAsyncTest.php
+
+      - acceptanceCriteria: onExit event with async property registers as AsyncCallbackType
+        criticality: contract
+        intent: Enables async event hook execution for state exit
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Loader/OnExitAsyncTest.php
+
+      - acceptanceCriteria: YAML machine with async actions executes correctly
+        criticality: contract
+        intent: Validates complete async workflow from YAML definition
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Loader/AsyncYamlMachineTest.php
+
+      - acceptanceCriteria: YAML machine with mixed sync/async callbacks works
+        criticality: contract
+        intent: Demonstrates seamless integration of sync and async callbacks
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Loader/MixedCallbackTypesTest.php
+
+      - acceptanceCriteria: Existing YAML machines continue working without modification
+        criticality: constraint
+        intent: Ensures zero breaking changes for existing configurations
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Loader/ExistingYamlCompatibilityTest.php
+
+      - acceptanceCriteria: YAML with all async configuration options works
+        criticality: contract
+        intent: Validates comprehensive async configuration support
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Loader/FullAsyncConfigTest.php
