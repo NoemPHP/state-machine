@@ -15,33 +15,10 @@ use Noem\State\RegionBuilder;
 
 require __DIR__.'/../../vendor/autoload.php';
 
-class ServerConnection
-{
-
-
-    public readonly string $method;
-
-    public readonly string $uri;
-
-    public readonly string $protocol;
-
-    public function __construct(public readonly mixed $client, public readonly string $request)
-    {
-        // Parse HTTP request
-        $lines = explode("\r\n", $request);
-        $requestLine = $lines[0];
-        $parts = explode(' ', $requestLine);
-
-        if (count($parts) < 3) {
-            return;
-        }
-        $this->method = $parts[0];
-        $this->uri = $parts[1];
-        $this->protocol = $parts[2];
-    }
+// Conditionally include ServerConnection if not already defined (allows test mocking)
+if (!class_exists('ServerConnection', false)) {
+    require_once __DIR__.'/src/ServerConnection.php';
 }
-
-;
 
 $yaml = file_get_contents(__DIR__.'/machine.yml');
 $helpers = [
