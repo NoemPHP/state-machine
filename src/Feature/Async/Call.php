@@ -128,7 +128,8 @@ class Call
     {
         return new Call(
             function (Task $task, CoroutineScheduler $scheduler) use ($generatorFunc) {
-                $forked = $scheduler->enqueue($generatorFunc(), spl_object_id($generatorFunc));
+                // No AsyncConfig - use default behavior
+                $forked = $scheduler->enqueue($generatorFunc());
                 $task->setSendValue($forked);
             }
         );

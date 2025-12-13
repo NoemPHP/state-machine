@@ -11,7 +11,8 @@ class ResolverRecord
     public function __construct(
         public readonly Region $region,
         public readonly string $key,
-        public readonly \Closure $resolver
+        public readonly \Closure $resolver,
+        public readonly ?AsyncConfig $asyncConfig = null
     ) {
     }
 }

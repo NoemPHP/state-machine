@@ -19,10 +19,14 @@ class AddResolver implements BuildStep
     /**
      * @param string $name The property name in the context that this resolver provides
      * @param \Closure $resolver The callback that computes the value (can be sync or async generator)
+     * @param AsyncConfig|null $async Optional async configuration for resolver execution
+     *                                 Supports: priority, singleton, timeout
+     *                                 Note: debounce/throttle NOT applicable for resolvers (access-driven, not trigger-driven)
      */
     public function __construct(
         private readonly string $name,
-        private readonly \Closure $resolver
+        private readonly \Closure $resolver,
+        private readonly ?AsyncConfig $async = null
     ) {
     }
 
@@ -30,7 +34,14 @@ class AddResolver implements BuildStep
     {
         $resolvers = $builder->chainMail->get(Resolvers::class);
         $region = $next($builder);
-        $resolvers->addResolver(new ResolverRecord($region, $this->name, $this->resolver));
+        $resolvers->addResolver(
+            new ResolverRecord(
+                $region,
+                $this->name,
+                $this->resolver,
+                $this->async
+            )
+        );
         return $region;
     }
 }
