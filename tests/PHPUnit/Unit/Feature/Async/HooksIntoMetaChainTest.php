@@ -15,6 +15,27 @@ class HooksIntoMetaChainTest extends TestCase
 {
     public function testHooksIntoMetaChain(): void
     {
-        $this->markTestIncomplete('Spec defined but test not yet implemented');
+        // RED TEST: Meta chain hook for resolvers not yet implemented
+        $this->markTestIncomplete(
+            'Meta chain hook test awaiting resolver implementation. ' .
+            'When implemented, AsyncFeature should hook into Meta chain to intercept ' .
+            'context property access and trigger lazy resolver evaluation.'
+        );
+
+        /*
+        // This test would verify that AsyncFeature registers middleware in Meta chain
+        // to intercept mesh property access and initialize ornaments for lazy resolvers
+
+        $asyncFeature = new AsyncFeature();
+        $chainMail = new ChainMail();
+
+        $asyncFeature->__invoke($chainMail);
+
+        // Verify Meta chain has async middleware registered
+        $this->assertTrue(
+            $chainMail->hasMiddleware('Meta', 'AsyncResolverMiddleware'),
+            'AsyncFeature should register middleware in Meta chain'
+        );
+        */
     }
 }

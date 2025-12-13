@@ -32,6 +32,7 @@ class RegistersDoTransitionTest extends TestCase
             fn(): ValidateCallback => new ValidateCallback(),
             fn(): PrepareInvokable => new PrepareInvokable(),
             fn(): InvokeCallback => new InvokeCallback(),
+            fn(): \Noem\State\Callbacks\CallbackRegistry => new \Noem\State\Callbacks\CallbackRegistry(),
             Events::conjure()
         );
 

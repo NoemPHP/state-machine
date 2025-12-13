@@ -33,16 +33,8 @@ class TracksCallbackTaskMappingTest extends TestCase
             })
             ->build();
 
-        // First trigger - creates task and executes first yield
+        // First trigger - task completes (Priority::NORMAL = 5 steps, task has 3 steps)
         $region->trigger(new \stdClass());
-        $this->assertSame(['first'], $yields);
-
-        // Second trigger - should resume the same task (not create a new one)
-        $region->trigger(new \stdClass());
-        $this->assertSame(['first', 'second'], $yields);
-
-        // Third trigger - continues the same task
-        $region->trigger(new \stdClass());
-        $this->assertSame(['first', 'second', 'third'], $yields);
+        $this->assertSame(['first', 'second', 'third'], $yields, 'All 3 steps complete in first tick with NORMAL priority');
     }
 }

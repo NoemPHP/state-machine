@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Noem\State\Test\Unit\Core\RegionBuilder;
 
+use Noem\State\Callbacks\CallbackRegistry;
 use Noem\State\Feature\Feature;
 use Noem\State\Middleware\ChainMail;
 use Noem\State\RegionBuilder;
@@ -30,6 +31,7 @@ class FeatureInvocationTest extends TestCase
             fn(): \Noem\State\Chains\ExtendedState => new \Noem\State\Chains\ExtendedState(),
             fn(): \Noem\State\Chains\Set => new \Noem\State\Chains\Set(),
             fn(): \Noem\State\Chains\Get => new \Noem\State\Chains\Get(),
+            fn(): CallbackRegistry => new CallbackRegistry(),
             fn(): \Noem\State\Chains\Notification => new \Noem\State\Chains\Notification(),
             fn(\Noem\State\Chains\ConnectedRegions $connections): \Noem\State\Chains\Path => new \Noem\State\Chains\Path($connections),
             \Noem\State\Events::conjure(),

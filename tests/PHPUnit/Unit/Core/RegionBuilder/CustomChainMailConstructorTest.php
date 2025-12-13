@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Noem\State\Test\Unit\Core\RegionBuilder;
 
+use Noem\State\Callbacks\CallbackRegistry;
 use Noem\State\Chains\ConnectedRegions;
 use Noem\State\Chains\ExtendedState;
 use Noem\State\Events;
@@ -31,6 +32,7 @@ class CustomChainMailConstructorTest extends TestCase
             fn(): \Noem\State\Chains\InvokeCallback => new \Noem\State\Chains\InvokeCallback(),
             fn(): ConnectedRegions => new ConnectedRegions(),
             fn(): ExtendedState => new ExtendedState(),
+            fn(): CallbackRegistry => new CallbackRegistry(),
             fn(ConnectedRegions $connectedRegions): \Noem\State\Chains\Meta => new \Noem\State\Chains\Meta($connectedRegions),
             fn(): \Noem\State\Chains\Set => new \Noem\State\Chains\Set(),
             fn(): \Noem\State\Chains\Get => new \Noem\State\Chains\Get(),

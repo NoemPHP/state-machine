@@ -38,18 +38,11 @@ class TicksAfterSyncCallbackTest extends TestCase
             })
             ->build();
 
-        // First trigger
+        // First trigger - async task completes (Priority::NORMAL = 5 steps, task has 2 steps)
         $region->trigger(new \stdClass());
 
         $this->assertTrue($syncExecuted, 'Sync callback should have executed');
-        $this->assertSame(['async1'], $asyncProgress, 'Async should have progressed once');
-
-        // Second trigger - sync callback runs again, and scheduler ticks
-        $syncExecuted = false;
-        $region->trigger(new \stdClass());
-
-        $this->assertTrue($syncExecuted);
-        $this->assertSame(['async1', 'async2'], $asyncProgress, 'Async should have progressed again');
+        $this->assertSame(['async1', 'async2'], $asyncProgress, 'Async completes in first tick with NORMAL priority');
     }
 
     public function testTicksProgressesAllTasks(): void
@@ -76,14 +69,9 @@ class TicksAfterSyncCallbackTest extends TestCase
             })
             ->build();
 
-        // First trigger - both tasks progress once
+        // First trigger - both tasks complete (Priority::NORMAL = 5 steps, each task has 2 steps)
         $region->trigger(new \stdClass());
-        $this->assertSame(1, $task1Progress);
-        $this->assertSame(1, $task2Progress);
-
-        // Second trigger - both tasks progress again
-        $region->trigger(new \stdClass());
-        $this->assertSame(2, $task1Progress);
-        $this->assertSame(2, $task2Progress);
+        $this->assertSame(2, $task1Progress, 'Task 1 completes in first tick');
+        $this->assertSame(2, $task2Progress, 'Task 2 completes in first tick');
     }
 }

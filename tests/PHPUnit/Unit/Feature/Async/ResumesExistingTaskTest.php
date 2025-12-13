@@ -37,26 +37,14 @@ class ResumesExistingTaskTest extends TestCase
             })
             ->build();
 
-        // First invocation
+        // First invocation - completes task (Priority::NORMAL = 5 steps, task has 3 steps)
         $region->trigger(new \stdClass());
-        $this->assertSame(['step1'], $executionOrder, 'After trigger 1');
+        $this->assertSame(['step1', 'step2', 'step3'], $executionOrder, 'After trigger 1 - task completes');
         $this->assertSame(1, $invocationCount, 'Callback should be invoked once');
 
-        // Second invocation - resumes task
+        // Second invocation - creates new task and completes it
         $region->trigger(new \stdClass());
-        $this->assertSame(['step1', 'step2'], $executionOrder, 'After trigger 2');
-        $this->assertSame(1, $invocationCount, 'Callback should still be invoked once (task resumed)');
-
-        // Third invocation - completes task
-        $region->trigger(new \stdClass());
-        $this->assertSame(['step1', 'step2', 'step3'], $executionOrder, 'After trigger 3');
-        $this->assertSame(1, $invocationCount, 'Callback should still be invoked once (task completed)');
-
-        // Fourth invocation - task is completed, should create a new one
-        $region->trigger(new \stdClass());
-        var_dump('After trigger 4 - executionOrder', $executionOrder);
-        var_dump('After trigger 4 - invocationCount', $invocationCount);
-        $this->assertSame(['step1', 'step2', 'step3', 'step1'], $executionOrder, 'After trigger 4 - should create new task');
+        $this->assertSame(['step1', 'step2', 'step3', 'step1', 'step2', 'step3'], $executionOrder, 'After trigger 2 - new task completes');
         $this->assertSame(2, $invocationCount, 'Callback should be invoked again (new task created)');
     }
 

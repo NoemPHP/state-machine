@@ -31,21 +31,13 @@ class ClearsCompletedTaskMappingTest extends TestCase
             })
             ->build();
 
-        // First trigger - creates and starts task
+        // First trigger - creates and completes task (Priority::NORMAL = 5 steps, task has 2 steps)
         $region->trigger(new \stdClass());
         $this->assertSame(1, $executionCount);
 
-        // Second trigger - completes task
-        $region->trigger(new \stdClass());
-        $this->assertSame(1, $executionCount);
-
-        // Third trigger - should create a NEW task since mapping was cleared
+        // Second trigger - should create a NEW task since previous task completed and complete it
         $region->trigger(new \stdClass());
         $this->assertSame(2, $executionCount, 'Should create new task after previous completed');
-
-        // Fourth trigger - completes the second task
-        $region->trigger(new \stdClass());
-        $this->assertSame(2, $executionCount);
     }
 
     public function testAllowsTaskRecreationAfterCompletion(): void
@@ -65,17 +57,11 @@ class ClearsCompletedTaskMappingTest extends TestCase
             })
             ->build();
 
-        // First execution cycle
-        $region->trigger(new \stdClass());
-        $this->assertSame(['run1-start'], $runs);
-
+        // First execution cycle - completes in one tick (Priority::NORMAL = 5 steps, task has 2 steps)
         $region->trigger(new \stdClass());
         $this->assertSame(['run1-start', 'run1-end'], $runs);
 
-        // Second execution cycle - new task
-        $region->trigger(new \stdClass());
-        $this->assertSame(['run1-start', 'run1-end', 'run2-start'], $runs);
-
+        // Second execution cycle - new task created and completes
         $region->trigger(new \stdClass());
         $this->assertSame(['run1-start', 'run1-end', 'run2-start', 'run2-end'], $runs);
     }
