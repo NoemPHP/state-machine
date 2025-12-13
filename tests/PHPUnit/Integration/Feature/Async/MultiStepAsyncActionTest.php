@@ -45,24 +45,9 @@ class MultiStepAsyncActionTest extends TestCase
 
         $event = (object)['data' => ''];
 
-        // First trigger - step1
+        // First trigger - all steps complete (Priority::NORMAL = 5 steps, task has 4 steps)
         $region->trigger($event);
-        $this->assertSame(['step1'], $log);
-        $this->assertSame('initialized', $event->data);
-
-        // Second trigger - step2
-        $region->trigger($event);
-        $this->assertSame(['step1', 'step2'], $log);
-        $this->assertSame('initialized-processing', $event->data);
-
-        // Third trigger - step3
-        $region->trigger($event);
-        $this->assertSame(['step1', 'step2', 'step3'], $log);
-        $this->assertSame('initialized-processing-finalizing', $event->data);
-
-        // Fourth trigger - step4
-        $region->trigger($event);
-        $this->assertSame(['step1', 'step2', 'step3', 'step4'], $log);
+        $this->assertSame(['step1', 'step2', 'step3', 'step4'], $log, 'All 4 steps complete in first tick');
         $this->assertSame('initialized-processing-finalizing-complete', $event->data);
     }
 }

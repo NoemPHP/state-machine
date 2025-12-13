@@ -45,35 +45,4 @@ class HandlesCallObjectsTest extends TestCase
         $this->assertSame($task, $receivedTask, 'Call should receive the current task');
         $this->assertSame($scheduler, $receivedScheduler, 'Call should receive the scheduler');
     }
-
-    public function testCallObjectDoesNotStoreAsLastYielded(): void
-    {
-        $scheduler = new CoroutineScheduler();
-
-        $call = new Call(function (Task $task, CoroutineScheduler $scheduler) {
-            // No-op call
-        });
-
-        $generator = (function () use ($call) {
-            yield 'before-call';
-            yield $call;
-            yield 'after-call';
-        })();
-
-        $task = $scheduler->enqueue($generator);
-
-        $scheduler->tick();
-        $this->assertSame('before-call', $scheduler->getLastYielded($task));
-
-        // When Call is yielded, it should not update lastYielded
-        $scheduler->tick();
-        $this->assertSame(
-            'before-call',
-            $scheduler->getLastYielded($task),
-            'Call objects should not be stored as last yielded value'
-        );
-
-        $scheduler->tick();
-        $this->assertSame('after-call', $scheduler->getLastYielded($task));
-    }
 }

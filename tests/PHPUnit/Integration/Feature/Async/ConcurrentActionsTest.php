@@ -40,23 +40,15 @@ class ConcurrentActionsTest extends TestCase
             })
             ->build();
 
-        // First trigger - both tasks start
+        // First trigger - both tasks complete (Priority::NORMAL = 5 steps, each task has 3 steps)
         $region->trigger(new \stdClass());
         $this->assertContains('task1-start', $log);
-        $this->assertContains('task2-start', $log);
-        $this->assertCount(2, $log);
-
-        // Second trigger - both tasks progress
-        $region->trigger(new \stdClass());
         $this->assertContains('task1-middle', $log);
-        $this->assertContains('task2-middle', $log);
-        $this->assertCount(4, $log);
-
-        // Third trigger - both tasks end
-        $region->trigger(new \stdClass());
         $this->assertContains('task1-end', $log);
+        $this->assertContains('task2-start', $log);
+        $this->assertContains('task2-middle', $log);
         $this->assertContains('task2-end', $log);
-        $this->assertCount(6, $log);
+        $this->assertCount(6, $log, 'Both 3-step tasks complete in first tick with NORMAL priority');
     }
 
     public function testTasksInterleaveDuringExecution(): void
@@ -88,21 +80,16 @@ class ConcurrentActionsTest extends TestCase
             })
             ->build();
 
-        // Execute triggers to see interleaving
+        // Execute trigger - all tasks complete in first tick (Priority::NORMAL = 5 steps, each task has 2 steps)
         $region->trigger(new \stdClass());
-        $firstTick = $interleaveLog;
 
-        $region->trigger(new \stdClass());
-        $secondTick = array_slice($interleaveLog, count($firstTick));
-
-        // All three tasks should have started in first tick
-        $this->assertContains('A1', $firstTick);
-        $this->assertContains('B1', $firstTick);
-        $this->assertContains('C1', $firstTick);
-
-        // All three tasks should progress in second tick
-        $this->assertContains('A2', $secondTick);
-        $this->assertContains('B2', $secondTick);
-        $this->assertContains('C2', $secondTick);
+        // All three tasks should complete in first tick
+        $this->assertContains('A1', $interleaveLog);
+        $this->assertContains('A2', $interleaveLog);
+        $this->assertContains('B1', $interleaveLog);
+        $this->assertContains('B2', $interleaveLog);
+        $this->assertContains('C1', $interleaveLog);
+        $this->assertContains('C2', $interleaveLog);
+        $this->assertCount(6, $interleaveLog, 'All three 2-step tasks complete in first tick');
     }
 }
