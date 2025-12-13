@@ -30,7 +30,7 @@ class ProcessArray
         /**
          * If a sub-region is being built, we need a separate builder for it since the current builder is already
          * dedicated to the parent region.
-         * However, the middleware configuration needs to be passed on, which is why the new instance must be
+         * However, middleware configuration needs to be passed on, which is why a new instance must be
          * received from an existing one.
          */
         static $recursion;
@@ -118,14 +118,7 @@ class ProcessArray
             'final' => Expect::string(),
             'factory' => $callback,
         ]);
-        $schemaContext = new SchemaContext(
-            $callback,
-            $action,
-            $state,
-            $region
-        );
-
-        //$schema = Expect::arrayOf($regionSchema);
+        $schemaContext = new SchemaContext($callback, $action, $state, $region);
 
         try {
             $this->schema->withProvider(function (SchemaContext $context) use ($data) {
@@ -146,7 +139,7 @@ class ProcessArray
     }
 
     /**
-     * Creates a closure to be used as transition guard based on given definition.
+     * Creates a closure to be used as a transition guard based on given definition.
      *
      * @param array $transition An array defining a single transition with a potential `guard` property
      *
@@ -241,7 +234,7 @@ class ProcessArray
     }
 
     /**
-     * Extracts the relevant configuration data from a list of state definitions.
+     * Extracts relevant configuration data from a list of state definitions.
      *
      * @param array $raw An array representing states' configurations
      *
