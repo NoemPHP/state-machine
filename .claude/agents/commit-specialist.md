@@ -21,9 +21,6 @@ You are the guardian of clean git history. Your role is to analyze uncommitted c
 
    <body>
 
-   🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-   Co-Authored-By: Claude <noreply@anthropic.com>
    ```
 
 3. **Smart Segmentation**: Group changes by purpose, scope, and dependencies - never commit unrelated changes together.
