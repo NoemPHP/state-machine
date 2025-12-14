@@ -43,8 +43,15 @@ return [
             $read = [$server];
             $write = [];
             $except = [];
-            foreach ($clients as $client) {
-                $read[] = $client;
+            foreach ($clients as $clientId => $client) {
+                // Only add valid resources (may have been closed by child region)
+                if (is_resource($client) && !feof($client)) {
+                    $read[] = $client;
+                } else {
+                    // Clean up closed resources
+                    unset($clients[$clientId]);
+                    unset($buffers[$clientId]);
+                }
             }
             // Use stream_select for non-blocking I/O multiplexing
             // Timeout of 1 second to prevent blocking indefinitely
@@ -147,15 +154,17 @@ return [
     },
     'request.action.processing' => function (object $trigger) {
         $client = $this->get('client');
+
+        // Check if client socket is valid before proceeding
+        if (!is_resource($client) || feof($client)) {
+            return;
+        }
+
         $headers = $this->get('headers');
         //var_dump($headers);
         $regionId = spl_object_id($this);
         $resourceId = get_resource_id($client);
         //echo "Processing request $id: {$headers['Referer']}\n";
-
-        if (!is_resource($client) || feof($client)) {
-            return;
-        }
         //var_dump($client);
         $response = "HTTP/1.1 200 OK\r\n"
             ."Connection: close\r\n"
