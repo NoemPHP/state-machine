@@ -7,6 +7,7 @@ namespace Noem\State\Test\Integration\Feature\Abilities;
 use Noem\State\Feature\Abilities\AbilitiesFeature;
 use Noem\State\Feature\ExtendedState\ExtendedState;
 use Noem\State\Feature\Message\MessageFeature;
+use Noem\State\Feature\Transitions\AddTransition;
 use Noem\State\Test\Integration\RegionBuilderTestCase;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
@@ -34,9 +35,11 @@ class OverwriteAbilityTest extends RegionBuilderTestCase
             ->enableFeatures(
                 new MessageFeature(),
                 new ExtendedState(),
+                new \Noem\State\Feature\Transitions\TransitionsFeature(),
                 new AbilitiesFeature()
             )
             ->setStates('idle', 'active')
+            ->addBuildStep(new AddTransition('idle', 'active'))
             ->onEnter('idle', function (object $t) use (&$firstResponse) {
                 // Register initial ability
                 $this->abilities()->register('overwrite-test', [
@@ -197,7 +200,7 @@ class OverwriteAbilityTest extends RegionBuilderTestCase
         // Then: New schema should be enforced
         $this->assertNotNull($validationError);
         $this->assertInstanceOf(
-            \Noem\State\Feature\Abilities\Exception\SchemaValidationException::class,
+            \Noem\State\Feature\Abilities\SchemaValidationException::class,
             $validationError
         );
 

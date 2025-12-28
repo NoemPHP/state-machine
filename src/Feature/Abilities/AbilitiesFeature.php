@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace Noem\State\Feature\Abilities;
 
+use Noem\State\Chains\EnhanceRegionBuilder;
 use Noem\State\Chains\Notification;
 use Noem\State\Feature\Abilities\Chains\ExecuteAbilityHandler;
 use Noem\State\Feature\Abilities\Chains\InvokeAbility;
+use Noem\State\Feature\Abilities\Chains\ProcessAbilityResult;
 use Noem\State\Feature\Abilities\Chains\Params\InvokeAbility as InvokeAbilityParams;
 use Noem\State\Feature\ExtendedState\ContextChains\BoundAccess;
 use Noem\State\Feature\ExtendedState\ContextChains\Params\BoundAccessParams;
 use Noem\State\Feature\Feature;
+use Noem\State\Feature\Loader\LoaderChains\Schema;
 use Noem\State\Feature\Message\MessageFeature;
 use Noem\State\Feature\RequiresFeature;
 use Noem\State\Middleware\ChainMail;
@@ -36,38 +39,35 @@ class AbilitiesFeature implements Feature
 
         // Register AbilityRegistry in ChainMail
         $registry = new AbilityRegistry();
-        $chainMail->supply(fn(): AbilityRegistry => $registry);
-
-        // Register ExecuteAbilityHandler chain (hookable by AsyncFeature)
-        $chainMail->supply(fn(): ExecuteAbilityHandler => new ExecuteAbilityHandler());
-
-        // Register InvokeAbility chain in ChainMail
         $chainMail->supply(
-            fn(Notification $notificationChain, ExecuteAbilityHandler $executeChain): InvokeAbility =>
-                new InvokeAbility($registry, $notificationChain, $executeChain)
+            fn(): AbilityRegistry => $registry,
+            fn(): ExecuteAbilityHandler => new ExecuteAbilityHandler(),
+            fn(Notification $n): ProcessAbilityResult => new ProcessAbilityResult($n),
+            fn(Notification $n, ExecuteAbilityHandler $e, ProcessAbilityResult $r): InvokeAbility => new InvokeAbility($registry, $n, $e, $r)
         );
 
         // Wire abilities() method into BoundAccess if ExtendedState is loaded
         // Use chainMail->use() to defer execution until all features are loaded
-        $chainMail->use(function (?BoundAccess $boundAccess = null, ?InvokeAbility $invokeAbilityChain = null) use ($registry) {
-            if ($boundAccess !== null && $invokeAbilityChain !== null) {
-                $this->wireBoundAccess($boundAccess, $invokeAbilityChain, $registry);
+        $chainMail->use(
+            function (
+                ?BoundAccess $boundAccess = null,
+                ?InvokeAbility $invokeAbilityChain = null
+            ) use ($registry) {
+                if ($boundAccess !== null && $invokeAbilityChain !== null) {
+                    $this->wireBoundAccess($boundAccess, $invokeAbilityChain, $registry);
+                }
+                // If BoundAccess is null, ExtendedState wasn't loaded - that's fine
             }
-            // If BoundAccess is null, ExtendedState wasn't loaded - that's fine
-        });
+        );
 
         // Extend YAML schema to support abilities at region and state level (optional dependency)
-        $chainMail->use(function (?\Noem\State\Feature\Loader\LoaderChains\Schema $schema = null) {
-            if ($schema !== null) {
-                $this->extendYamlSchema($schema);
-            }
+        $chainMail->use(function (?Schema $schema = null) {
+            $schema && $this->extendYamlSchema($schema);
         });
 
         // Process abilities from YAML configuration (optional dependency)
-        $chainMail->use(function (?\Noem\State\Chains\EnhanceRegionBuilder $builder = null) use ($registry) {
-            if ($builder !== null) {
-                $this->processAbilitiesConfig($builder, $registry);
-            }
+        $chainMail->use(function (?EnhanceRegionBuilder $builder = null) use ($registry) {
+            $builder && $this->processAbilitiesConfig($builder, $registry);
         });
 
         // Register built-in enumerate-abilities ability
@@ -119,12 +119,12 @@ class AbilitiesFeature implements Feature
             // Return an AbilityInvocation wrapper that supports both:
             // - yield from $this->abilities(...) - generator pattern
             // - $this->abilities(...)->then(...) - message pattern
-            $generator = (function() use ($message) {
+            $generator = (function () use ($message) {
                 $receivedResponse = null;
 
                 // Register then() handler - will be called immediately if response cached,
                 // or later when response arrives
-                $message->then(function($response) use (&$receivedResponse) {
+                $message->then(function ($response) use (&$receivedResponse) {
                     $receivedResponse = $response;
                 });
 
@@ -224,7 +224,7 @@ class AbilitiesFeature implements Feature
      * - predicate (optional callable)
      */
     private function extendYamlSchema(
-        ?\Noem\State\Feature\Loader\LoaderChains\Schema $schema = null
+        ?Schema $schema = null
     ): void {
         if ($schema === null) {
             return; // RegionLoader not loaded, no YAML support
@@ -266,7 +266,7 @@ class AbilitiesFeature implements Feature
      * State-level abilities are wrapped with predicates to check active state.
      */
     private function processAbilitiesConfig(
-        \Noem\State\Chains\EnhanceRegionBuilder $enhanceBuilder,
+        EnhanceRegionBuilder $enhanceBuilder,
         AbilityRegistry $registry
     ): void {
         $enhanceBuilder->link(function (\Noem\State\Chains\Params\BuildParams $context, callable $next) use ($registry) {
@@ -338,7 +338,7 @@ class AbilitiesFeature implements Feature
 
                 // If original predicate exists, evaluate it
                 if ($originalPredicate !== null && is_callable($originalPredicate)) {
-                    return (bool) $originalPredicate($region);
+                    return (bool)$originalPredicate($region);
                 }
 
                 return true;

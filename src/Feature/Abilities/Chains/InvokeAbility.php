@@ -13,7 +13,6 @@ use Noem\State\Feature\Abilities\AbilityRegistry;
 use Noem\State\Feature\Abilities\Chains\Params\InvokeAbility as InvokeAbilityParams;
 use Noem\State\Feature\Abilities\Chains\Params\ExecuteAbilityHandler as ExecuteParams;
 use Noem\State\Feature\Abilities\SchemaValidationException;
-use Noem\State\Feature\Async\Task;
 use Noem\State\Middleware\Chain;
 
 /**
@@ -30,6 +29,7 @@ class InvokeAbility extends Chain
         private readonly AbilityRegistry $registry,
         private readonly Notification $notificationChain,
         private readonly ExecuteAbilityHandler $executeChain,
+        private readonly ProcessAbilityResult $processResultChain,
     ) {
         parent::__construct($this->invoke(...));
     }
@@ -86,37 +86,19 @@ class InvokeAbility extends Chain
             parameters: $params->parameters,
             region: $params->region,
         );
-        $responseData = $this->executeChain->call($executeParams);
+        $handlerResult = $this->executeChain->call($executeParams);
 
-        // If AsyncFeature returned a Task, tick it to completion
-        if ($responseData instanceof Task) {
-            $task = $responseData;
-
-            // Tick task until it completes
-            while (!$task->isFinished()) {
-                $task->run();
-            }
-
-            // Get the return value
-            $responseData = $task->getReturn();
-        }
-
-        // Create correlated response message
-        $response = $message->createResponse(
-            AbilityMessage::class,
-            [
-                'abilityName' => $message->abilityName,
-                'parameters' => $responseData,
-                'definition' => $definition,
-            ]
+        // Process result through ProcessAbilityResult chain
+        // AsyncFeature can hook this to handle Task objects asynchronously
+        $processParams = new Params\ProcessAbilityResult(
+            message: $message,
+            handlerResult: $handlerResult,
+            definition: $definition,
+            region: $params->region,
         );
+        $this->processResultChain->call($processParams);
 
-        // Emit response via Notification (triggers MessageFeature subscription)
-        $listeners = $this->notificationChain->call(new Notify($params->region, $response));
-        foreach ($listeners as $listener) {
-            $listener($response, $params->region);
-        }
-
+        // Return message immediately for chaining (non-blocking if async)
         return $message;
     }
 

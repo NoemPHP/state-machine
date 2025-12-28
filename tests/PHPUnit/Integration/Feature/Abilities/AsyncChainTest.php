@@ -139,7 +139,7 @@ class AsyncChainTest extends RegionBuilderTestCase
                 new AbilitiesFeature()
             )
             ->setStates('idle')
-            ->onEnter('idle', function (object $t) use (&$response) {
+            ->onAction('idle', function (object $t) use (&$response) {
                 // Register ability with generator handler
                 $this->abilities()->register('generator-handler', [
                     'name' => 'generator-handler',
@@ -157,9 +157,6 @@ class AsyncChainTest extends RegionBuilderTestCase
                     ->then(function ($data) use (&$response) {
                         $response = $data;
                     });
-
-                // Yield to allow async processing
-                yield;
             })
             ->build();
 
@@ -168,7 +165,7 @@ class AsyncChainTest extends RegionBuilderTestCase
 
         // Then: Generator handler should execute and deliver response
         $this->assertNotNull($response);
-        $this->assertInstanceOf(\Noem\State\Feature\Abilities\Message\AbilityMessage::class, $response);
+        $this->assertInstanceOf(\Noem\State\Feature\Abilities\AbilityMessage::class, $response);
         $this->assertTrue($response->parameters['async']);
     }
 
@@ -186,7 +183,7 @@ class AsyncChainTest extends RegionBuilderTestCase
                 new AbilitiesFeature()
             )
             ->setStates('idle')
-            ->onEnter('idle', function (object $t) use (&$responseReceived) {
+            ->onAction('idle', function (object $t) use (&$responseReceived) {
                 // Register ability
                 $this->abilities()->register('yield-test', [
                     'name' => 'yield-test',
@@ -199,16 +196,13 @@ class AsyncChainTest extends RegionBuilderTestCase
                     }
                 ]);
 
-                // Yield the ability invocation to wait for response
+                // Invoke and register callback to capture response
                 $message = $this->abilities('yield-test');
 
                 // Register then() to capture response
                 $message->then(function ($data) use (&$responseReceived) {
                     $responseReceived = $data;
                 });
-
-                // Yield to wait
-                yield;
             })
             ->build();
 
@@ -217,7 +211,7 @@ class AsyncChainTest extends RegionBuilderTestCase
 
         // Then: Response should be received after yielding
         $this->assertNotNull($responseReceived);
-        $this->assertInstanceOf(\Noem\State\Feature\Abilities\Message\AbilityMessage::class, $responseReceived);
+        $this->assertInstanceOf(\Noem\State\Feature\Abilities\AbilityMessage::class, $responseReceived);
         $this->assertTrue($responseReceived->parameters['waited']);
     }
 }

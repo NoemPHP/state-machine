@@ -222,7 +222,7 @@ class ComplexSchemaTest extends RegionBuilderTestCase
         // Then: Should reject invalid nested value
         $this->assertNotNull($exceptionCaught);
         $this->assertInstanceOf(
-            \Noem\State\Feature\Abilities\Exception\SchemaValidationException::class,
+            \Noem\State\Feature\Abilities\SchemaValidationException::class,
             $exceptionCaught
         );
     }

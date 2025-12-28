@@ -7,6 +7,8 @@ namespace Noem\State\Test\Integration\Feature\Abilities;
 use Noem\State\Feature\Abilities\AbilitiesFeature;
 use Noem\State\Feature\ExtendedState\ExtendedState;
 use Noem\State\Feature\Message\MessageFeature;
+use Noem\State\Feature\Transitions\AddTransition;
+use Noem\State\Feature\Transitions\TransitionsFeature;
 use Noem\State\Test\Integration\RegionBuilderTestCase;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
@@ -196,9 +198,11 @@ class EnumerateCustomAbilitiesTest extends RegionBuilderTestCase
             ->enableFeatures(
                 new MessageFeature(),
                 new ExtendedState(),
+                new TransitionsFeature(),
                 new AbilitiesFeature()
             )
             ->setStates('idle', 'active')
+            ->addBuildStep(new AddTransition('idle', 'active'))
             ->onEnter('idle', function (object $t) use (&$firstEnumeration) {
                 // Register first ability
                 $this->abilities()->register('ability-one', [

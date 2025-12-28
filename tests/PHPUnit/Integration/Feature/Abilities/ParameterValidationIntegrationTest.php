@@ -73,7 +73,7 @@ class ParameterValidationIntegrationTest extends RegionBuilderTestCase
         );
 
         $this->assertInstanceOf(
-            \Noem\State\Feature\Abilities\Exception\SchemaValidationException::class,
+            \Noem\State\Feature\Abilities\SchemaValidationException::class,
             $exceptionCaught
         );
 
@@ -128,7 +128,7 @@ class ParameterValidationIntegrationTest extends RegionBuilderTestCase
         // Then: Should reject type mismatch
         $this->assertNotNull($exceptionCaught);
         $this->assertInstanceOf(
-            \Noem\State\Feature\Abilities\Exception\SchemaValidationException::class,
+            \Noem\State\Feature\Abilities\SchemaValidationException::class,
             $exceptionCaught
         );
     }
@@ -247,7 +247,7 @@ class ParameterValidationIntegrationTest extends RegionBuilderTestCase
         // Then: Exception should provide clear error details
         $this->assertNotNull($exceptionCaught);
         $this->assertInstanceOf(
-            \Noem\State\Feature\Abilities\Exception\SchemaValidationException::class,
+            \Noem\State\Feature\Abilities\SchemaValidationException::class,
             $exceptionCaught
         );
 

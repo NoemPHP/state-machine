@@ -92,7 +92,7 @@ class GeneratorHandlersTest extends RegionBuilderTestCase
                 new AbilitiesFeature()
             )
             ->setStates('idle')
-            ->onAction('idle', function (object $t) use (&$operations) {
+            ->onEnter('idle', function (object $t) use (&$operations) {
                 // Register ability with multi-step generator
                 $this->abilities()->register('async-operation', [
                     'name' => 'async-operation',
@@ -101,6 +101,7 @@ class GeneratorHandlersTest extends RegionBuilderTestCase
                     'responseSchema' => [],
                     'handler' => function ($params) use (&$operations) {
                         // Simulate non-blocking I/O with generator
+                        yield;  // Pause first for async behavior
                         $operations[] = $params['id'] . '-start';
                         yield;
 
@@ -116,13 +117,17 @@ class GeneratorHandlersTest extends RegionBuilderTestCase
                 ]);
 
                 // Start multiple async operations
-                yield from $this->abilities('async-operation', ['id' => 'A']);
-                yield from $this->abilities('async-operation', ['id' => 'B']);
+                $this->abilities('async-operation', ['id' => 'A']);
+                $this->abilities('async-operation', ['id' => 'B']);
             })
             ->build();
 
-        // When: Trigger region
-        $region->trigger((object)[]);
+        // When: Trigger region multiple times for scheduler ticks
+        $region->trigger((object)[]);  // onEnter runs, abilities invoked
+        $region->trigger((object)[]);  // Scheduler tick
+        $region->trigger((object)[]);  // Scheduler tick
+        $region->trigger((object)[]);  // Scheduler tick
+        $region->trigger((object)[]);  // Scheduler tick - handlers complete
 
         // Then: Both generators should progress (non-blocking)
         $this->assertContains('A-start', $operations);
@@ -202,7 +207,7 @@ class GeneratorHandlersTest extends RegionBuilderTestCase
                 new AbilitiesFeature()
             )
             ->setStates('idle')
-            ->onAction('idle', function (object $t) use (&$syncResult, &$generatorResult) {
+            ->onEnter('idle', function (object $t) use (&$syncResult, &$generatorResult) {
                 // Register synchronous ability
                 $this->abilities()->register('sync', [
                     'name' => 'sync',
@@ -230,20 +235,22 @@ class GeneratorHandlersTest extends RegionBuilderTestCase
                 ]);
 
                 // Invoke both types
-                yield from $this->abilities('sync')
+                $this->abilities('sync')
                     ->then(function ($response) use (&$syncResult) {
                         $syncResult = 'sync-done';
                     });
 
-                yield from $this->abilities('generator')
+                $this->abilities('generator')
                     ->then(function ($response) use (&$generatorResult) {
                         $generatorResult = 'generator-done';
                     });
             })
             ->build();
 
-        // When: Trigger region
-        $region->trigger((object)[]);
+        // When: Trigger region multiple times
+        $region->trigger((object)[]);  // onEnter runs, sync responds immediately, generator enqueued
+        $region->trigger((object)[]);  // Scheduler tick: generator advances
+        $region->trigger((object)[]);  // Scheduler tick: generator completes, response delivered
 
         // Then: Both handler types should work
         $this->assertSame('sync-done', $syncResult, 'Sync handler should work');
@@ -265,7 +272,7 @@ class GeneratorHandlersTest extends RegionBuilderTestCase
                 new AbilitiesFeature()
             )
             ->setStates('idle')
-            ->onAction('idle', function (object $t) use (&$errorCaught, &$successResult) {
+            ->onEnter('idle', function (object $t) use (&$errorCaught, &$successResult) {
                 // Register generator ability that might fail
                 $this->abilities()->register('risky-generator', [
                     'name' => 'risky-generator',
@@ -286,7 +293,7 @@ class GeneratorHandlersTest extends RegionBuilderTestCase
                 ]);
 
                 // Invoke successfully
-                yield from $this->abilities('risky-generator', ['fail' => false])
+                $this->abilities('risky-generator', ['fail' => false])
                     ->then(function ($response) use (&$successResult) {
                         $successResult = 'completed';
                     });
@@ -295,8 +302,10 @@ class GeneratorHandlersTest extends RegionBuilderTestCase
             })
             ->build();
 
-        // When: Trigger region
-        $region->trigger((object)[]);
+        // When: Trigger region multiple times
+        $region->trigger((object)[]);  // onEnter runs, ability invoked
+        $region->trigger((object)[]);  // Scheduler tick
+        $region->trigger((object)[]);  // Scheduler tick: completes, response delivered
 
         // Then: Successful generator should complete
         $this->assertSame('completed', $successResult, 'Generator should complete successfully');
@@ -318,7 +327,7 @@ class GeneratorHandlersTest extends RegionBuilderTestCase
                 new AbilitiesFeature()
             )
             ->setStates('idle')
-            ->onAction('idle', function (object $t) use (&$outerExecuted, &$innerExecuted, &$finalResult) {
+            ->onEnter('idle', function (object $t) use (&$outerExecuted, &$innerExecuted, &$finalResult) {
                 // Register inner ability
                 $this->abilities()->register('inner', [
                     'name' => 'inner',
@@ -326,6 +335,7 @@ class GeneratorHandlersTest extends RegionBuilderTestCase
                     'parameterSchema' => [],
                     'responseSchema' => [],
                     'handler' => function () use (&$innerExecuted) {
+                        yield;  // Pause first
                         $innerExecuted = true;
                         yield;
                         return ['level' => 'inner'];
@@ -339,6 +349,7 @@ class GeneratorHandlersTest extends RegionBuilderTestCase
                     'parameterSchema' => [],
                     'responseSchema' => [],
                     'handler' => function () use (&$outerExecuted) {
+                        yield;  // Pause first
                         $outerExecuted = true;
                         yield;
 
@@ -351,15 +362,18 @@ class GeneratorHandlersTest extends RegionBuilderTestCase
                 ]);
 
                 // Invoke outer generator
-                yield from $this->abilities('outer')
+                $this->abilities('outer')
                     ->then(function ($response) use (&$finalResult) {
                         $finalResult = 'completed';
                     });
             })
             ->build();
 
-        // When: Trigger region
-        $region->trigger((object)[]);
+        // When: Trigger region multiple times
+        $region->trigger((object)[]);  // onEnter runs, ability invoked
+        $region->trigger((object)[]);  // Scheduler tick
+        $region->trigger((object)[]);  // Scheduler tick
+        $region->trigger((object)[]);  // Scheduler tick: completes, response delivered
 
         // Then: Outer generator should execute
         $this->assertTrue($outerExecuted, 'Outer generator should execute');

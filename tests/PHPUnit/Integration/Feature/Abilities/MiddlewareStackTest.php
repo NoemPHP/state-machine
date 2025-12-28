@@ -25,6 +25,23 @@ use PHPUnit\Framework\Attributes\Test;
 #[Group('middleware')]
 class MiddlewareStackTest extends RegionBuilderTestCase
 {
+    /**
+     * Helper to enable features and resolve them immediately
+     * Needed to access chains before build()
+     */
+    private function enableAndResolveFeatures(): void
+    {
+        $this->builder->enableFeatures(
+            new MessageFeature(),
+            new ExtendedState(),
+            new AbilitiesFeature()
+        );
+
+        // Manually invoke features to register chains
+        $registry = $this->chainmail()->get(\Noem\State\Feature\FeatureRegistry::class);
+        $registry->resolve($this->chainmail());
+    }
+
     #[Test]
     public function multipleMiddlewareExecuteInOrder(): void
     {
@@ -32,7 +49,10 @@ class MiddlewareStackTest extends RegionBuilderTestCase
         $executionOrder = [];
         $response = null;
 
-        // Access InvokeAbility chain and add middleware BEFORE building region
+        // Enable and resolve features so chains are accessible
+        $this->enableAndResolveFeatures();
+
+        // Access InvokeAbility chain and add middleware
         $invokeChain = $this->chainmail()->get(InvokeAbility::class);
 
         // Add logging middleware
@@ -60,11 +80,6 @@ class MiddlewareStackTest extends RegionBuilderTestCase
         });
 
         $region = $this->builder
-            ->enableFeatures(
-                new MessageFeature(),
-                new ExtendedState(),
-                new AbilitiesFeature()
-            )
             ->setStates('idle')
             ->onEnter('idle', function (object $t) use (&$response) {
                 // Register ability
@@ -105,12 +120,15 @@ class MiddlewareStackTest extends RegionBuilderTestCase
         // Given: Middleware that modifies parameters
         $receivedParams = null;
 
-        // Add middleware that injects additional parameters BEFORE building region
+        // Enable and resolve features so chains are accessible
+        $this->enableAndResolveFeatures();
+
+        // Add middleware that modifies parameters
         $invokeChain = $this->chainmail()->get(InvokeAbility::class);
 
         $invokeChain->link(function ($params, $next) {
             // Modify params before validation
-            $modifiedParams = new \Noem\State\Feature\Abilities\Params\InvokeAbility(
+            $modifiedParams = new \Noem\State\Feature\Abilities\Chains\Params\InvokeAbility(
                 $params->region,
                 $params->abilityName,
                 array_merge((array)$params->parameters, ['injected' => true])
@@ -119,11 +137,6 @@ class MiddlewareStackTest extends RegionBuilderTestCase
         });
 
         $region = $this->builder
-            ->enableFeatures(
-                new MessageFeature(),
-                new ExtendedState(),
-                new AbilitiesFeature()
-            )
             ->setStates('idle')
             ->onEnter('idle', function (object $t) use (&$receivedParams) {
                 // Register ability
@@ -160,7 +173,10 @@ class MiddlewareStackTest extends RegionBuilderTestCase
         $handlerExecuted = false;
         $blocked = false;
 
-        // Add auth middleware BEFORE building region
+        // Enable and resolve features so chains are accessible
+        $this->enableAndResolveFeatures();
+
+        // Add auth middleware
         $invokeChain = $this->chainmail()->get(InvokeAbility::class);
 
         $invokeChain->link(function ($params, $next) use (&$blocked) {
@@ -173,11 +189,6 @@ class MiddlewareStackTest extends RegionBuilderTestCase
         });
 
         $region = $this->builder
-            ->enableFeatures(
-                new MessageFeature(),
-                new ExtendedState(),
-                new AbilitiesFeature()
-            )
             ->setStates('idle')
             ->onEnter('idle', function (object $t) use (&$handlerExecuted) {
                 // Register protected ability
@@ -219,7 +230,10 @@ class MiddlewareStackTest extends RegionBuilderTestCase
         // Simple cache
         $cache = [];
 
-        // Add caching middleware BEFORE building region
+        // Enable and resolve features so chains are accessible
+        $this->enableAndResolveFeatures();
+
+        // Add caching middleware
         $invokeChain = $this->chainmail()->get(InvokeAbility::class);
 
         $invokeChain->link(function ($params, $next) use (&$cache) {
@@ -238,11 +252,6 @@ class MiddlewareStackTest extends RegionBuilderTestCase
         });
 
         $region = $this->builder
-            ->enableFeatures(
-                new MessageFeature(),
-                new ExtendedState(),
-                new AbilitiesFeature()
-            )
             ->setStates('idle')
             ->onEnter('idle', function (object $t) use (&$handlerCallCount, &$responses) {
                 // Register ability

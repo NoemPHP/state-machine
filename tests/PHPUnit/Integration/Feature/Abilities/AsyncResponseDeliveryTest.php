@@ -208,7 +208,7 @@ class AsyncResponseDeliveryTest extends RegionBuilderTestCase
                 new AbilitiesFeature()
             )
             ->setStates('idle')
-            ->onAction('idle', function (object $t) use (&$results) {
+            ->onEnter('idle', function (object $t) use (&$results) {
                 // Register abilities
                 $this->abilities()->register('workflow-step', [
                     'name' => 'workflow-step',
@@ -236,14 +236,13 @@ class AsyncResponseDeliveryTest extends RegionBuilderTestCase
                     ->then(function ($response) use (&$results) {
                         $results[] = 'step-3-done';
                     });
-
-                // Yield to allow async processing
-                yield;
             })
             ->build();
 
-        // When: Trigger region
-        $region->trigger((object)[]);
+        // When: Trigger region multiple times for scheduler ticks
+        $region->trigger((object)[]);  // onEnter runs, abilities invoked, tasks enqueued
+        $region->trigger((object)[]);  // Scheduler tick: handlers run
+        $region->trigger((object)[]);  // Scheduler tick: responses delivered
 
         // Then: All async callbacks should fire
         $this->assertCount(
@@ -303,7 +302,7 @@ class AsyncResponseDeliveryTest extends RegionBuilderTestCase
 
         // Response should be an AbilityMessage
         $this->assertInstanceOf(
-            \Noem\State\Feature\Abilities\Message\AbilityMessage::class,
+            \Noem\State\Feature\Abilities\AbilityMessage::class,
             $capturedResponse,
             'Response should be an AbilityMessage'
         );
@@ -323,7 +322,7 @@ class AsyncResponseDeliveryTest extends RegionBuilderTestCase
                 new AbilitiesFeature()
             )
             ->setStates('idle')
-            ->onAction('idle', function (object $t) use (&$timeline) {
+            ->onEnter('idle', function (object $t) use (&$timeline) {
                 // Register ability with multi-step handler
                 $this->abilities()->register('timing', [
                     'name' => 'timing',
@@ -331,6 +330,7 @@ class AsyncResponseDeliveryTest extends RegionBuilderTestCase
                     'parameterSchema' => [],
                     'responseSchema' => [],
                     'handler' => function () use (&$timeline) {
+                        yield;  // Pause first to avoid sync execution
                         $timeline[] = 'handler-step-1';
                         yield;
                         $timeline[] = 'handler-step-2';
@@ -346,15 +346,15 @@ class AsyncResponseDeliveryTest extends RegionBuilderTestCase
                         $timeline[] = 'response-delivered';
                     });
 
-                // Yield to allow async processing
-                yield;
-
-                $timeline[] = 'workflow-end';
+                $timeline[] = 'invocation-complete';
             })
             ->build();
 
-        // When: Trigger region
-        $region->trigger((object)[]);
+        // When: Trigger region multiple times for scheduler ticks
+        $region->trigger((object)[]);  // onEnter runs, ability invoked
+        $region->trigger((object)[]);  // Scheduler tick: handler-step-1
+        $region->trigger((object)[]);  // Scheduler tick: handler-step-2
+        $region->trigger((object)[]);  // Scheduler tick: handler-complete, response-delivered
 
         // Then: Response should be delivered AFTER handler completes
         $this->assertContains('handler-complete', $timeline);

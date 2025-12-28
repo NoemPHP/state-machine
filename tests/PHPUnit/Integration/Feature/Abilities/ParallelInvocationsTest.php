@@ -41,7 +41,7 @@ class ParallelInvocationsTest extends RegionBuilderTestCase
                 new AbilitiesFeature()
             )
             ->setStates('idle')
-            ->onAction('idle', function (object $t) use (&$executionLog) {
+            ->onEnter('idle', function (object $t) use (&$executionLog) {
                 // Register abilities that log their progress
                 $this->abilities()->register('ability-a', [
                     'name' => 'ability-a',
@@ -49,6 +49,7 @@ class ParallelInvocationsTest extends RegionBuilderTestCase
                     'parameterSchema' => [],
                     'responseSchema' => [],
                     'handler' => function () use (&$executionLog) {
+                        // Log start BEFORE yield to show concurrent startup
                         $executionLog[] = 'A-start';
                         yield;
                         $executionLog[] = 'A-step1';
@@ -66,6 +67,7 @@ class ParallelInvocationsTest extends RegionBuilderTestCase
                     'parameterSchema' => [],
                     'responseSchema' => [],
                     'handler' => function () use (&$executionLog) {
+                        // Log start BEFORE yield to show concurrent startup
                         $executionLog[] = 'B-start';
                         yield;
                         $executionLog[] = 'B-step1';
@@ -83,6 +85,7 @@ class ParallelInvocationsTest extends RegionBuilderTestCase
                     'parameterSchema' => [],
                     'responseSchema' => [],
                     'handler' => function () use (&$executionLog) {
+                        // Log start BEFORE yield to show concurrent startup
                         $executionLog[] = 'C-start';
                         yield;
                         $executionLog[] = 'C-step1';
@@ -98,14 +101,15 @@ class ParallelInvocationsTest extends RegionBuilderTestCase
                 $this->abilities('ability-a');
                 $this->abilities('ability-b');
                 $this->abilities('ability-c');
-
-                // Yield to allow async processing
-                yield;
             })
             ->build();
 
-        // When: Trigger region
-        $region->trigger((object)[]);
+        // When: Trigger region multiple times for scheduler ticks
+        $region->trigger((object)[]);  // onEnter runs, abilities invoked
+        $region->trigger((object)[]);  // Scheduler tick
+        $region->trigger((object)[]);  // Scheduler tick
+        $region->trigger((object)[]);  // Scheduler tick
+        $region->trigger((object)[]);  // Scheduler tick - handlers complete
 
         // Then: All abilities should have executed
         $this->assertContains('A-start', $executionLog);
@@ -152,7 +156,7 @@ class ParallelInvocationsTest extends RegionBuilderTestCase
                 new AbilitiesFeature()
             )
             ->setStates('idle')
-            ->onAction('idle', function (object $t) use (&$task1Completed, &$task2Completed, &$task3Completed) {
+            ->onEnter('idle', function (object $t) use (&$task1Completed, &$task2Completed, &$task3Completed) {
                 // Register parallel tasks
                 $this->abilities()->register('parallel-task', [
                     'name' => 'parallel-task',
@@ -168,7 +172,7 @@ class ParallelInvocationsTest extends RegionBuilderTestCase
                     }
                 ]);
 
-                // Use yield from to enable parallel execution
+                // Invoke abilities to enable parallel execution
                 $this->abilities('parallel-task', ['id' => 1])
                     ->then(function () use (&$task1Completed) {
                         $task1Completed = true;
@@ -183,14 +187,14 @@ class ParallelInvocationsTest extends RegionBuilderTestCase
                     ->then(function () use (&$task3Completed) {
                         $task3Completed = true;
                     });
-
-                // Yield to allow async processing
-                yield;
             })
             ->build();
 
-        // When: Trigger region
-        $region->trigger((object)[]);
+        // When: Trigger region multiple times for scheduler ticks
+        $region->trigger((object)[]);  // onEnter runs, abilities invoked
+        $region->trigger((object)[]);  // Scheduler tick
+        $region->trigger((object)[]);  // Scheduler tick
+        $region->trigger((object)[]);  // Scheduler tick - all complete, responses delivered
 
         // Then: All tasks should complete via parallel execution
         $this->assertTrue($task1Completed, 'Task 1 should complete');
@@ -212,7 +216,7 @@ class ParallelInvocationsTest extends RegionBuilderTestCase
                 new AbilitiesFeature()
             )
             ->setStates('idle')
-            ->onAction('idle', function (object $t) use (&$responses) {
+            ->onEnter('idle', function (object $t) use (&$responses) {
                 // Register ability
                 $this->abilities()->register('identify', [
                     'name' => 'identify',
@@ -240,14 +244,12 @@ class ParallelInvocationsTest extends RegionBuilderTestCase
                     ->then(function ($response) use (&$responses) {
                         $responses[] = 'gamma';
                     });
-
-                // Yield to allow async processing
-                yield;
             })
             ->build();
 
-        // When: Trigger region
-        $region->trigger((object)[]);
+        // When: Trigger region multiple times
+        $region->trigger((object)[]);  // onEnter runs, abilities invoked
+        $region->trigger((object)[]);  // Scheduler tick: all complete, responses delivered
 
         // Then: Each invocation should receive its own correlated response
         $this->assertCount(3, $responses, 'All three responses should be delivered');
@@ -270,8 +272,9 @@ class ParallelInvocationsTest extends RegionBuilderTestCase
                 new AsyncFeature(),
                 new AbilitiesFeature()
             )
-            ->setStates('state-a', 'state-b')
-            ->onAction('state-a', function (object $t) use (&$stateAResult) {
+            ->setStates('idle')
+            ->onEnter('idle', function (object $t) use (&$stateAResult, &$stateBResult) {
+                // Register both tasks from same state (simulating parallel abilities)
                 $this->abilities()->register('task-a', [
                     'name' => 'task-a',
                     'description' => 'Task A',
@@ -280,19 +283,10 @@ class ParallelInvocationsTest extends RegionBuilderTestCase
                     'handler' => function () {
                         yield;
                         yield;
-                        return ['from' => 'state-a'];
+                        return ['from' => 'task-a'];
                     }
                 ]);
 
-                $this->abilities('task-a')
-                    ->then(function ($response) use (&$stateAResult) {
-                        $stateAResult = 'a-done';
-                    });
-
-                // Yield to allow async processing
-                yield;
-            })
-            ->onAction('state-b', function (object $t) use (&$stateBResult) {
                 $this->abilities()->register('task-b', [
                     'name' => 'task-b',
                     'description' => 'Task B',
@@ -301,22 +295,27 @@ class ParallelInvocationsTest extends RegionBuilderTestCase
                     'handler' => function () {
                         yield;
                         yield;
-                        return ['from' => 'state-b'];
+                        return ['from' => 'task-b'];
                     }
                 ]);
+
+                // Invoke both tasks in parallel
+                $this->abilities('task-a')
+                    ->then(function ($response) use (&$stateAResult) {
+                        $stateAResult = 'a-done';
+                    });
 
                 $this->abilities('task-b')
                     ->then(function ($response) use (&$stateBResult) {
                         $stateBResult = 'b-done';
                     });
-
-                // Yield to allow async processing
-                yield;
             })
             ->build();
 
-        // When: Trigger both states concurrently
-        $region->trigger((object)[]);
+        // When: Trigger region multiple times for async completion
+        $region->trigger((object)[]);  // onEnter runs, both abilities invoked
+        $region->trigger((object)[]);  // Scheduler tick
+        $region->trigger((object)[]);  // Scheduler tick - both complete, responses delivered
 
         // Then: Both should execute in parallel
         $this->assertSame('a-done', $stateAResult, 'State A ability should complete');

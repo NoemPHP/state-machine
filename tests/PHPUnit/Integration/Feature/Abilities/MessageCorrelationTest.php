@@ -52,7 +52,7 @@ class MessageCorrelationTest extends RegionBuilderTestCase
                 $requestMessage = $this->abilities('correlation-test');
                 $requestCorrelationId = $requestMessage->correlationId;
 
-                $requestMessage->then(function ($response, $responseMessage) use (&$responseCorrelationId) {
+                $requestMessage->then(function ($responseMessage) use (&$responseCorrelationId) {
                     $responseCorrelationId = $responseMessage->correlationId ?? null;
                 });
             })

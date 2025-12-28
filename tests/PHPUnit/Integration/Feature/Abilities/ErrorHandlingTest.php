@@ -99,7 +99,7 @@ class ErrorHandlingTest extends RegionBuilderTestCase
         // Then: Should throw AbilityNotFoundException
         $this->assertNotNull($exceptionCaught);
         $this->assertInstanceOf(
-            \Noem\State\Feature\Abilities\Exception\AbilityNotFoundException::class,
+            \Noem\State\Feature\Abilities\AbilityNotFoundException::class,
             $exceptionCaught
         );
         $this->assertStringContainsString(

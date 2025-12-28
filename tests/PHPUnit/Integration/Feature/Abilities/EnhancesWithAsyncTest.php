@@ -81,6 +81,7 @@ class EnhancesWithAsyncTest extends RegionBuilderTestCase
         $syncRegion = $this->builder
             ->enableFeatures(
                 new MessageFeature(),
+                new ExtendedState(),
                 new AbilitiesFeature()
             )
             ->setStates('idle')
