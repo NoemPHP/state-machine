@@ -22,14 +22,14 @@ class ParameterDeriver
     /**
      * Derives the class type of the first argument of a callable.
      *
-     * @param callable|array $callable $callable
+     * @param string|array<string|object,string>|callable $callable $callable
      *   The callable for which we want the parameter type.
      * @param int $param
      *
      * @return string
      *   The class the parameter is type hinted on.
      */
-    public static function getParameterType(callable|array $callable, int $param = 0): string
+    public static function getParameterType(callable|array|string $callable, int $param = 0): string
     {
         // We can't type hint $callable as it could be an array, and arrays are not callable. Sometimes. Bah, PHP.
 
@@ -44,6 +44,9 @@ class ParameterDeriver
             if ($rType === null) {
                 throw new \InvalidArgumentException("No type hint defined for parameter {$param}.");
             }
+            if (!$rType instanceof \ReflectionNamedType) {
+                throw new \InvalidArgumentException("Could not derive type name of parameter {$param}.");
+            }
             $type = $rType->getName();
         } catch (ReflectionException $e) {
             throw new \RuntimeException('Type error registering callable.', 0, $e);
@@ -55,12 +58,12 @@ class ParameterDeriver
     /**
      * Checks if the specified parameter of a callable is nullable.
      *
-     * @param callable|array $callable The callable for which we want to check parameter nullability.
+     * @param string|array<string|object,string>|callable $callable The callable for which we want to check parameter nullability.
      * @param int $param The index of the parameter to check. Defaults to 0.
      *
      * @return bool Returns true if the parameter is nullable, false otherwise.
      */
-    public static function isParameterNullable(callable|array $callable, int $param = 0): bool
+    public static function isParameterNullable(callable|string|array $callable, int $param = 0): bool
     {
         try {
             $reflect = self::reflect($callable);
@@ -73,7 +76,7 @@ class ParameterDeriver
             $rType = $params[$param]->getType();
 
             // If the parameter has no type or is a scalar (which cannot be null), return false
-            if (!$rType || $rType->isBuiltin()) {
+            if (!$rType || ($rType instanceof \ReflectionNamedType && $rType->isBuiltin())) {
                 return false;
             }
 
@@ -87,12 +90,12 @@ class ParameterDeriver
     /**
      * Returns the number of parameters
      *
-     * @param $callable
+     * @param string|array<string|object,string>|callable $callable
      *
      * @return int
      * @throws ReflectionException
      */
-    public static function getParameterCount($callable): int
+    public static function getParameterCount(string|array|callable $callable): int
     {
         $reflect = self::reflect($callable);
         $params = $reflect->getParameters();
@@ -101,9 +104,10 @@ class ParameterDeriver
     }
 
     /**
+     * @param string|array<string|object,string>|callable $callable
      * @throws ReflectionException
      */
-    public static function getReturnType($callable): string|null
+    public static function getReturnType(string|array|callable $callable): string|null
     {
         $returns = self::reflect($callable)->getReturnType();
 
@@ -122,7 +126,7 @@ class ParameterDeriver
      * parameter type of the callable at the specified position. If the parameter type
      * is 'object', it checks if the payload is an instance of that object type.
      *
-     * @param callable $callback
+     * @param string|array<string|object,string>|callable $callback
      *   The callable for which to check the parameter compatibility.
      * @param object $payload
      *   The payload object to be checked against the parameter type.
@@ -133,10 +137,11 @@ class ParameterDeriver
      *   Returns true if the payload is compatible with the parameter type, false otherwise.
      */
     public static function isCompatibleParameter(
-        callable $callback,
-        object $payload,
-        int $param = 0
-    ): bool {
+        string|array|callable $callback,
+        object                $payload,
+        int                   $param = 0
+    ): bool
+    {
         $parameterType = self::getParameterType($callback, $param);
 
         if ($parameterType !== 'object' && !$payload instanceof $parameterType) {
@@ -193,12 +198,12 @@ class ParameterDeriver
     }
 
     /**
-     * @param $callable
+     * @param string|array<string|object,string>|callable $callable
      *
      * @return \ReflectionFunction|\ReflectionMethod
      * @throws ReflectionException
      */
-    public static function reflect($callable): \ReflectionFunction|\ReflectionMethod
+    public static function reflect(string|array|callable $callable): \ReflectionFunction|\ReflectionMethod
     {
         return match (true) {
             self::isClassCallable($callable) => (new \ReflectionClass($callable[0]))->getMethod($callable[1]),
@@ -216,11 +221,11 @@ class ParameterDeriver
      *
      * Or at least a reasonable approximation, since a function name may not be defined yet.
      *
-     * @param callable $callable
+     * @param string|array<string|object,string>|callable $callable $callable
      *
-     * @return True if the callable represents a function, false otherwise.
+     * @return bool True if the callable represents a function, false otherwise.
      */
-    protected static function isFunctionCallable($callable): bool
+    protected static function isFunctionCallable(string|array|callable $callable): bool
     {
         // We can't check for function_exists() because it may be included later by the time it matters.
         return is_string($callable);
@@ -231,7 +236,7 @@ class ParameterDeriver
      *
      * @param callable $callable
      *
-     * @return True if the callable represents a closure object, false otherwise.
+     * @return bool True if the callable represents a closure object, false otherwise.
      */
     protected static function isClosureCallable(callable $callable): bool
     {
@@ -243,7 +248,7 @@ class ParameterDeriver
      *
      * @param callable $callable
      *
-     * @return True if the callable represents a method object, false otherwise.
+     * @return bool True if the callable represents a method object, false otherwise.
      */
     protected static function isObjectCallable(callable $callable): bool
     {
@@ -265,7 +270,7 @@ class ParameterDeriver
      *
      * @param callable $callable
      *
-     * @return True if the callable represents a static method, false otherwise.
+     * @return bool True if the callable represents a static method, false otherwise.
      */
     protected static function isClassCallable($callable): bool
     {
@@ -277,7 +282,7 @@ class ParameterDeriver
      *
      * @param callable $callable
      *
-     * @return True if the callable represents an invokable object, false otherwise.
+     * @return bool True if the callable represents an invokable object, false otherwise.
      */
     private static function isInvokable(callable $callable): bool
     {

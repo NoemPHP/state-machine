@@ -21,6 +21,17 @@ use Noem\State\Feature\Feature;
  */
 class MessageFeature implements Feature
 {
+    /**
+     * Tracks messages that already have subscriptions set up to prevent duplicates
+     * @var \WeakMap<Message, true>
+     */
+    private \WeakMap $subscribedMessages;
+
+    public function __construct()
+    {
+        $this->subscribedMessages = new \WeakMap();
+    }
+
     public function __invoke(ChainMail $chainMail): void
     {
         $chainMail->use($this->installMessageDispatching(...));
@@ -65,6 +76,14 @@ class MessageFeature implements Feature
         Message $message,
         Notification $notificationChain
     ): void {
+        // Check if subscription already exists for this message
+        if ($this->subscribedMessages->offsetExists($message)) {
+            return;
+        }
+
+        // Mark as subscribed before setting up to prevent re-entry
+        $this->subscribedMessages[$message] = true;
+
         // Subscribe to events with correlation ID matching request
         $unsubscribe = $notificationChain->subscribe(
             function (object $event, ?\Noem\State\Region $eventRegion = null) use ($message, &$unsubscribe) {
@@ -79,6 +98,9 @@ class MessageFeature implements Feature
 
                 // Correlation matches - deliver response to request then() callbacks
                 $message->deliverResponse($event);
+
+                // Remove from tracked messages since subscription is being cleaned up
+                unset($this->subscribedMessages[$message]);
 
                 // Auto cleanup - remove this subscription since we got our response
                 $unsubscribe();
@@ -97,12 +119,25 @@ class MessageFeature implements Feature
         $notificationChain->link(function (Notify $notify, callable $next) use ($notificationChain) {
             // Check if event is a Message BEFORE processing
             if ($notify->event instanceof Message) {
-                // Set up subscription for this message before processing
-                // This ensures the subscription is ready when the response is emitted
-                $this->setupMessageSubscription(
-                    $notify->event,
-                    $notificationChain
-                );
+                // Check if this message is a response to any request we're tracking
+                // Responses should NOT get subscriptions set up for them
+                $isResponse = false;
+                foreach ($this->subscribedMessages as $trackedMessage => $_) {
+                    if ($notify->event->repliesTo($trackedMessage)) {
+                        $isResponse = true;
+                        break;
+                    }
+                }
+
+                // Only set up subscription for request messages, not responses
+                if (!$isResponse) {
+                    // Set up subscription for this message (if not already subscribed)
+                    // This ensures the subscription is ready when the response is emitted
+                    $this->setupMessageSubscription(
+                        $notify->event,
+                        $notificationChain
+                    );
+                }
             }
 
             // Now process the notification
