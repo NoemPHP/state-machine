@@ -1,0 +1,167 @@
+# Machine Agent - Autonomous State Machine Generator
+# Self-contained Holon machine that generates other Holon machines
+
+machine:
+  require: !php require '/var/www/html/machines/machine-agent/holon-functions.php'
+
+  features:
+    # Core infrastructure
+    - class: Noem\State\Feature\ExtendedState\ExtendedState
+
+    # AI capabilities
+    - class: Noem\State\Feature\Template\TemplateFeature
+    - class: Noem\State\Feature\Ai\AiFeature
+    - class: Noem\State\Feature\Ai\AiConfigFeature
+      config:
+        credentials:
+          ollama:
+            baseUrl: 'http://telvanni:7863/api'
+
+        modelPool:
+          - id: 'qwen-coder'
+            provider: 'ollama'
+            model: 'qwen2.5-coder:14b-instruct-q4_K_M'
+            complexity: 3
+            context: 32
+            cost: 'low'
+          - id: 'qwen-small'
+            provider: 'ollama'
+            model: 'qwen2.5:3b-instruct-q5_K_M'
+            complexity: 2
+            context: 8
+            cost: 'free'
+
+        preferences:
+          defaultComplexity: 2
+          defaultContext: 32
+          preferProviders: ['ollama']
+          costBias: 'moderate'
+
+        weave:
+          defaultMaxIterations: 3
+          defaultBackend: 'ollama'
+          defaultComplexity: 'high'
+
+    # Async & messaging
+    - class: Noem\State\Feature\Async\AsyncFeature
+    - class: Noem\State\Feature\Message\MessageFeature
+
+    # Abilities & agentic operations
+    - class: Noem\State\Feature\Abilities\AbilitiesFeature
+    - class: Noem\State\Feature\Agentic\AgenticFeature
+
+  eventLoop:
+    autoRun: true
+    maxIterations: 0  # Unlimited iterations for interactive session
+
+states:
+  - name: idle
+    onEnter:
+      - run: !php return onEnterIdle()
+    transitions:
+      - target: gathering_requirements
+
+  - name: gathering_requirements
+    onEnter:
+      - run: !php return onEnterGatheringRequirements()
+    action:
+      - run: !php return actionGatheringRequirements()
+        async:
+          enabled: true
+    transitions:
+      - target: analyzing_requirements
+        guard: !php return guardHasUserRequest()
+      - target: finished
+        guard: !php return guardShouldExit()
+
+  - name: analyzing_requirements
+    onEnter:
+      - run: !php return onEnterAnalyzingRequirements()
+    action:
+      - run: !php return actionAnalyzingRequirements()
+        async:
+          enabled: true
+    transitions:
+      - target: questioning
+        guard: !php return guardAnalysisComplete()
+
+  - name: questioning
+    onEnter:
+      - run: !php return onEnterQuestioning()
+    action:
+      - run: !php return actionQuestioning()
+        async:
+          enabled: true
+    transitions:
+      - target: questioning
+        guard: !php return guardQuestioningNotComplete()
+      - target: planning_machine
+        guard: !php return guardQuestioningComplete()
+      - target: finished
+        guard: !php return guardShouldExit()
+
+  - name: planning_machine
+    onEnter:
+      - run: !php return onEnterPlanningMachine()
+    action:
+      - run: !php return actionPlanningMachine()
+        async:
+          enabled: true
+    transitions:
+      - target: generating_yaml
+        guard: !php return guardPlanComplete()
+
+  - name: generating_yaml
+    onEnter:
+      - run: !php return onEnterGeneratingYaml()
+    action:
+      - run: !php return actionGeneratingYaml()
+        async:
+          enabled: true
+    transitions:
+      - target: generating_functions
+        guard: !php return guardYamlGeneratedNeedsFunctions()
+      - target: validating_output
+        guard: !php return guardYamlGeneratedInline()
+
+  - name: generating_functions
+    onEnter:
+      - run: !php return onEnterGeneratingFunctions()
+    action:
+      - run: !php return actionGeneratingFunctions()
+        async:
+          enabled: true
+    transitions:
+      - target: validating_output
+        guard: !php return guardFunctionsGenerated()
+
+  - name: validating_output
+    onEnter:
+      - run: !php return onEnterValidatingOutput()
+    action:
+      - run: !php return actionValidatingOutput()
+        async:
+          enabled: true
+    transitions:
+      - target: delivering_machine
+        guard: !php return guardValidationPassed()
+      - target: planning_machine
+        guard: !php return guardValidationFailed()
+
+  - name: delivering_machine
+    onEnter:
+      - run: !php return onEnterDeliveringMachine()
+    action:
+      - run: !php return actionDeliveringMachine()
+        async:
+          enabled: true
+    transitions:
+      - target: finished
+        guard: !php return guardDeliveryComplete()
+
+  - name: finished
+    onEnter:
+      - run: !php return onEnterFinished()
+
+initial: idle
+final: finished
