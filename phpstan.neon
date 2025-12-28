@@ -1,0 +1,11 @@
+# phpstan.neon
+parameters:
+    level: 6
+    paths:
+        - src
+        #- tests
+services:
+    -
+        class: \Noem\State\Test\Architecture\Layering\MiddlewareIndependenceTest
+        tags:
+            - phpat.test

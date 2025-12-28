@@ -21,10 +21,13 @@
         "phpunit/phpunit": "^11.4",
         "mockery/mockery": "^1.4",
         "squizlabs/php_codesniffer": "^3.11",
-        "vimeo/psalm": "^5.0",
+        "vimeo/psalm": "^6.0",
         "phpmd/phpmd": "^2.15",
         "noem/composer-file-embed": "dev-master",
-        "spatie/phpunit-watcher": "^1.24"
+        "spatie/phpunit-watcher": "^1.24",
+        "phpat/phpat": "^0.12.1",
+        "phpstan/phpstan": "^2.1",
+        "phpstan/extension-installer": "^1.4"
     },
     "autoload": {
         "psr-4": {
@@ -33,12 +36,14 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Noem\\State\\Test\\": "tests/PHPUnit"
+            "Noem\\State\\Test\\": "tests/PHPUnit",
+            "Noem\\State\\Test\\Architecture\\": "tests/Architecture"
         }
     },
     "config": {
         "allow-plugins": {
-            "noem/composer-file-embed": true
+            "noem/composer-file-embed": true,
+            "phpstan/extension-installer": true
         },
         "process-timeout": 0
     },
