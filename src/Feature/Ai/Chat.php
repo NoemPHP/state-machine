@@ -4,20 +4,25 @@ declare(strict_types=1);
 
 namespace Noem\State\Feature\Ai;
 
+use Noem\State\Feature\Ai\Backend\BackendInterface;
+use Noem\State\Feature\Ai\Backend\OpenAiBackend;
 use Noem\State\Feature\Async\IO\Fetch;
 
 class Chat
 {
     private Request $request;
+    private BackendInterface $backend;
 
     public function __construct(
         string|Request $request,
-        private readonly ?bool $asText = true
+        private readonly ?bool $asText = true,
+        ?BackendInterface $backend = null
     ) {
         if (is_scalar($request)) {
             $request = new RequestBuilder()->setPrompt($request)->build();
         }
         $this->request = $request;
+        $this->backend = $backend ?? new OpenAiBackend();
     }
 
     /**
@@ -25,76 +30,15 @@ class Chat
      */
     public function __invoke(): \Generator
     {
-        $args = [
-            'model' => $this->request->model,
-            'messages' => [
-                [
-                    'role' => 'developer',
-                    'content' => 'You are a helpful assistant',
-                ],
-                [
-                    'role' => 'user',
-                    'content' => $this->request->prompt,
-                ],
-            ],
-            'stream' => false,
-//            'stream' => $this->request->stream,
-        ];
+        // Use backend to stream responses
+        $responses = $this->backend->stream($this->request);
 
-        if ($this->request->responseFormat) {
-            $args['response_format'] = [
-                'type' => $this->request->responseFormat->format,
-                $this->request->responseFormat->format => $this->request->responseFormat->definition,
-            ];
-        }
-        $fetch = new Fetch(
-            "{$this->request->baseUrl}/chat/completions",
-            'POST',
-            [
-                'Content-Type' => 'application/json',
-                'Authorization' => 'Bearer ' . $this->request->token,
-            ],
-            json_encode($args)
-        )();
-        $buffer = '';
-        while ($fetch->valid()) {
-            $chunk = $fetch->current();
-            $fetch->next();
-            $buffer .= $chunk;
-
-            $output = $this->processBuffer($buffer);
-
-            while ($output->valid()) {
-                $payload = $output->current();
-                yield $payload;
-                $output->next();
-            }
-            $buffer = $output->getReturn();
-        }
-        $buffer .= $fetch->current();
-        /**
-         * If there is data remaining in the buffer
-         */
-        yield from $this->processBuffer($buffer);
-    }
-
-    private function processBuffer(string $buffer): \Generator
-    {
-        // Split the buffer into lines
-        $lines = explode("\n", $buffer);
-        foreach (array_slice($lines, 0, -1) as $line) {
-            $decoded = json_decode($line, true);
-            if (!$decoded) {
-                continue;
-            }
+        foreach ($responses as $payload) {
             if ($this->asText) {
-                yield $decoded['choices'][0]['message']['content'];
+                yield $payload['choices'][0]['message']['content'] ?? '';
                 continue;
             }
-            yield $decoded;
+            yield $payload;
         }
-
-        // Keep the last incomplete line in the buffer
-        return end($lines);
     }
 }

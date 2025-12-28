@@ -59,7 +59,12 @@ features:
         criticality: constraint
         intent: Prevents unbounded recursion by deferring nested events to subsequent dispatch cycles, maintaining controlled execution flow
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/NestedEventDispatchTest.php
-        
+
+      - acceptanceCriteria: Region.doDispatch() invokes notificationChain for each dispatched event
+        criticality: contract
+        intent: Enables observer pattern for region events, allowing external code to react to state machine activity without modifying action callbacks. Listeners registered via Region.on() must be notified when events are dispatched, independent of any features. Notifications fire before actionChain processing so listeners observe state before it changes.
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Region/DispatchInvokesNotificationChainTest.php
+
   - name: action-chain-integration
     description: Integration with the action chain for state-based event handling
     specs:

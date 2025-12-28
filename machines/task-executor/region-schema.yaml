@@ -1,0 +1,163 @@
+# RegionLoader YAML Schema Template for AI-Generated State Machines
+# This schema defines the structure that the AI must follow when generating task execution state machines
+
+schema:
+  description: |
+    Complete YAML schema for RegionLoader-compatible state machine definitions.
+    The AI should generate state machines that follow this structure.
+
+  required_sections:
+    - states
+    - initial
+    - final
+
+  structure:
+    states:
+      description: Array of state definitions
+      type: array
+      items:
+        type: object
+        required: [name]
+        properties:
+          name:
+            type: string
+            description: Unique state identifier
+
+          onEnter:
+            type: array
+            description: Callbacks executed when entering this state
+            items:
+              type: object
+              properties:
+                run:
+                  type: string
+                  description: Inline PHP code or function reference
+                  examples:
+                    - "!php return function(object \$t) { echo 'Entered state'; };"
+                    - "!php return taskStepOne();"
+
+          onExit:
+            type: array
+            description: Callbacks executed when leaving this state
+            items:
+              type: object
+              properties:
+                run:
+                  type: string
+
+          action:
+            type: array
+            description: Main state logic (can be async)
+            items:
+              type: object
+              properties:
+                run:
+                  type: string
+                async:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                    singleton:
+                      type: boolean
+
+          transitions:
+            type: array
+            description: Possible state transitions
+            items:
+              type: object
+              required: [target]
+              properties:
+                target:
+                  type: string
+                  description: Target state name
+                guard:
+                  type: string
+                  description: Condition for transition (must return boolean)
+                  examples:
+                    - "!php return function(object \$t) { return true; };"
+
+    initial:
+      type: string
+      description: Name of the initial state
+
+    final:
+      type: string
+      description: Name of the final state (or array of final states)
+
+  examples:
+    simple_task:
+      description: Simple 3-state task execution
+      yaml: |
+        states:
+          - name: prepare
+            onEnter:
+              - run: !php return function(object \$t) { echo "Preparing task...\n"; };
+            transitions:
+              - target: execute
+
+          - name: execute
+            onEnter:
+              - run: !php return function(object \$t) { echo "Executing task...\n"; };
+            action:
+              - run: !php return function(object \$t): \Generator { echo "Processing...\n"; yield; };
+                async:
+                  enabled: true
+            transitions:
+              - target: complete
+
+          - name: complete
+            onEnter:
+              - run: !php return function(object \$t) { echo "Task complete!\n"; };
+
+        initial: prepare
+        final: complete
+
+    multi_step_workflow:
+      description: Multi-step workflow with conditional transitions
+      yaml: |
+        states:
+          - name: start
+            onEnter:
+              - run: !php return function(object \$t) { \$this->set('step', 1); };
+            transitions:
+              - target: step_one
+
+          - name: step_one
+            onEnter:
+              - run: !php return function(object \$t) { echo "Step 1\n"; \$this->set('step', 2); };
+            transitions:
+              - target: step_two
+
+          - name: step_two
+            onEnter:
+              - run: !php return function(object \$t) { echo "Step 2\n"; \$this->set('step', 3); };
+            transitions:
+              - target: done
+
+          - name: done
+            onEnter:
+              - run: !php return function(object \$t) { echo "All steps complete!\n"; };
+
+        initial: start
+        final: done
+
+guidelines:
+  for_ai_generation:
+    - Keep state machines focused on the specific task requested
+    - Use descriptive state names (e.g., "downloading_data", "processing_results")
+    - Include progress messages in onEnter callbacks
+    - Use ExtendedState context for passing data between states (\$this->set/get)
+    - Mark actions as async if they perform I/O or long operations
+    - Always define clear initial and final states
+    - Use transitions to model the task workflow
+    - Add guards for conditional logic
+    - Keep inline PHP simple - complex logic should be described in comments
+    - Each state should represent a distinct phase of the task
+
+  output_format:
+    - Return ONLY the YAML structure (states, initial, final)
+    - Do NOT include schema documentation in the output
+    - Do NOT wrap in markdown code blocks
+    - Ensure proper YAML indentation (2 spaces)
+    - Use !php helper for inline PHP code

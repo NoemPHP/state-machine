@@ -28,54 +28,14 @@ states:
                 # language=html
                 default: |
                   <html lang="en">
-
                   <head>
                       <title>Noem Regions</title>
                   </head>
                   <body>
-                  <header>Hi, this is Noem
-                  </header>
-                  <p>
-                      {{#complete max=64 stop='</title>'}}
-                      {{systemPrompt}}
-                      Write a humorous, nerdy paragraph about how awesome finite state machines are
-                      {{/complete}}
-                  </p>
+                  <header>Hi, this is Noem</header>
+                  <p>This is a test response from the webserver state machine.</p>
+                  <p>Request URI: {{uri}}</p>
                   <span>END</span>
-                  </body>
-                  </html>
-              - name: bodyTemplateBAK
-                type: string
-                description: The template that renders all file contents condensed as a single piece of text
-                # language=html
-                default: |
-                  <html lang="en">
-
-                  <head>
-                      <title>
-                          {{#complete max=64 stop='</title>'}}
-                      {{systemPrompt}}
-                      # Task
-                      Write the title of a personal blog about family life and organization.
-                      Text of the title only! Do not proceed with markup
-                      {{/complete}}
-                      </title>
-
-                      {{#complete max=512}}
-                      {{systemPrompt}}
-                      # Task
-                      Complete this HTML head section of a personal blog about family life and organization.
-                      Generate light CSS styles that match the content.
-                      Output until the closing tag, but do not out the closing tag
-                      {{/complete}}
-                  </head>
-                  <body>
-                  {{#complete max=512}}
-                  {{systemPrompt}}
-                  # Task
-                  Complete the HTML body section of a personal blog about family life and organization.
-                  Output until the closing tag, but do not out the closing tag
-                  {{/complete}}
                   </body>
                   </html>
           states:
@@ -84,8 +44,8 @@ states:
                 - target: processing
               action:
                 - run: !get request.action.accept
-                  async:
-                    enabled: true
+#                  async:
+#                    enabled: true
             - name: processing
               action:
                 - run: !get request.action.processing
@@ -99,12 +59,12 @@ states:
                 - run: !get request.onEnter.close
     onEnter:
       - run: !get server.starting.onEnter
-        async:
-          enabled: true
+
     action:
       - run: !get server.starting.accept
         async:
           enabled: true
+          singleton: true
   #    transitions:
   #      - target: lol
 

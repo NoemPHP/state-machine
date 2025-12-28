@@ -1,0 +1,793 @@
+name: abilities
+group: features
+description: |
+  Schema-validated, discoverable cross-region operations built on MessageFeature correlation system. Provides direct BoundAccess
+  integration via $this->abilities() API, stateless InvokeAbility chain, meta-reflexive enumeration, and synchronous-first design
+  with optional AsyncFeature enhancement. Enables regions to expose and invoke operations through clean, middleware-interceptable API.
+
+features:
+  - name: feature-registration
+    description: Feature initialization and service registration in ChainMail
+    specs:
+      - acceptanceCriteria: AbilitiesFeature registers AbilityRegistry Mesh in ChainMail
+        criticality: contract
+        intent: Provides centralized ability storage through AbilityRegistry Mesh registration, enabling per-region ability definitions and discovery
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/RegistersAbilityRegistryTest.php
+
+      - acceptanceCriteria: AbilitiesFeature registers InvokeAbility chain in ChainMail
+        criticality: contract
+        intent: Provides ability invocation mechanism through InvokeAbility chain registration, enabling middleware-interceptable ability calls
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/RegistersInvokeAbilityChainTest.php
+
+      - acceptanceCriteria: AbilitiesFeature requires MessageFeature dependency
+        criticality: constraint
+        intent: Enforces MessageFeature presence for correlation-based response handling, preventing runtime failures from missing infrastructure
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/RequiresMessageFeatureTest.php
+
+      - acceptanceCriteria: AbilitiesFeature wires abilities method into BoundAccess
+        criticality: contract
+        intent: Intercepts BoundAccess __call to handle abilities() invocations, enabling direct $this->abilities() API in state callbacks
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/WiresBoundAccessMethodTest.php
+
+      - acceptanceCriteria: AbilitiesFeature installs DispatchAction middleware for AbilityMessage handling
+        criticality: contract
+        intent: Intercepts AbilityMessage payloads during dispatch to execute ability handlers and generate responses
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/InstallsDispatchMiddlewareTest.php
+
+      - acceptanceCriteria: AbilitiesFeature registers built-in enumerate-abilities ability
+        criticality: contract
+        intent: Provides meta-reflexive discovery by registering enumerate-abilities as native ability, enabling introspection through same API
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/RegistersEnumerateAbilityTest.php
+
+  - name: ability-definition
+    description: Immutable ability definition with name, description, schemas, and handler
+    specs:
+      - acceptanceCriteria: AbilityDefinition stores ability name as readonly string
+        criticality: contract
+        intent: Provides unique identifier for ability lookup and invocation, ensuring name immutability after creation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Definition/StoresNameTest.php
+
+      - acceptanceCriteria: AbilityDefinition stores description as readonly string
+        criticality: contract
+        intent: Provides human-readable documentation for ability purpose, supporting enumeration and introspection
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Definition/StoresDescriptionTest.php
+
+      - acceptanceCriteria: AbilityDefinition stores parameterSchema as readonly array
+        criticality: contract
+        intent: Provides JSON Schema for parameter validation, enabling schema-validated invocations and documentation generation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Definition/StoresParameterSchemaTest.php
+
+      - acceptanceCriteria: AbilityDefinition stores responseSchema as readonly array
+        criticality: contract
+        intent: Provides JSON Schema for response validation, enabling contract verification and type-safe response handling
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Definition/StoresResponseSchemaTest.php
+
+      - acceptanceCriteria: AbilityDefinition stores handler as readonly callable
+        criticality: contract
+        intent: Provides execution logic for ability, encapsulating business logic separate from infrastructure
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Definition/StoresHandlerTest.php
+
+      - acceptanceCriteria: AbilityDefinition is immutable after construction
+        criticality: constraint
+        intent: Prevents modification of ability contracts after registration, ensuring predictable behavior
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Definition/ImmutabilityTest.php
+
+  - name: ability-registry
+    description: Mesh-based storage for ability definitions
+    specs:
+      - acceptanceCriteria: AbilityRegistry extends Mesh for ability storage
+        criticality: contract
+        intent: Leverages Mesh infrastructure for ability definitions, enabling ChainMail integration and middleware patterns
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Registry/ExtendsMeshTest.php
+
+      - acceptanceCriteria: AbilityRegistry.register() stores AbilityDefinition by name
+        criticality: contract
+        intent: Adds ability to registry indexed by name, enabling lookup during invocation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Registry/RegisterStoresDefinitionTest.php
+
+      - acceptanceCriteria: AbilityRegistry.get() retrieves AbilityDefinition by name
+        criticality: contract
+        intent: Looks up registered ability, returning definition or null if not found, supporting existence checking
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Registry/GetRetrievesDefinitionTest.php
+
+      - acceptanceCriteria: AbilityRegistry.all() returns array of all AbilityDefinitions
+        criticality: contract
+        intent: Provides complete ability set for enumeration, enabling meta-reflexive discovery
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Registry/AllReturnsArrayTest.php
+
+      - acceptanceCriteria: AbilityRegistry.register() overwrites existing ability with same name
+        criticality: constraint
+        intent: Allows ability redefinition with explicit overwrite semantics, supporting runtime customization
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Registry/RegisterOverwritesTest.php
+
+      - acceptanceCriteria: AbilityRegistry.get() returns null for unknown ability name
+        criticality: contract
+        intent: Provides safe lookup without exceptions, enabling existence checks before invocation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Registry/GetReturnsNullTest.php
+
+  - name: ability-message
+    description: Message subclass for ability invocations
+    specs:
+      - acceptanceCriteria: AbilityMessage extends Message base class
+        criticality: contract
+        intent: Inherits correlation infrastructure from Message, enabling request-response pattern through MessageFeature
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Message/ExtendsMessageTest.php
+
+      - acceptanceCriteria: AbilityMessage stores abilityName as readonly string
+        criticality: contract
+        intent: Identifies which ability to invoke, enabling handler lookup during dispatch
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Message/StoresAbilityNameTest.php
+
+      - acceptanceCriteria: AbilityMessage stores parameters as readonly mixed
+        criticality: contract
+        intent: Carries invocation parameters for ability handler, supporting arbitrary parameter structures
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Message/StoresParametersTest.php
+
+      - acceptanceCriteria: AbilityMessage stores optional AbilityDefinition reference
+        criticality: contract
+        intent: Includes definition metadata for middleware access, supporting logging and validation without registry lookup
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Message/StoresDefinitionTest.php
+
+      - acceptanceCriteria: AbilityMessage accepts optional correlationId in constructor
+        criticality: contract
+        intent: Allows explicit correlation ID for response messages, supporting createResponse pattern
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Message/AcceptsCorrelationIdTest.php
+
+      - acceptanceCriteria: AbilityMessage generates UUID correlation ID if not provided
+        criticality: contract
+        intent: Ensures every ability invocation has unique identifier for response matching, inheriting Message behavior
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Message/GeneratesCorrelationIdTest.php
+
+  - name: invoke-ability-params
+    description: Params object for InvokeAbility chain
+    specs:
+      - acceptanceCriteria: Params\InvokeAbility stores region as readonly property
+        criticality: contract
+        intent: Provides target region for ability invocation, enabling handler execution in correct region context
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Params/StoresRegionTest.php
+
+      - acceptanceCriteria: Params\InvokeAbility stores abilityName as readonly string
+        criticality: contract
+        intent: Identifies which ability to invoke, encapsulating invocation intent in params object
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Params/StoresAbilityNameTest.php
+
+      - acceptanceCriteria: Params\InvokeAbility stores parameters as readonly mixed
+        criticality: contract
+        intent: Carries invocation parameters, supporting arbitrary parameter structures
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Params/StoresParametersTest.php
+
+      - acceptanceCriteria: Params\InvokeAbility defaults parameters to null if not provided
+        criticality: contract
+        intent: Enables parameterless ability invocations with clean API, supporting abilities without required parameters
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Params/DefaultsParametersTest.php
+
+      - acceptanceCriteria: Params\InvokeAbility is immutable after construction
+        criticality: constraint
+        intent: Prevents modification during chain processing, ensuring middleware sees consistent invocation data
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Params/ImmutabilityTest.php
+
+  - name: invoke-ability-chain
+    description: Stateless chain for ability invocation with middleware support
+    specs:
+      - acceptanceCriteria: InvokeAbility extends Chain with Params\InvokeAbility input type
+        criticality: contract
+        intent: Provides type-safe chain for ability invocations, following DispatchAction/Notification pattern
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Chain/ExtendsChainTest.php
+
+      - acceptanceCriteria: InvokeAbility constructs with AbilityRegistry dependency
+        criticality: contract
+        intent: Requires registry access for ability lookup during invocation, supporting handler retrieval
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Chain/ConstructsWithRegistryTest.php
+
+      - acceptanceCriteria: InvokeAbility.call() looks up AbilityDefinition from registry by name
+        criticality: contract
+        intent: Retrieves ability definition during invocation, enabling schema and handler access
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Chain/LookupsDefinitionTest.php
+
+      - acceptanceCriteria: InvokeAbility.call() throws AbilityNotFoundException for unknown ability
+        criticality: contract
+        intent: Fails fast with clear error when ability not registered, preventing silent failures
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Chain/ThrowsNotFoundExceptionTest.php
+
+      - acceptanceCriteria: InvokeAbility.call() validates parameters against parameterSchema
+        criticality: contract
+        intent: Enforces schema compliance before invocation, catching invalid parameters early
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Chain/ValidatesParametersTest.php
+
+      - acceptanceCriteria: InvokeAbility.call() throws SchemaValidationException for invalid parameters
+        criticality: contract
+        intent: Provides clear error with validation details when parameters violate schema
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Chain/ThrowsValidationExceptionTest.php
+
+      - acceptanceCriteria: InvokeAbility.call() creates AbilityMessage with abilityName and parameters
+        criticality: contract
+        intent: Constructs message payload for dispatch, encapsulating invocation data
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Chain/CreatesAbilityMessageTest.php
+
+      - acceptanceCriteria: InvokeAbility.call() includes AbilityDefinition in created message
+        criticality: contract
+        intent: Provides definition metadata to middleware and handlers, avoiding redundant registry lookups
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Chain/IncludesDefinitionInMessageTest.php
+
+      - acceptanceCriteria: InvokeAbility.call() dispatches AbilityMessage via region.trigger()
+        criticality: contract
+        intent: Sends message through normal dispatch pipeline, enabling handler execution via DispatchAction middleware
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Chain/DispatchesMessageTest.php
+
+      - acceptanceCriteria: InvokeAbility.call() returns created AbilityMessage
+        criticality: contract
+        intent: Provides message reference for then() handler registration, supporting promise-like API
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Chain/ReturnsMessageTest.php
+
+      - acceptanceCriteria: InvokeAbility supports middleware via link() method
+        criticality: contract
+        intent: Enables interception for logging, auth, caching through standard chain middleware pattern
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Chain/SupportsMiddlewareTest.php
+
+  - name: bound-access-integration
+    description: Direct $this->abilities() API integration
+    specs:
+      - acceptanceCriteria: BoundAccess intercepts abilities() method calls
+        criticality: contract
+        intent: Detects abilities method name in __call, routing to ability infrastructure instead of default behavior
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/BoundAccess/InterceptsAbilitiesCallTest.php
+
+      - acceptanceCriteria: BoundAccess extracts abilityName from first argument
+        criticality: contract
+        intent: Parses invocation signature to identify which ability to invoke, supporting $this->abilities('name') syntax
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/BoundAccess/ExtractsAbilityNameTest.php
+
+      - acceptanceCriteria: BoundAccess extracts parameters from second argument
+        criticality: contract
+        intent: Parses invocation parameters from arguments, supporting $this->abilities('name', $params) syntax
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/BoundAccess/ExtractsParametersTest.php
+
+      - acceptanceCriteria: BoundAccess defaults parameters to null if not provided
+        criticality: contract
+        intent: Enables parameterless invocations via $this->abilities('name') without errors
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/BoundAccess/DefaultsParametersTest.php
+
+      - acceptanceCriteria: BoundAccess creates Params\InvokeAbility from parsed arguments
+        criticality: contract
+        intent: Constructs params object for chain invocation, encapsulating region and invocation data
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/BoundAccess/CreatesParamsObjectTest.php
+
+      - acceptanceCriteria: BoundAccess calls InvokeAbility chain with params object
+        criticality: contract
+        intent: Delegates to chain for processing, enabling middleware interception and validation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/BoundAccess/CallsInvokeAbilityChainTest.php
+
+      - acceptanceCriteria: BoundAccess returns AbilityMessage from chain invocation
+        criticality: contract
+        intent: Provides message reference to caller, enabling then() handler registration for responses
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/BoundAccess/ReturnsAbilityMessageTest.php
+
+      - acceptanceCriteria: BoundAccess passes non-abilities calls through unchanged
+        criticality: contract
+        intent: Preserves normal BoundAccess behavior for other method names, maintaining backward compatibility
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/BoundAccess/PassthroughTest.php
+
+  - name: dispatch-middleware
+    description: DispatchAction middleware for AbilityMessage handling
+    specs:
+      - acceptanceCriteria: DispatchAction middleware intercepts AbilityMessage payloads
+        criticality: contract
+        intent: Detects when dispatched action contains AbilityMessage, routing to ability handler execution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Dispatch/InterceptsAbilityMessageTest.php
+
+      - acceptanceCriteria: DispatchAction middleware passes non-AbilityMessage payloads through
+        criticality: contract
+        intent: Preserves normal dispatch behavior for other message types, maintaining separation of concerns
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Dispatch/PassthroughTest.php
+
+      - acceptanceCriteria: DispatchAction middleware looks up AbilityDefinition from registry
+        criticality: contract
+        intent: Retrieves ability definition for handler execution, supporting schema and handler access
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Dispatch/LookupsDefinitionTest.php
+
+      - acceptanceCriteria: DispatchAction middleware throws AbilityNotFoundException if definition not found
+        criticality: contract
+        intent: Fails with clear error when ability missing from registry, preventing silent failures
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Dispatch/ThrowsNotFoundExceptionTest.php
+
+      - acceptanceCriteria: DispatchAction middleware executes AbilityDefinition handler with parameters
+        criticality: contract
+        intent: Invokes ability business logic with invocation parameters, producing response data
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Dispatch/ExecutesHandlerTest.php
+
+      - acceptanceCriteria: DispatchAction middleware creates response AbilityMessage with handler result
+        criticality: contract
+        intent: Constructs correlated response message containing handler output, enabling correlation-based delivery
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Dispatch/CreatesResponseMessageTest.php
+
+      - acceptanceCriteria: DispatchAction middleware uses createResponse() with inherited correlation ID
+        criticality: contract
+        intent: Ensures response has same correlation ID as request, enabling MessageFeature to deliver to then() handlers
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Dispatch/InheritsCorrelationIdTest.php
+
+      - acceptanceCriteria: DispatchAction middleware emits response via Notification chain
+        criticality: contract
+        intent: Publishes response message through notification infrastructure, triggering MessageFeature delivery
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Dispatch/EmitsResponseTest.php
+
+      - acceptanceCriteria: DispatchAction middleware continues dispatch chain after handling
+        criticality: contract
+        intent: Calls next middleware to preserve dispatch pipeline, supporting other dispatch interceptors
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Dispatch/ContinuesChainTest.php
+
+  - name: enumerate-abilities-builtin
+    description: Meta-reflexive ability enumeration
+    specs:
+      - acceptanceCriteria: enumerate-abilities AbilityDefinition is registered during feature initialization
+        criticality: contract
+        intent: Provides built-in enumeration ability available immediately after feature load
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Enumerate/RegisteredTest.php
+
+      - acceptanceCriteria: enumerate-abilities parameterSchema accepts optional filter regex string
+        criticality: contract
+        intent: Enables filtered enumeration by ability name pattern, supporting targeted discovery
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Enumerate/AcceptsFilterSchemaTest.php
+
+      - acceptanceCriteria: enumerate-abilities responseSchema defines abilities array property
+        criticality: contract
+        intent: Documents response structure for schema-aware consumers, ensuring type-safe responses
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Enumerate/DefinesResponseSchemaTest.php
+
+      - acceptanceCriteria: enumerate-abilities handler retrieves all abilities from registry
+        criticality: contract
+        intent: Queries registry for complete ability set, enabling full enumeration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Enumerate/RetrievesAllAbilitiesTest.php
+
+      - acceptanceCriteria: enumerate-abilities handler maps definitions to serializable array structure
+        criticality: contract
+        intent: Converts AbilityDefinition objects to arrays containing name, description, schemas
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Enumerate/MapsToArrayStructureTest.php
+
+      - acceptanceCriteria: enumerate-abilities handler excludes handler callable from response
+        criticality: contract
+        intent: Prevents non-serializable callable exposure in enumeration, maintaining clean response structure
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Enumerate/ExcludesHandlerTest.php
+
+      - acceptanceCriteria: enumerate-abilities handler filters by regex when filter parameter provided
+        criticality: contract
+        intent: Applies regex pattern to ability names, returning only matching subset
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Enumerate/FiltersTest.php
+
+      - acceptanceCriteria: enumerate-abilities handler returns unfiltered list when filter parameter absent
+        criticality: contract
+        intent: Provides complete ability set when no filter specified, supporting full enumeration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Enumerate/UnfilteredTest.php
+
+      - acceptanceCriteria: enumerate-abilities is invocable through $this->abilities() API
+        criticality: contract
+        intent: Demonstrates meta-reflexive property where enumeration uses same mechanism as other abilities
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Enumerate/InvocableTest.php
+
+  - name: schema-validation
+    description: JSON Schema validation for parameters
+    specs:
+      - acceptanceCriteria: InvokeAbility validates parameters against AbilityDefinition.parameterSchema
+        criticality: contract
+        intent: Enforces schema compliance before invocation, catching invalid parameters early
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Schema/ValidatesParametersTest.php
+
+      - acceptanceCriteria: Schema validation accepts valid parameters matching schema
+        criticality: contract
+        intent: Allows invocation to proceed when parameters conform to schema, supporting normal flow
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Schema/AcceptsValidParametersTest.php
+
+      - acceptanceCriteria: Schema validation rejects parameters violating required properties
+        criticality: contract
+        intent: Throws SchemaValidationException when required parameters missing, providing clear error
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Schema/RejectsRequiredViolationTest.php
+
+      - acceptanceCriteria: Schema validation rejects parameters with type mismatches
+        criticality: contract
+        intent: Throws SchemaValidationException when parameter types wrong, preventing type errors in handlers
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Schema/RejectsTypeMismatchTest.php
+
+      - acceptanceCriteria: Schema validation includes validation errors in exception message
+        criticality: contract
+        intent: Provides actionable error details for debugging, listing all schema violations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Schema/IncludesErrorDetailsTest.php
+
+      - acceptanceCriteria: Schema validation skips validation if parameterSchema is empty array
+        criticality: contract
+        intent: Enables abilities without parameter validation by convention, supporting unrestricted parameters
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Schema/SkipsEmptySchemaTest.php
+
+      - acceptanceCriteria: Schema validation supports nested object schemas
+        criticality: contract
+        intent: Validates complex parameter structures with nested properties, supporting rich parameter types
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Schema/SupportsNestedSchemasTest.php
+
+      - acceptanceCriteria: Schema validation supports array item schemas
+        criticality: contract
+        intent: Validates array parameters with item type constraints, supporting collections
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Schema/SupportsArraySchemasTest.php
+
+  - name: synchronous-behavior
+    description: Synchronous-first design without AsyncFeature
+    specs:
+      - acceptanceCriteria: Ability invocation works without AsyncFeature enabled
+        criticality: contract
+        intent: Core abilities infrastructure operates with only MessageFeature dependency, maintaining simplicity
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Abilities/WorksWithoutAsyncTest.php
+
+      - acceptanceCriteria: Message.then() handlers fire synchronously without AsyncFeature
+        criticality: contract
+        intent: Response callbacks execute immediately during same trigger call, supporting synchronous workflows
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Abilities/SynchronousResponseTest.php
+
+      - acceptanceCriteria: Ability handler executes during region.trigger() call
+        criticality: contract
+        intent: Handler runs synchronously as part of dispatch pipeline, enabling immediate results
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Abilities/SynchronousHandlerTest.php
+
+      - acceptanceCriteria: Response delivery completes before abilities() call returns
+        criticality: contract
+        intent: Then handlers execute before invocation returns, supporting synchronous result access
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Abilities/SynchronousDeliveryTest.php
+
+      - acceptanceCriteria: Multiple abilities can be invoked sequentially in same callback
+        criticality: contract
+        intent: Supports sequential ability calls without async infrastructure, enabling simple workflows
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Abilities/SequentialInvocationsTest.php
+
+  - name: async-enhancement
+    description: Optional AsyncFeature integration for parallel execution
+    specs:
+      - acceptanceCriteria: Ability invocation with AsyncFeature returns immediately without blocking
+        criticality: contract
+        intent: Message dispatch queues async task instead of executing synchronously, enabling parallelism
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Abilities/AsyncNonblockingTest.php
+
+      - acceptanceCriteria: Message.then() handlers fire asynchronously when AsyncFeature enabled
+        criticality: contract
+        intent: Response callbacks execute in scheduler tick after handler completes, supporting concurrent workflows
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Abilities/AsyncResponseTest.php
+
+      - acceptanceCriteria: Multiple abilities can execute concurrently with AsyncFeature
+        criticality: contract
+        intent: Parallel invocations yield to scheduler, enabling concurrent execution of multiple abilities
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Abilities/ConcurrentInvocationsTest.php
+
+      - acceptanceCriteria: Yielding from abilities() invocation waits for response with AsyncFeature
+        criticality: contract
+        intent: Async callbacks can yield abilities() call to pause until response arrives, supporting sequential async workflows
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Abilities/YieldWaitsForResponseTest.php
+
+      - acceptanceCriteria: Ability handlers can be generators when AsyncFeature enabled
+        criticality: contract
+        intent: Handlers can yield for async operations, enabling non-blocking I/O within abilities
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Abilities/AsyncHandlerTest.php
+
+  - name: middleware-interception
+    description: Middleware support for logging, auth, caching
+    specs:
+      - acceptanceCriteria: InvokeAbility.link() registers middleware interceptors
+        criticality: contract
+        intent: Enables adding middleware to invocation pipeline through standard chain pattern
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Middleware/RegistersMiddlewareTest.php
+
+      - acceptanceCriteria: Middleware receives Params\InvokeAbility before invocation
+        criticality: contract
+        intent: Provides access to region, abilityName, parameters for inspection and modification
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Middleware/ReceivesParamsTest.php
+
+      - acceptanceCriteria: Middleware can modify parameters before validation
+        criticality: contract
+        intent: Enables parameter transformation like normalization or injection before schema validation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Middleware/ModifiesParametersTest.php
+
+      - acceptanceCriteria: Middleware can short-circuit invocation by returning without next()
+        criticality: contract
+        intent: Enables auth middleware to block unauthorized invocations, preventing handler execution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Middleware/ShortCircuitsTest.php
+
+      - acceptanceCriteria: Middleware can access returned AbilityMessage after invocation
+        criticality: contract
+        intent: Supports response inspection for logging, caching, or transformation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Middleware/AccessesReturnValueTest.php
+
+      - acceptanceCriteria: Multiple middleware execute in registration order
+        criticality: contract
+        intent: Provides predictable execution sequence for middleware stack like auth -> logging -> caching
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Middleware/ExecutionOrderTest.php
+
+      - acceptanceCriteria: Middleware can throw exceptions to abort invocation
+        criticality: contract
+        intent: Enables validation or authorization failures to prevent handler execution with clear errors
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Middleware/ThrowsExceptionsTest.php
+
+  - name: integration
+    description: End-to-end workflows combining multiple components
+    specs:
+      - acceptanceCriteria: State callback invokes ability via $this->abilities() and receives response
+        criticality: contract
+        intent: Demonstrates complete request-response cycle from invocation to then() handler execution
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Abilities/InvocationResponseTest.php
+
+      - acceptanceCriteria: Enumerate-abilities returns list including custom registered abilities
+        criticality: contract
+        intent: Validates meta-reflexive enumeration includes both built-in and user-defined abilities
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Abilities/EnumerateCustomAbilitiesTest.php
+
+      - acceptanceCriteria: Ability with parameter validation rejects invalid parameters
+        criticality: contract
+        intent: Confirms schema validation prevents invocation with wrong parameter types or missing required fields
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Abilities/ValidationRejectTest.php
+
+      - acceptanceCriteria: Ability with parameter validation accepts valid parameters
+        criticality: contract
+        intent: Confirms schema validation allows invocation with correct parameters
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Abilities/ValidationAcceptTest.php
+
+      - acceptanceCriteria: Middleware logs ability invocations with timing
+        criticality: contract
+        intent: Demonstrates logging middleware recording invocation details and duration
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Abilities/LoggingMiddlewareTest.php
+
+      - acceptanceCriteria: Middleware blocks unauthorized ability invocations
+        criticality: contract
+        intent: Demonstrates auth middleware preventing execution based on permissions
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Abilities/AuthMiddlewareTest.php
+
+      - acceptanceCriteria: Middleware caches ability responses
+        criticality: contract
+        intent: Demonstrates caching middleware returning cached results without handler execution
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Abilities/CachingMiddlewareTest.php
+
+      - acceptanceCriteria: Cross-region ability invocation delivers response to caller region
+        criticality: contract
+        intent: Validates abilities work across region boundaries, enabling cross-region communication
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Abilities/CrossRegionTest.php
+
+      - acceptanceCriteria: Multiple abilities invoked in single callback all receive responses
+        criticality: contract
+        intent: Confirms parallel or sequential ability invocations don't interfere with correlation
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Abilities/MultipleInvocationsTest.php
+
+      - acceptanceCriteria: Ability handler throws exception propagates to caller
+        criticality: contract
+        intent: Validates error handling where handler exceptions bubble up through dispatch pipeline
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Abilities/HandlerExceptionTest.php
+
+      - acceptanceCriteria: AbilityNotFoundException includes ability name in error message
+        criticality: contract
+        intent: Provides clear error when invoking non-existent ability with actionable details
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Abilities/NotFoundErrorMessageTest.php
+
+      - acceptanceCriteria: Ability with complex nested parameter schema validates correctly
+        criticality: contract
+        intent: Validates schema validation handles deeply nested objects and arrays
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Abilities/NestedSchemaValidationTest.php
+
+      - acceptanceCriteria: enumerate-abilities with filter returns only matching abilities
+        criticality: contract
+        intent: Confirms regex filtering works correctly in enumeration
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Abilities/EnumerateFilterTest.php
+
+      - acceptanceCriteria: Ability system works with ExtendedState for context access
+        criticality: contract
+        intent: Validates abilities can read extended state context during handler execution
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Abilities/ExtendedStateIntegrationTest.php
+
+  - name: build-time-registration
+    description: BuildStep-based ability registration during region construction
+    specs:
+      - acceptanceCriteria: RegisterAbility BuildStep exists
+        criticality: contract
+        intent: Provides BuildStep implementation for declarative ability registration during region build
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/BuildStep/RegisterAbilityExistsTest.php
+
+      - acceptanceCriteria: RegisterAbility accepts name parameter
+        criticality: contract
+        intent: Stores ability name for registration, enabling unique identification
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/BuildStep/AcceptsNameTest.php
+
+      - acceptanceCriteria: RegisterAbility accepts handler callable parameter
+        criticality: contract
+        intent: Stores ability handler for execution, supporting business logic definition at build time
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/BuildStep/AcceptsHandlerTest.php
+
+      - acceptanceCriteria: RegisterAbility accepts optional predicate callable parameter
+        criticality: contract
+        intent: Enables conditional ability exposure based on runtime context, supporting context-sensitive APIs
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/BuildStep/AcceptsPredicateTest.php
+
+      - acceptanceCriteria: RegisterAbility accepts optional description parameter
+        criticality: contract
+        intent: Stores human-readable documentation for enumeration, supporting discoverability
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/BuildStep/AcceptsDescriptionTest.php
+
+      - acceptanceCriteria: RegisterAbility accepts optional parameterSchema parameter
+        criticality: contract
+        intent: Defines parameter validation schema, enabling schema-validated invocations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/BuildStep/AcceptsParameterSchemaTest.php
+
+      - acceptanceCriteria: RegisterAbility accepts optional responseSchema parameter
+        criticality: contract
+        intent: Defines response validation schema, enabling contract verification
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/BuildStep/AcceptsResponseSchemaTest.php
+
+      - acceptanceCriteria: RegisterAbility.__invoke() creates AbilityDefinition
+        criticality: contract
+        intent: Constructs ability definition from build step parameters, preparing for registration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/BuildStep/CreatesDefinitionTest.php
+
+      - acceptanceCriteria: RegisterAbility.__invoke() registers ability in AbilityRegistry
+        criticality: contract
+        intent: Adds ability to registry during build process, making it available for invocation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/BuildStep/RegistersInRegistryTest.php
+
+      - acceptanceCriteria: RegisterAbility with predicate stores predicate in definition
+        criticality: contract
+        intent: Associates predicate with ability for runtime evaluation, enabling conditional exposure
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/BuildStep/StoresPredicateTest.php
+
+      - acceptanceCriteria: RegisterAbility without predicate creates always-available ability
+        criticality: contract
+        intent: Abilities without predicate are unconditionally exposed, supporting common use case
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/BuildStep/DefaultsNoPredicateTest.php
+
+      - acceptanceCriteria: Multiple RegisterAbility steps can be added to same builder
+        criticality: contract
+        intent: Supports registering multiple abilities during build, enabling batch registration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/BuildStep/MultipleStepsTest.php
+
+      - acceptanceCriteria: RegisterAbility registration happens during region build process
+        criticality: contract
+        intent: Abilities are registered before first state entry, ensuring immediate availability
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/BuildStep/RegistersDuringBuildTest.php
+
+  - name: yaml-schema-extension
+    description: YAML schema support for declarative ability definitions
+    specs:
+      - acceptanceCriteria: abilities key supported at region level in YAML
+        criticality: contract
+        intent: Enables region-wide ability definitions in YAML, supporting declarative configuration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Yaml/RegionLevelKeyTest.php
+
+      - acceptanceCriteria: abilities key supported at state level in YAML
+        criticality: contract
+        intent: Enables state-scoped ability definitions in YAML, supporting state-specific APIs
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Yaml/StateLevelKeyTest.php
+
+      - acceptanceCriteria: YAML ability requires name property
+        criticality: contract
+        intent: Enforces unique identifier for ability lookup, preventing anonymous abilities
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Yaml/RequiresNameTest.php
+
+      - acceptanceCriteria: YAML ability requires handler property
+        criticality: contract
+        intent: Enforces executable logic definition, preventing handler-less abilities
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Yaml/RequiresHandlerTest.php
+
+      - acceptanceCriteria: YAML ability handler supports !php tag
+        criticality: contract
+        intent: Enables PHP callable references in YAML, supporting standard loader patterns
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Yaml/SupportsPhpTagTest.php
+
+      - acceptanceCriteria: YAML ability handler supports !get tag
+        criticality: contract
+        intent: Enables ExtendedState context lookups in YAML, supporting data-driven handlers
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Yaml/SupportsGetTagTest.php
+
+      - acceptanceCriteria: YAML ability handler supports standard loader callback tags
+        criticality: contract
+        intent: Enables all loader-supported callback types, maintaining consistency with loader API
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Yaml/SupportsLoaderTagsTest.php
+
+      - acceptanceCriteria: YAML ability accepts optional description property
+        criticality: contract
+        intent: Supports human-readable documentation in YAML, enabling inline documentation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Yaml/AcceptsDescriptionTest.php
+
+      - acceptanceCriteria: YAML ability accepts optional parameterSchema property
+        criticality: contract
+        intent: Supports schema validation definition in YAML, enabling declarative validation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Yaml/AcceptsParameterSchemaTest.php
+
+      - acceptanceCriteria: YAML ability accepts optional responseSchema property
+        criticality: contract
+        intent: Supports response schema definition in YAML, enabling declarative contracts
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Yaml/AcceptsResponseSchemaTest.php
+
+      - acceptanceCriteria: YAML ability accepts optional predicate property
+        criticality: contract
+        intent: Supports conditional exposure in YAML, enabling context-sensitive abilities
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Yaml/AcceptsPredicateTest.php
+
+      - acceptanceCriteria: State-level YAML abilities scope to defining state
+        criticality: contract
+        intent: Abilities defined in state YAML only available when that state is active
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Yaml/StateScopedTest.php
+
+      - acceptanceCriteria: Region-level YAML abilities available globally
+        criticality: contract
+        intent: Abilities defined at region level available regardless of active state
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Yaml/RegionScopedTest.php
+
+      - acceptanceCriteria: State-level YAML abilities override region-level with same name
+        criticality: contract
+        intent: Enables state-specific overrides of region abilities, supporting polymorphic APIs
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Yaml/StateOverridesRegionTest.php
+
+      - acceptanceCriteria: YAML abilities registered during region build
+        criticality: contract
+        intent: Abilities are registered during build process, ensuring immediate availability
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Yaml/RegistersDuringBuildTest.php
+
+      - acceptanceCriteria: YAML schema validation rejects abilities without name
+        criticality: contract
+        intent: Provides clear error during build when name missing, preventing runtime failures
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Yaml/RejectsNoNameTest.php
+
+      - acceptanceCriteria: YAML schema validation rejects abilities without handler
+        criticality: contract
+        intent: Provides clear error during build when handler missing, preventing incomplete abilities
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Yaml/RejectsNoHandlerTest.php
+
+  - name: conditional-exposure
+    description: Predicate-based ability filtering for context-sensitive APIs
+    specs:
+      - acceptanceCriteria: AbilityDefinition stores optional predicate callable
+        criticality: contract
+        intent: Associates conditional logic with ability for runtime filtering, enabling context-aware exposure
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Conditional/StoresPredicateTest.php
+
+      - acceptanceCriteria: Predicate receives region as parameter
+        criticality: contract
+        intent: Provides region context for conditional evaluation, enabling state-based filtering
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Conditional/ReceivesRegionTest.php
+
+      - acceptanceCriteria: Predicate returning true exposes ability
+        criticality: contract
+        intent: Ability is available for invocation when predicate satisfied, supporting conditional APIs
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Conditional/TrueExposesTest.php
+
+      - acceptanceCriteria: Predicate returning false hides ability
+        criticality: contract
+        intent: Ability is unavailable for invocation when predicate fails, enabling dynamic API surface
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Conditional/FalseHidesTest.php
+
+      - acceptanceCriteria: Hidden ability throws AbilityNotFoundException when invoked
+        criticality: contract
+        intent: Provides clear error when invoking filtered-out ability, maintaining consistent error handling
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Conditional/HiddenThrowsNotFoundTest.php
+
+      - acceptanceCriteria: Hidden abilities excluded from enumerate-abilities
+        criticality: contract
+        intent: Enumeration only shows currently available abilities, reflecting actual API surface
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Conditional/HiddenExcludedFromEnumerateTest.php
+
+      - acceptanceCriteria: Predicate evaluated at invocation time
+        criticality: contract
+        intent: Enables dynamic filtering based on current context, supporting stateful predicates
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Conditional/EvaluatedAtInvocationTest.php
+
+      - acceptanceCriteria: Predicate evaluated during enumeration
+        criticality: contract
+        intent: Ensures enumerate-abilities reflects current availability, maintaining consistency
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Conditional/EvaluatedDuringEnumerationTest.php
+
+      - acceptanceCriteria: Predicate can access ExtendedState context
+        criticality: contract
+        intent: Enables context-based filtering using extended state data, supporting rich conditional logic
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Conditional/AccessesExtendedStateTest.php
+
+      - acceptanceCriteria: Predicate exceptions propagate as AbilityNotFoundException
+        criticality: contract
+        intent: Wraps predicate errors in consistent exception type, simplifying error handling
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Conditional/PredicateExceptionTest.php
+
+      - acceptanceCriteria: Ability without predicate is always available
+        criticality: contract
+        intent: Null predicate treated as unconditional exposure, supporting common use case
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Conditional/NullPredicateAlwaysAvailableTest.php
+
+      - acceptanceCriteria: Predicate result cached during single invocation chain
+        criticality: performance
+        intent: Prevents redundant predicate evaluation during single request, optimizing performance
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Conditional/CachedEvaluationTest.php

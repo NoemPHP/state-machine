@@ -1,0 +1,254 @@
+name: runtime
+group: core
+description: |
+  Runtime provides an execution context layer between Region and Holon, enabling event streaming,
+  async-aware execution, and dynamic sub-machine spawning. Runtime wraps a preconfigured Region
+  and provides configurable event loop execution with support for both blocking (run to completion)
+  and non-blocking (step-by-step) execution patterns.
+
+features:
+  - name: runtime-config
+    description: Configuration value object for runtime execution parameters
+    specs:
+      - acceptanceCriteria: RuntimeConfig stores maxIterations with default value
+        criticality: contract
+        intent: Prevents infinite loops by limiting event loop iterations, providing safety mechanism for runaway state machines
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeConfigMaxIterationsTest.php
+
+      - acceptanceCriteria: RuntimeConfig accepts 0 or -1 for maxIterations to disable iteration limit
+        criticality: contract
+        intent: Enables indefinite execution for long-running processes like servers, daemons, and interactive applications without artificial iteration limits
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeConfigUnlimitedIterationsTest.php
+
+      - acceptanceCriteria: RuntimeConfig accepts optional triggerFactory callable
+        criticality: contract
+        intent: Enables custom trigger generation per iteration, supporting different execution strategies (async, batch, custom events)
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeConfigTriggerFactoryTest.php
+
+      - acceptanceCriteria: RuntimeConfig accepts optional onIteration callable
+        criticality: contract
+        intent: Provides hook for monitoring/debugging each iteration, enabling logging, metrics, and custom iteration behavior
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeConfigOnIterationTest.php
+
+      - acceptanceCriteria: RuntimeConfig accepts optional onComplete callable
+        criticality: contract
+        intent: Fires exactly once when runtime completes, regardless of how many times run() was called, enabling cleanup and final processing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeConfigOnCompleteTest.php
+
+  - name: runtime-registry
+    description: WeakMap-based registry mapping Region instances to Runtime wrappers
+    specs:
+      - acceptanceCriteria: RuntimeRegistry can register Region-to-Runtime mapping
+        criticality: contract
+        intent: Enables $this->summon() to retrieve parent runtime without exposing ChainMail, maintaining clean API boundaries
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeRegistryRegisterTest.php
+
+      - acceptanceCriteria: RuntimeRegistry can retrieve Runtime by Region
+        criticality: contract
+        intent: Allows OrthogonalRegions feature to locate parent runtime from callback context, enabling dynamic sub-machine spawning
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeRegistryGetTest.php
+
+      - acceptanceCriteria: RuntimeRegistry returns null for unregistered Region
+        criticality: contract
+        intent: Prevents errors when runtime context is not available, allowing graceful handling when summon() is called outside Runtime execution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeRegistryGetUnregisteredTest.php
+
+      - acceptanceCriteria: RuntimeRegistry can unregister Region-to-Runtime mapping
+        criticality: contract
+        intent: Enables cleanup after runtime completion, preventing memory leaks and stale references
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeRegistryUnregisterTest.php
+
+      - acceptanceCriteria: RuntimeRegistry uses WeakMap for automatic garbage collection
+        criticality: constraint
+        intent: Prevents memory leaks by allowing Region instances to be garbage collected when no longer referenced elsewhere
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeRegistryWeakMapTest.php
+
+  - name: runtime-execution
+    description: Core runtime execution with blocking and non-blocking modes
+    specs:
+      - acceptanceCriteria: Runtime.run() with no arguments runs region to completion
+        criticality: contract
+        intent: Provides simple blocking API for straightforward use cases, executing event loop until region reaches final state
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeRunToCompletionTest.php
+
+      - acceptanceCriteria: Runtime.run(steps) executes exactly N iterations and returns true if more available
+        criticality: contract
+        intent: Enables non-blocking execution and cooperative multitasking, allowing integration with event loops and concurrent task execution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeRunStepsTest.php
+
+      - acceptanceCriteria: Runtime.run() returns false when region is complete
+        criticality: contract
+        intent: Signals completion to caller, enabling while loops that execute until done without checking region state separately
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeRunReturnsFalseWhenCompleteTest.php
+
+      - acceptanceCriteria: Runtime.run() registers region in RuntimeRegistry before execution
+        criticality: contract
+        intent: Guarantees runtime is available for $this->summon() calls during execution, enabling dynamic sub-machine spawning
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeRunRegistersInRegistryTest.php
+
+      - acceptanceCriteria: Runtime.run() unregisters region from RuntimeRegistry after completion
+        criticality: constraint
+        intent: Prevents stale runtime references and enables cleanup, ensuring summon() fails gracefully after runtime finishes
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeRunUnregistersAfterCompletionTest.php
+
+      - acceptanceCriteria: Runtime.run() unregisters region from RuntimeRegistry on exception
+        criticality: constraint
+        intent: Ensures cleanup happens even during errors, preventing registry pollution and memory leaks in failure scenarios
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeRunUnregistersOnExceptionTest.php
+
+  - name: runtime-event-loop
+    description: Event loop implementation with trigger generation and iteration management
+    specs:
+      - acceptanceCriteria: Runtime generates default trigger when no triggerFactory configured
+        criticality: contract
+        intent: Provides sensible default behavior without requiring configuration, allowing simple use cases to work immediately
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeDefaultTriggerGenerationTest.php
+
+      - acceptanceCriteria: Runtime uses triggerFactory when configured
+        criticality: contract
+        intent: Enables custom trigger generation strategies for async operations, batch processing, and domain-specific event patterns
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeCustomTriggerFactoryTest.php
+
+      - acceptanceCriteria: Runtime calls onIteration callback before each region trigger
+        criticality: contract
+        intent: Provides hook for logging, metrics, and custom behavior at each iteration boundary, supporting observability and debugging
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeOnIterationCallbackTest.php
+
+      - acceptanceCriteria: Runtime stops when region reaches final state
+        criticality: contract
+        intent: Terminates event loop naturally when workflow completes, preventing unnecessary iterations after completion
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeStopsAtFinalStateTest.php
+
+      - acceptanceCriteria: Runtime throws exception when maxIterations exceeded without reaching final state
+        criticality: constraint
+        intent: Detects infinite loops and runaway state machines, providing clear error message for debugging
+        notes: Does NOT apply when maxIterations is 0 or -1 (unlimited execution)
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeMaxIterationsExceptionTest.php
+
+      - acceptanceCriteria: Runtime skips maxIterations check when set to 0 or -1
+        criticality: contract
+        intent: Allows indefinite execution without throwing exceptions for long-running processes
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeUnlimitedExecutionTest.php
+
+      - acceptanceCriteria: Runtime tracks iteration count across multiple run() calls
+        criticality: contract
+        intent: Maintains consistent iteration counting for non-blocking execution, ensuring maxIterations applies to total iterations not per-call
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeIterationCountPersistsTest.php
+
+  - name: runtime-completion
+    description: Completion callback handling and lifecycle management
+    specs:
+      - acceptanceCriteria: Runtime fires onComplete callback exactly once when region completes
+        criticality: contract
+        intent: Ensures cleanup and final processing happens once regardless of execution mode, providing consistent completion semantics
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeOnCompleteFiresOnceTest.php
+
+      - acceptanceCriteria: Runtime fires onComplete when run() with no steps completes
+        criticality: contract
+        intent: onComplete works correctly in blocking mode, supporting simple use cases without step-by-step execution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeOnCompleteBlockingModeTest.php
+
+      - acceptanceCriteria: Runtime fires onComplete only on final run(steps) call that completes
+        criticality: contract
+        intent: onComplete works correctly in non-blocking mode, firing on the iteration that actually completes the region
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeOnCompleteNonBlockingModeTest.php
+
+      - acceptanceCriteria: Runtime does not fire onComplete if region already completed
+        criticality: constraint
+        intent: Prevents duplicate completion callbacks when run() called after completion, avoiding unexpected behavior
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeOnCompleteNoDoubleFireTest.php
+
+  - name: runtime-queries
+    description: Runtime state queries and accessors
+    specs:
+      - acceptanceCriteria: Runtime.isComplete() returns true when region is in final state
+        criticality: contract
+        intent: Provides simple boolean check for completion status without calling run(), enabling conditional logic in application code
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeIsCompleteTest.php
+
+      - acceptanceCriteria: Runtime.getRegion() returns wrapped region instance
+        criticality: contract
+        intent: Provides access to underlying region for advanced use cases like event subscription and manual triggering
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeGetRegionTest.php
+
+      - acceptanceCriteria: Runtime.getConfig() returns runtime configuration
+        criticality: contract
+        intent: Enables inspection of runtime configuration for debugging and introspection purposes
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeGetConfigTest.php
+
+  - name: runtime-events
+    description: Event streaming via generator for memory-efficient event iteration
+    specs:
+      - acceptanceCriteria: Runtime.events() yields all events emitted during execution
+        criticality: contract
+        intent: Enables reactive programming patterns and event-driven architectures by streaming events as they occur
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeEventsYieldTest.php
+
+      - acceptanceCriteria: Runtime.events() uses generator for memory efficiency
+        criticality: constraint
+        intent: Prevents buffering all events in memory, enabling processing of large event streams without memory exhaustion
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeEventsGeneratorTest.php
+
+      - acceptanceCriteria: Runtime implements IteratorAggregate
+        criticality: contract
+        intent: Allows foreach iteration over runtime events using standard PHP iterator protocol
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeIteratorAggregateTest.php
+
+      - acceptanceCriteria: Runtime.getIterator() returns events() generator
+        criticality: contract
+        intent: Implements IteratorAggregate contract by delegating to events() method, enabling foreach usage
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeGetIteratorTest.php
+
+  - name: runtime-spawning
+    description: Child runtime creation for hierarchical state machine composition
+    specs:
+      - acceptanceCriteria: Runtime.spawn() creates new runtime instance with child region
+        criticality: contract
+        intent: Enables vertical embedding of sub-machines, supporting hierarchical composition and modular state machine design
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeSpawnCreatesRuntimeTest.php
+
+      - acceptanceCriteria: Runtime.spawn() accepts optional RuntimeConfig for child
+        criticality: contract
+        intent: Allows child runtimes to have different execution parameters than parent, supporting heterogeneous runtime configurations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeSpawnWithConfigTest.php
+
+      - acceptanceCriteria: Runtime.spawn() returns Runtime instance of same class
+        criticality: contract
+        intent: Preserves runtime type through spawning hierarchy, ensuring consistent behavior across parent and child runtimes
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/RuntimeSpawnReturnsSameTypeTest.php
+
+  - name: standard-runtime
+    description: Default runtime implementation with standard trigger generation
+    specs:
+      - acceptanceCriteria: StandardRuntime inherits all behavior from Runtime base class
+        criticality: contract
+        intent: Validates that StandardRuntime requires no additional implementation, demonstrating base class completeness
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/StandardRuntimeInheritsAllTest.php
+
+      - acceptanceCriteria: StandardRuntime generates anonymous object trigger by default
+        criticality: contract
+        intent: Provides default trigger compatible with existing Holon behavior, maintaining backwards compatibility
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Core/Runtime/StandardRuntimeDefaultTriggerTest.php
+
+  - name: integration
+    description: Full integration scenarios combining runtime features
+    specs:
+      - acceptanceCriteria: Runtime executes region from initial state to final state
+        criticality: contract
+        intent: Validates complete execution flow including trigger generation, iteration management, and completion detection
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Core/Runtime/RuntimeFullExecutionTest.php
+
+      - acceptanceCriteria: Multiple runtimes execute cooperatively in round-robin fashion
+        criticality: contract
+        intent: Demonstrates cooperative multitasking pattern for concurrent state machine execution, validating non-blocking API
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Core/Runtime/RuntimeCooperativeMultitaskingTest.php
+
+      - acceptanceCriteria: Runtime integrates with ExtendedState context
+        criticality: contract
+        intent: Validates that runtime execution preserves extended state context across iterations, ensuring feature compatibility
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Core/Runtime/RuntimeWithExtendedStateTest.php
+
+      - acceptanceCriteria: Runtime respects TransitionsFeature guards and callbacks
+        criticality: contract
+        intent: Ensures runtime works correctly with transition feature, validating integration with existing state machine infrastructure
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Core/Runtime/RuntimeWithTransitionsTest.php

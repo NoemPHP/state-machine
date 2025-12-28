@@ -1,0 +1,65 @@
+# Conversational CLI - Complete Holon Configuration
+# Uses external holon-functions.php for ExtendedState-compatible callbacks
+
+machine:
+  require: !php require '/var/www/html/machines/conversational-cli/holon-functions.php'
+
+  features:
+    - class: Noem\State\Feature\ExtendedState\ExtendedState
+    - class: Noem\State\Feature\Template\TemplateFeature
+    - class: Noem\State\Feature\Ai\AiFeature
+    - class: Noem\State\Feature\Async\AsyncFeature
+    - class: Noem\State\Feature\Message\MessageFeature
+
+  eventLoop:
+    autoRun: true
+    maxIterations: 0  # Unlimited iterations for long-running interactive process
+
+states:
+  - name: idle
+    onEnter:
+      - run: !php return onEnterIdle()
+    transitions:
+      - target: waiting_for_input
+
+  - name: waiting_for_input
+    onEnter:
+      - run: !php return onEnterWaitingForInput()
+    action:
+      - run: !php return actionWaitingForInput()
+        async:
+          enabled: true
+    transitions:
+      - target: processing
+        guard: !php return guardHasUserInput()
+
+  - name: processing
+    onEnter:
+      - run: !php return onEnterProcessing()
+    action:
+      - run: !php return actionProcessing()
+        async:
+          enabled: true
+    transitions:
+      - target: responding
+        guard: !php return guardHasAiResponse()
+
+  - name: responding
+    onEnter:
+      - run: !php return onEnterResponding()
+    action:
+      - run: !php return actionResponding()
+        async:
+          enabled: true
+    transitions:
+      - target: waiting_for_input
+        guard: !php return guardResponseComplete()
+      - target: finished
+        guard: !php return guardConversationEnded()
+
+  - name: finished
+    onEnter:
+      - run: !php return onEnterFinished()
+
+initial: idle
+final: finished

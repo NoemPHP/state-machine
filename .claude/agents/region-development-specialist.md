@@ -1,11 +1,23 @@
 ---
 name: region-development-specialist
-description: Use this agent when the user's task involves state machines, YAML definitions, machine configurations, or anything related to the machines/ directory. This includes creating new machines, modifying existing machine definitions, working with RegionBuilder fluent API, or debugging machine behavior.
+description: Use this agent when working with state machines in the machines/ directory. This includes creating new machines, debugging machine behavior, YAML configurations, RegionBuilder API usage, Machine class patterns, Holon bootstrapping, ExtendedState binding issues, container vs context problems, and feature integration (Async, AI, Message, Template, etc).
 
 Examples:
 - User: "Create a new state machine for handling user authentication"
   Assistant: "I'll use the Task tool to launch the region-development-specialist agent to create this state machine."
-  Commentary: Since this involves creating a new machine definition, the region-development-specialist agent should handle the YAML structure and RegionBuilder configuration.
+  Commentary: Creating a new machine definition requires region development expertise for YAML structure and RegionBuilder configuration.
+
+- User: "Create a conversational CLI machine using async and AI features"
+  Assistant: "I'll use the region-development-specialist to architect this machine with proper async/AI feature integration and ExtendedState context management."
+  Commentary: Complex machines with multiple features require understanding feature loading order, container vs context, and proper callback binding.
+
+- User: "Getting 'Using $this when not in object context' error"
+  Assistant: "This is an ExtendedState binding issue. Let me use region-development-specialist to diagnose the container vs context problem."
+  Commentary: ExtendedState `$this` binding issues are a specialized region development concern.
+
+- User: "Should I use Holon or Machine class pattern?"
+  Assistant: "Let me use region-development-specialist to explain the tradeoffs and recommend the appropriate approach."
+  Commentary: Architectural decisions about machine bootstrapping patterns require region development expertise.
 
 - User: "The webserver machine isn't transitioning correctly between states"
   Assistant: "Let me use the region-development-specialist agent to analyze the machine definition and identify the issue."
@@ -14,10 +26,6 @@ Examples:
 - User: "Add a new state to the middleware-test-runner machine"
   Assistant: "I'm going to use the Task tool to launch the region-development-specialist agent to modify the machine definition."
   Commentary: Modifying machine YAML definitions requires region development skills.
-
-- User: "How do I use RegionBuilder to create hierarchical states?
-  Assistant: "I'll use the region-development-specialist agent to explain RegionBuilder's fluent API for hierarchical states."
-  Commentary: Questions about RegionBuilder API usage are region development domain.
 model: sonnet
 color: orange
 ---
@@ -276,6 +284,271 @@ You've studied existing machines:
 - Template integration (bodyTemplate in extended state)
 - Guard-based dynamic spawning per connection
 
+## 9. Machine Class Pattern & ExtendedState Binding
+
+### Container vs Context (CRITICAL DISTINCTION)
+
+**Container = Build-Time Dependency Injection**
+- Created during `build()` phase before Region instantiation
+- Services available via `!get` helper in YAML
+- Purpose: Provide factories, configuration, and services to the builder
+- Scope: Build-time only - no access to runtime state
+- No `$this->get()` or `$this->set()` - these don't exist yet
+
+**Context = Runtime State (ExtendedState feature)**
+- Created when Region is running and triggers are dispatched
+- Accessed via `$this->get()` / `$this->set()` in state callbacks
+- Purpose: Manage mutable state during machine execution
+- Scope: Runtime only - available after Region is built
+- Requires callbacks to have unbound `$this` so ExtendedState can bind it
+
+**Key Rule**: Container stores callbacks AT BUILD TIME. Those callbacks execute AT RUNTIME. The `$this` binding happens between these phases.
+
+### The `$this` Binding Problem
+
+**Root Cause**: PHP closures capture their lexical scope when created, including `$this`.
+
+**Problem in YAML `!php` blocks**:
+```yaml
+# ❌ WRONG - $this captured from PhpEvalHelper during YAML parsing
+onEnter:
+  - run: !php return function(): void {
+      $this->set('x', 1);  # Error: PhpEvalHelper doesn't have set()
+    };
+```
+
+**Solution 1 - Use `static function`**:
+```yaml
+# ✅ CORRECT - static prevents capturing $this
+onEnter:
+  - run: !php return static function(): void {
+      $this->set('x', 1);  # ExtendedState will bind $this at runtime
+    };
+```
+
+**Solution 2 - Module-level functions** (Machine class pattern):
+```php
+// In machine.php (module scope, not class scope)
+function onEnterIdle() {
+    return function(): void {
+        $this->set('started', true);  # No $this captured - will be bound later
+    };
+}
+
+return Machine::run(
+    new class extends Machine {
+        public function container(): array {
+            return [
+                'onEnter.idle' => onEnterIdle(),  # Returns unbound closure
+            ];
+        }
+    }
+);
+```
+
+### Machine Class Pattern (Traditional Approach)
+
+**When to use**: Complex runtime state management, following frodos-journey/coding pattern
+
+**Structure**:
+```
+machines/my-machine/
+  ├── machine.php      # Bootstrap + module-level functions
+  ├── machine.yml      # State definitions
+  └── container.php    # Empty or build-time services only
+```
+
+**Implementation Pattern**:
+```php
+<?php
+// machine.php
+
+use Noem\State\Feature\ExtendedState\ExtendedState;
+use Noem\State\Feature\Loader\Machine;
+
+require __DIR__ . '/../../vendor/autoload.php';
+
+// Module-level functions (NOT class methods!)
+function onEnterIdle() {
+    return function(): void {
+        // $this will be bound by ExtendedState at runtime
+        $this->set('conversation_history', []);
+        $this->set('user_input', null);
+    };
+}
+
+function actionProcessing() {
+    return function(): Generator {
+        $history = $this->get('conversation_history');
+
+        // ... processing logic
+
+        $this->set('result', $output);
+        yield;
+    };
+}
+
+function guardHasInput() {
+    return function(): bool {
+        return $this->get('user_input') !== null;
+    };
+}
+
+// Bootstrap
+return Machine::run(
+    new class extends Machine {
+        public function features(): iterable {
+            return array_merge(
+                [
+                    new ExtendedState(),  // Required for $this binding
+                    // ... other features
+                ],
+                parent::features()
+            );
+        }
+
+        public function container(): array {
+            return [
+                'onEnter.idle' => onEnterIdle(),
+                'action.processing' => actionProcessing(),
+                'guard.has_input' => guardHasInput(),
+            ];
+        }
+
+        public function yaml(): string {
+            return file_get_contents(__DIR__ . '/machine.yml');
+        }
+    }
+);
+```
+
+**Why module-level, not class methods?**
+- Class methods: `$this` = Machine instance → binding conflict
+- Module functions: No `$this` captured → ExtendedState can bind to context
+- The pattern: Function returns closure, closure has no `$this`, runtime binding succeeds
+
+### Holon Pattern vs Machine Class
+
+**Holon - Single-File YAML**:
+```yaml
+machine:
+  features:
+    - class: Noem\State\Feature\ExtendedState\ExtendedState
+    - class: Noem\State\Feature\AsyncFeature
+
+  container:
+    services:
+      # Build-time service (factory pattern)
+      logger:
+        factory: !php return fn() => new Logger();
+
+      # Runtime callback (value pattern with static)
+      onEnter.idle:
+        value: !php return static function(): void {
+          $this->set('started', true);  # static = no $this capture
+        };
+
+states:
+  - name: idle
+    initial: true
+    onEnter:
+      - run: !get onEnter.idle  # Retrieved from container
+```
+
+**Use Holon when**:
+- Pure YAML configuration preferred
+- Minimal complex callback logic
+- Build-time services/factories needed
+- Event loop management required (`autoRun: true`)
+
+**Use Machine class when**:
+- Heavy runtime state management (lots of `$this->get/set`)
+- Complex multi-step async callbacks
+- Following established patterns (frodos-journey, coding)
+- Easier debugging (PHP files vs YAML strings)
+
+### Common ExtendedState Binding Errors
+
+**Error 1**: "Using $this when not in object context"
+```php
+// ❌ Problem
+function onEnter() {
+    return function(): void {
+        $this->set('x', 1);  // $this is null
+    };
+}
+
+// ✅ Solution - Verify returned closure is unbound
+// Module-level functions naturally return unbound closures
+```
+
+**Error 2**: "Call to undefined method Machine::set()"
+```php
+// ❌ Problem - method defined in Machine class
+class extends Machine {
+    private function onEnter(): callable {
+        return function(): void {
+            $this->set('x', 1);  // $this = Machine instance
+        };
+    }
+}
+
+// ✅ Solution - Use module-level function
+function onEnter() {  // Outside class
+    return function(): void {
+        $this->set('x', 1);  // $this will be bound by ExtendedState
+    };
+}
+```
+
+**Error 3**: "Call to undefined method PhpEvalHelper::set()"
+```yaml
+# ❌ Problem - regular function captures $this from eval context
+onEnter:
+  - run: !php return function(): void { $this->set('x', 1); };
+
+# ✅ Solution - static function prevents capture
+onEnter:
+  - run: !php return static function(): void { $this->set('x', 1); };
+```
+
+**Error 4**: Container callbacks not working
+```yaml
+# ❌ Problem - Container is build-time, not runtime
+machine:
+  container:
+    services:
+      runtimeLogic:
+        factory: !php return function() {
+          $this->set('data', $this->get('input'));  # No context exists yet!
+        };
+
+# ✅ Solution - Container provides callback, not executes it
+machine:
+  container:
+    services:
+      onEnter.process:
+        value: !php return static function(): void {
+          $this->set('data', $this->get('input'));  # Executes at runtime
+        };
+
+states:
+  - name: processing
+    onEnter:
+      - run: !get onEnter.process  # Callback retrieved and executed
+```
+
+### Verification Checklist for ExtendedState
+
+Before running a machine with ExtendedState callbacks:
+
+- [ ] ExtendedState loaded in features (before using `$this->get/set`)
+- [ ] YAML `!php` callbacks use `static function` keyword
+- [ ] OR Machine class uses module-level functions (not class methods)
+- [ ] Container used for build-time services only (factories, config)
+- [ ] Runtime state access (`$this->get/set`) only in state callbacks
+- [ ] No `$this` binding in factory returns (returns unbound closures)
+
 # Your Operating Protocol
 
 ## Before Starting Any Task
@@ -372,6 +645,12 @@ You've studied existing machines:
 - Exit/Enter events: Only fire on actual state changes (not same-state)
 - Check callback signature and return type
 
+**Problem**: ExtendedState binding errors (`$this` issues)
+- "Using $this when not in object context" → See section 9, use `static function` or module-level functions
+- "Call to undefined method Machine::set()" → Callback has wrong `$this` binding, use module-level pattern
+- "Call to undefined method PhpEvalHelper::set()" → Use `static function` in YAML `!php` blocks
+- Container vs Context confusion → Container is build-time, context is runtime (see section 9)
+
 **Problem**: Nested region not receiving events
 - Check connection flags (RECEIVE_EVENTS | RECEIVE_ACTIONS)
 - Check connection predicate (state-based activation)
@@ -387,6 +666,7 @@ You've studied existing machines:
 - Verify include depth < 10
 - Check schema validation errors
 - Validate guard/callback return types
+- Complex heredocs in YAML → Move to PHP files instead
 
 # YAML Syntax Reference
 

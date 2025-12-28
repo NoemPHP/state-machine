@@ -1,6 +1,6 @@
 name: ai
 group: features
-description: The AiFeature enables AI-powered text generation and completion within state machines, providing template helpers for completion and structured extraction, request building with configurable parameters, streaming and non-streaming response handling, and integration with AI APIs for chat and completion endpoints
+description: The AiFeature enables AI-powered text generation and completion within state machines with multi-backend support (OpenAI, Ollama, Anthropic). Provides template helpers for completion and structured extraction, request building with configurable parameters, streaming and non-streaming response handling, backend mesh infrastructure, provider-specific prompt formatting, and optional credential injection
 
 features:
   - name: feature-registration
@@ -223,15 +223,93 @@ features:
         intent: Uses block content as extraction instructions when used as block helper
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/TemplateHelpers/CaptureHelperBlockModeTest.php
         
-      - acceptanceCriteria: Capture helper uses JSON schema response format
-        criticality: constraint
-        intent: Ensures structured extraction by configuring request with JSON schema array format
+      - acceptanceCriteria: Capture helper uses JSON schema response format from schema parameter or defaults to array of strings
+        criticality: contract
+        intent: Enables custom structured extraction by accepting optional schema parameter, falling back to default array<string> schema for backward compatibility
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/TemplateHelpers/CaptureHelperUsesJsonSchemaTest.php
         
       - acceptanceCriteria: Capture helper stores decoded JSON in template data
         criticality: contract
         intent: Parses JSON response and stores structured data in specified variable, making it accessible to subsequent template sections
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/TemplateHelpers/CaptureHelperStoresDecodedJsonTest.php
+
+      - acceptanceCriteria: Capture helper accepts optional schema parameter for custom JSON schemas
+        criticality: contract
+        intent: Enables custom structured output through schema hash parameter ({{capture "data" schema=mySchema}}), allowing fine-grained control over extracted data structure
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/TemplateHelpers/CaptureHelperAcceptsSchemaParamTest.php
+
+      - acceptanceCriteria: Capture helper resolves schema from template data context when schema parameter is string reference
+        criticality: contract
+        intent: Enables schema reuse by supporting context variable references in schema parameter, retrieving schema definition from template data at runtime
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/TemplateHelpers/CaptureHelperResolvesSchemaFromContextTest.php
+
+      - acceptanceCriteria: Capture helper accepts inline JSON schema objects in schema parameter
+        criticality: contract
+        intent: Enables ad-hoc schema definition through inline schema objects in template syntax
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/TemplateHelpers/CaptureHelperAcceptsInlineSchemaTest.php
+
+      - acceptanceCriteria: Capture helper validates custom schema is valid JSON Schema before API call
+        criticality: contract
+        intent: Prevents invalid API requests by validating schema structure matches JSON Schema specification
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/TemplateHelpers/CaptureHelperValidatesSchemaTest.php
+
+  - name: context-helpers
+    description: Direct context methods for AI operations accessible from ExtendedState
+    specs:
+      - acceptanceCriteria: AiFeature registers capture() method in ExtendedState context
+        criticality: contract
+        intent: Provides direct programmatic access to AI capture functionality from state actions without requiring template syntax
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/ContextHelpers/RegistersCaptureMethodTest.php
+
+      - acceptanceCriteria: Context capture() method accepts prompt string as first parameter
+        criticality: contract
+        intent: Enables capture operations through simple function call with prompt text
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/ContextHelpers/CaptureAcceptsPromptTest.php
+
+      - acceptanceCriteria: Context capture() method accepts optional schema parameter
+        criticality: contract
+        intent: Enables custom structured output by accepting JSON schema array, defaulting to array<string> schema when not provided
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/ContextHelpers/CaptureAcceptsSchemaTest.php
+
+      - acceptanceCriteria: Context capture() method accepts optional backend parameter
+        criticality: contract
+        intent: Enables explicit provider selection as optional override of capability-based selection
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/ContextHelpers/CaptureAcceptsBackendTest.php
+
+      - acceptanceCriteria: Context capture() method returns Generator yielding decoded JSON result
+        criticality: contract
+        intent: Provides async-compatible result delivery through generator, yielding during API call and returning decoded JSON
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/ContextHelpers/CaptureReturnsGeneratorTest.php
+
+      - acceptanceCriteria: Context capture() method shares schema resolution logic with template helper
+        criticality: constraint
+        intent: Maintains consistency between template and context helpers by using shared schema processing implementation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/ContextHelpers/CaptureSharesSchemaLogicTest.php
+
+      - acceptanceCriteria: Context capture() method shares backend resolution logic with template helper
+        criticality: constraint
+        intent: Maintains consistency between template and context helpers by using shared backend selection implementation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/ContextHelpers/CaptureSharesBackendLogicTest.php
+
+      - acceptanceCriteria: AiFeature registers complete() method in ExtendedState context
+        criticality: contract
+        intent: Provides direct programmatic access to text completion from state actions without requiring template syntax
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/ContextHelpers/RegistersCompleteMethodTest.php
+
+      - acceptanceCriteria: Context complete() method accepts prompt string as first parameter
+        criticality: contract
+        intent: Enables text completion operations through simple function call with prompt text
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/ContextHelpers/CompleteAcceptsPromptTest.php
+
+      - acceptanceCriteria: Context complete() method accepts optional backend parameter
+        criticality: contract
+        intent: Enables explicit provider selection as optional override of capability-based selection
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/ContextHelpers/CompleteAcceptsBackendTest.php
+
+      - acceptanceCriteria: Context complete() method returns Generator yielding completion text
+        criticality: contract
+        intent: Provides async-compatible result delivery through generator yielding text chunks during streaming
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/ContextHelpers/CompleteReturnsGeneratorTest.php
 
   - name: response-format
     description: Structured response formatting with JSON schemas
@@ -253,18 +331,549 @@ features:
         criticality: contract
         intent: Enables non-blocking AI generation through AsyncFeature integration, allowing other tasks to execute during API calls
         test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Ai/CompletionIntegrationTest.php
-        
+
       - acceptanceCriteria: Template helpers integrate with TemplateFeature
         criticality: contract
         intent: Provides seamless AI functionality within templates through TemplateFeature integration
         test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Ai/TemplateHelperIntegrationTest.php
-        
+
       - acceptanceCriteria: Multiple template helpers can be used sequentially
         criticality: contract
         intent: Enables complex AI workflows by supporting multiple helper invocations within same template
         test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Ai/MultipleHelpersIntegrationTest.php
-        
+
       - acceptanceCriteria: Captured data can be used in subsequent template sections
         criticality: contract
         intent: Enables AI-driven template logic by making extracted data available to later template sections through data context
         test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Ai/CapturedDataFlowIntegrationTest.php
+
+  - name: backend-mesh-infrastructure
+    description: Mesh-based backend storage and access infrastructure
+    specs:
+      - acceptanceCriteria: AiFeature supplies Mesh containing backend instances via ChainMail
+        criticality: contract
+        intent: Provides backend mesh through ChainMail dependency injection, enabling features to access multiple AI backends through array-like interface
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/SuppliesBackendMeshTest.php
+
+      - acceptanceCriteria: Backend mesh contains backends keyed by name ('openai', 'ollama', 'anthropic')
+        criticality: contract
+        intent: Establishes backend naming convention using provider names as keys, enabling backend selection via name rather than model patterns
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/MeshContainsNamedBackendsTest.php
+
+      - acceptanceCriteria: Backend mesh supports array-like access pattern ($backends['openai'])
+        criticality: contract
+        intent: Provides intuitive backend access through ArrayAccess interface, enabling simple backend retrieval by name
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/MeshSupportsArrayAccessTest.php
+
+      - acceptanceCriteria: Backend mesh supports extend() method for chain-based extensions
+        criticality: contract
+        intent: Enables chain-based backend mesh extension, allowing features to intercept backend access operations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/MeshSupportsExtendMethodTest.php
+
+      - acceptanceCriteria: Backend mesh supports extendWith() method for adding backend sources
+        criticality: contract
+        intent: Enables extending mesh with additional backend collections, allowing features to add multiple backends at once
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/MeshSupportsExtendWithMethodTest.php
+
+      - acceptanceCriteria: Other features can add backends via array assignment ($backends['custom'] = new CustomBackend())
+        criticality: contract
+        intent: Provides simple backend addition mechanism, enabling features to register custom backends without complex APIs
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/OtherFeaturesCanAddBackendsTest.php
+
+  - name: backend-interface
+    description: Backend abstraction contract for AI providers
+    specs:
+      - acceptanceCriteria: BackendInterface defines createCompletionRequest(Request) method returning array
+        criticality: contract
+        intent: Establishes completion request creation contract, ensuring all backends can transform generic Request to provider-specific completion API format
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/BackendInterface/DefinesCreateCompletionRequestTest.php
+
+      - acceptanceCriteria: BackendInterface defines createChatRequest(Request) method returning array
+        criticality: contract
+        intent: Establishes chat request creation contract, ensuring all backends can transform generic Request to provider-specific chat API format
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/BackendInterface/DefinesCreateChatRequestTest.php
+
+      - acceptanceCriteria: BackendInterface defines stream(Request) method returning iterable
+        criticality: contract
+        intent: Establishes streaming contract, ensuring all backends provide consistent streaming interface for both completion and chat
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/BackendInterface/DefinesStreamMethodTest.php
+
+      - acceptanceCriteria: BackendInterface defines formatSystemPrompt(string) method returning string
+        criticality: contract
+        intent: Establishes system prompt formatting contract, enabling provider-specific prompt template application
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/BackendInterface/DefinesFormatSystemPromptTest.php
+
+  - name: openai-backend-implementation
+    description: OpenAI API backend implementation
+    specs:
+      - acceptanceCriteria: OpenAiBackend implements BackendInterface
+        criticality: contract
+        intent: Ensures OpenAI backend conforms to backend abstraction contract
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/OpenAi/ImplementsBackendInterfaceTest.php
+
+      - acceptanceCriteria: OpenAiBackend createCompletionRequest() transforms Request to OpenAI completion API format
+        criticality: contract
+        intent: Converts generic Request object to OpenAI-specific completion request structure with proper field mapping
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/OpenAi/TransformsCompletionRequestTest.php
+
+      - acceptanceCriteria: OpenAiBackend createChatRequest() transforms Request to OpenAI chat API format
+        criticality: contract
+        intent: Converts generic Request object to OpenAI-specific chat request structure with messages array and roles
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/OpenAi/TransformsChatRequestTest.php
+
+      - acceptanceCriteria: OpenAiBackend stream() yields text chunks from OpenAI streaming API
+        criticality: contract
+        intent: Handles OpenAI SSE streaming format, parsing data lines and extracting text content incrementally
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/OpenAi/StreamsResponseChunksTest.php
+
+      - acceptanceCriteria: OpenAiBackend formatSystemPrompt() applies OpenAI-specific prompt template
+        criticality: contract
+        intent: Formats system prompts according to OpenAI best practices and model-specific requirements
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/OpenAi/FormatsSystemPromptTest.php
+
+      - acceptanceCriteria: OpenAiBackend accepts optional apiKey and baseUrl configuration
+        criticality: contract
+        intent: Enables runtime configuration of API credentials and endpoint, supporting both cloud and local deployments
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/OpenAi/AcceptsConfigurationTest.php
+
+  - name: ollama-backend-implementation
+    description: Ollama API backend implementation
+    specs:
+      - acceptanceCriteria: OllamaBackend implements BackendInterface
+        criticality: contract
+        intent: Ensures Ollama backend conforms to backend abstraction contract
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/Ollama/ImplementsBackendInterfaceTest.php
+
+      - acceptanceCriteria: OllamaBackend createCompletionRequest() transforms Request to Ollama completion API format
+        criticality: contract
+        intent: Converts generic Request object to Ollama-specific completion request structure with proper field mapping
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/Ollama/TransformsCompletionRequestTest.php
+
+      - acceptanceCriteria: OllamaBackend createChatRequest() transforms Request to Ollama chat API format
+        criticality: contract
+        intent: Converts generic Request object to Ollama-specific chat request structure with messages array
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/Ollama/TransformsChatRequestTest.php
+
+      - acceptanceCriteria: OllamaBackend stream() yields text chunks from Ollama streaming API
+        criticality: contract
+        intent: Handles Ollama streaming format, parsing JSON lines and extracting response content incrementally
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/Ollama/StreamsResponseChunksTest.php
+
+      - acceptanceCriteria: OllamaBackend formatSystemPrompt() applies Ollama-specific prompt template
+        criticality: contract
+        intent: Formats system prompts according to Ollama model-specific requirements and local deployment context
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/Ollama/FormatsSystemPromptTest.php
+
+      - acceptanceCriteria: OllamaBackend accepts optional baseUrl configuration
+        criticality: contract
+        intent: Enables runtime configuration of Ollama endpoint, supporting local and remote deployments
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/Ollama/AcceptsConfigurationTest.php
+
+  - name: anthropic-backend-implementation
+    description: Anthropic (Claude) API backend implementation
+    specs:
+      - acceptanceCriteria: AnthropicBackend implements BackendInterface
+        criticality: contract
+        intent: Ensures Anthropic backend conforms to backend abstraction contract
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/Anthropic/ImplementsBackendInterfaceTest.php
+
+      - acceptanceCriteria: AnthropicBackend createCompletionRequest() transforms Request to Anthropic completion API format
+        criticality: contract
+        intent: Converts generic Request object to Anthropic-specific completion request structure with proper field mapping
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/Anthropic/TransformsCompletionRequestTest.php
+
+      - acceptanceCriteria: AnthropicBackend createChatRequest() transforms Request to Anthropic messages API format
+        criticality: contract
+        intent: Converts generic Request object to Anthropic-specific messages request structure with system parameter and messages array
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/Anthropic/TransformsChatRequestTest.php
+
+      - acceptanceCriteria: AnthropicBackend stream() yields text chunks from Anthropic streaming API
+        criticality: contract
+        intent: Handles Anthropic SSE streaming format, parsing event types and extracting text deltas incrementally
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/Anthropic/StreamsResponseChunksTest.php
+
+      - acceptanceCriteria: AnthropicBackend formatSystemPrompt() applies Anthropic-specific prompt template
+        criticality: contract
+        intent: Formats system prompts according to Claude model requirements and best practices
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/Anthropic/FormatsSystemPromptTest.php
+
+      - acceptanceCriteria: AnthropicBackend accepts optional apiKey and baseUrl configuration
+        criticality: contract
+        intent: Enables runtime configuration of API credentials and endpoint, supporting both cloud and custom deployments
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/Anthropic/AcceptsConfigurationTest.php
+
+  - name: prompt-template-chain
+    description: Provider-specific prompt template resolution via chain
+    specs:
+      - acceptanceCriteria: AiFeature supplies PromptTemplate chain via ChainMail
+        criticality: contract
+        intent: Provides prompt template resolution through ChainMail dependency injection, enabling provider-specific prompt formatting
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/SuppliesPromptTemplateChainTest.php
+
+      - acceptanceCriteria: PromptTemplate extends Chain class
+        criticality: contract
+        intent: Leverages Chain infrastructure for middleware-based template resolution extensibility
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/PromptTemplate/ExtendsChainTest.php
+
+      - acceptanceCriteria: PromptTemplate __invoke(backend, type) returns string template
+        criticality: contract
+        intent: Defines invocation signature accepting backend name and template type, returning resolved template string
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/PromptTemplate/InvokeReturnsTemplateTest.php
+
+      - acceptanceCriteria: PromptTemplate resolves templates in order - model → provider → base
+        criticality: constraint
+        intent: Implements resolution hierarchy enabling progressive template specialization from general to specific
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/PromptTemplate/ResolvesTemplateHierarchyTest.php
+
+      - acceptanceCriteria: PromptTemplate supports middleware extension via link() method
+        criticality: contract
+        intent: Enables features to inject custom template resolution logic through chain middleware
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/PromptTemplate/SupportsMiddlewareExtensionTest.php
+
+      - acceptanceCriteria: PromptTemplate returns empty string when template not found
+        criticality: constraint
+        intent: Provides fallback behavior preventing errors when templates missing, allowing backends to use defaults
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/PromptTemplate/ReturnsEmptyOnNotFoundTest.php
+
+  - name: enhanced-template-helpers
+    description: Template helpers with backend selection support
+    specs:
+      - acceptanceCriteria: Complete helper accepts optional backend parameter ({{complete backend="ollama"}})
+        criticality: contract
+        intent: Enables explicit backend selection through template syntax, allowing per-completion backend choice
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/TemplateHelpers/CompleteHelperAcceptsBackendParamTest.php
+
+      - acceptanceCriteria: Complete helper defaults to 'openai' backend when backend parameter not specified
+        criticality: constraint
+        intent: Provides sensible default backend for backward compatibility and convenience
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/TemplateHelpers/CompleteHelperDefaultsToOpenAiTest.php
+
+      - acceptanceCriteria: Complete helper receives Mesh $backends via ChainMail injection
+        criticality: constraint
+        intent: Obtains backend mesh through dependency injection, enabling backend access without global state
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/TemplateHelpers/CompleteHelperReceivesBackendMeshTest.php
+
+      - acceptanceCriteria: Complete helper receives PromptTemplate chain via ChainMail injection
+        criticality: constraint
+        intent: Obtains prompt template resolver through dependency injection, enabling provider-specific prompt formatting
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/TemplateHelpers/CompleteHelperReceivesPromptTemplateTest.php
+
+      - acceptanceCriteria: Complete helper uses PromptTemplate to format prompt for specified backend
+        criticality: contract
+        intent: Applies provider-specific prompt formatting before completion, ensuring optimal results per backend
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/TemplateHelpers/CompleteHelperFormatsPromptTest.php
+
+      - acceptanceCriteria: Complete helper passes backend instance to Completion class
+        criticality: contract
+        intent: Enables Completion to use specified backend for API communication
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/TemplateHelpers/CompleteHelperPassesBackendTest.php
+
+      - acceptanceCriteria: Capture helper accepts optional backend parameter ({{capture items backend="ollama"}})
+        criticality: contract
+        intent: Enables explicit backend selection for structured extraction through template syntax
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/TemplateHelpers/CaptureHelperAcceptsBackendParamTest.php
+
+      - acceptanceCriteria: Capture helper defaults to 'openai' backend when backend parameter not specified
+        criticality: constraint
+        intent: Provides sensible default backend for backward compatibility and convenience
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/TemplateHelpers/CaptureHelperDefaultsToOpenAiTest.php
+
+      - acceptanceCriteria: Capture helper receives Mesh $backends via ChainMail injection
+        criticality: constraint
+        intent: Obtains backend mesh through dependency injection, enabling backend access without global state
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/TemplateHelpers/CaptureHelperReceivesBackendMeshTest.php
+
+      - acceptanceCriteria: Capture helper receives PromptTemplate chain via ChainMail injection
+        criticality: constraint
+        intent: Obtains prompt template resolver through dependency injection, enabling provider-specific prompt formatting
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/TemplateHelpers/CaptureHelperReceivesPromptTemplateTest.php
+
+      - acceptanceCriteria: Capture helper uses PromptTemplate to format prompt for specified backend
+        criticality: contract
+        intent: Applies provider-specific prompt formatting before extraction, ensuring optimal results per backend
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/TemplateHelpers/CaptureHelperFormatsPromptTest.php
+
+      - acceptanceCriteria: Capture helper passes backend instance to Chat class
+        criticality: contract
+        intent: Enables Chat to use specified backend for API communication
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/TemplateHelpers/CaptureHelperPassesBackendTest.php
+
+  - name: completion-chat-backend-integration
+    description: Completion and Chat classes integration with backend instances
+    specs:
+      - acceptanceCriteria: Completion accepts optional BackendInterface parameter
+        criticality: contract
+        intent: Enables backend injection for multi-provider support while maintaining backward compatibility
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/CompletionChat/CompletionAcceptsBackendTest.php
+
+      - acceptanceCriteria: Completion uses backend's createCompletionRequest() to build API request
+        criticality: contract
+        intent: Delegates request format transformation to backend, enabling provider-specific request structures
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/CompletionChat/CompletionUsesBackendRequestTest.php
+
+      - acceptanceCriteria: Completion uses backend's stream() method for response handling
+        criticality: contract
+        intent: Delegates streaming to backend, enabling provider-specific response parsing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/CompletionChat/CompletionUsesBackendStreamTest.php
+
+      - acceptanceCriteria: Chat accepts optional BackendInterface parameter
+        criticality: contract
+        intent: Enables backend injection for multi-provider support while maintaining backward compatibility
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/CompletionChat/ChatAcceptsBackendTest.php
+
+      - acceptanceCriteria: Chat uses backend's createChatRequest() to build API request
+        criticality: contract
+        intent: Delegates request format transformation to backend, enabling provider-specific chat request structures
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/CompletionChat/ChatUsesBackendRequestTest.php
+
+      - acceptanceCriteria: Chat uses backend's stream() method for response handling
+        criticality: contract
+        intent: Delegates streaming to backend, enabling provider-specific response parsing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/CompletionChat/ChatUsesBackendStreamTest.php
+
+  - name: optional-credential-injection
+    description: Optional AiConfigFeature for runtime credential injection
+    specs:
+      - acceptanceCriteria: AiConfigFeature accepts credentials array in constructor
+        criticality: contract
+        intent: Enables credential configuration through constructor injection, supporting multiple backend credentials
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/AiConfig/AcceptsCredentialsTest.php
+
+      - acceptanceCriteria: AiConfigFeature implements Feature interface
+        criticality: contract
+        intent: Ensures config feature conforms to feature contract, enabling standard feature loading
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/AiConfig/ImplementsFeatureInterfaceTest.php
+
+      - acceptanceCriteria: AiConfigFeature extends backend mesh via offsetGet chain
+        criticality: contract
+        intent: Injects credentials when backends accessed, avoiding premature backend instantiation and configuration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/AiConfig/ExtendsBackendMeshTest.php
+
+      - acceptanceCriteria: AiConfigFeature injects apiKey when backend accessed
+        criticality: contract
+        intent: Configures backend API key at access time, enabling runtime credential resolution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/AiConfig/InjectsApiKeyTest.php
+
+      - acceptanceCriteria: AiConfigFeature injects baseUrl when backend accessed
+        criticality: contract
+        intent: Configures backend base URL at access time, enabling custom endpoint configuration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/AiConfig/InjectsBaseUrlTest.php
+
+      - acceptanceCriteria: AiConfigFeature returns backend unchanged when no credentials configured for that backend
+        criticality: constraint
+        intent: Allows backends to use default configuration when credentials not explicitly provided
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/AiConfig/ReturnsUnchangedWhenNoCredentialsTest.php
+
+  - name: mesh-extensibility-patterns
+    description: Patterns for extending backend mesh from other features
+    specs:
+      - acceptanceCriteria: Custom features can add backends via direct array assignment
+        criticality: contract
+        intent: Provides simple mechanism for features to register custom backends without complex APIs
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/Extensibility/AddBackendViaArrayAssignmentTest.php
+
+      - acceptanceCriteria: Custom features can extend mesh via extend() method with offsetGet callback
+        criticality: contract
+        intent: Enables features to intercept backend access operations, supporting lazy instantiation and decoration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/Extensibility/ExtendViaOffsetGetTest.php
+
+      - acceptanceCriteria: Custom features can extend mesh via extendWith() method with backend collection
+        criticality: contract
+        intent: Enables features to add multiple backends at once through collection extension
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/Extensibility/ExtendWithBackendCollectionTest.php
+
+      - acceptanceCriteria: Multiple features can extend same mesh without conflicts
+        criticality: contract
+        intent: Ensures chain-based extension maintains proper middleware stacking, allowing feature composition
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/MultiBackend/Extensibility/MultipleExtensionsTest.php
+
+  - name: multi-backend-integration
+    description: End-to-end multi-backend integration scenarios
+    specs:
+      - acceptanceCriteria: Template helpers can switch between backends using backend parameter
+        criticality: contract
+        intent: Validates end-to-end backend selection through template syntax in real usage scenarios
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Ai/MultiBackend/TemplateSwitchesBackendsTest.php
+
+      - acceptanceCriteria: PromptTemplate chain can be extended by other features for custom templates
+        criticality: contract
+        intent: Validates chain-based template extension mechanism enabling feature-level template customization
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Ai/MultiBackend/PromptTemplateExtensionTest.php
+
+      - acceptanceCriteria: Backend mesh can be extended by other features for custom backends
+        criticality: contract
+        intent: Validates mesh extension mechanism enabling features to add custom backends
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Ai/MultiBackend/BackendMeshExtensionTest.php
+
+      - acceptanceCriteria: AiConfigFeature credential injection works with all three default backends
+        criticality: contract
+        intent: Validates credential injection mechanism across OpenAI, Ollama, and Anthropic backends
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Ai/MultiBackend/CredentialInjectionTest.php
+
+      - acceptanceCriteria: Multi-backend system cooperates with AsyncFeature for streaming
+        criticality: contract
+        intent: Validates async cooperation across different backends ensuring consistent non-blocking behavior
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Ai/MultiBackend/AsyncCooperationTest.php
+
+      - acceptanceCriteria: Backends throw native exceptions for error conditions without custom event system
+        criticality: contract
+        intent: Validates error handling approach using native exceptions rather than custom event infrastructure
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Ai/MultiBackend/NativeExceptionHandlingTest.php
+
+  - name: capability-based-selection
+    description: Declarative model selection by capability requirements (complexity and context dimensions) instead of explicit backend names, with model pool configuration and automatic selection algorithm
+    specs:
+      - acceptanceCriteria: ModelPool stores models with capability metadata (complexity, context, provider, cost)
+        criticality: contract
+        intent: Provides capability-aware model registry enabling selection by abstract requirements rather than specific model names
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/ModelPool/StoresModelMetadataTest.php
+
+      - acceptanceCriteria: ModelPool selectModel() returns model matching complexity and context requirements
+        criticality: contract
+        intent: Implements core selection algorithm filtering models by minimum capability requirements
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/ModelPool/SelectsMatchingModelTest.php
+
+      - acceptanceCriteria: ModelPool selectModel() prefers exact match over higher capability
+        criticality: behavior
+        intent: Optimizes cost and resource usage by selecting closest match rather than most capable model
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/ModelPool/PrefersExactMatchTest.php
+
+      - acceptanceCriteria: ModelPool selectModel() falls back to higher capability when no exact match
+        criticality: behavior
+        intent: Ensures requests succeed by falling back to more capable models when exact match unavailable
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/ModelPool/FallsBackToHigherTest.php
+
+      - acceptanceCriteria: ModelPool selectModel() respects provider preference order
+        criticality: behavior
+        intent: Enables provider prioritization for latency, cost, or privacy considerations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/ModelPool/RespectsProviderPreferenceTest.php
+
+      - acceptanceCriteria: ModelPool selectModel() applies cost bias (low, moderate, high, none) to selection
+        criticality: behavior
+        intent: Enables cost-aware selection balancing capability with budget constraints
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/ModelPool/AppliesCostBiasTest.php
+
+      - acceptanceCriteria: ModelPool selectModel() returns null when no models match requirements
+        criticality: contract
+        intent: Signals inability to fulfill request allowing caller to handle missing capability gracefully
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/ModelPool/ReturnsNullWhenNoMatchTest.php
+
+      - acceptanceCriteria: ModelPool addModel() registers model with capability metadata
+        criticality: contract
+        intent: Enables runtime model pool extension for custom models or provider updates
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/ModelPool/RegistersModelTest.php
+
+      - acceptanceCriteria: Context capture() accepts optional complexity parameter
+        criticality: contract
+        intent: Enables capability-based model selection for structured extraction through complexity requirement
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/Context/CaptureAcceptsComplexityTest.php
+
+      - acceptanceCriteria: Context capture() accepts optional context parameter
+        criticality: contract
+        intent: Enables capability-based model selection for structured extraction through context size requirement
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/Context/CaptureAcceptsContextTest.php
+
+      - acceptanceCriteria: Context capture() uses ModelPool for backend selection when complexity or context specified
+        criticality: contract
+        intent: Integrates capability-based selection into context API providing transparent model resolution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/Context/CaptureUsesModelPoolTest.php
+
+      - acceptanceCriteria: Context capture() backend parameter overrides capability-based selection
+        criticality: contract
+        intent: Maintains backward compatibility and allows explicit override when needed
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/Context/BackendOverridesCapabilityTest.php
+
+      - acceptanceCriteria: Context complete() accepts optional complexity parameter
+        criticality: contract
+        intent: Enables capability-based model selection for text completion through complexity requirement
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/Context/CompleteAcceptsComplexityTest.php
+
+      - acceptanceCriteria: Context complete() accepts optional context parameter
+        criticality: contract
+        intent: Enables capability-based model selection for text completion through context size requirement
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/Context/CompleteAcceptsContextTest.php
+
+      - acceptanceCriteria: Context complete() uses ModelPool for backend selection when complexity or context specified
+        criticality: contract
+        intent: Integrates capability-based selection into completion API providing transparent model resolution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/Context/CompleteUsesModelPoolTest.php
+
+      - acceptanceCriteria: Template capture helper accepts optional complexity parameter
+        criticality: contract
+        intent: Enables declarative capability-based selection in templates through complexity hash parameter
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/Templates/CaptureHelperComplexityParamTest.php
+
+      - acceptanceCriteria: Template capture helper accepts optional context parameter
+        criticality: contract
+        intent: Enables declarative capability-based selection in templates through context hash parameter
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/Templates/CaptureHelperContextParamTest.php
+
+      - acceptanceCriteria: Template capture helper uses ModelPool for backend selection when complexity or context specified
+        criticality: contract
+        intent: Integrates capability-based selection into template syntax providing transparent model resolution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/Templates/CaptureHelperUsesModelPoolTest.php
+
+      - acceptanceCriteria: Template complete helper accepts optional complexity parameter
+        criticality: contract
+        intent: Enables declarative capability-based selection in templates through complexity hash parameter
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/Templates/CompleteHelperComplexityParamTest.php
+
+      - acceptanceCriteria: Template complete helper accepts optional context parameter
+        criticality: contract
+        intent: Enables declarative capability-based selection in templates through context hash parameter
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/Templates/CompleteHelperContextParamTest.php
+
+      - acceptanceCriteria: Template complete helper uses ModelPool for backend selection when complexity or context specified
+        criticality: contract
+        intent: Integrates capability-based selection into template syntax providing transparent model resolution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/Templates/CompleteHelperUsesModelPoolTest.php
+
+      - acceptanceCriteria: AiConfigFeature parses modelPool configuration array from constructor
+        criticality: contract
+        intent: Enables declarative model pool definition through configuration rather than code
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/Config/ParsesModelPoolConfigTest.php
+
+      - acceptanceCriteria: AiConfigFeature constructs ModelPool from modelPool configuration
+        criticality: contract
+        intent: Transforms configuration data into ModelPool instance with registered models
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/Config/ConstructsModelPoolTest.php
+
+      - acceptanceCriteria: AiConfigFeature parses preferences configuration (defaultComplexity, defaultContext, preferProviders, costBias)
+        criticality: contract
+        intent: Enables selection behavior customization through preferences configuration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/Config/ParsesPreferencesTest.php
+
+      - acceptanceCriteria: AiConfigFeature supplies ModelPool via ChainMail for feature access
+        criticality: contract
+        intent: Makes configured model pool available to AiFeature and other features through dependency injection
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/Config/SuppliesModelPoolTest.php
+
+      - acceptanceCriteria: AiConfigFeature injects model-specific backend instances into backend mesh based on ModelPool
+        criticality: contract
+        intent: Populates backend mesh with model-specific backend instances enabling capability-selected model usage
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/Config/InjectsBackendInstancesTest.php
+
+      - acceptanceCriteria: All AI entrypoints apply default complexity when complexity parameter not provided
+        criticality: contract
+        intent: Enables zero-config capability-based selection across all AI interfaces including context methods, template helpers, and abilities
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/DefaultComplexityTest.php
+
+      - acceptanceCriteria: All AI entrypoints apply default context when context parameter not provided
+        criticality: contract
+        intent: Enables zero-config capability-based selection across all AI interfaces including context methods, template helpers, and abilities
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Ai/CapabilitySelection/DefaultContextTest.php
+
+      - acceptanceCriteria: Capability-based selection integrates with existing backend parameter for override
+        criticality: contract
+        intent: Validates backward compatibility allowing explicit backend selection to bypass capability resolution
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Ai/CapabilitySelection/BackendOverrideIntegrationTest.php
+
+      - acceptanceCriteria: Capability-based selection works across template and context APIs consistently
+        criticality: contract
+        intent: Validates consistent selection behavior between template helpers and context methods
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Ai/CapabilitySelection/CrossApiConsistencyTest.php
+
+      - acceptanceCriteria: ModelPool selection algorithm scores models by capability distance
+        criticality: behavior
+        intent: Implements scoring formula minimizing capability waste while meeting requirements
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Ai/CapabilitySelection/ScoringAlgorithmTest.php

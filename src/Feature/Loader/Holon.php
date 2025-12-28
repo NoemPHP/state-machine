@@ -340,7 +340,8 @@ class Holon
         $iteration = 0;
         $lastResult = null;
 
-        while ($iteration < $maxIterations) {
+        // Allow unlimited iterations when maxIterations is 0 or -1
+        while ($maxIterations <= 0 || $iteration < $maxIterations) {
             $trigger = is_callable($triggerFactory) ? $triggerFactory($iteration, $region, $container) : $triggerFactory;
 
             if ($onIteration && is_callable($onIteration)) {
@@ -367,7 +368,8 @@ class Holon
         }
 
         // Throw exception with iteration count if we hit max iterations AND region is not final
-        if ($iteration >= $maxIterations && !$region->isFinal()) {
+        // Skip check for unlimited execution (maxIterations <= 0)
+        if ($maxIterations > 0 && $iteration >= $maxIterations && !$region->isFinal()) {
             throw new RuntimeException("Event loop reached maximum iterations ($iteration)");
         }
 

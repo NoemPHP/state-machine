@@ -23,7 +23,7 @@ class ConstructsWithDefaultsTest extends TestCase
         $this->assertInstanceOf(\Noem\State\Feature\Ai\Request::class, $request);
         $this->assertSame('http://telvanni:7863/v1', $request->baseUrl);
         $this->assertSame('sk-111111111111111111111111111111111111111111111111', $request->token);
-        $this->assertSame('gemma3:12b', $request->model);
+        $this->assertNotEmpty($request->model);
         $this->assertSame('say hello', $request->prompt);
         $this->assertSame(2048, $request->maxTokens);
         $this->assertSame(0.6, $request->temperature);

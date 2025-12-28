@@ -36,8 +36,8 @@ class Meta extends Chain
 
         parent::__construct(function (Params\Meta $metaParams) use ($metaData): Mesh {
             $regionId = spl_object_id($metaParams->region);
-            if (!$metaData->contains($metaParams->region)) {
-                $metaData->attach($metaParams->region, new MetaData());
+            if (!$metaData->offsetExists($metaParams->region)) {
+                $metaData->offsetSet($metaParams->region, new MetaData());
             }
             $metaType = (string)$metaParams->type;
             $meta = $metaData->offsetGet($metaParams->region);
@@ -103,7 +103,7 @@ class Meta extends Chain
                  * to the Mesh of the parent Region
                  * TODO It must be possible to unhook temporary (spawned) MRegions
                  */
-                if (!$metaData->contains($parentRegion) || !$metaData->contains($metaParams->region)) {
+                if (!$metaData->offsetExists($parentRegion) || !$metaData->offsetExists($metaParams->region)) {
                     $parentMetaParams = new Params\Meta($parentRegion, ContextMetaType::get());
                     $parent = $first($parentMetaParams);
                     assert($parent instanceof Mesh);

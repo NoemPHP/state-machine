@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["states", "initial", "final"],
+  "properties": {
+    "states": {
+      "type": "array",
+      "description": "Array of state definitions",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Unique state identifier"
+          },
+          "transitions": {
+            "type": "array",
+            "description": "Possible state transitions from this state",
+            "items": {
+              "type": "object",
+              "required": ["target"],
+              "properties": {
+                "target": {
+                  "type": "string",
+                  "description": "Target state name"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "initial": {
+      "type": "string",
+      "description": "Name of the initial state"
+    },
+    "final": {
+      "type": "string",
+      "description": "Name of the final state"
+    }
+  },
+  "description": "RegionLoader-compatible state machine definition with states, initial state, and final state"
+}

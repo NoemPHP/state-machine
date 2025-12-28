@@ -74,6 +74,13 @@ class Region
         $dispatched = [...$this->dispatched];
         $this->dispatched = [];
         foreach ($dispatched as $trigger) {
+            // Notify listeners before processing action chain
+            $notifyParams = new Params\Notify($this, $trigger);
+            $listeners = $this->notificationChain->call($notifyParams);
+            foreach ($listeners as $listener) {
+                $listener($trigger, $this);
+            }
+
             $context = new Params\Action($this, (object)$trigger);
             $newState = ($this->actionChain)->call($context);
             /**

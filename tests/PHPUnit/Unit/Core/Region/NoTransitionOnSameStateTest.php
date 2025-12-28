@@ -29,7 +29,9 @@ class NoTransitionOnSameStateTest extends TestCase
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
         $notificationChain = \Mockery::mock(Notification::class);
-        $notificationChain = \Mockery::mock(Notification::class);
+
+        $notificationChain->shouldReceive('call')
+            ->andReturn([]);
 
         $actionChain->shouldReceive('call')
             ->andReturn('initial');
@@ -61,7 +63,9 @@ class NoTransitionOnSameStateTest extends TestCase
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
         $notificationChain = \Mockery::mock(Notification::class);
-        $notificationChain = \Mockery::mock(Notification::class);
+
+        $notificationChain->shouldReceive('call')
+            ->andReturn([]);
 
         $actionChain->shouldReceive('call')
             ->andReturn('myState', 'myState', 'myState');
@@ -95,7 +99,9 @@ class NoTransitionOnSameStateTest extends TestCase
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
         $notificationChain = \Mockery::mock(Notification::class);
-        $notificationChain = \Mockery::mock(Notification::class);
+
+        $notificationChain->shouldReceive('call')
+            ->andReturn([]);
 
         $actionChain->shouldReceive('call')
             ->andReturn('stable');

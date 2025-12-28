@@ -1,0 +1,115 @@
+# Task Executor - AI-Powered Conversational CLI with Task Execution
+# Classifies user input and either responds conversationally or generates and executes task state machines
+
+machine:
+  require: !php require '/var/www/html/machines/task-executor/holon-functions.php'
+
+  features:
+    - class: Noem\State\Feature\ExtendedState\ExtendedState
+    - class: Noem\State\Feature\Template\TemplateFeature
+    - class: Noem\State\Feature\Ai\AiFeature
+    - class: Noem\State\Feature\Ai\AiConfigFeature
+      config:
+        ollama:
+          baseUrl: 'http://telvanni:7863/api'
+    - class: Noem\State\Feature\Async\AsyncFeature
+    - class: Noem\State\Feature\Message\MessageFeature
+
+  eventLoop:
+    autoRun: true
+    maxIterations: 0  # Unlimited iterations for long-running interactive process
+
+states:
+  - name: idle
+    onEnter:
+      - run: !php return onEnterIdle()
+    transitions:
+      - target: waiting_for_input
+
+  - name: waiting_for_input
+    onEnter:
+      - run: !php return onEnterWaitingForInput()
+    action:
+      - run: !php return actionWaitingForInput()
+        async:
+          enabled: true
+    transitions:
+      - target: classify_input
+        guard: !php return guardHasUserInput()
+
+  - name: classify_input
+    onEnter:
+      - run: !php return onEnterClassifyInput()
+    action:
+      - run: !php return actionClassifyInput()
+        async:
+          enabled: true
+    transitions:
+      - target: respond_conversation
+        guard: !php return guardIsConversation()
+      - target: task_generation
+        guard: !php return guardIsTask()
+
+  - name: respond_conversation
+    onEnter:
+      - run: !php return onEnterRespondConversation()
+    action:
+      - run: !php return actionRespondConversation()
+        async:
+          enabled: true
+    transitions:
+      - target: cleanup
+        guard: !php return guardResponseComplete()
+
+  - name: task_generation
+    onEnter:
+      - run: !php return onEnterTaskGeneration()
+    action:
+      - run: !php return actionTaskGeneration()
+        async:
+          enabled: true
+    transitions:
+      - target: execute_task
+        guard: !php return guardHasTaskDefinition()
+
+  - name: execute_task
+    onEnter:
+      - run: !php return onEnterExecuteTask()
+    action:
+      - run: !php return actionExecuteTask()
+        async:
+          enabled: true
+    transitions:
+      - target: task_summary
+        guard: !php return guardTaskComplete()
+
+  - name: task_summary
+    onEnter:
+      - run: !php return onEnterTaskSummary()
+    action:
+      - run: !php return actionTaskSummary()
+        async:
+          enabled: true
+    transitions:
+      - target: cleanup
+        guard: !php return guardSummaryComplete()
+
+  - name: cleanup
+    onEnter:
+      - run: !php return onEnterCleanup()
+    action:
+      - run: !php return actionCleanup()
+        async:
+          enabled: true
+    transitions:
+      - target: waiting_for_input
+        guard: !php return guardNotExiting()
+      - target: finished
+        guard: !php return guardExiting()
+
+  - name: finished
+    onEnter:
+      - run: !php return onEnterFinished()
+
+initial: idle
+final: finished

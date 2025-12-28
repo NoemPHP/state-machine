@@ -29,7 +29,9 @@ class TransitionChainInvocationTest extends TestCase
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
         $notificationChain = \Mockery::mock(Notification::class);
-        $notificationChain = \Mockery::mock(Notification::class);
+
+        $notificationChain->shouldReceive('call')
+            ->andReturn([]);
 
         $actionChain->shouldReceive('call')
             ->andReturn('newState');
@@ -62,7 +64,9 @@ class TransitionChainInvocationTest extends TestCase
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
         $notificationChain = \Mockery::mock(Notification::class);
-        $notificationChain = \Mockery::mock(Notification::class);
+
+        $notificationChain->shouldReceive('call')
+            ->andReturn([]);
 
         $actionChain->shouldReceive('call')
             ->andReturn('state1', 'state2', 'state3');

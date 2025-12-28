@@ -29,7 +29,10 @@ class ImmediateEventDispatchTest extends TestCase
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
         $notificationChain = \Mockery::mock(Notification::class);
-        $notificationChain = \Mockery::mock(Notification::class);
+
+        $notificationChain->shouldReceive('call')
+            ->once()
+            ->andReturn([]);
 
         $actionChain->shouldReceive('call')
             ->once()
@@ -60,9 +63,12 @@ class ImmediateEventDispatchTest extends TestCase
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
         $notificationChain = \Mockery::mock(Notification::class);
-        $notificationChain = \Mockery::mock(Notification::class);
 
-          $actionChain->shouldReceive('call')
+        $notificationChain->shouldReceive('call')
+            ->once()
+            ->andReturn([]);
+
+        $actionChain->shouldReceive('call')
             ->once()
             ->andReturn('initial');
 
@@ -92,7 +98,10 @@ class ImmediateEventDispatchTest extends TestCase
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
         $notificationChain = \Mockery::mock(Notification::class);
-        $notificationChain = \Mockery::mock(Notification::class);
+
+        $notificationChain->shouldReceive('call')
+            ->once()
+            ->andReturn([]);
 
         $actionChain->shouldReceive('call')
             ->andReturn('initial');

@@ -30,7 +30,9 @@ class ProcessQueuedEventsTest extends TestCase
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
         $notificationChain = \Mockery::mock(Notification::class);
-        $notificationChain = \Mockery::mock(Notification::class);
+
+        $notificationChain->shouldReceive('call')
+            ->andReturn([]);
 
         $processedPayloads = [];
         $actionChain->shouldReceive('call')
@@ -73,7 +75,9 @@ class ProcessQueuedEventsTest extends TestCase
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
         $notificationChain = \Mockery::mock(Notification::class);
-        $notificationChain = \Mockery::mock(Notification::class);
+
+        $notificationChain->shouldReceive('call')
+            ->andReturn([]);
 
         $order = [];
         $actionChain->shouldReceive('call')

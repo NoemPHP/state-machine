@@ -39,21 +39,17 @@ class MessageFeature implements Feature
     ): void {
         // Hook DispatchAction chain to scan for Messages
         $dispatchChain->link(function (Action $action, callable $next) use ($notificationChain) {
-            // Dispatch action first
-            $result = $next($action);
-
             // Check if payload is a Message
-            if (!$action->payload instanceof Message) {
-                return $result;
+            if ($action->payload instanceof Message) {
+                // Set up subscription BEFORE dispatching so it's ready when response arrives
+                $this->setupMessageSubscription(
+                    $action->payload,
+                    $notificationChain
+                );
             }
 
-            // For Messages, set up temporary response subscription
-            $this->setupMessageSubscription(
-                $action->payload,
-                $notificationChain
-            );
-
-            return $result;
+            // Now dispatch action (may execute handler and emit response)
+            return $next($action);
         });
     }
 
@@ -93,17 +89,24 @@ class MessageFeature implements Feature
     /**
      * Install correlation filtering optimization on NotificationChain
      *
-     * Adds middleware to pre-filter Message events by correlation ID,
-     * optimizing delivery by avoiding unnecessary listener invocations
-     * for messages with non-matching correlation IDs
+     * Hooks Notification chain to detect outgoing Message requests and set up
+     * subscriptions for correlated responses (used by abilities and other non-trigger paths)
      */
     private function installCorrelationFiltering(Notification $notificationChain): void
     {
-        // Note: This optimization is already handled by the subscription setup above
-        // which uses repliesTo() to filter. No additional middleware needed for v1.
-        // This method exists to satisfy the spec but has no implementation in v1.
+        $notificationChain->link(function (Notify $notify, callable $next) use ($notificationChain) {
+            // Check if event is a Message BEFORE processing
+            if ($notify->event instanceof Message) {
+                // Set up subscription for this message before processing
+                // This ensures the subscription is ready when the response is emitted
+                $this->setupMessageSubscription(
+                    $notify->event,
+                    $notificationChain
+                );
+            }
 
-        // Future optimization: Could add middleware here to pre-filter listeners
-        // before type checking, but current implementation is sufficient.
+            // Now process the notification
+            return $next($notify);
+        });
     }
 }

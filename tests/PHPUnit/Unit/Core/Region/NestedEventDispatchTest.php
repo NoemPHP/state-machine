@@ -30,7 +30,9 @@ class NestedEventDispatchTest extends TestCase
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
         $notificationChain = \Mockery::mock(Notification::class);
-        $notificationChain = \Mockery::mock(Notification::class);
+
+        $notificationChain->shouldReceive('call')
+            ->andReturn([]);
 
         $processedIds = [];
         $region = new Region(
@@ -77,7 +79,9 @@ class NestedEventDispatchTest extends TestCase
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
         $notificationChain = \Mockery::mock(Notification::class);
-        $notificationChain = \Mockery::mock(Notification::class);
+
+        $notificationChain->shouldReceive('call')
+            ->andReturn([]);
 
         $callCount = 0;
         $maxCalls = 10; // Safety limit

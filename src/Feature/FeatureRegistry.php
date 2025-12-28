@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Noem\State\Feature;
 
+use Noem\State\Middleware\ChainMail;
+
 /**
  * Manages feature registration, dependency resolution, and topological sorting.
  *
@@ -20,7 +22,7 @@ class FeatureRegistry
     private array $features = [];
 
     /**
-     * @var \SplObjectStorage<\Noem\State\Middleware\ChainMail, array<Feature>>
+     * @var \SplObjectStorage<ChainMail, array<Feature>>
      */
     private \SplObjectStorage $resolved;
 
@@ -78,14 +80,14 @@ class FeatureRegistry
      * same instance return the cached array without re-invoking features, preventing
      * duplicate middleware registration when builders share ChainMail via newInstance().
      *
-     * @param \Noem\State\Middleware\ChainMail $chainMail The ChainMail instance to invoke features with
+     * @param ChainMail $chainMail The ChainMail instance to invoke features with
      * @return array<Feature> Features in dependency order (dependencies first)
      * @throws \LogicException If circular dependencies detected
      */
-    public function resolve(\Noem\State\Middleware\ChainMail $chainMail): array
+    public function resolve(ChainMail $chainMail): array
     {
         // Return cached result if available for this ChainMail instance
-        if ($this->resolved->contains($chainMail)) {
+        if ($this->resolved->offsetExists($chainMail)) {
             return $this->resolved[$chainMail];
         }
 

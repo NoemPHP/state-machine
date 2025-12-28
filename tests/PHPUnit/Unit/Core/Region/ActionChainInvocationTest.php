@@ -30,7 +30,9 @@ class ActionChainInvocationTest extends TestCase
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
         $notificationChain = \Mockery::mock(Notification::class);
-        $notificationChain = \Mockery::mock(Notification::class);
+
+        $notificationChain->shouldReceive('call')
+            ->andReturn([]);
 
         $actionChain->shouldReceive('call')
             ->times(3)
@@ -63,7 +65,9 @@ class ActionChainInvocationTest extends TestCase
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
         $notificationChain = \Mockery::mock(Notification::class);
-        $notificationChain = \Mockery::mock(Notification::class);
+
+        $notificationChain->shouldReceive('call')
+            ->andReturn([]);
 
         $callCount = 0;
         $actionChain->shouldReceive('call')
@@ -96,7 +100,9 @@ class ActionChainInvocationTest extends TestCase
         $transitionChain = \Mockery::mock(DoTransition::class);
         $pathChain = \Mockery::mock(Path::class);
         $notificationChain = \Mockery::mock(Notification::class);
-        $notificationChain = \Mockery::mock(Notification::class);
+
+        $notificationChain->shouldReceive('call')
+            ->andReturn([]);
 
         $actionChain->shouldReceive('call')
             ->never();

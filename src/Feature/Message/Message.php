@@ -19,6 +19,11 @@ abstract class Message implements \JsonSerializable
      */
     private array $replyHandlers = [];
 
+    /**
+     * @var Message|null Cached response if received before then() handlers attached
+     */
+    private ?Message $pendingResponse = null;
+
     protected function __construct(?string $correlationId = null)
     {
         $this->correlationId = $correlationId ?? $this->generateId();
@@ -46,29 +51,56 @@ abstract class Message implements \JsonSerializable
 
     /**
      * Register response handler (promise-like API)
+     *
+     * If a response was already received (before handlers were attached),
+     * delivers it immediately to the new handler.
      */
     final public function then(callable $handler): self
     {
         $this->replyHandlers[] = $handler;
+
+        // If response already received, deliver it immediately to this handler
+        if ($this->pendingResponse !== null) {
+            $handler($this->pendingResponse);
+        }
+
         return $this;
     }
 
     /**
      * Deliver response to registered handlers
+     *
+     * If no handlers are registered yet, caches the response for delivery
+     * when then() is called later (synchronous response pattern).
      */
     final public function deliverResponse(Message $response): void
     {
+        // If no handlers registered, cache for later delivery
+        if (empty($this->replyHandlers)) {
+            $this->pendingResponse = $response;
+            return;
+        }
+
+        // Deliver to all registered handlers
         foreach ($this->replyHandlers as $handler) {
             $handler($response);  // Call handler with response Message object
         }
+
+        // Clear pending response after delivery
+        $this->pendingResponse = null;
     }
 
     /**
      * Check if this message replies to given request
+     *
+     * Returns true if:
+     * - Correlation IDs match
+     * - This is NOT the same message instance (responses are different objects)
      */
     final public function repliesTo(Message $request): bool
     {
-        return $this->correlationId === $request->correlationId();
+        return $this->correlationId === $request->correlationId()
+            && $this !== $request;
     }
 
     /**

@@ -252,7 +252,8 @@ class SelfContainedLoader
         $iteration = 0;
         $lastResult = null;
 
-        while (!$region->isFinal() && $iteration < $maxIterations) {
+        // Allow unlimited iterations when maxIterations is 0 or -1
+        while (!$region->isFinal() && ($maxIterations <= 0 || $iteration < $maxIterations)) {
             $trigger = is_callable($triggerFactory) ? $triggerFactory($iteration, $region, $container) : $triggerFactory;
 
             if ($onIteration && is_callable($onIteration)) {
@@ -263,7 +264,8 @@ class SelfContainedLoader
             $iteration++;
         }
 
-        if ($iteration >= $maxIterations) {
+        // Skip check for unlimited execution (maxIterations <= 0)
+        if ($maxIterations > 0 && $iteration >= $maxIterations) {
             throw new RuntimeException("Event loop reached maximum iterations ($maxIterations)");
         }
 

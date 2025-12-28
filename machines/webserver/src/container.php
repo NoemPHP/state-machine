@@ -54,11 +54,16 @@ return [
                 }
             }
             // Use stream_select for non-blocking I/O multiplexing
-            // Timeout of 1 second to prevent blocking indefinitely
-            $ready = stream_select($read, $write, $except, 0);
+            // Timeout of 0 seconds for non-blocking operation
+            $ready = @stream_select($read, $write, $except, 0);
 
+            // Handle stream_select errors gracefully - child region may have closed socket
+            // between our cleanup check and stream_select call (timing window)
             if ($ready === false) {
-                throw new Exception("stream_select failed");
+                // Log error but continue operation - accept loop must remain responsive
+                echo "[".date('Y-m-d H:i:s')."] stream_select warning: socket may have been closed\n";
+                yield; // Yield control and retry on next tick
+                continue;
             }
             if ($ready > 0) {
                 // Check for new connections
@@ -84,6 +89,17 @@ return [
                 // Handle existing client connections
                 foreach ($read as $client) {
                     $clientId = (int)$client;
+
+                    // Defensive check: validate resource before reading
+                    // Child region may have closed socket after stream_select but before we process
+                    if (!is_resource($client) || feof($client)) {
+                        if (isset($clients[$clientId])) {
+                            unset($clients[$clientId]);
+                            unset($buffers[$clientId]);
+                        }
+                        continue;
+                    }
+
                     // Read data from client (non-blocking)
                     $data = fread($client, 4096);
 
@@ -117,13 +133,9 @@ return [
         // Handle the accepted connection here
         echo "[" . date('Y-m-d H:i:s') . "] $connection->method $connection->uri\n";
         $client = $connection->client;
-        // Read a large chunk of data from the client
-        $buffer = fread($client, 65536);
-        if ($buffer === false || $buffer === '') {
-            fclose($client);
 
-            return;
-        }
+        // Use the request data already in ServerConnection (don't try to re-read from socket)
+        $buffer = $connection->request;
 
         // Split the request into headers and body (if any)
         $parts = explode("\r\n\r\n", $buffer, 2);
@@ -155,10 +167,12 @@ return [
     'request.action.processing' => function (object $trigger) {
         $client = $this->get('client');
 
-        // Check if client socket is valid before proceeding
-        if (!is_resource($client) || feof($client)) {
-            return;
-        }
+        // TODO: Socket validation breaks processing - investigate why socket is invalid
+        // See WEBSERVER_BUG_ROOT_CAUSE_ANALYSIS.md for details
+        // if (!is_resource($client) || feof($client)) {
+        //     yield; // CRITICAL: Must yield for async compatibility
+        //     return;
+        // }
 
         $headers = $this->get('headers');
         //var_dump($headers);

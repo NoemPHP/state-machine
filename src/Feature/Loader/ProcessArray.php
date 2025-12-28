@@ -222,7 +222,21 @@ class ProcessArray
         }
 
         // Wrap untyped closure to add type hints
-        return fn(object $t) => $callback($t);
+        // The wrapper will be rebound by ExtendedState, and when it runs,
+        // it rebinds the inner callback to propagate the ExtendedState context
+        return function(object $t) use ($callback) {
+            // Rebind the inner callback to match this wrapper's binding
+            // After ExtendedState rebinds this wrapper, $this will be Bound instance
+            if ($callback instanceof \Closure) {
+                $boundCallback = $callback->bindTo($this, $this);
+                if ($boundCallback === null) {
+                    // Fallback if binding fails (e.g., static closures)
+                    return $callback($t);
+                }
+                return $boundCallback($t);
+            }
+            return $callback($t);
+        };
     }
 
     public function createFactoryCallback($definition): Closure

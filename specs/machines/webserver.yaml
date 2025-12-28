@@ -125,3 +125,26 @@ features:
         criticality: contract
         intent: Validates parent's resource tracking correctly handles premature socket closure, the core bug that was discovered in production
         test: vendor/bin/phpunit tests/PHPUnit/E2E/WebServer/Integration/EarlySocketCloseHandlingTest.php
+
+  - name: resource-lifecycle-resilience
+    description: Accept loop resilience against child region socket closures and resource lifecycle timing
+    specs:
+      - acceptanceCriteria: Accept loop removes closed client socket references before child region completes region cleanup
+        criticality: contract
+        intent: Prevents stream_select() failure when given invalid stream resources by ensuring parent loop cleans up references before socket closure propagates
+        test: vendor/bin/phpunit tests/PHPUnit/E2E/WebServer/Resilience/ResourceLifecycleTimingTest.php
+
+      - acceptanceCriteria: Server accepts new connections immediately after previous connection closes
+        criticality: contract
+        intent: Validates server remains perpetually responsive by processing complete request-response cycles without becoming unresponsive to subsequent connections
+        test: vendor/bin/phpunit tests/PHPUnit/E2E/WebServer/Resilience/ContinuousConnectionAcceptanceTest.php
+
+      - acceptanceCriteria: Accept loop gracefully handles stream_select() errors from invalid socket references
+        criticality: contract
+        intent: Ensures accept loop continues operating when stream_select fails due to closed socket resources, preventing server from becoming unresponsive
+        test: vendor/bin/phpunit tests/PHPUnit/E2E/WebServer/Resilience/StreamSelectErrorRecoveryTest.php
+
+      - acceptanceCriteria: Server processes multiple sequential requests after handling socket closure timing window
+        criticality: contract
+        intent: Demonstrates complete resilience where server maintains full operational capability through resource lifecycle timing risks between child fclose() and parent cleanup
+        test: vendor/bin/phpunit tests/PHPUnit/E2E/WebServer/Resilience/SequentialRequestProcessingTest.php

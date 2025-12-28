@@ -1,0 +1,159 @@
+name: orthogonal-regions
+group: features
+description: |
+  OrthogonalRegions feature enables parallel and hierarchical state machine composition through
+  static region definitions (YAML) and dynamic runtime spawning ($this->summon()). The feature
+  extends BoundAccess chain to provide declarative sub-machine creation that works in YAML
+  without requiring external context or use() closures.
+
+features:
+  - name: static-regions
+    description: Declarative sub-region definitions via YAML configuration
+    specs:
+      - acceptanceCriteria: OrthogonalRegions loads static sub-regions from YAML regions key
+        criticality: contract
+        intent: Enables declarative hierarchical state machine composition through YAML configuration, supporting complex nested structures
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/OrthogonalRegions/StaticRegionsLoadingTest.php
+
+      - acceptanceCriteria: Static regions are built and connected during parent region construction
+        criticality: contract
+        intent: Ensures sub-regions are available immediately when parent starts executing, maintaining consistent initialization order
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/OrthogonalRegions/StaticRegionsBuildingTest.php
+
+      - acceptanceCriteria: Static regions can specify connection flags for action/event forwarding
+        criticality: contract
+        intent: Allows controlling parent-child event flow through Connection flags, supporting different communication patterns
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/OrthogonalRegions/StaticRegionsConnectionFlagsTest.php
+
+  - name: summon-method
+    description: Dynamic runtime spawning via $this->summon() in callbacks
+    specs:
+      - acceptanceCriteria: OrthogonalRegions adds summon() method to BoundAccess chain
+        criticality: contract
+        intent: Enables dynamic sub-machine creation from callbacks without external context, maintaining YAML compatibility
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/OrthogonalRegions/SummonMethodRegistrationTest.php
+
+      - acceptanceCriteria: summon() requires RegionBuilder as first parameter
+        criticality: contract
+        intent: Ensures type safety by requiring proper builder instance, preventing runtime errors from invalid arguments
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/OrthogonalRegions/SummonRequiresBuilderTest.php
+
+      - acceptanceCriteria: summon() throws RuntimeException when called without Runtime context
+        criticality: contract
+        intent: Provides clear error when summon() called outside Runtime execution, guiding users to wrap region in Runtime
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/OrthogonalRegions/SummonRequiresRuntimeContextTest.php
+
+      - acceptanceCriteria: summon() retrieves parent Runtime from RuntimeRegistry
+        criticality: contract
+        intent: Enables access to parent runtime without ChainMail exposure, maintaining clean API boundaries
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/OrthogonalRegions/SummonRetrievesRuntimeTest.php
+
+      - acceptanceCriteria: summon() builds child region from provided RegionBuilder
+        criticality: contract
+        intent: Constructs child region with all features and configuration, ensuring complete initialization before spawning
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/OrthogonalRegions/SummonBuildsChildRegionTest.php
+
+      - acceptanceCriteria: summon() returns Runtime instance wrapping child region
+        criticality: contract
+        intent: Returns executable runtime that can be run() immediately, providing consistent API with parent runtime
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/OrthogonalRegions/SummonReturnsRuntimeTest.php
+
+  - name: context-sharing
+    description: Bidirectional context sharing between parent and child via shareMesh parameter
+    specs:
+      - acceptanceCriteria: "summon(shareMesh: true) connects child with RECEIVE_META flag"
+        criticality: contract
+        intent: Establishes bidirectional context sharing through Meta chain, enabling parent-child data communication
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/OrthogonalRegions/SummonShareMeshConnectsTest.php
+
+      - acceptanceCriteria: Child region with shareMesh can read parent extended state
+        criticality: contract
+        intent: Validates parent context is visible to child through Mesh inheritance, supporting data passing from parent to child
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/OrthogonalRegions/SummonShareMeshChildReadsParentTest.php
+
+      - acceptanceCriteria: Parent region can read child extended state written after shareMesh connection
+        criticality: contract
+        intent: Validates bidirectional sharing where parent sees child writes, matching existing Meta.php behavior
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/OrthogonalRegions/SummonShareMeshParentReadsChildTest.php
+
+      - acceptanceCriteria: "summon(shareMesh: false) creates isolated child context"
+        criticality: contract
+        intent: Ensures child runs with independent context when sharing disabled, preventing unintended data coupling
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/OrthogonalRegions/SummonNoShareMeshIsolatesTest.php
+
+  - name: runtime-config-passing
+    description: Custom RuntimeConfig propagation to child runtimes
+    specs:
+      - acceptanceCriteria: summon() accepts optional RuntimeConfig for child
+        criticality: contract
+        intent: Allows child runtime to have different execution parameters than parent, supporting heterogeneous configurations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/OrthogonalRegions/SummonAcceptsConfigTest.php
+
+      - acceptanceCriteria: Child runtime uses provided RuntimeConfig
+        criticality: contract
+        intent: Validates config is passed through to spawned runtime, enabling customization of maxIterations, callbacks, etc.
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/OrthogonalRegions/SummonConfigPropagationTest.php
+
+      - acceptanceCriteria: summon() without config parameter creates child with default RuntimeConfig
+        criticality: contract
+        intent: Provides sensible defaults when config not specified, allowing simple use cases without configuration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/OrthogonalRegions/SummonDefaultConfigTest.php
+
+  - name: yaml-compatibility
+    description: summon() usage in YAML machine definitions
+    specs:
+      - acceptanceCriteria: summon() works in YAML onEnter callbacks without use() closure
+        criticality: contract
+        intent: Validates YAML compatibility by demonstrating no external context required, enabling fully declarative machine definitions
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/OrthogonalRegions/SummonInYamlOnEnterTest.php
+
+      - acceptanceCriteria: summon() works in YAML onAction callbacks
+        criticality: contract
+        intent: Validates summon() available in all callback contexts, not just state entry
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/OrthogonalRegions/SummonInYamlOnActionTest.php
+
+      - acceptanceCriteria: Multiple summon() calls in same callback create independent runtimes
+        criticality: contract
+        intent: Ensures each summon() creates distinct runtime instance, enabling multiple concurrent sub-machines
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/OrthogonalRegions/MultipleSummonCallsTest.php
+
+  - name: feature-dependencies
+    description: Integration with ExtendedState and other features
+    specs:
+      - acceptanceCriteria: OrthogonalRegions requires ExtendedState to be loaded first
+        criticality: constraint
+        intent: Ensures BoundAccess chain is available before OrthogonalRegions tries to extend it, preventing initialization errors
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/OrthogonalRegions/RequiresExtendedStateTest.php
+
+      - acceptanceCriteria: OrthogonalRegions throws error when ExtendedState not loaded
+        criticality: constraint
+        intent: Provides clear error message when feature dependency violated, guiding users to correct feature loading order
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/OrthogonalRegions/MissingExtendedStateErrorTest.php
+
+  - name: integration
+    description: End-to-end scenarios combining static regions and dynamic spawning
+    specs:
+      - acceptanceCriteria: Parent runtime summons child runtime and executes it to completion
+        criticality: contract
+        intent: Validates complete summon workflow from retrieval through execution, demonstrating practical usage pattern
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/OrthogonalRegions/SummonAndRunChildTest.php
+
+      - acceptanceCriteria: Nested summon() calls create multi-level runtime hierarchy
+        criticality: contract
+        intent: Validates child runtimes can themselves summon children, supporting arbitrary nesting depth
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/OrthogonalRegions/NestedSummonTest.php
+
+      - acceptanceCriteria: Parent runtime continues execution after child runtime completes
+        criticality: contract
+        intent: Ensures parent state machine progresses normally after child execution, validating lifecycle independence
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/OrthogonalRegions/ParentContinuesAfterChildTest.php
+
+      - acceptanceCriteria: Dynamic summon() based on runtime data creates correct sub-machine type
+        criticality: contract
+        intent: Demonstrates conditional sub-machine selection, validating dynamic builder choice based on trigger payload
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/OrthogonalRegions/ConditionalSummonTest.php
+
+      - acceptanceCriteria: Child runtime with shareMesh writes data accessible to parent after completion
+        criticality: contract
+        intent: Validates parent-child data exchange pattern for result passing from child to parent
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/OrthogonalRegions/ChildToParentDataFlowTest.php

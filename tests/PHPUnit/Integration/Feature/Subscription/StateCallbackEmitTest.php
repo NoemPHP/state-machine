@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Noem\State\Tests\Integration\Feature\Subscription;
 
 use Noem\State\Feature\Subscription\SubscriptionFeature;
+use Noem\State\Region;
 use Noem\State\RegionBuilder;
 use Noem\State\Feature\Transitions\AddTransition;
 use PHPUnit\Framework\Attributes\Group;

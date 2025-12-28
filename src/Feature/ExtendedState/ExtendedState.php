@@ -70,13 +70,19 @@ class ExtendedState implements Feature
                     $boundAccess
                 ) {
                     $id = spl_object_id($callback->handler);
-                    if (!$boundCallbackMap->contains($callback->handler)) {
+                    if (!$boundCallbackMap->offsetExists($callback->handler)) {
                         $closure = ($callback->handler)(...);
                         $region = $callback->region;
-                        if (!$contextStorage->contains($region)) {
+                        if (!$contextStorage->offsetExists($region)) {
                             $contextStorage[$region] = new Bound($region, $boundAccess);
                         }
-                        $bound = $closure->bindTo($contextStorage[$region]);
+                        $bound = $closure->bindTo($contextStorage[$region], $contextStorage[$region]);
+                        if ($bound === null) {
+                            throw new \RuntimeException(
+                                'Failed to bind closure to Bound context. ' .
+                                'This may happen with static closures or closures that cannot be rebound.'
+                            );
+                        }
                         $boundCallbackMap->offsetSet($callback->handler, $bound);
                     }
 

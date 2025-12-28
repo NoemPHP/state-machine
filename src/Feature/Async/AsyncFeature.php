@@ -65,6 +65,7 @@ class AsyncFeature implements Feature
             ->use($this->trackBoundCallbacks(...))
             ->use($this->deferTicksUntilActionComplete(...))
             ->use($this->enqueueCoroutines(...))
+            ->use($this->enqueueAbilityHandlerCoroutines(...))
             ->use($this->extendBuilderSchema(...))
             ->use($this->processBuilderConfig(...))
             ->use($this->transformAsyncCallbacksInArray(...))
@@ -89,7 +90,7 @@ class AsyncFeature implements Feature
             $original = $context->handler;
 
             // If we haven't seen this callback before, look it up in the registry
-            if (!$this->callbackConfigMap->contains($original)) {
+            if (!$this->callbackConfigMap->offsetExists($original)) {
                 $records = $registry->query(
                     region: $context->region,
                     type: AsyncCallbackType::get(),
@@ -110,9 +111,9 @@ class AsyncFeature implements Feature
             $prepared = $next($context);
 
             // If the callback was bound, also map the bound version to the same config
-            if ($prepared !== $original && $this->callbackConfigMap->contains($original)) {
+            if ($prepared !== $original && $this->callbackConfigMap->offsetExists($original)) {
                 $config = $this->callbackConfigMap[$original];
-                if (!$this->callbackConfigMap->contains($prepared)) {
+                if (!$this->callbackConfigMap->offsetExists($prepared)) {
                     $this->callbackConfigMap->attach($prepared, $config);
                 }
             }
@@ -245,7 +246,7 @@ class AsyncFeature implements Feature
                 $enqueue,
                 $registry
             ): mixed {
-                if (!$this->coroutinesByRegion->contains($context->region)) {
+                if (!$this->coroutinesByRegion->offsetExists($context->region)) {
                     $this->coroutinesByRegion->attach($context->region, new CoroutineScheduler());
                 }
                 $coroutines = $this->coroutinesByRegion[$context->region];
@@ -253,7 +254,7 @@ class AsyncFeature implements Feature
 
                 // Check if callback has AsyncConfig in our map
                 $asyncConfig = null;
-                if ($this->callbackConfigMap->contains($context->handler)) {
+                if ($this->callbackConfigMap->offsetExists($context->handler)) {
                     $asyncConfig = $this->callbackConfigMap[$context->handler];
                     assert($asyncConfig instanceof AsyncConfig);
                 }
@@ -292,6 +293,7 @@ class AsyncFeature implements Feature
                         // For singleton/throttle/debounce:
                         // Check if timing period has elapsed - if so, use existing generator
                         // Otherwise create new generator to capture latest payload
+                        //TODO: [BUG] For singletons WITHOUT throttling/debounce, we always create a new one here
                         $shouldCreateNew = $this->shouldCreateNewGenerator($task, $asyncConfig, $coroutines);
                         if (!$shouldCreateNew) {
                             // Timing period elapsed, using existing generator - async callbacks don't return sync values
@@ -337,6 +339,69 @@ class AsyncFeature implements Feature
                 }
 
                 // Not async - execute normally (sync callback)
+                return $result;
+            }
+        );
+    }
+
+    /**
+     * Hook into ExecuteAbilityHandler chain to support generator-based ability handlers
+     *
+     * Similar to enqueueCoroutines but for ability handlers specifically.
+     * This allows AbilitiesFeature to work with AsyncFeature without needing
+     * to depend on it directly.
+     */
+    private function enqueueAbilityHandlerCoroutines(
+        ?\Noem\State\Feature\Abilities\Chains\ExecuteAbilityHandler $executeAbilityHandler = null,
+        ?\Noem\State\Feature\Abilities\Chains\InvokeAbility $invokeAbilityChain = null,
+    ): void {
+        if (!$executeAbilityHandler) {
+            return;
+        }
+
+        $executeAbilityHandler->link(
+            function (
+                \Noem\State\Feature\Abilities\Chains\Params\ExecuteAbilityHandler $context,
+                callable $next
+            ) use ($invokeAbilityChain): mixed {
+                $region = $context->region;
+
+                // Ensure scheduler exists
+                if (!$this->coroutinesByRegion->offsetExists($region)) {
+                    $this->coroutinesByRegion->attach($region, new CoroutineScheduler());
+                }
+                $coroutines = $this->coroutinesByRegion[$region];
+                assert($coroutines instanceof CoroutineScheduler);
+
+                // Check if this handler is already tracked as a running task
+                if ($this->callbackTaskMap->offsetExists($context->handler)) {
+                    $task = $this->callbackTaskMap[$context->handler];
+
+                    // If task is still running, async handlers don't return synchronous values
+                    if (!$task->isFinished()) {
+                        return null;
+                    }
+
+                    // Task finished, remove from map and create new
+                    unset($this->callbackTaskMap[$context->handler]);
+                    // Fall through to execute handler and create new task if needed
+                }
+
+                // Execute the handler to get result
+                $result = $next($context);
+
+                // If handler returns a Generator, enqueue it
+                if ($result instanceof \Generator) {
+                    // Use default AsyncConfig (Priority::NORMAL, no special behavior)
+                    $defaultConfig = new AsyncConfig();
+                    $task = $coroutines->enqueue($result, $defaultConfig, $context->handler);
+                    $this->callbackTaskMap[$context->handler] = $task;
+
+                    // Return the Task so InvokeAbility knows this is async
+                    return $task;
+                }
+
+                // Not async - return result normally (sync handler)
                 return $result;
             }
         );
@@ -710,7 +775,7 @@ class AsyncFeature implements Feature
                  * A region could be part of multiple shared meshes and resolvers
                  * might yield different results based on their environment
                  */
-                if ($observers->contains($metaParams->region)) {
+                if ($observers->offsetExists($metaParams->region)) {
                     return $mesh;
                 }
                 $ornaments = [];
@@ -853,8 +918,8 @@ class AsyncFeature implements Feature
         \SplObjectStorage $coroutinesByRegion,
         Region $region
     ): CoroutineScheduler {
-        if (!$coroutinesByRegion->contains($region)) {
-            $coroutinesByRegion->attach($region, new CoroutineScheduler());
+        if (!$coroutinesByRegion->offsetExists($region)) {
+            $coroutinesByRegion->offsetSet($region, new CoroutineScheduler());
         }
 
         return $coroutinesByRegion[$region];
