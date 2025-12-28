@@ -57,7 +57,13 @@ class OllamaBackend implements BackendInterface
         ];
 
         if ($request->responseFormat) {
-            $args['format'] = 'json';
+            // Ollama supports structured outputs via format parameter
+            // Pass the actual JSON schema for better compliance
+            if ($request->responseFormat->format === 'json_schema' && isset($request->responseFormat->definition['schema'])) {
+                $args['format'] = $request->responseFormat->definition['schema'];
+            } else {
+                $args['format'] = 'json';
+            }
         }
 
         return $args;

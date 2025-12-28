@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Noem\State\Feature\Ai;
 
+use Noem\State\Feature\Agentic\WeaveConfig;
 use Noem\State\Feature\Ai\Backend\AnthropicBackend;
 use Noem\State\Feature\Ai\Backend\OllamaBackend;
 use Noem\State\Feature\Ai\Backend\OpenAiBackend;
@@ -19,16 +20,19 @@ use Noem\State\Middleware\Mesh;
  * without premature backend instantiation.
  *
  * Additionally manages ModelPool for capability-based model selection.
+ * Supplies WeaveConfig when weave configuration is provided.
  */
 class AiConfigFeature implements Feature
 {
     private ?ModelPool $modelPool = null;
+    private ?WeaveConfig $weaveConfig = null;
 
     /**
      * @param array<string, mixed> $config Configuration array supporting:
      *   - credentials: Backend credentials (apiKey, baseUrl)
      *   - modelPool: Array of model definitions
      *   - preferences: Selection preferences (defaultComplexity, defaultContext, etc)
+     *   - weave: Weave configuration (defaultMaxIterations, defaultBackend, defaultComplexity, promptTemplates)
      */
     public function __construct(
         private readonly array $config = []
@@ -40,6 +44,17 @@ class AiConfigFeature implements Feature
                 'preferences' => $config['preferences'] ?? [],
             ]);
         }
+
+        // Build WeaveConfig if weave configuration provided
+        if (isset($config['weave'])) {
+            $weaveConfigData = $config['weave'];
+            $this->weaveConfig = new WeaveConfig(
+                defaultMaxIterations: $weaveConfigData['defaultMaxIterations'] ?? null,
+                defaultBackend: $weaveConfigData['defaultBackend'] ?? null,
+                defaultComplexity: $weaveConfigData['defaultComplexity'] ?? null,
+                promptTemplates: $weaveConfigData['promptTemplates'] ?? [],
+            );
+        }
     }
 
     public function __invoke(ChainMail $chainMail): void
@@ -47,6 +62,11 @@ class AiConfigFeature implements Feature
         // Supply ModelPool if available
         if ($this->modelPool !== null) {
             $chainMail->supply(fn(): ModelPool => $this->modelPool);
+        }
+
+        // Supply WeaveConfig if available
+        if ($this->weaveConfig !== null) {
+            $chainMail->supply(fn(): WeaveConfig => $this->weaveConfig);
         }
 
         $chainMail->use(function (Mesh $backends): void {
