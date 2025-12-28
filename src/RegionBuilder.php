@@ -182,6 +182,7 @@ class RegionBuilder
         // Delegate to AddCallback BuildStep
         // Determine type from metadata if it's AsyncConfig
         $type = null;
+        //TODO: This has no place here since RegionBuilder MUST NOT depend on AsyncFeature symbols!
         if ($metadata instanceof \Noem\State\Feature\Async\AsyncConfig) {
             $type = \Noem\State\Feature\Async\AsyncCallbackType::get();
         }
