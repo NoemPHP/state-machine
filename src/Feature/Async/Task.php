@@ -43,17 +43,13 @@ class Task
     {
         if ($this->beforeFirstYield) {
             $this->beforeFirstYield = false;
-
-            return $this->coroutine->current();
+            $retval = $this->coroutine->current();
         } else {
             $retval = $this->coroutine->send($this->sendValue);
-            if ($this->isFinished()) {
-                return $this->coroutine->getReturn();
-            }
             $this->sendValue = null;
-
-            return $retval;
         }
+
+        return $this->isFinished() ? $this->coroutine->getReturn() : $retval;
     }
 
     public function getReturn(): mixed
@@ -115,12 +111,34 @@ class Task
         $this->completionCallbacks[] = $callback;
     }
 
+    /**
+     * Register callback to invoke when task completes
+     *
+     * If task is already finished, callback is invoked immediately.
+     * Otherwise, callback is invoked when task finishes during run().
+     *
+     * Callback receives task's return value as parameter.
+     */
+    public function onComplete(callable $callback): void
+    {
+        if ($this->isFinished()) {
+            // Already finished - invoke immediately
+            $callback($this->getReturn());
+        } else {
+            // Store for later
+            $this->completionCallbacks[] = $callback;
+        }
+    }
+
     public function triggerCompletionCallbacks(): void
     {
-        foreach ($this->completionCallbacks as $callback) {
-            $callback();
+        if (!empty($this->completionCallbacks)) {
+            $result = $this->isFinished() ? $this->getReturn() : null;
+            foreach ($this->completionCallbacks as $callback) {
+                $callback($result);
+            }
+            $this->completionCallbacks = [];
         }
-        $this->completionCallbacks = [];
     }
 
     // Pause state

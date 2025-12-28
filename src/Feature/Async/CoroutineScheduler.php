@@ -239,7 +239,26 @@ class CoroutineScheduler
             // Calling isFinished() triggers generator->valid() which EXECUTES code before first yield
             // For debounce/throttle to work, we must check timing BEFORE letting the generator start
             if ($task->isFinished()) {
-                $finished[] = $task;
+                // For throttled/debounced tasks, keep them around until the period elapses
+                // so that enqueue() can check timing and prevent new tasks from being created
+                $keepForTiming = false;
+                if ($config !== null) {
+                    if ($config->throttle !== null) {
+                        $lastExecution = $task->getLastExecutionTime() ?? 0;
+                        if ($lastExecution > 0 && $now - $lastExecution < $config->throttle) {
+                            $keepForTiming = true;
+                        }
+                    } elseif ($config->debounce !== null) {
+                        $enqueueTime = $task->getDebounceTime() ?? 0;
+                        if ($enqueueTime > 0 && $now - $enqueueTime < $config->debounce) {
+                            $keepForTiming = true;
+                        }
+                    }
+                }
+
+                if (!$keepForTiming) {
+                    $finished[] = $task;
+                }
                 continue;
             }
 
@@ -253,8 +272,33 @@ class CoroutineScheduler
             for ($step = 0; $step < $budget; $step++) {
                 $yielded = $task->run();
 
+                // Update throttle state immediately after execution
+                // This must happen BEFORE checking isFinished so that timing info is available
+                if ($config !== null && $config->throttle !== null) {
+                    $task->setLastExecutionTime($now);
+                }
+
                 // Check if finished after running
                 if ($task->isFinished()) {
+                    // For throttled/debounced tasks, keep them around until period elapses
+                    $keepForTiming = false;
+                    if ($config !== null) {
+                        if ($config->throttle !== null) {
+                            $lastExecution = $task->getLastExecutionTime() ?? 0;
+                            if ($lastExecution > 0 && $now - $lastExecution < $config->throttle) {
+                                $keepForTiming = true;
+                            }
+                        } elseif ($config->debounce !== null) {
+                            $enqueueTime = $task->getDebounceTime() ?? 0;
+                            if ($enqueueTime > 0 && $now - $enqueueTime < $config->debounce) {
+                                $keepForTiming = true;
+                            }
+                        }
+                    }
+
+                    if (!$keepForTiming) {
+                        $finished[] = $task;
+                    }
                     break;
                 }
                 if ($yielded instanceof Call) {
@@ -277,11 +321,6 @@ class CoroutineScheduler
                     }
                 }
                 // Regular yielded values are not stored - async tasks don't provide sync return values
-            }
-
-            // Update throttle state after execution
-            if ($config !== null && $config->throttle !== null) {
-                $task->setLastExecutionTime(microtime(true));
             }
         }
 

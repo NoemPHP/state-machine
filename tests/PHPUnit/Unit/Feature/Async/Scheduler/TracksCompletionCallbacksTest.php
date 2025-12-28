@@ -72,8 +72,7 @@ class TracksCompletionCallbacksTest extends TestCase
             $task2Callback = true;
         });
 
-        // Complete task1 (3 ticks: current, send-finish, cancel)
-        $scheduler->tick();
+        // Complete task1 (2 ticks: current, send-finish-and-callback)
         $scheduler->tick();
         $scheduler->tick();
 

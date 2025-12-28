@@ -87,12 +87,10 @@ class CallTest extends TestCase
         $this->assertFalse($parentExecuted);
         $scheduler->tick();
         $this->assertFalse($parentExecuted);
-        $scheduler->tick();
-        $this->assertFalse($parentExecuted);
 
-        // Eventually parent executes
+        // Parent executes after child completes
         $scheduler->tick();
-        $this->assertTrue($parentExecuted, 'Parent should eventually execute after child completes');
+        $this->assertTrue($parentExecuted, 'Parent should execute after child completes');
     }
 
     public function testCallReturnsChildResult(): void

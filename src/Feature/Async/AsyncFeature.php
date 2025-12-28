@@ -66,6 +66,7 @@ class AsyncFeature implements Feature
             ->use($this->deferTicksUntilActionComplete(...))
             ->use($this->enqueueCoroutines(...))
             ->use($this->enqueueAbilityHandlerCoroutines(...))
+            ->use($this->interceptAbilityResults(...))
             ->use($this->extendBuilderSchema(...))
             ->use($this->processBuilderConfig(...))
             ->use($this->transformAsyncCallbacksInArray(...))
@@ -373,36 +374,71 @@ class AsyncFeature implements Feature
                 $coroutines = $this->coroutinesByRegion[$region];
                 assert($coroutines instanceof CoroutineScheduler);
 
-                // Check if this handler is already tracked as a running task
-                if ($this->callbackTaskMap->offsetExists($context->handler)) {
-                    $task = $this->callbackTaskMap[$context->handler];
-
-                    // If task is still running, async handlers don't return synchronous values
-                    if (!$task->isFinished()) {
-                        return null;
-                    }
-
-                    // Task finished, remove from map and create new
-                    unset($this->callbackTaskMap[$context->handler]);
-                    // Fall through to execute handler and create new task if needed
-                }
-
                 // Execute the handler to get result
                 $result = $next($context);
 
                 // If handler returns a Generator, enqueue it
                 if ($result instanceof \Generator) {
-                    // Use default AsyncConfig (Priority::NORMAL, no special behavior)
+                    // For ability handlers, ALWAYS create a new task
+                    // (unlike state callbacks, abilities can invoke concurrently)
                     $defaultConfig = new AsyncConfig();
                     $task = $coroutines->enqueue($result, $defaultConfig, $context->handler);
-                    $this->callbackTaskMap[$context->handler] = $task;
 
-                    // Return the Task so InvokeAbility knows this is async
+                    // Don't track in callbackTaskMap - each invocation is independent
+                    // Return the Task so ProcessAbilityResult can handle it
                     return $task;
                 }
 
                 // Not async - return result normally (sync handler)
                 return $result;
+            }
+        );
+    }
+
+    /**
+     * Intercept ProcessAbilityResult to handle Task objects non-blockingly
+     *
+     * When a handler returns a Task, register a completion callback that
+     * continues the chain with the unwrapped result when the task finishes.
+     * This enables non-blocking async ability invocation.
+     */
+    private function interceptAbilityResults(
+        ?\Noem\State\Feature\Abilities\Chains\ProcessAbilityResult $processResultChain = null,
+    ): void {
+        if (!$processResultChain) {
+            return; // AbilitiesFeature not loaded
+        }
+
+        $processResultChain->link(
+            function (
+                \Noem\State\Feature\Abilities\Chains\Params\ProcessAbilityResult $params,
+                callable $next
+            ): mixed {
+                // Check if result is a Task (from our domain)
+                if ($params->handlerResult instanceof Task) {
+                    $task = $params->handlerResult;
+
+                    // Register completion callback
+                    $task->onComplete(function ($result) use ($params, $next) {
+                        // When task completes, continue chain with actual result
+                        $completionParams = new \Noem\State\Feature\Abilities\Chains\Params\ProcessAbilityResult(
+                            message: $params->message,
+                            handlerResult: $result, // Unwrapped result
+                            definition: $params->definition,
+                            region: $params->region,
+                        );
+
+                        // Continue to provider (synchronous delivery)
+                        $next($completionParams);
+                    });
+
+                    // Don't continue now - callback will continue later
+                    // This makes the invocation non-blocking
+                    return null;
+                }
+
+                // Not a Task - pass through synchronously
+                return $next($params);
             }
         );
     }

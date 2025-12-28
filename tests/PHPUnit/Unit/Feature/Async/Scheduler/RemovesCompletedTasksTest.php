@@ -37,16 +37,12 @@ class RemovesCompletedTasksTest extends TestCase
         $this->assertFalse($shortTask->isFinished(), 'Task should not be finished after first tick');
         $this->assertFalse($completionCallbackTriggered);
 
-        // Tick 2: Task.run() calls send(), generator completes
+        // Tick 2: Task.run() calls send(), generator completes, scheduler calls cancel() at end of tick
         $scheduler->tick();
         $this->assertTrue($shortTask->isFinished(), 'Task should be finished after second tick');
-        $this->assertFalse($completionCallbackTriggered, 'Callback not triggered yet');
-
-        // Tick 3: Scheduler detects task is finished and calls cancel()
-        $scheduler->tick();
         $this->assertTrue(
             $completionCallbackTriggered,
-            'Completed task should trigger its completion callback when removed'
+            'Completion callback should trigger at end of tick when task finishes'
         );
     }
 
@@ -71,16 +67,12 @@ class RemovesCompletedTasksTest extends TestCase
         $scheduler->tick();
         $this->assertFalse($callbackExecuted);
 
-        // Tick 2: send() advances generator to completion
+        // Tick 2: send() advances generator to completion, cancel() triggers callbacks at end of tick
         $scheduler->tick();
         $this->assertTrue($task->isFinished());
-        $this->assertFalse($callbackExecuted);
-
-        // Tick 3: cancel() is called and triggers callbacks
-        $scheduler->tick();
         $this->assertTrue(
             $callbackExecuted,
-            'Completion callback should be triggered when task is removed'
+            'Completion callback should be triggered at end of tick when task finishes'
         );
     }
 }

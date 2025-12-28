@@ -26,6 +26,8 @@ readonly class Fetch
                 'method' => $this->method,
                 'header' => $headerString,
                 'content' => $this->body,
+                'timeout' => 300, // 5 minutes for large AI requests
+                'ignore_errors' => false,
             ],
         ]);
 
