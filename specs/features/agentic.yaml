@@ -1,0 +1,532 @@
+# AGENTIC FEATURE SPECIFICATIONS
+# Standalone feature for AI-powered autonomous tool orchestration
+# Dependencies: AbilitiesFeature (tool discovery), AiFeature (AI reasoning), ExtendedState (context API)
+
+name: agentic
+group: features
+description: |
+  AI-powered autonomous tool selection and execution via weave() context helper. Enables state machines to delegate
+  complex multi-step operations to AI by describing intent rather than explicit control flow. Integrates with
+  AbilitiesFeature for tool discovery, AiFeature for backend selection, and AsyncFeature for cooperative execution.
+
+features:
+  - name: feature-registration
+    description: AgenticFeature initialization and dependency management
+    specs:
+      # =====================================================================
+      # PHASE 1: CORE INFRASTRUCTURE (MVP)
+      # =====================================================================
+
+      # ---------------------------------------------------------------------
+      # Context Method Registration
+      # ---------------------------------------------------------------------
+      - acceptanceCriteria: AgenticFeature registers weave() method in ExtendedState context
+        criticality: contract
+        intent: Provides agentic operation capabilities through context API, enabling AI-powered tool selection and execution from state actions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Registration/RegistersWeaveMethodTest.php
+
+      - acceptanceCriteria: AgenticFeature requires AbilitiesFeature dependency at registration time
+        criticality: constraint
+        intent: Enforces AbilitiesFeature presence for tool enumeration, preventing runtime failures from missing infrastructure
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Registration/RequiresAbilitiesFeatureTest.php
+
+      # ---------------------------------------------------------------------
+      # Parameter Validation and API Contract
+      # ---------------------------------------------------------------------
+      - acceptanceCriteria: weave() accepts intent string as required first parameter
+        criticality: contract
+        intent: Defines primary input as natural language operation description, establishing intent-driven invocation pattern
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Parameters/AcceptsIntentTest.php
+
+      - acceptanceCriteria: weave() accepts optional options array as second parameter
+        criticality: contract
+        intent: Enables configuration customization through optional parameter, supporting tools filtering, iteration limits, and backend selection
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Parameters/AcceptsOptionsTest.php
+
+      - acceptanceCriteria: weave() options.tools accepts array of ability name patterns for scope filtering
+        criticality: contract
+        intent: Restricts tool scope through pattern matching, enabling security and performance optimization
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Parameters/AcceptsToolsFilterTest.php
+
+      - acceptanceCriteria: weave() options.maxIterations accepts integer limiting selection cycles
+        criticality: contract
+        intent: Prevents runaway execution through hard iteration cap, defaulting to 3 iterations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Parameters/AcceptsMaxIterationsTest.php
+
+      - acceptanceCriteria: weave() options.backend accepts string for explicit backend override
+        criticality: contract
+        intent: Enables explicit provider selection bypassing capability-based selection when needed
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Parameters/AcceptsBackendTest.php
+
+      - acceptanceCriteria: weave() options.complexity accepts string for capability-based backend selection
+        criticality: contract
+        intent: Enables complexity-based model selection through capability system integration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Parameters/AcceptsComplexityTest.php
+
+      - acceptanceCriteria: weave() options.context accepts string for context window requirement
+        criticality: contract
+        intent: Enables context-aware model selection through capability system integration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Parameters/AcceptsContextWindowTest.php
+
+      - acceptanceCriteria: weave() options.schema accepts array for final result validation
+        criticality: contract
+        intent: Enables structured output validation through JSON Schema application to final result
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Parameters/AcceptsSchemaTest.php
+
+      - acceptanceCriteria: weave() returns Generator yielding associative array result
+        criticality: contract
+        intent: Provides async-compatible result delivery through generator, yielding during AI calls and tool execution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Parameters/ReturnsGeneratorTest.php
+
+      # ---------------------------------------------------------------------
+      # Return Value Structure
+      # ---------------------------------------------------------------------
+      - acceptanceCriteria: weave() result contains selectedTools array with ability names
+        criticality: contract
+        intent: Provides list of AI-selected tools, enabling audit trail and debugging
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/ReturnValue/ContainsSelectedToolsTest.php
+
+      - acceptanceCriteria: weave() result contains toolCalls array with execution results
+        criticality: contract
+        intent: Provides detailed execution log including parameters, results, success status, and errors
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/ReturnValue/ContainsToolCallsTest.php
+
+      - acceptanceCriteria: weave() result contains result key with AI-synthesized final output
+        criticality: contract
+        intent: Provides aggregated result addressing original intent, generated by AI from tool results
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/ReturnValue/ContainsFinalResultTest.php
+
+      - acceptanceCriteria: weave() result contains reasoning string explaining tool selection
+        criticality: contract
+        intent: Provides AI explanation of selection rationale, enabling transparency and debugging
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/ReturnValue/ContainsReasoningTest.php
+
+      - acceptanceCriteria: Each toolCalls entry contains ability, parameters, result, success, error fields
+        criticality: contract
+        intent: Defines standardized tool call result structure, ensuring consistent execution logging
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/ReturnValue/ToolCallStructureTest.php
+
+      # ---------------------------------------------------------------------
+      # Phase 1: Tool Enumeration
+      # ---------------------------------------------------------------------
+      - acceptanceCriteria: weave() invokes enumerate-abilities to discover available tools
+        criticality: contract
+        intent: Leverages AbilitiesFeature introspection for tool discovery, respecting predicate filtering
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Enumeration/InvokesEnumerateAbilitiesTest.php
+
+      - acceptanceCriteria: weave() filters enumerated abilities by options.tools patterns when specified
+        criticality: contract
+        intent: Applies pattern matching to restrict tool scope, supporting wildcard and exact name matching
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Enumeration/FiltersAbilitiesByPatternsTest.php
+
+      - acceptanceCriteria: weave() extracts name, description, parameterSchema from each ability
+        criticality: contract
+        intent: Constructs tool signature from ability metadata for AI consumption
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Enumeration/ExtractsToolSignaturesTest.php
+
+      - acceptanceCriteria: weave() excludes enumerate-abilities itself from tool set
+        criticality: constraint
+        intent: Prevents recursive meta-operations, avoiding infinite loops and confusion
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Enumeration/ExcludesEnumerateAbilityTest.php
+
+      - acceptanceCriteria: weave() handles empty tool set gracefully when no abilities match filters
+        criticality: constraint
+        intent: Returns empty result with reasoning when no tools available, avoiding errors
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Enumeration/HandlesEmptyToolSetTest.php
+
+      # ---------------------------------------------------------------------
+      # Phase 2: AI-Powered Planning
+      # ---------------------------------------------------------------------
+      - acceptanceCriteria: weave() constructs planning prompt with tool definitions and intent
+        criticality: contract
+        intent: Formats prompt including system instructions, tool signatures, and user intent for AI processing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Planning/ConstructsPlanningPromptTest.php
+
+      - acceptanceCriteria: weave() planning prompt includes tool name, description, parameter schema for each tool
+        criticality: constraint
+        intent: Provides complete tool documentation to AI, enabling informed selection decisions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Planning/PromptIncludesToolDetailsTest.php
+
+      - acceptanceCriteria: weave() uses capture() with JSON Schema for structured planning response
+        criticality: contract
+        intent: Leverages existing structured extraction for predictable AI response format
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Planning/UsesCaptureForPlanningTest.php
+
+      - acceptanceCriteria: weave() planning schema requires reasoning field and tools array
+        criticality: contract
+        intent: Enforces structured planning output containing explanation and tool selections
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Planning/PlanningSchemaStructureTest.php
+
+      - acceptanceCriteria: weave() planning schema tools array contains ability name and parameters objects
+        criticality: contract
+        intent: Defines tool call format with ability identifier and parameter values
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Planning/ToolSelectionSchemaTest.php
+
+      - acceptanceCriteria: weave() validates selected ability names exist in registry
+        criticality: constraint
+        intent: Filters out hallucinated or invalid ability names, preventing invocation errors
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Planning/ValidatesAbilityNamesTest.php
+
+      - acceptanceCriteria: weave() skips invalid ability selections without failing entire operation
+        criticality: constraint
+        intent: Continues execution with valid selections when AI hallucinates ability names
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Planning/SkipsInvalidSelectionsTest.php
+
+      - acceptanceCriteria: weave() defaults complexity to 'high' for planning when not explicitly set
+        criticality: constraint
+        intent: Routes planning to capable models for reasoning-intensive selection task
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Planning/DefaultsHighComplexityTest.php
+
+      - acceptanceCriteria: weave() respects options.backend for planning call when specified
+        criticality: contract
+        intent: Allows explicit backend override for planning phase
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Planning/RespectsBackendOverrideTest.php
+
+      - acceptanceCriteria: weave() respects options.complexity for planning call when specified
+        criticality: contract
+        intent: Enables complexity-based backend selection for planning through capability system
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Planning/RespectsComplexityTest.php
+
+      # ---------------------------------------------------------------------
+      # Phase 3: Tool Execution
+      # ---------------------------------------------------------------------
+      - acceptanceCriteria: weave() invokes selected abilities via $this->abilities() for each tool
+        criticality: contract
+        intent: Leverages existing ability invocation infrastructure for tool execution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Execution/InvokesAbilitiesTest.php
+
+      - acceptanceCriteria: weave() passes AI-generated parameters to ability invocations
+        criticality: contract
+        intent: Provides parameter values from planning response to ability handlers
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Execution/PassesParametersTest.php
+
+      - acceptanceCriteria: weave() waits for ability response via yield after invocation
+        criticality: contract
+        intent: Handles async ability execution through generator protocol
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Execution/WaitsForResponseTest.php
+
+      - acceptanceCriteria: weave() populates toolCalls with ability name, parameters, and result
+        criticality: contract
+        intent: Logs successful execution details in result array
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Execution/PopulatesToolCallsTest.php
+
+      - acceptanceCriteria: weave() catches ability execution exceptions and stores in error field
+        criticality: contract
+        intent: Handles tool failures gracefully, logging error without halting execution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Execution/CatchesExecutionExceptionsTest.php
+
+      - acceptanceCriteria: weave() sets success=true for successful tool calls, success=false for failures
+        criticality: contract
+        intent: Provides boolean execution status in toolCalls for easy filtering
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Execution/SetsSuccessFlagTest.php
+
+      - acceptanceCriteria: weave() continues executing remaining tools after individual tool failure
+        criticality: constraint
+        intent: Maximizes information gathering by executing all selected tools regardless of individual failures
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Execution/ContinuesAfterFailureTest.php
+
+      - acceptanceCriteria: weave() respects AbilitiesFeature schema validation for AI-generated parameters
+        criticality: constraint
+        intent: Ensures parameter validation applies to AI-generated values, maintaining security contracts
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Execution/RespectsSchemaValidationTest.php
+
+      - acceptanceCriteria: weave() executes tools sequentially in single-iteration MVP
+        criticality: constraint
+        intent: Simplifies initial implementation by avoiding parallel execution complexity
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Execution/ExecutesSequentiallyTest.php
+
+      # ---------------------------------------------------------------------
+      # Phase 5: Result Aggregation (MVP - Single Iteration)
+      # ---------------------------------------------------------------------
+      - acceptanceCriteria: weave() constructs aggregation prompt with tool results and intent
+        criticality: contract
+        intent: Formats prompt including original intent, tool call logs, and synthesis instructions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Aggregation/ConstructsAggregationPromptTest.php
+
+      - acceptanceCriteria: weave() aggregation prompt includes all tool call results with success status
+        criticality: constraint
+        intent: Provides complete execution context to AI for informed synthesis
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Aggregation/PromptIncludesToolResultsTest.php
+
+      - acceptanceCriteria: weave() uses capture() with options.schema when schema provided
+        criticality: contract
+        intent: Enables structured result validation through schema-constrained aggregation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Aggregation/UsesCaptureWithSchemaTest.php
+
+      - acceptanceCriteria: weave() uses complete() for text synthesis when options.schema not provided
+        criticality: contract
+        intent: Provides unstructured text aggregation as default when schema not specified
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Aggregation/UsesCompleteWithoutSchemaTest.php
+
+      - acceptanceCriteria: weave() stores aggregation result in result key of return array
+        criticality: contract
+        intent: Provides final AI-synthesized output in standardized location
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Aggregation/StoresResultTest.php
+
+      - acceptanceCriteria: weave() respects options.backend for aggregation call when specified
+        criticality: contract
+        intent: Allows explicit backend override for aggregation phase
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Aggregation/RespectsBackendOverrideTest.php
+
+      - acceptanceCriteria: weave() respects options.complexity for aggregation call when specified
+        criticality: contract
+        intent: Enables complexity-based backend selection for aggregation through capability system
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Aggregation/RespectsComplexityTest.php
+
+      - acceptanceCriteria: weave() defaults complexity to 'medium' for aggregation when not explicitly set
+        criticality: constraint
+        intent: Routes aggregation to balanced models for synthesis task
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Aggregation/DefaultsMediumComplexityTest.php
+
+      # ---------------------------------------------------------------------
+      # Error Handling and Edge Cases
+      # ---------------------------------------------------------------------
+      - acceptanceCriteria: weave() returns empty result with reasoning when no tools selected by AI
+        criticality: constraint
+        intent: Handles zero-selection gracefully, providing explanation rather than error
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/ErrorHandling/HandlesNoToolsSelectedTest.php
+
+      - acceptanceCriteria: weave() includes error details in toolCalls when ability invocation fails
+        criticality: contract
+        intent: Provides debugging context through error messages in execution log
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/ErrorHandling/IncludesErrorDetailsTest.php
+
+      - acceptanceCriteria: weave() handles AI planning failures by returning error in result
+        criticality: constraint
+        intent: Gracefully handles capture() failures during planning phase
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/ErrorHandling/HandlesPlanningFailureTest.php
+
+      - acceptanceCriteria: weave() handles AI aggregation failures by returning raw tool results
+        criticality: constraint
+        intent: Provides fallback to tool call data when synthesis fails
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/ErrorHandling/HandlesAggregationFailureTest.php
+
+      - acceptanceCriteria: weave() validates options.schema is valid JSON Schema before aggregation
+        criticality: constraint
+        intent: Prevents invalid API requests by validating schema structure
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/ErrorHandling/ValidatesSchemaTest.php
+
+      # =====================================================================
+      # PHASE 2: ITERATION SUPPORT
+      # =====================================================================
+
+      # ---------------------------------------------------------------------
+      # Iteration Infrastructure
+      # ---------------------------------------------------------------------
+      - acceptanceCriteria: weave() result contains iterations array logging each cycle
+        criticality: contract
+        intent: Provides complete execution audit trail with per-iteration details
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Iteration/ContainsIterationsArrayTest.php
+
+      - acceptanceCriteria: Each iteration entry contains iteration number, tools, reasoning, results
+        criticality: contract
+        intent: Defines standardized iteration log structure for debugging and analysis
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Iteration/IterationEntryStructureTest.php
+
+      - acceptanceCriteria: weave() defaults maxIterations to 3 when not specified
+        criticality: constraint
+        intent: Provides sensible iteration limit preventing unbounded execution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Iteration/DefaultsMaxIterationsTest.php
+
+      - acceptanceCriteria: weave() enforces maxIterations hard cap on selection cycles
+        criticality: constraint
+        intent: Prevents runaway execution by stopping at configured iteration limit
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Iteration/EnforcesMaxIterationsTest.php
+
+      - acceptanceCriteria: weave() single iteration executes planning → execution → aggregation once
+        criticality: contract
+        intent: Validates MVP single-cycle workflow as foundation for multi-iteration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Iteration/SingleIterationFlowTest.php
+
+      # ---------------------------------------------------------------------
+      # Multi-Iteration Logic
+      # ---------------------------------------------------------------------
+      - acceptanceCriteria: weave() prompts AI for additional tool needs after first iteration results
+        criticality: contract
+        intent: Enables iterative refinement by asking AI if more tools needed based on results
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Iteration/PromptsForAdditionalToolsTest.php
+
+      - acceptanceCriteria: weave() continuation prompt includes previous iteration results
+        criticality: constraint
+        intent: Provides result context to AI for informed continuation decisions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Iteration/PromptIncludesPreviousResultsTest.php
+
+      - acceptanceCriteria: weave() continues iteration when AI selects additional tools
+        criticality: contract
+        intent: Executes additional cycles when AI indicates more information needed
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Iteration/ContinuesWhenToolsSelectedTest.php
+
+      - acceptanceCriteria: weave() stops iteration when AI indicates completion
+        criticality: contract
+        intent: Terminates early when AI signals no additional tools needed
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Iteration/StopsWhenCompleteTest.php
+
+      - acceptanceCriteria: weave() accumulates toolCalls across all iterations
+        criticality: contract
+        intent: Provides complete execution log combining all iteration tool calls
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Iteration/AccumulatesToolCallsTest.php
+
+      - acceptanceCriteria: weave() logs each iteration in iterations array with complete details
+        criticality: contract
+        intent: Records iteration-specific data for debugging and analysis
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Iteration/LogsIterationDetailsTest.php
+
+      - acceptanceCriteria: weave() performs final aggregation after all iterations complete
+        criticality: contract
+        intent: Synthesizes final result from all accumulated tool calls
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Iteration/AggregatesAfterAllIterationsTest.php
+
+      - acceptanceCriteria: weave() final aggregation includes results from all iterations
+        criticality: constraint
+        intent: Ensures synthesis considers complete execution history
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Iteration/AggregationIncludesAllResultsTest.php
+
+      # =====================================================================
+      # PHASE 3: ADVANCED FEATURES
+      # =====================================================================
+
+      # ---------------------------------------------------------------------
+      # AiConfigFeature Integration
+      # ---------------------------------------------------------------------
+      - acceptanceCriteria: AiConfigFeature accepts weave configuration in constructor
+        criticality: contract
+        intent: Enables declarative weave defaults through configuration object
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Config/AcceptsWeaveConfigTest.php
+
+      - acceptanceCriteria: AiConfigFeature weave.defaultMaxIterations sets default iteration limit
+        criticality: contract
+        intent: Allows project-wide iteration limit customization through configuration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Config/DefaultMaxIterationsTest.php
+
+      - acceptanceCriteria: AiConfigFeature weave.defaultBackend sets default backend for weave
+        criticality: contract
+        intent: Allows project-wide backend preference for agentic operations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Config/DefaultBackendTest.php
+
+      - acceptanceCriteria: AiConfigFeature weave.defaultComplexity sets default complexity level
+        criticality: contract
+        intent: Allows project-wide complexity preference for weave AI calls
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Config/DefaultComplexityTest.php
+
+      - acceptanceCriteria: AiConfigFeature weave.promptTemplates accepts custom planning template
+        criticality: contract
+        intent: Enables custom planning prompt format through configuration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Config/CustomPlanningTemplateTest.php
+
+      - acceptanceCriteria: AiConfigFeature weave.promptTemplates accepts custom aggregation template
+        criticality: contract
+        intent: Enables custom aggregation prompt format through configuration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Config/CustomAggregationTemplateTest.php
+
+      - acceptanceCriteria: AiConfigFeature weave.promptTemplates accepts custom continuation template
+        criticality: contract
+        intent: Enables custom continuation prompt format for multi-iteration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Config/CustomContinuationTemplateTest.php
+
+      - acceptanceCriteria: weave() options override AiConfigFeature defaults when specified
+        criticality: contract
+        intent: Ensures per-invocation options take precedence over configuration defaults
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Config/OptionsOverrideDefaultsTest.php
+
+      # ---------------------------------------------------------------------
+      # Performance Optimizations
+      # ---------------------------------------------------------------------
+      - acceptanceCriteria: weave() caches enumerate-abilities result within single invocation
+        criticality: behavior
+        intent: Avoids redundant enumeration across iterations improving performance
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Performance/CachesEnumerationTest.php
+
+      - acceptanceCriteria: weave() supports options.parallel for concurrent tool execution
+        criticality: contract
+        intent: Enables parallel tool invocation when AsyncFeature available for performance
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Performance/SupportsParallelExecutionTest.php
+
+      - acceptanceCriteria: weave() executes independent tools concurrently when options.parallel=true
+        criticality: behavior
+        intent: Reduces latency by executing non-dependent tools simultaneously
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Performance/ExecutesConcurrentlyTest.php
+
+      - acceptanceCriteria: weave() maintains sequential execution when options.parallel=false
+        criticality: constraint
+        intent: Preserves execution order when parallelism disabled or dependencies exist
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Performance/MaintainsSequentialOrderTest.php
+
+      # ---------------------------------------------------------------------
+      # Security and Access Control
+      # ---------------------------------------------------------------------
+      - acceptanceCriteria: weave() respects AbilitiesFeature predicate filtering during enumeration
+        criticality: constraint
+        intent: Ensures conditional abilities only exposed when predicate returns true
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Security/RespectsPredicateFilteringTest.php
+
+      - acceptanceCriteria: weave() options.tools pattern matching supports exact names and wildcards
+        criticality: contract
+        intent: Enables flexible scope restriction through pattern syntax
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Security/ToolsPatternMatchingTest.php
+
+      - acceptanceCriteria: weave() cannot invoke abilities outside filtered scope
+        criticality: constraint
+        intent: Prevents scope escalation by rejecting AI selections outside filtered set
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Security/EnforcesScopeRestrictionTest.php
+
+      - acceptanceCriteria: weave() logs all invocations in iterations array for audit trail
+        criticality: contract
+        intent: Provides complete execution history for security auditing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Security/ProvidesAuditTrailTest.php
+
+      # =====================================================================
+      # INTEGRATION TESTS
+      # =====================================================================
+
+      # ---------------------------------------------------------------------
+      # End-to-End Workflows
+      # ---------------------------------------------------------------------
+      - acceptanceCriteria: weave() completes data aggregation workflow with multiple tool calls
+        criticality: integration
+        intent: Validates end-to-end operation gathering data from multiple abilities and synthesizing result
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Agentic/DataAggregationWorkflowTest.php
+
+      - acceptanceCriteria: weave() handles conditional tool selection based on first iteration results
+        criticality: integration
+        intent: Validates AI can adapt tool selection based on intermediate results
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Agentic/ConditionalToolSelectionTest.php
+
+      - acceptanceCriteria: weave() performs iterative refinement across multiple cycles
+        criticality: integration
+        intent: Validates multi-iteration workflow with progressive information gathering
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Agentic/IterativeRefinementTest.php
+
+      - acceptanceCriteria: weave() cooperates with AsyncFeature for non-blocking execution
+        criticality: integration
+        intent: Validates async cooperation during tool enumeration, execution, and AI calls
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Agentic/AsyncCooperationTest.php
+
+      - acceptanceCriteria: weave() integrates with capability-based backend selection
+        criticality: integration
+        intent: Validates ModelPool integration for automatic backend selection based on complexity/context
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Agentic/CapabilityBasedSelectionTest.php
+
+      - acceptanceCriteria: weave() respects AbilitiesFeature schema validation for parameters and results
+        criticality: integration
+        intent: Validates schema validation applies to AI-generated parameters and tool results
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Agentic/SchemaValidationIntegrationTest.php
+
+      - acceptanceCriteria: weave() handles tool failures gracefully without halting operation
+        criticality: integration
+        intent: Validates error resilience with partial failures continuing execution
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Agentic/ErrorResilienceTest.php
+
+      - acceptanceCriteria: weave() supports parallel tool execution with AsyncFeature and options.parallel
+        criticality: integration
+        intent: Validates concurrent tool invocation reducing overall latency
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Agentic/ParallelExecutionTest.php
+
+      - acceptanceCriteria: weave() tools filtering restricts scope preventing unauthorized ability access
+        criticality: integration
+        intent: Validates security through scope restriction and predicate filtering
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Agentic/ScopeRestrictionTest.php
+
+      - acceptanceCriteria: weave() with custom AiConfigFeature templates uses configured prompts
+        criticality: integration
+        intent: Validates custom prompt template application through configuration
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Agentic/CustomTemplatesTest.php
