@@ -26,7 +26,9 @@ machine:
       - "ExtendedState MUST be first (provides $this-> context access)"
       - "AsyncFeature MUST load AFTER ExtendedState"
       - "TemplateFeature MUST load BEFORE AiFeature"
-      - "MessageFeature typically loads AFTER AsyncFeature"
+      - "MessageFeature MUST load BEFORE AbilitiesFeature and InteractionFeature"
+      - "InteractionFeature MUST load BEFORE InteractionRegistryFeature"
+      - "AbilitiesFeature MUST load BEFORE AgenticFeature"
     example: |
       features:
         # CRITICAL: This order matters!
@@ -50,6 +52,8 @@ machine:
         - class: Noem\State\Feature\Async\AsyncFeature
         - class: Noem\State\Feature\Message\MessageFeature
         - class: Noem\State\Feature\Abilities\AbilitiesFeature
+        - class: Noem\State\Feature\Interaction\InteractionFeature
+        - class: Noem\State\Feature\Interaction\InteractionRegistryFeature
         - class: Noem\State\Feature\Agentic\AgenticFeature
 
   eventLoop:
@@ -135,6 +139,48 @@ callback_signatures:
           };
       }
 
+  critical_type_filtering:
+    description: "Parameter type hint acts as EVENT FILTER (similar to PSR-14)"
+    behavior: |
+      Type hints are NOT just documentation - they control WHICH events invoke the callback!
+
+      - 'object $t' = CATCH-ALL (accepts ANY event payload)
+      - 'MyInterface $t' = FILTERED (only invoked if payload implements MyInterface)
+      - 'SpecificClass $t' = FILTERED (only invoked if payload is instance of SpecificClass)
+
+    examples:
+      catch_all: |
+        // This callback receives ALL events
+        function onEnterState() {
+            return function(object $t): void {
+                // Invoked for every event
+            };
+        }
+
+      filtered_by_interface: |
+        // This callback ONLY receives events implementing UserAction
+        function onEnterState() {
+            return function(UserAction $t): void {
+                // Only invoked when $t implements UserAction
+                $userId = $t->getUserId();
+            };
+        }
+
+      multiple_handlers: |
+        // You can register multiple handlers with different type filters
+        ->onAction('processing', function(object $t) {
+            // Fallback handler for all events
+        })
+        ->onAction('processing', function(ApiRequest $t) {
+            // Specific handler for ApiRequest events
+        })
+
+    critical_notes:
+      - "Type filtering happens BEFORE callback execution"
+      - "Multiple callbacks can coexist with different type filters"
+      - "Use 'object' when you don't need filtering"
+      - "Use specific types to create event-specific handlers"
+
   onEnter_onExit:
     return_type: "void"
     pattern: |
@@ -183,14 +229,161 @@ callback_signatures:
       yield;  // Still must yield for async scheduler
 
   guard:
-    return_type: "bool"
-    purpose: "Return true to allow transition"
+    return_type: "bool (REQUIRED - MUST explicitly return boolean)"
+    purpose: "Return true to allow transition, false to prevent"
+    critical_requirement: "Guards MUST return bool - non-boolean returns will cause runtime errors"
+    type_filtering: "Guards support type filtering like other callbacks"
     pattern: |
       function guardCondition() {
           return function(object $t): bool {
               return $this->get('ready') === true;
           };
       }
+
+    filtered_guard_example: |
+      // Guard only checks specific event types
+      function guardUserAuthenticated() {
+          return function(LoginEvent $t): bool {
+              return $t->isAuthenticated();
+          };
+      }
+
+    common_mistakes: |
+      # ❌ WRONG - Missing return statement
+      function guardReady() {
+          return function(object $t): bool {
+              $this->get('ready');  // Missing return!
+          };
+      }
+
+      # ❌ WRONG - Returns non-boolean
+      function guardCount() {
+          return function(object $t): bool {
+              return $this->get('count');  // Returns int, not bool!
+          };
+      }
+
+      # ✅ CORRECT - Explicit boolean return
+      function guardReady() {
+          return function(object $t): bool {
+              return $this->get('ready') === true;
+          };
+      }
+
+# ==============================================================================
+# EVENT TYPE FILTERING - PSR-14 Style Event Dispatching
+# ==============================================================================
+
+event_type_filtering:
+  description: "Type hints on callback parameters act as event filters"
+
+  mechanism:
+    how_it_works: |
+      When a callback is registered with a type hint, the state machine checks
+      if the incoming event payload matches that type BEFORE invoking the callback.
+      This is similar to PSR-14 event dispatching where listeners filter by event type.
+
+    execution_order: |
+      1. Event triggered with payload
+      2. State machine checks callback parameter type hint
+      3. If payload matches type → invoke callback
+      4. If payload doesn't match type → skip callback
+      5. Multiple callbacks can coexist with different type filters
+
+  use_cases:
+    catch_all_handler:
+      when_to_use: "Default behavior, simple machines, no event filtering needed"
+      syntax: "function(object $t): ReturnType"
+      example: |
+        function onEnterProcessing() {
+            return function(object $t): void {
+                // Handles ALL events regardless of type
+                echo "Processing any event\n";
+            };
+        }
+
+    filtered_handler:
+      when_to_use: "Complex machines, event-specific behavior, type-safe access"
+      syntax: "function(SpecificType $t): ReturnType"
+      example: |
+        function onEnterProcessing() {
+            return function(ApiRequest $t): void {
+                // ONLY invoked for ApiRequest events
+                $endpoint = $t->getEndpoint();  // Type-safe access
+                echo "Processing API request to {$endpoint}\n";
+            };
+        }
+
+    multiple_handlers:
+      when_to_use: "Different behavior for different event types in same state"
+      example: |
+        // Register multiple handlers with different type filters
+        ->onAction('processing', function(object $t) {
+            // Fallback for all events
+            echo "Default processing\n";
+        })
+        ->onAction('processing', function(HttpRequest $t) {
+            // Specific handling for HTTP requests
+            $this->set('method', $t->getMethod());
+        })
+        ->onAction('processing', function(DatabaseQuery $t) {
+            // Specific handling for database queries
+            $this->set('table', $t->getTable());
+        })
+
+  real_world_examples:
+    user_authentication:
+      description: "Different guards for different event types"
+      code: |
+        // Guard only checks LoginEvent, ignores other events
+        function guardUserLoggedIn() {
+            return function(LoginEvent $t): bool {
+                return $t->isAuthenticated() === true;
+            };
+        }
+
+        // Catch-all guard checks context
+        function guardSessionActive() {
+            return function(object $t): bool {
+                return $this->get('session_active') === true;
+            };
+        }
+
+    api_routing:
+      description: "Route different API request types to different handlers"
+      code: |
+        ->onAction('handling_request', function(GetRequest $t): void {
+            $this->set('method', 'GET');
+            $this->set('data', $t->getQueryParams());
+        })
+        ->onAction('handling_request', function(PostRequest $t): void {
+            $this->set('method', 'POST');
+            $this->set('data', $t->getBody());
+        })
+
+    error_handling:
+      description: "Specific handlers for different error types"
+      code: |
+        ->onEnter('error_state', function(ValidationError $t): void {
+            $this->set('error_type', 'validation');
+            $this->set('errors', $t->getValidationErrors());
+        })
+        ->onEnter('error_state', function(DatabaseError $t): void {
+            $this->set('error_type', 'database');
+            $this->set('query', $t->getFailedQuery());
+        })
+        ->onEnter('error_state', function(object $t): void {
+            // Catch-all for other error types
+            $this->set('error_type', 'unknown');
+        })
+
+  critical_notes:
+    - "Type filtering happens BEFORE callback execution (performance optimization)"
+    - "instanceof check is used internally"
+    - "Interface type hints work (e.g., UserAction implements ActionInterface)"
+    - "Use 'object $t' when you don't need filtering (most common for simple machines)"
+    - "Multiple callbacks with same type filter are ALL invoked"
+    - "Guards with type filters only evaluate for matching events"
 
 # ==============================================================================
 # CONTEXT API - Methods available as $this-> in callbacks
@@ -230,14 +423,32 @@ context_api:
         yield;  # Still yield for async scheduler
 
     complete:
-      signature: "complete(string $prompt, string $backend = 'openai'): string"
-      purpose: "AI text completion"
+      signature: "complete(string $prompt, string $backend = 'openai'): Generator"
+      purpose: "AI text completion (streaming)"
       requires: "AiFeature"
-      returns: "string - Complete generated text"
-      note: "Use template() for streaming"
+      returns: "Generator - Yields string chunks as they arrive"
+      critical_note: "Returns Generator, NOT string - must consume the generator"
       example: |
-        $text = $this->complete('Generate a greeting', 'anthropic');
+        // Consume generator to get complete text
+        $generator = $this->complete('Generate a greeting', 'anthropic');
+        $text = '';
+        foreach ($generator as $chunk) {
+            $text .= $chunk;
+        }
         yield;
+
+      common_mistake: |
+        # ❌ WRONG - Treating Generator as string
+        $text = $this->complete('prompt', 'ollama');  // Returns Generator, not string!
+        echo $text;  // ERROR: Cannot convert Generator to string
+
+        # ✅ CORRECT - Consume generator
+        $generator = $this->complete('prompt', 'ollama');
+        $text = '';
+        foreach ($generator as $chunk) {
+            $text .= $chunk;
+        }
+        echo $text;  // Works!
 
     template:
       signature: "template(string $template): Generator"
@@ -263,17 +474,232 @@ context_api:
             yield;
         }
 
+  messaging:
+    dispatch:
+      signature: "dispatch(object $event): void"
+      purpose: "Emit an event/notification to the current region"
+      requires: "ExtendedState (not MessageFeature)"
+      critical_note: "Takes SINGLE object parameter - entire event structure in one object"
+      pattern: |
+        Event structure convention (not enforced):
+        {
+            'type' => 'event.name',           // Event type/name
+            'correlation_id' => 'uuid',       // Optional: for request/response tracking
+            'timestamp' => time(),            // Optional: when event occurred
+            'payload' => [...]                // Event-specific data
+        }
+      example: |
+        // Emit progress update event
+        $this->dispatch((object)[
+            'type' => 'progress.update',
+            'correlation_id' => $this->get('correlation_id'),
+            'timestamp' => time(),
+            'payload' => [
+                'stage' => 'processing',
+                'percent' => 50,
+            ],
+        ]);
+
+        // Simple event without metadata
+        $this->dispatch((object)[
+            'type' => 'user.clicked',
+            'button' => 'submit',
+        ]);
+
+    subscribe:
+      signature: "subscribe(callable $handler): callable"
+      purpose: "Register event listener (receives ALL events, filter in handler)"
+      requires: "NotificationChain access (context helper)"
+      availability: "ONLY available as $this-> in callbacks, NOT on Region instances"
+      returns: "Unsubscribe function"
+      type_filtering: "Use type hints on handler parameter for automatic filtering"
+      example: |
+        // Subscribe with type filtering (PSR-14 style)
+        $unsubscribe = $this->subscribe(function(MyEventType $event) {
+            // Only receives events that are instanceof MyEventType
+            $this->set('last_event', $event);
+        });
+
+        // Subscribe to all events
+        $unsubscribe = $this->subscribe(function(object $event) {
+            // Receives ALL events, manual filtering needed
+            if (isset($event->type) && $event->type === 'progress.update') {
+                $this->set('progress', $event->payload['percent']);
+            }
+        });
+
+        // Unsubscribe when done
+        $unsubscribe();
+
+    common_mistakes: |
+      # ❌ WRONG - emit() does not exist
+      $this->emit('event.type', [...]);  // ERROR: Method 'emit' not found
+
+      # ❌ WRONG - dispatch() is NOT dispatch(eventType, payload)
+      $this->dispatch('progress.update', (object)[...]);  // ERROR: too many parameters
+
+      # ❌ WRONG - passing array instead of object
+      $this->dispatch([
+          'type' => 'event.name',
+          'payload' => [...],
+      ]);  // ERROR: Argument #1 must be of type object, array given
+
+      # ✅ CORRECT - single object parameter with all event data
+      $this->dispatch((object)[
+          'type' => 'event.name',
+          'correlation_id' => '123',
+          'payload' => [...],
+      ]);
+
   abilities:
-    signature: "abilities(string $name, mixed $params = null): Message"
-    purpose: "Invoke registered tool/ability"
+    signature: "abilities(string $name, mixed $params = null): AbilityInvocation"
+    purpose: "Invoke registered ability (machine-to-machine communication)"
     requires: "AbilitiesFeature"
-    returns: "Message object with then() for async response handling"
-    example: |
-      $msg = $this->abilities('calculate', ['numbers' => [1, 2, 3]]);
-      $msg->then(function($response) {
-          $this->set('total', $response->parameters['result']);
-      });
-      yield;
+    returns: "AbilityInvocation supporting both yield from and then() patterns"
+    critical_notes:
+      - "Use for internal machine-to-machine communication"
+      - "Abilities are schema-validated, discoverable operations"
+      - "Use interactions (see below) for human/external agent communication"
+    patterns:
+      yield_from_pattern: |
+        # Synchronous-style execution
+        yield from $this->abilities('calculate', ['numbers' => [1, 2, 3]]);
+      then_pattern: |
+        # Callback-based async execution
+        $msg = $this->abilities('calculate', ['numbers' => [1, 2, 3]]);
+        $msg->then(function($response) {
+            $this->set('total', $response->parameters['result']);
+        });
+        yield;
+
+  interact:
+    signature: "interact(InteractionRequest|string $request, array $overrides = []): mixed"
+    purpose: "Request input/confirmation from external agent (human, CLI, UI)"
+    requires: "InteractionFeature"
+    returns: "Mixed - Value from interaction response (throws if cancelled)"
+    critical_notes:
+      - "Use for machine-to-HUMAN/EXTERNAL-AGENT communication"
+      - "Use abilities() for machine-to-machine communication"
+      - "Supports declarative contracts via InteractionRegistry"
+      - "Four patterns: Confirm, Select, Choice, Prompt"
+
+    dual_signature:
+      direct_request: |
+        # Direct: Pass InteractionRequest object
+        $confirmed = yield from $this->interact(
+            new ConfirmRequest(
+                question: 'Deploy to production?',
+                defaultValue: false
+            )
+        );
+
+      by_id_lookup: |
+        # By ID: Reference registered interaction with optional overrides
+        $confirmed = yield from $this->interact(
+            'deploy_confirm',
+            ['defaultValue' => true]  // Override registered default
+        );
+
+    patterns:
+      confirm:
+        purpose: "Yes/No confirmation"
+        request_class: "ConfirmRequest"
+        response_value: "bool"
+        example: |
+          $deploy = yield from $this->interact(new ConfirmRequest(
+              question: 'Deploy to production?',
+              defaultValue: false,
+              context: 'Deploying v2.1.3',
+              timeoutMs: 30000
+          ));
+          if ($deploy) {
+              // User confirmed
+          }
+
+      select:
+        purpose: "Single choice from options"
+        request_class: "SelectRequest"
+        response_value: "string (selected key)"
+        example: |
+          $backend = yield from $this->interact(new SelectRequest(
+              question: 'Choose database',
+              options: [
+                  'mysql' => new SelectOption('MySQL', 'Traditional RDBMS'),
+                  'postgres' => new SelectOption('PostgreSQL', 'Advanced features'),
+                  'sqlite' => new SelectOption('SQLite', 'Embedded database')
+              ],
+              defaultKey: 'mysql'
+          ));
+          // $backend = 'mysql' | 'postgres' | 'sqlite'
+
+      choice:
+        purpose: "Multiple selections from options"
+        request_class: "ChoiceRequest"
+        response_value: "array (selected keys)"
+        example: |
+          $features = yield from $this->interact(new ChoiceRequest(
+              question: 'Select features',
+              options: [
+                  'auth' => new ChoiceOption('Authentication', recommended: true),
+                  'cache' => new ChoiceOption('Caching'),
+                  'logging' => new ChoiceOption('Logging')
+              ],
+              minSelections: 1,
+              maxSelections: 3,
+              defaultKeys: ['auth']
+          ));
+          // $features = ['auth', 'cache']
+
+      prompt:
+        purpose: "Free-form text input"
+        request_class: "PromptRequest"
+        response_value: "string"
+        example: |
+          $name = yield from $this->interact(new PromptRequest(
+              question: 'Enter project name',
+              placeholder: 'my-awesome-project',
+              defaultValue: 'untitled',
+              validation: '^[a-z0-9-]+$',
+              multiline: false
+          ));
+          // $name = "my-awesome-project"
+
+    registry_pattern:
+      description: "Register interactions declaratively for discovery and validation"
+      registration_example: |
+        # In builder or YAML
+        $builder->registerInteraction(
+            id: 'deploy_confirm',
+            new InteractionDefinition(
+                type: 'confirm',
+                state: 'deploying',
+                question: 'Deploy to production?',
+                metadata: ['defaultValue' => false, 'critical' => true]
+            )
+        );
+
+      discovery_abilities:
+        enumerate_interactions: |
+          # List all registered interactions
+          $msg = $this->abilities('enumerate-interactions', []);
+          $msg->then(function($response) {
+              $interactions = $response->parameters['interactions'];
+              // Array of all InteractionDefinition objects
+          });
+
+        get_interaction: |
+          # Get specific interaction by ID
+          $msg = $this->abilities('get-interaction', ['id' => 'deploy_confirm']);
+          $msg->then(function($response) {
+              $definition = $response->parameters['definition'];
+          });
+
+        get_interactions_for_state: |
+          # Get interactions for a specific state
+          $msg = $this->abilities('get-interactions-for-state', ['state' => 'deploying']);
+          $msg->then(function($response) {
+              $interactions = $response->parameters['interactions'];
+          });
 
   weave:
     signature: "weave(string $intent, array $options = []): Generator"
@@ -288,6 +714,830 @@ context_api:
           backend: 'anthropic'
       );
 
+  presentation:
+    signature: "presentation(string $key, string $label, string $intent, ?array $metadata = null, ?callable $predicate = null): callable"
+    purpose: "Register declarative state exposure for external agent inspection"
+    requires: "PresentationFeature"
+    returns: "callable - Unregister function"
+    critical_notes:
+      - "PASSIVE exposure - external agents query state, machine doesn't push"
+      - "Use for dashboards, monitoring, supervisor machines, agentic UI"
+      - "NOT for active requests (use $this->interact() instead)"
+      - "NOT for machine operations (use $this->abilities() instead)"
+    example: |
+      function onEnterProcessing() {
+          return function(object $t): void {
+              // Register presentations for external agents to query
+              $this->presentation(
+                  key: 'processing_status',
+                  label: 'Processing Status',
+                  intent: 'status',
+                  metadata: ['critical' => true],
+                  predicate: fn($r) => $this->get('active', false)
+              );
+
+              $this->presentation(
+                  key: 'items_processed',
+                  label: 'Items Processed',
+                  intent: 'metric',
+                  metadata: ['unit' => 'count']
+              );
+
+              // Set values that presentations will expose
+              $this->set('processing_status', 'in_progress');
+              $this->set('items_processed', 0);
+          };
+      }
+
+  summon:
+    signature: "summon(string $filepath): Region"
+    purpose: "Dynamically load and spawn child state machine from YAML file"
+    requires: "RegionLoader + ExtendedState"
+    returns: "Region - Loaded machine (NOT executing, you control execution)"
+
+    critical_notes:
+      - "Returns Region instance, NOT Runtime - you control when/how to execute"
+      - "Absolute paths used as-is, relative paths resolved against getcwd()"
+      - "Creates fresh instance on every call - store in context if reuse needed"
+      - "Region has LIMITED API - see region_api section below"
+
+    region_api:
+      description: "Methods available on Region instance returned by summon()"
+      available_methods:
+        trigger:
+          signature: "trigger(object $event): void"
+          purpose: "Send event to child machine"
+          example: "$child->trigger((object)['type' => 'start', 'data' => 'value']);"
+        currentState:
+          signature: "currentState(): string"
+          purpose: "Get name of current state"
+          example: "$state = $child->currentState();"
+        isFinal:
+          signature: "isFinal(): bool"
+          purpose: "Check if in final state"
+          example: "$done = $child->isFinal();"
+
+      NOT_available_on_region:
+        description: "These are $this-> context helpers, NOT Region methods"
+        methods: ["subscribe()", "dispatch()", "isComplete()", "get()", "set()"]
+        availability: "ONLY available as $this-> within callbacks (requires ExtendedState)"
+        error_example: "$child->subscribe(...) // ❌ ERROR: Method does not exist"
+        correct_example: "$this->subscribe(...) // ✅ CORRECT: Available in callbacks"
+
+    execution_pattern:
+      description: "Correct pattern for executing summoned child machine"
+      steps:
+        1: "Load child with summon()"
+        2: "Send initial event with trigger()"
+        3: "Execute with StandardRuntime"
+        4: "Extract results with trigger callback pattern"
+
+      example: |
+        # Load child machine
+        $child = $this->summon(machines_path('machine-generator', 'holon.yml'));
+        yield;
+
+        # Send initial event to child using trigger()
+        $child->trigger((object)[
+            'type' => 'generate.request',
+            'correlation_id' => uniqid('cli-'),
+            'timestamp' => time(),
+            'payload' => [
+                'description' => $this->get('user_description'),
+            ],
+        ]);
+        yield;
+
+        # Execute child using StandardRuntime (blocks until complete)
+        $runtime = new \Noem\State\StandardRuntime($child);
+        $runtime->run();
+        yield;
+
+        # Extract results using trigger callback pattern
+        $success = false;
+        $machineName = null;
+        $machineDir = null;
+
+        $child->trigger((object)[
+            'extract' => function() use (&$success, &$machineName, &$machineDir) {
+                // Inside callback: $this-> context helpers ARE available
+                $success = $this->get('generation_complete', false);
+                $machineName = $this->get('machine_name', 'unknown');
+                $machineDir = $this->get('machine_directory', '');
+            }
+        ]);
+
+        # Store extracted results in parent context
+        $this->set('generation_success', $success);
+        $this->set('machine_name', $machineName);
+        $this->set('machine_directory', $machineDir);
+
+    common_mistakes:
+      wrong_subscribe_dispatch: |
+        # ❌ WRONG - subscribe/dispatch don't exist on Region
+        $child = $this->summon('child.yml');
+        $child->subscribe('event', function($msg) { ... });  // ERROR!
+        $child->dispatch('event', (object)[]);                // ERROR!
+
+      wrong_is_complete: |
+        # ❌ WRONG - isComplete() doesn't exist on Region
+        while (!$child->isComplete()) {  // ERROR!
+            $child->run();               // ERROR!
+        }
+
+      correct_execution: |
+        # ✅ CORRECT - Use trigger() and StandardRuntime
+        $child = $this->summon('child.yml');
+        $child->trigger((object)['type' => 'start']);
+        $runtime = new \Noem\State\StandardRuntime($child);
+        $runtime->run();  // Blocks until final state reached
+
+# ==============================================================================
+# AGENT COMMUNICATION ARCHITECTURE
+# ==============================================================================
+
+agent_communication:
+  overview: |
+    Two distinct communication patterns for different interaction scenarios:
+
+    INTERACTIONS: Machine → External Agent (Human, CLI, UI Framework)
+    ABILITIES:    Machine → Machine (Internal, Cross-Region)
+
+    Both use MessageFeature correlation infrastructure for request-response tracking.
+
+  interactions_api:
+    purpose: "Machine requests input/decisions from EXTERNAL agents"
+    use_when:
+      - "Need human confirmation or input"
+      - "External UI framework needs to display choices"
+      - "CLI tool requests user decisions"
+      - "Any interaction crossing the machine boundary"
+
+    method: "$this->interact()"
+    features_required: ["InteractionFeature", "InteractionRegistryFeature (optional)"]
+
+    four_patterns:
+      - "Confirm: Yes/No questions"
+      - "Select: Single choice from options"
+      - "Choice: Multiple selections from options"
+      - "Prompt: Free-form text input"
+
+    invocation_modes:
+      direct: |
+        # Direct: Pass InteractionRequest object
+        $result = yield from $this->interact(
+            new ConfirmRequest(question: 'Proceed?', defaultValue: false)
+        );
+
+      registry_based: |
+        # Registry: Reference pre-registered interaction by ID
+        # Enables discovery, validation, and contract enforcement
+        $result = yield from $this->interact('deploy_confirm', ['defaultValue' => true]);
+
+    discovery:
+      purpose: "External agents query machine for expected interactions BEFORE runtime"
+      abilities:
+        - "enumerate-interactions: List all registered interactions"
+        - "get-interaction: Get definition by ID"
+        - "get-interactions-for-state: Get interactions for specific state"
+
+      use_cases:
+        - "UI framework pre-generates forms for all possible interactions"
+        - "CLI tool builds help text from interaction contracts"
+        - "Testing framework generates fixtures for all interactions"
+        - "Documentation auto-generated from interaction registry"
+
+    framework_integration_pattern: |
+      # External framework listens for interaction requests
+      $machine->on(function(InteractionRequest $request) {
+          // Framework receives request
+          match ($request->getType()) {
+              'confirm' => $this->showConfirmDialog($request),
+              'select' => $this->showSelectDialog($request),
+              'choice' => $this->showChoiceDialog($request),
+              'prompt' => $this->showPromptDialog($request),
+          };
+
+          // Framework sends response back via correlation
+          $request->then(function(InteractionResponse $response) {
+              // Response delivered to machine
+          });
+      });
+
+  abilities_api:
+    purpose: "Machine invokes operations on OTHER machines or services"
+    use_when:
+      - "Cross-region communication (parent-child, sibling machines)"
+      - "Internal tool/function invocation"
+      - "Schema-validated operations"
+      - "Discoverable APIs between machines"
+
+    method: "$this->abilities()"
+    features_required: ["AbilitiesFeature"]
+
+    characteristics:
+      - "Schema-validated: Parameters and responses validated against JSON Schema"
+      - "Discoverable: enumerate-abilities lists all available operations"
+      - "Message-based: Uses MessageFeature correlation for async responses"
+      - "Middleware-interceptable: Can hook into execution pipeline"
+
+    invocation_patterns:
+      yield_from: |
+        # Synchronous style - waits for response
+        yield from $this->abilities('calculate', ['numbers' => [1, 2, 3]]);
+
+      callback: |
+        # Async callback style
+        $msg = $this->abilities('calculate', ['numbers' => [1, 2, 3]]);
+        $msg->then(function($response) {
+            $result = $response->parameters['result'];
+        });
+        yield;
+
+    registration_patterns:
+      runtime: |
+        # In state callback
+        $this->abilities()->register(
+            name: 'search-users',
+            handler: fn($params) => ['users' => $this->searchUsers($params['query'])],
+            parameterSchema: [
+                'type' => 'object',
+                'required' => ['query'],
+                'properties' => ['query' => ['type' => 'string']]
+            ]
+        );
+
+      builder: |
+        # During machine construction
+        $builder->addBuildStep(new RegisterAbility(
+            name: 'calculate',
+            handler: fn($params) => ['result' => array_sum($params['numbers'])],
+            parameterSchema: [...]
+        ));
+
+      yaml: |
+        # Declarative in YAML
+        abilities:
+          - name: calculate
+            handler: !php return calculateHandler()
+            parameterSchema:
+              type: object
+              required: [numbers]
+              properties:
+                numbers:
+                  type: array
+                  items: {type: number}
+
+    discovery:
+      purpose: "Machines query other machines for available operations"
+      built_in_ability:
+        name: "enumerate-abilities"
+        returns: "Array of all registered abilities with schemas"
+        example: |
+          $msg = $this->abilities('enumerate-abilities', []);
+          $msg->then(function($response) {
+              $abilities = $response->parameters['abilities'];
+              // [
+              //   ['name' => 'calculate', 'parameterSchema' => [...], ...],
+              //   ['name' => 'search-users', 'parameterSchema' => [...], ...],
+              // ]
+          });
+
+  comparison_table:
+    headers: ["Aspect", "Interactions", "Abilities"]
+    rows:
+      - ["Direction", "Machine → External Agent", "Machine → Machine"]
+      - ["Use Case", "Human input, UI frameworks", "Internal operations, cross-region"]
+      - ["Method", "$this->interact()", "$this->abilities()"]
+      - ["Patterns", "Confirm/Select/Choice/Prompt", "Schema-validated operations"]
+      - ["Discovery", "enumerate-interactions", "enumerate-abilities"]
+      - ["Registry", "InteractionRegistry", "AbilityRegistry"]
+      - ["Response", "Returns value directly", "Returns Message with then()"]
+      - ["Validation", "Type-based (ConfirmRequest, etc)", "JSON Schema-based"]
+      - ["Correlation", "Via MessageFeature", "Via MessageFeature"]
+      - ["Example", "User confirms deployment", "Child machine calculates total"]
+
+  workflow_example_interaction: |
+    # External agent requests deployment
+    function actionDeployment() {
+        return function(object $t): \Generator {
+            // Request confirmation from human operator
+            $confirmed = yield from $this->interact(new ConfirmRequest(
+                question: 'Deploy to production?',
+                defaultValue: false,
+                context: 'Version 2.1.3 ready for deployment'
+            ));
+
+            if (!$confirmed) {
+                $this->set('deployment_cancelled', true);
+                return;
+            }
+
+            $this->set('deployment_confirmed', true);
+            yield;
+        };
+    }
+
+  workflow_example_ability: |
+    # Machine invokes operation on child machine
+    function actionCalculateTotal() {
+        return function(object $t): \Generator {
+            // Invoke calculation ability on financial service machine
+            $msg = $this->abilities('calculate-total', [
+                'items' => $this->get('cart_items'),
+                'taxRate' => 0.08
+            ]);
+
+            $msg->then(function($response) {
+                $this->set('total', $response->parameters['total']);
+                $this->set('tax', $response->parameters['tax']);
+            });
+
+            yield;
+        };
+    }
+
+  critical_distinctions:
+    - "❌ DON'T use interact() for machine-to-machine - use abilities()"
+    - "❌ DON'T use abilities() for human input - use interact()"
+    - "✅ DO use interact() when crossing the machine boundary to external agents"
+    - "✅ DO use abilities() for internal operations and cross-region communication"
+    - "✅ DO register interactions when external agents need to discover them"
+    - "✅ DO register abilities when other machines need to discover them"
+
+# ==============================================================================
+# PRESENTATION API - Declarative State Exposure for Agentic Workflows
+# ==============================================================================
+
+presentation_api:
+  overview: |
+    PresentationFeature enables machines to declaratively expose internal state
+    for external consumption by AI agents, monitoring tools, and orchestration systems.
+
+    Unlike interactions (machine → agent requests) or abilities (machine ↔ machine operations),
+    presentations are PASSIVE state exposure - external agents QUERY machine state rather
+    than machines requesting input.
+
+  purpose: "Schema-enforced declarative state exposure with discovery and introspection"
+
+  use_cases:
+    agentic_ui:
+      description: "AI agents query machine state to render appropriate UI"
+      example_scenario: |
+        AI agent needs to build dashboard showing deployment pipeline status:
+        - Queries machine: "What presentations are available?"
+        - Machine responds: "deployment_status, error_log, progress_metrics"
+        - Agent fetches values and renders UI dynamically
+
+    agent_to_agent:
+      description: "Supervisor machines monitor child machine state"
+      example_scenario: |
+        Orchestration machine managing multiple workers:
+        - Worker machines expose "task_progress", "health_status"
+        - Supervisor periodically queries presentations from all workers
+        - Makes scaling decisions based on aggregated state
+
+    monitoring_tools:
+      description: "External monitoring systems track machine health"
+      example_scenario: |
+        Observability platform queries machine presentations:
+        - Discovers available metrics via enumerate-presentations
+        - Subscribes to specific presentations
+        - Builds real-time dashboards without machine code changes
+
+  registration:
+    signature: "presentation(string $key, string $label, string $intent, ?array $metadata = null, ?callable $predicate = null): callable"
+    purpose: "Register a presentation that exposes internal state value"
+
+    parameters:
+      key:
+        type: string
+        description: "Unique identifier for this presentation (used to fetch value)"
+        example: "deployment_status"
+
+      label:
+        type: string
+        description: "Human-readable label for UI display"
+        example: "Current Deployment Status"
+
+      intent:
+        type: string
+        description: "Semantic purpose (metric, status, diagnostic, config)"
+        values: ["metric", "status", "diagnostic", "config", "log", "state"]
+        example: "status"
+
+      metadata:
+        type: "?array"
+        description: "Optional schema, units, thresholds, or custom properties"
+        example: "['unit' => 'percent', 'threshold' => 90, 'critical' => true]"
+
+      predicate:
+        type: "?callable"
+        description: "Optional visibility condition - return false to hide presentation"
+        signature: "fn(Region $region): bool"
+        example: "fn($r) => $r->currentState() === 'deploying'"
+
+    returns: "callable - Unregister function to remove presentation"
+
+    registration_locations:
+      builder: |
+        # During machine construction
+        ->presentation(
+            key: 'deployment_status',
+            label: 'Deployment Status',
+            intent: 'status'
+        )
+
+      runtime_callback: |
+        # In state callback (most common)
+        function onEnterDeploying() {
+            return function(object $t): void {
+                $this->presentation(
+                    key: 'deployment_status',
+                    label: 'Current Deployment Status',
+                    intent: 'status',
+                    metadata: ['critical' => true],
+                    predicate: fn($r) => $this->get('deployment_active', false)
+                );
+
+                $this->set('deployment_status', 'in_progress');
+            };
+        }
+
+      yaml_declarative: |
+        # YAML (requires PresentationRegistryFeature - not yet implemented)
+        presentations:
+          - key: deployment_status
+            label: "Deployment Status"
+            intent: status
+            state: deploying  # Only visible in this state
+
+    example_basic: |
+      function onEnterMonitoring() {
+          return function(object $t): void {
+              // Register presentations for current state
+              $this->presentation(
+                  key: 'cpu_usage',
+                  label: 'CPU Usage',
+                  intent: 'metric',
+                  metadata: ['unit' => 'percent', 'max' => 100]
+              );
+
+              $this->presentation(
+                  key: 'error_count',
+                  label: 'Error Count',
+                  intent: 'diagnostic',
+                  metadata: ['severity' => 'high']
+              );
+
+              // Store actual values in context
+              $this->set('cpu_usage', 45.2);
+              $this->set('error_count', 3);
+          };
+      }
+
+    example_conditional: |
+      function actionProcessing() {
+          return function(object $t): \Generator {
+              // Conditional presentation (only visible when errors exist)
+              $this->presentation(
+                  key: 'last_error',
+                  label: 'Last Error Message',
+                  intent: 'diagnostic',
+                  predicate: fn($r) => $this->get('error_count', 0) > 0
+              );
+
+              // Update state
+              $errorCount = $this->get('error_count', 0);
+              if ($errorCount > 0) {
+                  $this->set('last_error', 'Connection timeout');
+              }
+
+              yield;
+          };
+      }
+
+  discovery_abilities:
+    description: "Built-in abilities for external agents to discover and query presentations"
+    requires: "PresentationFeature loaded"
+
+    enumerate_presentations:
+      name: "enumerate-presentations"
+      purpose: "List all registered presentations with schemas and metadata"
+      parameters: "none"
+      returns: "array - List of presentation definitions"
+
+      example: |
+        # External agent discovers available presentations
+        $msg = $this->abilities('enumerate-presentations', []);
+        $msg->then(function($response) {
+            $presentations = $response->parameters['presentations'];
+            // [
+            //   {
+            //     "key": "deployment_status",
+            //     "label": "Deployment Status",
+            //     "intent": "status",
+            //     "metadata": {"critical": true},
+            //     "schema": {...}
+            //   },
+            //   ...
+            // ]
+
+            foreach ($presentations as $p) {
+                echo "{$p['label']} ({$p['intent']})\n";
+            }
+        });
+        yield;
+
+      respects_predicates: |
+        # Predicates are evaluated during enumeration
+        # Only presentations with predicate returning true are included
+        # If predicate throws exception, presentation is excluded
+
+    get_presented_state:
+      name: "get-presented-state"
+      purpose: "Retrieve actual context values for presentations"
+      parameters: "optional array 'keys' to filter specific presentations"
+      returns: "array - Map of presentation keys to values with metadata"
+
+      example_all: |
+        # Fetch all presentation values
+        $msg = $this->abilities('get-presented-state', []);
+        $msg->then(function($response) {
+            $values = $response->parameters['values'];
+            // {
+            //   "deployment_status": {
+            //     "value": "in_progress",
+            //     "label": "Deployment Status",
+            //     "intent": "status",
+            //     "metadata": {"critical": true}
+            //   },
+            //   "cpu_usage": {
+            //     "value": 45.2,
+            //     "label": "CPU Usage",
+            //     "intent": "metric",
+            //     "metadata": {"unit": "percent", "max": 100}
+            //   }
+            // }
+        });
+        yield;
+
+      example_filtered: |
+        # Fetch specific presentations only
+        $msg = $this->abilities('get-presented-state', [
+            'keys' => ['deployment_status', 'error_count']
+        ]);
+        $msg->then(function($response) {
+            $values = $response->parameters['values'];
+            $status = $values['deployment_status']['value'];
+            $errors = $values['error_count']['value'];
+
+            echo "Status: {$status}, Errors: {$errors}\n";
+        });
+        yield;
+
+  agentic_ui_workflow:
+    description: "AI agent dynamically builds UI by querying presentations"
+
+    step_1_discovery: |
+      # AI Agent: "What information can I display from this machine?"
+      function discoverPresentations() {
+          return function(object $t): \Generator {
+              $msg = $this->abilities('enumerate-presentations', []);
+
+              $presentations = null;
+              $msg->then(function($r) use (&$presentations) {
+                  $presentations = $r->parameters['presentations'];
+              });
+              yield;
+
+              // AI analyzes available presentations
+              $uiComponents = [];
+              foreach ($presentations as $p) {
+                  $uiComponents[] = match($p['intent']) {
+                      'metric' => ['type' => 'gauge', 'presentation' => $p],
+                      'status' => ['type' => 'badge', 'presentation' => $p],
+                      'diagnostic' => ['type' => 'alert', 'presentation' => $p],
+                      'log' => ['type' => 'table', 'presentation' => $p],
+                      default => ['type' => 'text', 'presentation' => $p],
+                  };
+              }
+
+              $this->set('ui_components', $uiComponents);
+              yield;
+          };
+      }
+
+    step_2_fetch_values: |
+      # AI Agent: "Get current values for selected presentations"
+      function fetchPresentationValues() {
+          return function(object $t): \Generator {
+              $selectedKeys = $this->get('selected_presentations', []);
+
+              $msg = $this->abilities('get-presented-state', [
+                  'keys' => $selectedKeys
+              ]);
+
+              $values = null;
+              $msg->then(function($r) use (&$values) {
+                  $values = $r->parameters['values'];
+              });
+              yield;
+
+              // Render UI based on values
+              foreach ($values as $key => $data) {
+                  $this->renderComponent($data['intent'], $data['value'], $data['label']);
+              }
+
+              yield;
+          };
+      }
+
+    step_3_continuous_update: |
+      # AI Agent: Periodically refresh presentation values
+      function monitorPresentations() {
+          return function(object $t): \Generator {
+              while (true) {
+                  $msg = $this->abilities('get-presented-state', []);
+
+                  $msg->then(function($r) {
+                      $values = $r->parameters['values'];
+                      $this->updateDashboard($values);
+                  });
+
+                  yield;  # Wait for response
+
+                  # Wait before next poll
+                  usleep(500000);  # 500ms
+                  yield;
+              }
+          };
+      }
+
+  agent_to_agent_workflow:
+    description: "Supervisor machine monitors child machine state via presentations"
+
+    supervisor_monitoring: |
+      # Supervisor machine polls worker machines
+      function monitorWorkers() {
+          return function(object $t): \Generator {
+              $workers = $this->get('worker_machines', []);
+
+              foreach ($workers as $workerId => $worker) {
+                  // Query each worker's presentations
+                  $msg = $this->abilities('get-presented-state', []);
+
+                  $msg->then(function($r) use ($workerId) {
+                      $state = $r->parameters['values'];
+
+                      // Check worker health
+                      $health = $state['health_status']['value'] ?? 'unknown';
+                      $cpu = $state['cpu_usage']['value'] ?? 0;
+
+                      if ($health !== 'healthy' || $cpu > 90) {
+                          $this->dispatch((object)[
+                              'type' => 'worker.unhealthy',
+                              'worker_id' => $workerId,
+                              'health' => $health,
+                              'cpu' => $cpu
+                          ]);
+                      }
+                  });
+
+                  yield;
+              }
+          };
+      }
+
+    worker_exposing_state: |
+      # Worker machine exposes its state via presentations
+      function onEnterProcessing() {
+          return function(object $t): void {
+              // Register presentations for supervisor to query
+              $this->presentation(
+                  key: 'health_status',
+                  label: 'Worker Health',
+                  intent: 'status',
+                  metadata: ['states' => ['healthy', 'degraded', 'unhealthy']]
+              );
+
+              $this->presentation(
+                  key: 'cpu_usage',
+                  label: 'CPU Usage',
+                  intent: 'metric',
+                  metadata: ['unit' => 'percent', 'threshold' => 80]
+              );
+
+              $this->presentation(
+                  key: 'tasks_completed',
+                  label: 'Tasks Completed',
+                  intent: 'metric',
+                  metadata: ['unit' => 'count']
+              );
+
+              // Set initial values
+              $this->set('health_status', 'healthy');
+              $this->set('cpu_usage', 35.0);
+              $this->set('tasks_completed', 0);
+          };
+      }
+
+  comparison_interactions_abilities_presentations:
+    description: "Three communication patterns serving different purposes"
+
+    table:
+      headers: ["Aspect", "Interactions", "Abilities", "Presentations"]
+      rows:
+        - ["Direction", "Machine → Agent", "Machine ↔ Machine", "Agent → Machine"]
+        - ["Initiation", "Machine requests", "Either side calls", "Agent queries"]
+        - ["Purpose", "Get input/decisions", "Execute operations", "Inspect state"]
+        - ["Pattern", "Request-Response", "Request-Response", "Query-Retrieve"]
+        - ["Use When", "Need human input", "Cross-machine ops", "Need to inspect state"]
+        - ["Method", "$this->interact()", "$this->abilities()", "abilities('enumerate-presentations')"]
+        - ["Discovery", "enumerate-interactions", "enumerate-abilities", "enumerate-presentations"]
+        - ["Examples", "Confirm deployment?", "Calculate total", "Show CPU usage"]
+        - ["Active/Passive", "Active (blocks)", "Active (async)", "Passive (poll)"]
+
+    when_to_use_presentations:
+      - "External agent needs to inspect machine state"
+      - "Building dashboards or monitoring UIs"
+      - "Supervisor machines tracking child state"
+      - "Observability and telemetry collection"
+      - "AI agents deciding which UI to render"
+      - "Health checks and status endpoints"
+
+    when_NOT_to_use_presentations:
+      - "❌ Machine needs to REQUEST input (use interactions)"
+      - "❌ Machine needs to INVOKE operation on another machine (use abilities)"
+      - "❌ One-time state query (just use $this->get() internally)"
+      - "❌ Event notifications (use dispatch/subscribe)"
+
+  json_schema_integration:
+    description: "Presentations can include JSON Schema for validation"
+
+    example: |
+      function registerPresentationsWithSchema() {
+          return function(object $t): void {
+              $this->presentation(
+                  key: 'deployment_config',
+                  label: 'Deployment Configuration',
+                  intent: 'config',
+                  metadata: [
+                      'schema' => [
+                          'type' => 'object',
+                          'properties' => [
+                              'environment' => ['type' => 'string', 'enum' => ['dev', 'staging', 'prod']],
+                              'replicas' => ['type' => 'integer', 'minimum' => 1],
+                              'version' => ['type' => 'string', 'pattern' => '^\d+\.\d+\.\d+$']
+                          ]
+                      ]
+                  ]
+              );
+
+              $this->set('deployment_config', [
+                  'environment' => 'prod',
+                  'replicas' => 3,
+                  'version' => '2.1.3'
+              ]);
+          };
+      }
+
+  best_practices:
+    registration:
+      - "Register presentations in onEnter for state-specific data"
+      - "Register in builder/YAML for machine-wide metrics"
+      - "Use descriptive labels for UI rendering"
+      - "Choose semantic intents (metric/status/diagnostic/config/log)"
+      - "Include units and thresholds in metadata"
+      - "Use predicates to conditionally show/hide presentations"
+
+    naming:
+      - "Use snake_case for keys: deployment_status, cpu_usage"
+      - "Use descriptive labels: 'Current Deployment Status', 'CPU Usage (%)'"
+      - "Prefix related presentations: worker_health, worker_cpu, worker_tasks"
+
+    values:
+      - "Store presentation values in ExtendedState via $this->set()"
+      - "Keep presentation key same as ExtendedState key for consistency"
+      - "Update values whenever state changes"
+      - "Use appropriate types: numbers for metrics, strings for status, objects for config"
+
+    discovery:
+      - "External agents SHOULD enumerate presentations before querying"
+      - "Use intents to guide UI rendering decisions"
+      - "Respect predicate visibility - hidden presentations won't appear"
+      - "Cache enumeration results to avoid repeated queries"
+
+  critical_notes:
+    - "Presentations are PASSIVE - external agents query them, machines don't push"
+    - "Use $this->presentation() to REGISTER, abilities('get-presented-state') to FETCH"
+    - "Presentation keys match ExtendedState keys ($this->get($key))"
+    - "Predicates are evaluated during discovery and fetch"
+    - "PresentationFeature requires JsonSchemaFeature and ExtendedState"
+    - "NOT a replacement for interactions (which are active machine requests)"
+    - "NOT a replacement for abilities (which are bidirectional operations)"
+    - "Designed for READ-ONLY state inspection, not state modification"
+
 # ==============================================================================
 # FEATURE REFERENCE - What each feature provides
 # ==============================================================================
@@ -295,8 +1545,9 @@ context_api:
 features:
   ExtendedState:
     class: "Noem\\State\\Feature\\ExtendedState\\ExtendedState"
-    provides: ["$this->get()", "$this->set()"]
+    provides: ["$this->get()", "$this->set()", "$this->dispatch()"]
     critical: "MUST be first feature loaded"
+    note: "dispatch() emits events to current region only"
 
   AsyncFeature:
     class: "Noem\\State\\Feature\\Async\\AsyncFeature"
@@ -321,18 +1572,56 @@ features:
 
   MessageFeature:
     class: "Noem\\State\\Feature\\Message\\MessageFeature"
-    provides: ["Message correlation", "Request-response pattern"]
-    required_for: "AbilitiesFeature"
+    provides: ["Message correlation", "Request-response pattern with Message objects"]
+    required_for: "AbilitiesFeature, InteractionFeature"
+    critical_note: "MessageFeature is for Message objects with correlation IDs, NOT general events"
+    note: "$this->dispatch() and $this->subscribe() are provided by ExtendedState, not MessageFeature"
 
   AbilitiesFeature:
     class: "Noem\\State\\Feature\\Abilities\\AbilitiesFeature"
-    provides: ["$this->abilities()", "Tool/ability system"]
+    provides: ["$this->abilities()", "Schema-validated machine-to-machine operations"]
     requires: "MessageFeature"
+    built_in_abilities:
+      - "enumerate-abilities: List all registered abilities"
+    registration_patterns: ["Runtime ($this->abilities()->register())", "Builder", "YAML (abilities: blocks)"]
+
+  InteractionFeature:
+    class: "Noem\\State\\Feature\\Interaction\\InteractionFeature"
+    provides: ["$this->interact()", "Four interaction patterns (Confirm/Select/Choice/Prompt)"]
+    requires: "MessageFeature"
+    purpose: "Machine-to-external-agent communication (humans, CLI, UI frameworks)"
+    patterns:
+      - "ConfirmRequest/ConfirmResponse: Yes/No confirmations"
+      - "SelectRequest/SelectResponse: Single choice from options"
+      - "ChoiceRequest/ChoiceResponse: Multiple selections"
+      - "PromptRequest/PromptResponse: Free-form text input"
+
+  InteractionRegistryFeature:
+    class: "Noem\\State\\Feature\\Interaction\\InteractionRegistryFeature"
+    provides: ["InteractionRegistry", "Discovery abilities for interactions"]
+    requires: "InteractionFeature"
+    optional: true
+    purpose: "Declarative interaction contracts for discovery and validation"
+    built_in_abilities:
+      - "enumerate-interactions: List all registered interactions"
+      - "get-interaction: Get definition by ID"
+      - "get-interactions-for-state: Get interactions for specific state"
+    registration_patterns: ["Runtime ($this->registerInteraction())", "Builder ($builder->registerInteraction())", "YAML (interactions: blocks)"]
 
   AgenticFeature:
     class: "Noem\\State\\Feature\\Agentic\\AgenticFeature"
     provides: ["$this->weave()", "Autonomous AI orchestration"]
     requires: ["AbilitiesFeature", "AiFeature"]
+
+  PresentationFeature:
+    class: "Noem\\State\\Feature\\Presentation\\PresentationFeature"
+    provides: ["$this->presentation()", "Declarative state exposure for external inspection"]
+    requires: ["JsonSchemaFeature", "ExtendedState", "AbilitiesFeature"]
+    purpose: "Passive state exposure for AI agents, monitoring tools, and supervisor machines"
+    built_in_abilities:
+      - "enumerate-presentations: List all registered presentations with schemas"
+      - "get-presented-state: Retrieve actual context values for presentations"
+    registration_patterns: ["Runtime ($this->presentation())", "Builder ($builder->presentation())"]
 
 # ==============================================================================
 # COMMON PATTERNS
@@ -423,12 +1712,14 @@ yaml_tags:
     purpose: "Evaluate PHP code"
     use_cases:
       - "Callback references: !php return functionName()"
-      - "Inline functions: !php return function($t) { /* code */ };"
+      - "Inline functions: !php return function(object $t) { /* code */ };"
       - "Require files: !php require '/path/file.php'"
     critical_limitation: "No access to $this or runtime context during YAML parsing"
     examples:
       - "run: !php return onEnterIdle()"
+      - "run: !php return function(object $t) { $this->set('ready', true); };"
       - "guard: !php return guardReady()"
+      - "guard: !php return function(object $t) { return $this->get('done') === true; };"
       - "require: !php require '/var/www/html/functions.php'"
 
 # ==============================================================================
@@ -459,26 +1750,26 @@ inline_php_pattern:
       states:
         - name: idle
           onEnter:
-            - run: !php return function($t) { echo "Starting\n"; $this->set('started', true); };
+            - run: !php return function(object $t) { echo "Starting\n"; $this->set('started', true); };
           onExit:
-            - run: !php return function($t) { echo "Stopping\n"; $this->set('stopped', true); };
+            - run: !php return function(object $t) { echo "Stopping\n"; $this->set('stopped', true); };
 
     simple_action: |
       states:
         - name: counting
           action:
-            - run: !php return function($t) { $count = $this->get('count', 0); $this->set('count', $count + 1); };
+            - run: !php return function(object $t) { $count = $this->get('count', 0); $this->set('count', $count + 1); };
 
     simple_guard: |
       transitions:
         - target: next_state
-          guard: !php return function($t) { return $this->get('ready') === true; };
+          guard: !php return function(object $t) { return $this->get('ready') === true; };
 
     async_action_simple: |
       states:
         - name: processing
           action:
-            - run: !php return function($t) { $result = $this->complete("Say hello", "ollama"); yield; $this->set('greeting', $result); };
+            - run: !php return function(object $t) { $result = $this->complete("Say hello", "ollama"); yield; $this->set('greeting', $result); };
               async:
                 enabled: true
 
@@ -489,7 +1780,7 @@ inline_php_pattern:
         - name: validating
           action:
             - run: !php |
-                return function($t) {
+                return function(object $t) {
                   $input = $this->get('user_input', '');
                   if (strlen($input) < 3) {
                     $this->set('error', 'Too short');
@@ -523,15 +1814,62 @@ inline_php_pattern:
       states:
         - name: idle
           onEnter:
-            - run: !php return function($t) { echo "Starting\n"; $this->set('started', true); };
+            - run: !php return function(object $t) { echo "Starting\n"; $this->set('started', true); };
+
+  phpstorm_syntax_highlighting:
+    description: "Enable full PHP syntax highlighting for inline callbacks in PHPStorm"
+    pattern: "Add '# language=injectablephp' comment immediately before !php tag"
+
+    example_single_line: |
+      states:
+        - name: idle
+          onEnter:
+            # language=injectablephp
+            - run: !php return function(object $t) { echo "Starting\n"; };
+
+    example_multiline: |
+      states:
+        - name: processing
+          action:
+            # language=injectablephp
+            - run: !php |
+                return function(object $t): \Generator {
+                    // Full IDE support: autocomplete, syntax highlighting, type hints
+                    $data = $this->get('data');
+                    $result = $this->complete("Process: {$data}", "ollama");
+                    yield;
+                    $this->set('result', $result);
+                };
+              async:
+                enabled: true
+
+    example_guard: |
+      transitions:
+        - target: next_state
+          # language=injectablephp
+          guard: !php |
+            return function(object $t): bool {
+                return $this->get('ready') === true;
+            };
+
+    critical_requirement: "ALWAYS include language injection comment in generated machines"
+    benefits:
+      - "Full PHP syntax highlighting in YAML files"
+      - "Autocomplete for $this-> methods"
+      - "Type hints and parameter suggestions"
+      - "Error detection and warnings"
+      - "Refactoring support"
 
   critical_notes:
+    - "✅ ALWAYS add '# language=injectablephp' before inline PHP for IDE support"
     - "Inline functions still follow module-level pattern (return closure)"
-    - "Type hints optional but recommended for clarity"
+    - "Type hint is FUNCTIONAL - acts as event filter (PSR-14 style)"
+    - "'object $t' = catch-all (accepts any event)"
+    - "'MyInterface $t' = filtered (only invoked if event implements MyInterface)"
+    - "Guards MUST return bool - non-boolean returns cause errors"
     - "Still have access to $this-> context (bound at runtime)"
     - "Can mix inline and file-based callbacks in same machine"
     - "Inline code is harder to test and debug"
-    - "IDE support limited for inline PHP in YAML"
 
   recommended_hybrid_approach:
     description: "Use inline for simple state management, separate file for complex logic"
@@ -543,7 +1881,7 @@ inline_php_pattern:
         - name: idle
           # Simple inline
           onEnter:
-            - run: !php return function($t) { $this->set('ready', true); };
+            - run: !php return function(object $t) { $this->set('ready', true); };
           transitions:
             - target: processing
 
@@ -555,7 +1893,7 @@ inline_php_pattern:
                 enabled: true
           transitions:
             - target: finished
-              guard: !php return function($t) { return $this->get('complete') === true; };
+              guard: !php return function(object $t) { return $this->get('complete') === true; };
 
   get_tag:
     syntax: "!get <service>"
@@ -575,6 +1913,7 @@ critical_rules:
   dos:
     - "✅ Load ExtendedState first"
     - "✅ Load AsyncFeature AFTER ExtendedState"
+    - "✅ Load MessageFeature BEFORE AbilitiesFeature and InteractionFeature"
     - "✅ Use container paths (/var/www/html/...) in require"
     - "✅ Make all actions return Generator if async enabled"
     - "✅ Yield at least once in async actions"
@@ -583,9 +1922,23 @@ critical_rules:
     - "✅ Generate YAML strings for Holon::fromYaml() (NOT JSON or arrays)"
     - "✅ Use inline !php for simple callbacks (< 3 lines)"
     - "✅ Use separate file for complex logic (> 3 lines, multiple yields, AI prompts)"
+    - "✅ Guards MUST return bool (use === true/false for explicit comparison)"
+    - "✅ Use 'object $t' for catch-all event handling"
+    - "✅ Use specific type hints (MyInterface $t) for event filtering"
+    - "✅ Use dispatch() with single object: dispatch((object)['type' => 'event.name', ...])"
+    - "✅ Use $this->interact() for human/external agent communication"
+    - "✅ Use $this->abilities() for machine-to-machine communication"
+    - "✅ Use $this->presentation() for declarative state exposure to external agents"
+    - "✅ Use 'yield from' with $this->interact() and $this->abilities() for synchronous-style"
+    - "✅ Register interactions when external agents need discovery"
+    - "✅ Register abilities when other machines need discovery"
+    - "✅ Register presentations when external agents need to inspect state"
+    - "✅ Use abilities('enumerate-presentations') for passive state inspection"
+    - "✅ Use abilities('get-presented-state') to fetch presentation values"
 
   donts:
     - "❌ DON'T load AsyncFeature before ExtendedState"
+    - "❌ DON'T load AbilitiesFeature or InteractionFeature before MessageFeature"
     - "❌ DON'T use yield from with capture() or complete()"
     - "❌ DON'T forget to yield in async actions"
     - "❌ DON'T use host filesystem paths in require"
@@ -593,6 +1946,19 @@ critical_rules:
     - "❌ DON'T access $this in YAML !php tags (not available during parsing)"
     - "❌ DON'T output JSON or PHP arrays when generating machines"
     - "❌ DON'T inline complex logic (use separate file for debugging)"
+    - "❌ DON'T return non-boolean from guards (must return bool)"
+    - "❌ DON'T forget return statement in guards"
+    - "❌ DON'T treat type hints as documentation - they are FUNCTIONAL filters"
+    - "❌ DON'T use $this->emit() - it does NOT exist (use $this->dispatch())"
+    - "❌ DON'T use dispatch(eventType, payload) - takes SINGLE object parameter"
+    - "❌ DON'T pass arrays to dispatch() - must use (object)[...] cast"
+    - "❌ DON'T treat complete() as returning string - it returns Generator (must consume it)"
+    - "❌ DON'T use $this->interact() for machine-to-machine - use $this->abilities()"
+    - "❌ DON'T use $this->abilities() for human input - use $this->interact()"
+    - "❌ DON'T confuse interactions (external agents) with abilities (internal operations)"
+    - "❌ DON'T use presentations for active requests - use interactions or abilities"
+    - "❌ DON'T expect presentations to push state - they are passive (agents query)"
+    - "❌ DON'T modify state via presentations - they are read-only inspection"
 
 # ==============================================================================
 # INITIAL & FINAL
@@ -686,22 +2052,22 @@ machine_generation:
     states:
       - name: idle
         onEnter:
-          - run: !php return function($t) { $this->set('count', 0); echo "Counter initialized\n"; };
+          - run: !php return function(object $t) { $this->set('count', 0); echo "Counter initialized\n"; };
         transitions:
           - target: counting
 
       - name: counting
         action:
-          - run: !php return function($t) { $count = $this->get('count', 0); $this->set('count', $count + 1); echo "Count: " . ($count + 1) . "\n"; yield; };
+          - run: !php return function(object $t) { $count = $this->get('count', 0); $this->set('count', $count + 1); echo "Count: " . ($count + 1) . "\n"; yield; };
             async:
               enabled: true
         transitions:
           - target: finished
-            guard: !php return function($t) { return $this->get('count', 0) >= 10; };
+            guard: !php return function(object $t) { return $this->get('count', 0) >= 10; };
 
       - name: finished
         onEnter:
-          - run: !php return function($t) { echo "Finished counting!\n"; };
+          - run: !php return function(object $t) { echo "Finished counting!\n"; };
 
     initial: idle
     final: finished
