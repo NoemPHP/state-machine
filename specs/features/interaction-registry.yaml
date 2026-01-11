@@ -1,0 +1,431 @@
+name: interaction-registry
+group: features
+description: |
+  Declarative interaction contract registration and discovery system enabling external agents to query expected interactions
+  before runtime execution. Extends InteractionFeature with InteractionDefinition metadata, InteractionRegistry storage,
+  and abilities-based discovery API for dynamic UI generation, contract validation, and fixture mocking.
+
+features:
+  - name: interaction-definition
+    description: Value object describing expected interaction with metadata
+    specs:
+      - acceptanceCriteria: InteractionDefinition stores id as readonly string property
+        criticality: contract
+        intent: Provides unique identifier for interaction lookup and matching against runtime InteractionRequest instances
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/Definition/StoresIdTest.php
+
+      - acceptanceCriteria: InteractionDefinition stores type as readonly string property
+        criticality: contract
+        intent: Identifies interaction pattern type ('confirm', 'select', 'choice', 'prompt') for framework adapter routing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/Definition/StoresTypeTest.php
+
+      - acceptanceCriteria: InteractionDefinition stores state as readonly string property
+        criticality: contract
+        intent: Associates interaction with triggering state for state-scoped discovery queries
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/Definition/StoresStateTest.php
+
+      - acceptanceCriteria: InteractionDefinition stores question as readonly string property
+        criticality: contract
+        intent: Exposes question text or template for preview and documentation generation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/Definition/StoresQuestionTest.php
+
+      - acceptanceCriteria: InteractionDefinition stores optional options array as readonly property
+        criticality: contract
+        intent: Captures available options for select/choice interactions, supporting UI pre-generation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/Definition/StoresOptionsTest.php
+
+      - acceptanceCriteria: InteractionDefinition stores optional constraints array as readonly property
+        criticality: contract
+        intent: Exposes validation constraints (minSelections, maxSelections, regex patterns) for client-side validation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/Definition/StoresConstraintsTest.php
+
+      - acceptanceCriteria: InteractionDefinition stores optional metadata array as readonly property
+        criticality: contract
+        intent: Provides extensible metadata container (help text, defaults, placeholder) for rich UI rendering
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/Definition/StoresMetadataTest.php
+
+      - acceptanceCriteria: InteractionDefinition is immutable after construction
+        criticality: constraint
+        intent: Prevents modification of interaction contracts after registration, ensuring predictable discovery behavior
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/Definition/ImmutabilityTest.php
+
+      - acceptanceCriteria: InteractionDefinition implements JsonSerializable interface
+        criticality: contract
+        intent: Enables JSON serialization for API responses, logging, and external agent consumption
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/Definition/ImplementsJsonSerializableTest.php
+
+      - acceptanceCriteria: InteractionDefinition.jsonSerialize() includes all properties in returned array
+        criticality: contract
+        intent: Preserves complete interaction contract during serialization for external agent introspection
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/Definition/SerializesAllPropertiesTest.php
+
+  - name: interaction-registry
+    description: Mesh-based storage for interaction definitions
+    specs:
+      - acceptanceCriteria: InteractionRegistry extends Mesh for interaction storage
+        criticality: contract
+        intent: Leverages Mesh infrastructure for interaction definitions, enabling ChainMail integration and middleware patterns
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/ExtendsMeshTest.php
+
+      - acceptanceCriteria: InteractionRegistry.register() accepts InteractionDefinition parameter
+        criticality: contract
+        intent: Provides type-safe registration API for interaction contracts
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/RegisterAcceptsDefinitionTest.php
+
+      - acceptanceCriteria: InteractionRegistry.register() stores InteractionDefinition indexed by id
+        criticality: contract
+        intent: Enables direct lookup by interaction ID during matching and validation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/RegisterStoresByIdTest.php
+
+      - acceptanceCriteria: InteractionRegistry.get() accepts string id parameter
+        criticality: contract
+        intent: Provides type-safe lookup API for retrieving specific interaction definitions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/GetAcceptsIdTest.php
+
+      - acceptanceCriteria: InteractionRegistry.get() returns InteractionDefinition when id exists
+        criticality: contract
+        intent: Retrieves registered interaction for validation and matching operations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/GetReturnsDefinitionTest.php
+
+      - acceptanceCriteria: InteractionRegistry.get() returns null when id does not exist
+        criticality: contract
+        intent: Provides safe lookup without exceptions, enabling existence checks before validation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/GetReturnsNullTest.php
+
+      - acceptanceCriteria: InteractionRegistry.getByState() accepts string state parameter
+        criticality: contract
+        intent: Enables state-scoped discovery queries for external agents preparing for specific workflow phases
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/GetByStateAcceptsStateTest.php
+
+      - acceptanceCriteria: InteractionRegistry.getByState() returns array of InteractionDefinitions for matching state
+        criticality: contract
+        intent: Retrieves all interactions associated with state for comprehensive workflow preview
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/GetByStateReturnsArrayTest.php
+
+      - acceptanceCriteria: InteractionRegistry.getByState() returns empty array when no interactions match state
+        criticality: contract
+        intent: Provides consistent return type avoiding null checks, supporting states without declared interactions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/GetByStateReturnsEmptyArrayTest.php
+
+      - acceptanceCriteria: InteractionRegistry.all() returns array of all registered InteractionDefinitions
+        criticality: contract
+        intent: Enables complete interaction enumeration for documentation generation and global discovery
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/AllReturnsArrayTest.php
+
+      - acceptanceCriteria: InteractionRegistry.register() overwrites existing interaction with same id
+        criticality: constraint
+        intent: Allows interaction redefinition with explicit overwrite semantics, supporting runtime customization
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/RegisterOverwritesTest.php
+
+  - name: registration-api-builder
+    description: RegionBuilder integration for interaction registration
+    specs:
+      - acceptanceCriteria: RegionBuilder provides registerInteraction() method
+        criticality: contract
+        intent: Enables declarative interaction registration during machine construction phase
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/BuilderProvidesRegisterMethodTest.php
+
+      - acceptanceCriteria: RegionBuilder.registerInteraction() accepts string id and InteractionDefinition parameters
+        criticality: contract
+        intent: Provides consistent registration API aligned with InteractionRegistry contract
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/BuilderRegisterAcceptsParametersTest.php
+
+      - acceptanceCriteria: RegionBuilder.registerInteraction() stores definition in InteractionRegistry
+        criticality: contract
+        intent: Delegates storage to registry ensuring interactions available before machine starts
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/BuilderRegisterStoresInRegistryTest.php
+
+      - acceptanceCriteria: RegionBuilder.registerInteraction() returns RegionBuilder instance for chaining
+        criticality: contract
+        intent: Supports fluent builder pattern for multiple registration calls
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/BuilderRegisterReturnsBuilderTest.php
+
+      - acceptanceCriteria: Interactions registered via RegionBuilder available after build() completes
+        criticality: contract
+        intent: Ensures registration occurs early in build phase before state callbacks execute
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/BuilderRegistrationAvailableAfterBuildTest.php
+
+  - name: registration-api-runtime
+    description: BoundAccess integration for runtime interaction registration
+    specs:
+      - acceptanceCriteria: BoundAccess provides registerInteraction() method in state callbacks
+        criticality: contract
+        intent: Enables dynamic interaction declaration during machine execution for context-dependent workflows
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/BoundAccessProvidesRegisterMethodTest.php
+
+      - acceptanceCriteria: BoundAccess.registerInteraction() accepts string id and InteractionDefinition parameters
+        criticality: contract
+        intent: Provides consistent registration API across builder and runtime contexts
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/BoundAccessRegisterAcceptsParametersTest.php
+
+      - acceptanceCriteria: BoundAccess.registerInteraction() stores definition in region's InteractionRegistry
+        criticality: contract
+        intent: Adds interaction to same registry accessible via discovery abilities for unified introspection
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/BoundAccessRegisterStoresInRegistryTest.php
+
+      - acceptanceCriteria: BoundAccess.registerInteraction() requires InteractionFeature loaded
+        criticality: constraint
+        intent: Enforces dependency checking preventing registration without supporting infrastructure
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/BoundAccessRequiresInteractionFeatureTest.php
+
+      - acceptanceCriteria: Interactions registered via BoundAccess immediately available for discovery
+        criticality: contract
+        intent: Supports just-in-time registration pattern where interactions declared right before triggering
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/RuntimeRegistrationImmediatelyAvailableTest.php
+
+  - name: registry-access-chainmail
+    description: ChainMail integration for registry retrieval
+    specs:
+      - acceptanceCriteria: InteractionRegistry registered in ChainMail container during feature initialization
+        criticality: contract
+        intent: Makes registry accessible throughout feature infrastructure for registration and discovery operations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/ChainMail/RegisteredInChainMailTest.php
+
+      - acceptanceCriteria: InteractionRegistry retrievable via region.chainMail.get(InteractionRegistry.class)
+        criticality: contract
+        intent: Provides direct registry access for middleware and external integrations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/ChainMail/RetrievableFromChainMailTest.php
+
+      - acceptanceCriteria: Single InteractionRegistry instance shared across entire region
+        criticality: constraint
+        intent: Ensures consistent interaction state across all registration and discovery operations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/ChainMail/SingletonPerRegionTest.php
+
+  - name: discovery-ability-list
+    description: enumerate-interactions ability for listing all registered interactions
+    specs:
+      - acceptanceCriteria: AbilityRegistry contains 'enumerate-interactions' ability after InteractionFeature loads
+        criticality: contract
+        intent: Provides built-in discovery mechanism following abilities pattern for consistency
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/Discovery/EnumerateAbilityRegisteredTest.php
+
+      - acceptanceCriteria: enumerate-interactions ability accepts no required parameters
+        criticality: contract
+        intent: Enables simple invocation for retrieving complete interaction catalog
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/Discovery/EnumerateAcceptsNoParametersTest.php
+
+      - acceptanceCriteria: enumerate-interactions ability returns array of InteractionDefinitions
+        criticality: contract
+        intent: Provides complete interaction catalog for documentation and UI generation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/Discovery/EnumerateReturnsArrayTest.php
+
+      - acceptanceCriteria: enumerate-interactions ability serializes definitions to JSON-compatible arrays
+        criticality: contract
+        intent: Ensures response compatible with external agents and API transmission
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/Discovery/EnumerateSerializesDefinitionsTest.php
+
+      - acceptanceCriteria: enumerate-interactions ability accessible via $this->abilities() in state callbacks
+        criticality: contract
+        intent: Enables machines to introspect their own declared interactions for self-documentation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/Discovery/EnumerateAccessibleViaBoundAccessTest.php
+
+  - name: discovery-ability-get
+    description: get-interaction ability for retrieving specific interaction by id
+    specs:
+      - acceptanceCriteria: AbilityRegistry contains 'get-interaction' ability after InteractionFeature loads
+        criticality: contract
+        intent: Provides targeted retrieval following RESTful discovery pattern
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/Discovery/GetInteractionAbilityRegisteredTest.php
+
+      - acceptanceCriteria: get-interaction ability requires 'id' parameter in request
+        criticality: contract
+        intent: Enforces parameter schema for type-safe invocation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/Discovery/GetInteractionRequiresIdParameterTest.php
+
+      - acceptanceCriteria: get-interaction ability returns single InteractionDefinition when id exists
+        criticality: contract
+        intent: Retrieves specific interaction for validation against runtime requests
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/Discovery/GetInteractionReturnsDefinitionTest.php
+
+      - acceptanceCriteria: get-interaction ability returns null when id does not exist
+        criticality: contract
+        intent: Provides safe lookup semantics aligned with InteractionRegistry.get() behavior
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/Discovery/GetInteractionReturnsNullTest.php
+
+      - acceptanceCriteria: get-interaction ability serializes definition to JSON-compatible array
+        criticality: contract
+        intent: Ensures response compatible with external agents and API transmission
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/Discovery/GetInteractionSerializesDefinitionTest.php
+
+  - name: discovery-ability-by-state
+    description: get-interactions-for-state ability for state-scoped discovery
+    specs:
+      - acceptanceCriteria: AbilityRegistry contains 'get-interactions-for-state' ability after InteractionFeature loads
+        criticality: contract
+        intent: Enables state-scoped queries for workflow-phase-aware UI preparation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/Discovery/GetByStateAbilityRegisteredTest.php
+
+      - acceptanceCriteria: get-interactions-for-state ability requires 'state' parameter in request
+        criticality: contract
+        intent: Enforces parameter schema for type-safe state filtering
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/Discovery/GetByStateRequiresStateParameterTest.php
+
+      - acceptanceCriteria: get-interactions-for-state ability returns array of InteractionDefinitions matching state
+        criticality: contract
+        intent: Retrieves all interactions for specific state enabling targeted UI generation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/Discovery/GetByStateReturnsFilteredArrayTest.php
+
+      - acceptanceCriteria: get-interactions-for-state ability returns empty array when no interactions match
+        criticality: contract
+        intent: Provides consistent return type avoiding null checks for states without interactions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/Discovery/GetByStateReturnsEmptyArrayTest.php
+
+      - acceptanceCriteria: get-interactions-for-state ability serializes definitions to JSON-compatible arrays
+        criticality: contract
+        intent: Ensures response compatible with external agents and API transmission
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/Discovery/GetByStateSerializesDefinitionsTest.php
+
+  - name: yaml-configuration-schema
+    description: YAML schema extension for declarative interaction registration
+    specs:
+      - acceptanceCriteria: RegionLoader Schema supports 'interactions' key at region level
+        criticality: contract
+        intent: Enables global interaction declarations in Holon YAML files
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/SchemaSupportsRegionLevelTest.php
+
+      - acceptanceCriteria: RegionLoader Schema supports 'interactions' key at state level
+        criticality: contract
+        intent: Enables state-scoped interaction declarations for localized contracts
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/SchemaSupportsStateLevelTest.php
+
+      - acceptanceCriteria: Schema validates 'id' as required string in interaction definitions
+        criticality: contract
+        intent: Enforces unique identifier requirement for every declared interaction
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/SchemaRequiresIdTest.php
+
+      - acceptanceCriteria: Schema validates 'type' as required string in interaction definitions
+        criticality: contract
+        intent: Enforces pattern type declaration for every interaction
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/SchemaRequiresTypeTest.php
+
+      - acceptanceCriteria: Schema validates 'question' as required string in interaction definitions
+        criticality: contract
+        intent: Enforces question text requirement for every interaction
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/SchemaRequiresQuestionTest.php
+
+      - acceptanceCriteria: Schema validates 'options' as optional array in interaction definitions
+        criticality: contract
+        intent: Accepts options for select/choice patterns while remaining optional for confirm/prompt
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/SchemaAcceptsOptionsTest.php
+
+      - acceptanceCriteria: Schema validates 'constraints' as optional array in interaction definitions
+        criticality: contract
+        intent: Accepts validation constraints while remaining optional for simple interactions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/SchemaAcceptsConstraintsTest.php
+
+      - acceptanceCriteria: Schema validates 'metadata' as optional array in interaction definitions
+        criticality: contract
+        intent: Accepts extensible metadata while remaining optional for minimal declarations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/SchemaAcceptsMetadataTest.php
+
+  - name: yaml-configuration-loading
+    description: YAML configuration parsing and registration
+    specs:
+      - acceptanceCriteria: EnhanceRegionBuilder processes region-level interactions during build phase
+        criticality: contract
+        intent: Registers global interactions before machine starts for immediate availability
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/ProcessesRegionInteractionsTest.php
+
+      - acceptanceCriteria: EnhanceRegionBuilder processes state-level interactions during build phase
+        criticality: contract
+        intent: Registers state-scoped interactions with correct state association
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/ProcessesStateInteractionsTest.php
+
+      - acceptanceCriteria: YAML-registered interactions retrievable via InteractionRegistry.get()
+        criticality: contract
+        intent: Ensures YAML registrations behave identically to programmatic registrations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/YamlRegistrationsRetrievableTest.php
+
+      - acceptanceCriteria: YAML-registered interactions discoverable via enumerate-interactions ability
+        criticality: contract
+        intent: Validates YAML interactions participate in full discovery infrastructure
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/YamlInteractionsDiscoverableTest.php
+
+      - acceptanceCriteria: State-level YAML interactions associate with correct state property
+        criticality: contract
+        intent: Ensures getByState() filtering works correctly for YAML-declared interactions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/YamlStateAssociationTest.php
+
+  - name: validation-matching
+    description: Optional runtime validation matching actual requests against registered definitions
+    specs:
+      - acceptanceCriteria: InteractionFeature provides validateRequest() method accepting InteractionRequest
+        criticality: contract
+        intent: Enables opt-in contract validation for strict interaction enforcement
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/ProvidesValidateRequestTest.php
+
+      - acceptanceCriteria: validateRequest() matches InteractionRequest against registered InteractionDefinition by id
+        criticality: contract
+        intent: Verifies runtime interaction matches declared contract when validation enabled
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/ValidateMatchesByIdTest.php
+
+      - acceptanceCriteria: validateRequest() throws UnregisteredInteractionException when id not found
+        criticality: contract
+        intent: Fails fast when undeclared interaction attempted in strict mode
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/ValidateThrowsWhenNotRegisteredTest.php
+
+      - acceptanceCriteria: validateRequest() verifies InteractionRequest.getType() matches definition.type
+        criticality: contract
+        intent: Ensures runtime type consistency preventing pattern mismatches
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/ValidateChecksTypeTest.php
+
+      - acceptanceCriteria: validateRequest() verifies SelectRequest options match definition.options keys
+        criticality: contract
+        intent: Catches option set mismatches between declaration and runtime for select patterns
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/ValidateChecksSelectOptionsTest.php
+
+      - acceptanceCriteria: validateRequest() verifies ChoiceRequest options match definition.options keys
+        criticality: contract
+        intent: Catches option set mismatches between declaration and runtime for choice patterns
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/ValidateChecksChoiceOptionsTest.php
+
+      - acceptanceCriteria: validateRequest() throws InteractionContractViolationException on validation failure
+        criticality: contract
+        intent: Provides clear error messaging when runtime interaction violates declared contract
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/ValidateThrowsOnViolationTest.php
+
+  - name: validation-tracking
+    description: Optional tracking of triggered interactions for audit and testing
+    specs:
+      - acceptanceCriteria: InteractionRegistry provides trackTriggered() method accepting interaction id
+        criticality: contract
+        intent: Enables opt-in audit trail for interaction execution monitoring
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/ProvidesTrackTriggeredTest.php
+
+      - acceptanceCriteria: InteractionRegistry provides getTriggered() method returning array of triggered ids
+        criticality: contract
+        intent: Retrieves interaction execution history for testing and audit purposes
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/ProvidesGetTriggeredTest.php
+
+      - acceptanceCriteria: trackTriggered() adds interaction id to triggered set
+        criticality: contract
+        intent: Records interaction execution for subsequent retrieval and analysis
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/TrackAddsToSetTest.php
+
+      - acceptanceCriteria: getTriggered() returns array of unique interaction ids
+        criticality: contract
+        intent: Provides deduplicated execution history avoiding duplicate entries
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/GetTriggeredReturnsUniqueArrayTest.php
+
+      - acceptanceCriteria: trackTriggered() ignores unregistered interaction ids
+        criticality: constraint
+        intent: Silently skips tracking for dynamic interactions not in registry
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Registry/TrackIgnoresUnregisteredTest.php
+
+  - name: integration-complete-workflow
+    description: End-to-end workflow proving registry and discovery correctness
+    specs:
+      - acceptanceCriteria: Complete workflow from YAML declaration to ability-based discovery
+        criticality: integration
+        intent: Validates entire registration and discovery cycle including YAML loading, registry storage, and ability invocation
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Interaction/Registry/YamlToDiscoveryWorkflowTest.php
+
+      - acceptanceCriteria: Complete workflow from runtime registration to state-filtered discovery
+        criticality: integration
+        intent: Validates dynamic registration during execution and state-scoped query operations
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Interaction/Registry/RuntimeRegistrationToDiscoveryTest.php
+
+      - acceptanceCriteria: Complete workflow from contract declaration to runtime validation
+        criticality: integration
+        intent: Validates validation infrastructure catches contract violations during execution
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Interaction/Registry/ContractValidationWorkflowTest.php

@@ -1,0 +1,606 @@
+name: interaction
+group: features
+description: Standardized interaction patterns for machines to request information and decisions from external agents, supervisors, and orchestration frameworks via confirm, select, choice, and prompt patterns
+
+features:
+  - name: message-types-base
+    description: Abstract base classes for interaction requests and responses
+    specs:
+      - acceptanceCriteria: InteractionRequest extends Message class
+        criticality: contract
+        intent: Ensures all interaction requests leverage existing correlation infrastructure for request-response matching
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/InteractionRequestExtendsMessageTest.php
+
+      - acceptanceCriteria: InteractionRequest constructor accepts question, context, timeoutMs, and correlationId parameters
+        criticality: contract
+        intent: Provides consistent initialization pattern across all interaction types with required question and optional metadata
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/InteractionRequestPropertiesTest.php
+
+      - acceptanceCriteria: InteractionRequest provides readonly access to question property
+        criticality: contract
+        intent: Exposes human-readable question text for framework adapters to display without modification
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/InteractionRequestPropertiesTest.php
+
+      - acceptanceCriteria: InteractionRequest provides readonly access to context property
+        criticality: contract
+        intent: Exposes optional contextual information for enriching interaction displays in framework adapters
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/InteractionRequestPropertiesTest.php
+
+      - acceptanceCriteria: InteractionRequest provides readonly access to timeoutMs property
+        criticality: contract
+        intent: Exposes optional timeout value for framework adapters to implement deadline enforcement
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/InteractionRequestPropertiesTest.php
+
+      - acceptanceCriteria: InteractionRequest declares abstract getType() method
+        criticality: contract
+        intent: Forces subclasses to identify interaction type for framework adapter routing and validation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/InteractionRequestGetTypeTest.php
+
+      - acceptanceCriteria: InteractionResponse extends Message class
+        criticality: contract
+        intent: Ensures all interaction responses leverage correlation for automatic delivery to waiting machines
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/InteractionResponseExtendsMessageTest.php
+
+      - acceptanceCriteria: InteractionResponse constructor accepts value, cancelled, and correlationId parameters
+        criticality: contract
+        intent: Provides consistent response structure with payload value and cancellation flag across all types
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/InteractionResponsePropertiesTest.php
+
+      - acceptanceCriteria: InteractionResponse provides readonly access to value property
+        criticality: contract
+        intent: Exposes response payload for machine consumption without modification after creation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/InteractionResponsePropertiesTest.php
+
+      - acceptanceCriteria: InteractionResponse provides readonly access to cancelled property
+        criticality: contract
+        intent: Indicates whether interaction was cancelled or timed out for proper error handling in machines
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/InteractionResponsePropertiesTest.php
+
+  - name: message-types-confirm
+    description: Yes/No confirmation pattern with default value support
+    specs:
+      - acceptanceCriteria: ConfirmRequest extends InteractionRequest
+        criticality: contract
+        intent: Inherits correlation and base interaction properties while adding confirm-specific behavior
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/ConfirmPatternTest.php
+
+      - acceptanceCriteria: ConfirmRequest constructor accepts question, defaultValue, context, timeoutMs, and correlationId parameters
+        criticality: contract
+        intent: Provides confirm-specific initialization with boolean default value for graceful degradation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/ConfirmPatternTest.php
+
+      - acceptanceCriteria: ConfirmRequest provides readonly access to defaultValue property
+        criticality: contract
+        intent: Exposes default boolean value for framework adapters to pre-select or use on timeout
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/ConfirmPatternTest.php
+
+      - acceptanceCriteria: ConfirmRequest.getType() returns string 'confirm'
+        criticality: contract
+        intent: Identifies confirm pattern for framework adapter routing to yes/no UI rendering
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/ConfirmPatternTest.php
+
+      - acceptanceCriteria: ConfirmResponse extends InteractionResponse
+        criticality: contract
+        intent: Inherits correlation and base response properties while adding confirm-specific payload
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/ConfirmPatternTest.php
+
+      - acceptanceCriteria: ConfirmResponse constructor accepts confirmed, cancelled, and correlationId parameters
+        criticality: contract
+        intent: Provides confirm-specific response with boolean confirmed value and cancellation flag
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/ConfirmPatternTest.php
+
+      - acceptanceCriteria: ConfirmResponse provides readonly access to confirmed property
+        criticality: contract
+        intent: Exposes boolean confirmation result for machine decision logic without modification
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/ConfirmPatternTest.php
+
+  - name: message-types-select
+    description: Single-choice selection pattern with labeled options
+    specs:
+      - acceptanceCriteria: SelectRequest extends InteractionRequest
+        criticality: contract
+        intent: Inherits correlation and base interaction properties while adding select-specific behavior
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/SelectPatternTest.php
+
+      - acceptanceCriteria: SelectRequest constructor accepts question, options array, defaultKey, context, timeoutMs, and correlationId parameters
+        criticality: contract
+        intent: Provides select-specific initialization with options map and optional default selection
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/SelectPatternTest.php
+
+      - acceptanceCriteria: SelectRequest provides readonly access to options property containing SelectOption instances
+        criticality: contract
+        intent: Exposes option map for framework adapters to render dropdown or radio button UI
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/SelectPatternTest.php
+
+      - acceptanceCriteria: SelectRequest provides readonly access to defaultKey property
+        criticality: contract
+        intent: Exposes optional pre-selected option key for framework adapters to highlight or use on timeout
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/SelectPatternTest.php
+
+      - acceptanceCriteria: SelectRequest.getType() returns string 'select'
+        criticality: contract
+        intent: Identifies select pattern for framework adapter routing to single-choice UI rendering
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/SelectPatternTest.php
+
+      - acceptanceCriteria: SelectOption constructor accepts label and description parameters
+        criticality: contract
+        intent: Provides structured option data with display text and optional help text for rich UI rendering
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/SelectPatternTest.php
+
+      - acceptanceCriteria: SelectOption provides readonly access to label property
+        criticality: contract
+        intent: Exposes primary display text for option rendering in framework adapters
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/SelectPatternTest.php
+
+      - acceptanceCriteria: SelectOption provides readonly access to description property
+        criticality: contract
+        intent: Exposes optional help text for contextual guidance in framework adapter UI
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/SelectPatternTest.php
+
+      - acceptanceCriteria: SelectResponse extends InteractionResponse
+        criticality: contract
+        intent: Inherits correlation and base response properties while adding select-specific payload
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/SelectPatternTest.php
+
+      - acceptanceCriteria: SelectResponse constructor accepts selectedKey, cancelled, and correlationId parameters
+        criticality: contract
+        intent: Provides select-specific response with selected option key or null if cancelled
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/SelectPatternTest.php
+
+      - acceptanceCriteria: SelectResponse provides readonly access to selectedKey property
+        criticality: contract
+        intent: Exposes selected option key for machine logic without modification, null if cancelled
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/SelectPatternTest.php
+
+  - name: message-types-choice
+    description: Multiple-choice selection pattern with constraints and recommendations
+    specs:
+      - acceptanceCriteria: ChoiceRequest extends InteractionRequest
+        criticality: contract
+        intent: Inherits correlation and base interaction properties while adding choice-specific behavior
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/ChoicePatternTest.php
+
+      - acceptanceCriteria: ChoiceRequest constructor accepts question, options array, defaultKeys array, minSelections, maxSelections, context, timeoutMs, and correlationId parameters
+        criticality: contract
+        intent: Provides choice-specific initialization with options map, defaults, and validation constraints
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/ChoicePatternTest.php
+
+      - acceptanceCriteria: ChoiceRequest provides readonly access to options property containing ChoiceOption instances
+        criticality: contract
+        intent: Exposes option map for framework adapters to render checkbox or multi-select UI
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/ChoicePatternTest.php
+
+      - acceptanceCriteria: ChoiceRequest provides readonly access to defaultKeys property
+        criticality: contract
+        intent: Exposes array of pre-selected option keys for framework adapters to highlight or use on timeout
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/ChoicePatternTest.php
+
+      - acceptanceCriteria: ChoiceRequest provides readonly access to minSelections property
+        criticality: contract
+        intent: Exposes minimum required selections for framework adapter validation and error messaging
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/ChoicePatternTest.php
+
+      - acceptanceCriteria: ChoiceRequest provides readonly access to maxSelections property
+        criticality: contract
+        intent: Exposes maximum allowed selections for framework adapter validation and UI constraints
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/ChoicePatternTest.php
+
+      - acceptanceCriteria: ChoiceRequest.getType() returns string 'choice'
+        criticality: contract
+        intent: Identifies choice pattern for framework adapter routing to multi-choice UI rendering
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/ChoicePatternTest.php
+
+      - acceptanceCriteria: ChoiceOption constructor accepts label, description, and recommended parameters
+        criticality: contract
+        intent: Provides structured option data with display text, help text, and recommendation flag for rich UI
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/ChoicePatternTest.php
+
+      - acceptanceCriteria: ChoiceOption provides readonly access to label property
+        criticality: contract
+        intent: Exposes primary display text for option rendering in framework adapters
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/ChoicePatternTest.php
+
+      - acceptanceCriteria: ChoiceOption provides readonly access to description property
+        criticality: contract
+        intent: Exposes optional help text for contextual guidance in framework adapter UI
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/ChoicePatternTest.php
+
+      - acceptanceCriteria: ChoiceOption provides readonly access to recommended property
+        criticality: contract
+        intent: Exposes recommendation flag for framework adapters to highlight suggested options visually
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/ChoicePatternTest.php
+
+      - acceptanceCriteria: ChoiceResponse extends InteractionResponse
+        criticality: contract
+        intent: Inherits correlation and base response properties while adding choice-specific payload
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/ChoicePatternTest.php
+
+      - acceptanceCriteria: ChoiceResponse constructor accepts selectedKeys array, cancelled, and correlationId parameters
+        criticality: contract
+        intent: Provides choice-specific response with array of selected option keys or empty if cancelled
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/ChoicePatternTest.php
+
+      - acceptanceCriteria: ChoiceResponse provides readonly access to selectedKeys property
+        criticality: contract
+        intent: Exposes array of selected option keys for machine logic without modification, empty if cancelled
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/ChoicePatternTest.php
+
+  - name: message-types-prompt
+    description: Free-form text input pattern with validation and multiline support
+    specs:
+      - acceptanceCriteria: PromptRequest extends InteractionRequest
+        criticality: contract
+        intent: Inherits correlation and base interaction properties while adding prompt-specific behavior
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/PromptPatternTest.php
+
+      - acceptanceCriteria: PromptRequest constructor accepts question, placeholder, defaultValue, validation, multiline, context, timeoutMs, and correlationId parameters
+        criticality: contract
+        intent: Provides prompt-specific initialization with placeholder, defaults, regex validation, and multiline mode
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/PromptPatternTest.php
+
+      - acceptanceCriteria: PromptRequest provides readonly access to placeholder property
+        criticality: contract
+        intent: Exposes optional placeholder text for framework adapters to guide user input
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/PromptPatternTest.php
+
+      - acceptanceCriteria: PromptRequest provides readonly access to defaultValue property
+        criticality: contract
+        intent: Exposes optional pre-filled text value for framework adapters to populate or use on timeout
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/PromptPatternTest.php
+
+      - acceptanceCriteria: PromptRequest provides readonly access to validation property
+        criticality: contract
+        intent: Exposes optional regex pattern for framework adapters to validate input before submission
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/PromptPatternTest.php
+
+      - acceptanceCriteria: PromptRequest provides readonly access to multiline property
+        criticality: contract
+        intent: Exposes multiline flag for framework adapters to render textarea versus single-line input
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/PromptPatternTest.php
+
+      - acceptanceCriteria: PromptRequest.getType() returns string 'prompt'
+        criticality: contract
+        intent: Identifies prompt pattern for framework adapter routing to text input UI rendering
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/PromptPatternTest.php
+
+      - acceptanceCriteria: PromptResponse extends InteractionResponse
+        criticality: contract
+        intent: Inherits correlation and base response properties while adding prompt-specific payload
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/PromptPatternTest.php
+
+      - acceptanceCriteria: PromptResponse constructor accepts input, cancelled, and correlationId parameters
+        criticality: contract
+        intent: Provides prompt-specific response with user-provided text or null if cancelled
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/PromptPatternTest.php
+
+      - acceptanceCriteria: PromptResponse provides readonly access to input property
+        criticality: contract
+        intent: Exposes user-provided text for machine consumption without modification, null if cancelled
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/PromptPatternTest.php
+
+  - name: feature-integration-bound-access
+    description: BoundAccess integration for $this->interact() method binding
+    specs:
+      - acceptanceCriteria: InteractionFeature implements Feature interface
+        criticality: contract
+        intent: Ensures feature integrates correctly with ChainMail feature loading system
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/InteractionFeatureImplementsFeatureTest.php
+
+      - acceptanceCriteria: InteractionFeature requires ExtendedState feature via BoundAccess availability check
+        criticality: contract
+        intent: Enforces dependency on ExtendedState for BoundAccess method binding, failing fast if missing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/InteractionFeatureRequiresExtendedStateTest.php
+
+      - acceptanceCriteria: InteractionFeature binds interact method to BoundAccess chain
+        criticality: contract
+        intent: Registers $this->interact() method in state callbacks for invoking interaction patterns
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/InteractionFeatureBindsMethodTest.php
+
+      - acceptanceCriteria: BoundAccess intercepts $this->interact() method calls
+        criticality: contract
+        intent: Routes interact() invocations through InteractionFeature handler for request processing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/BoundAccessInterceptsInteractTest.php
+
+      - acceptanceCriteria: BoundAccess passes non-interact method calls through unchanged
+        criticality: contract
+        intent: Ensures interact() binding only affects interaction invocations without interfering with other methods
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/BoundAccessPassthroughTest.php
+
+      - acceptanceCriteria: interact() method validates first parameter is InteractionRequest instance
+        criticality: contract
+        intent: Enforces type safety by rejecting invalid interaction invocations with clear error messages
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/InteractValidatesParameterTypeTest.php
+
+      - acceptanceCriteria: interact() method throws InvalidArgumentException when parameter is not InteractionRequest
+        criticality: contract
+        intent: Provides explicit error feedback when interact() called with incorrect argument type
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/InteractThrowsOnInvalidParameterTest.php
+
+  - name: feature-integration-correlation
+    description: MessageFeature correlation integration for request-response matching
+    specs:
+      - acceptanceCriteria: interact() method registers response handler via InteractionRequest.then()
+        criticality: contract
+        intent: Sets up correlation-based listener to capture matching response when it arrives
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/InteractRegistersThenHandlerTest.php
+
+      - acceptanceCriteria: interact() method emits InteractionRequest via NotificationChain
+        criticality: contract
+        intent: Broadcasts request to all subscribed framework adapters for UI rendering and response collection
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/InteractEmitsRequestTest.php
+
+      - acceptanceCriteria: interact() method yields until matching response received
+        criticality: contract
+        intent: Suspends machine execution pending user/agent response, resuming when correlation match arrives
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/InteractYieldsUntilResponseTest.php
+
+      - acceptanceCriteria: interact() method returns response value when response.cancelled is false
+        criticality: contract
+        intent: Extracts payload from successful response for machine consumption, completing interaction cycle
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/InteractReturnsValueTest.php
+
+      - acceptanceCriteria: interact() method throws InteractionCancelledException when response.cancelled is true
+        criticality: contract
+        intent: Signals cancellation or timeout to machine for explicit error handling and fallback logic
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/InteractThrowsOnCancelledTest.php
+
+      - acceptanceCriteria: Multiple concurrent interact() calls maintain separate correlation contexts
+        criticality: contract
+        intent: Prevents cross-contamination when machine has multiple pending interactions simultaneously
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/ConcurrentInteractionsTest.php
+
+      - acceptanceCriteria: Nested interact() calls complete in LIFO order
+        criticality: contract
+        intent: Supports hierarchical interaction flows where inner interactions resolve before outer ones
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/NestedInteractionsTest.php
+
+  - name: feature-integration-emission
+    description: NotificationChain integration for request and response emission
+    specs:
+      - acceptanceCriteria: InteractionFeature emits InteractionRequest via Region.notificationChain
+        criticality: contract
+        intent: Broadcasts interaction requests to all registered framework adapters for processing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/InteractionFeatureEmitsRequestTest.php
+
+      - acceptanceCriteria: Framework adapters receive InteractionRequest events via SubscriptionFeature type filtering
+        criticality: contract
+        intent: Leverages existing subscription infrastructure to route requests to appropriate handlers
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/AdapterReceivesRequestTest.php
+
+      - acceptanceCriteria: Framework adapters emit InteractionResponse via Region.notificationChain
+        criticality: contract
+        intent: Enables framework adapters to send responses back through event bus for correlation matching
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/AdapterEmitsResponseTest.php
+
+      - acceptanceCriteria: MessageFeature delivers InteractionResponse to waiting machine via correlation ID
+        criticality: contract
+        intent: Completes request-response cycle by matching response to original request automatically
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/ResponseDeliveredViaCorrelationTest.php
+
+  - name: json-serialization-requests
+    description: JSON serialization for interaction request messages
+    specs:
+      - acceptanceCriteria: All InteractionRequest subclasses implement JsonSerializable interface
+        criticality: contract
+        intent: Ensures all interaction requests can be serialized for persistence, transmission, and logging
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/RequestsImplementJsonSerializableTest.php
+
+      - acceptanceCriteria: InteractionRequest.jsonSerialize() includes type field with fully qualified class name
+        criticality: contract
+        intent: Preserves request type during serialization for correct deserialization and framework routing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/RequestSerializesTypeTest.php
+
+      - acceptanceCriteria: InteractionRequest.jsonSerialize() includes correlationId field
+        criticality: contract
+        intent: Preserves correlation context for request-response matching after JSON round-trip
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/RequestSerializesCorrelationIdTest.php
+
+      - acceptanceCriteria: InteractionRequest.jsonSerialize() includes data field with request-specific properties
+        criticality: contract
+        intent: Bundles all request parameters for complete serialization without data loss
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/RequestSerializesDataFieldTest.php
+
+      - acceptanceCriteria: ConfirmRequest.jsonSerialize() includes question, defaultValue, context, and timeoutMs in data field
+        criticality: contract
+        intent: Serializes all confirm-specific properties for framework adapter reconstruction
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/ConfirmRequestSerializationTest.php
+
+      - acceptanceCriteria: SelectRequest.jsonSerialize() includes question, options, defaultKey, context, and timeoutMs in data field
+        criticality: contract
+        intent: Serializes all select-specific properties including option map for framework adapter reconstruction
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/SelectPatternTest.php
+
+      - acceptanceCriteria: ChoiceRequest.jsonSerialize() includes question, options, defaultKeys, minSelections, maxSelections, context, and timeoutMs in data field
+        criticality: contract
+        intent: Serializes all choice-specific properties including constraints for framework adapter reconstruction
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/ChoicePatternTest.php
+
+      - acceptanceCriteria: PromptRequest.jsonSerialize() includes question, placeholder, defaultValue, validation, multiline, context, and timeoutMs in data field
+        criticality: contract
+        intent: Serializes all prompt-specific properties including validation rules for framework adapter reconstruction
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/PromptPatternTest.php
+
+  - name: json-serialization-responses
+    description: JSON serialization for interaction response messages
+    specs:
+      - acceptanceCriteria: All InteractionResponse subclasses implement JsonSerializable interface
+        criticality: contract
+        intent: Ensures all interaction responses can be serialized for persistence, transmission, and logging
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/ResponsesImplementJsonSerializableTest.php
+
+      - acceptanceCriteria: InteractionResponse.jsonSerialize() includes type field with fully qualified class name
+        criticality: contract
+        intent: Preserves response type during serialization for correct deserialization and type casting
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/ResponseSerializesTypeTest.php
+
+      - acceptanceCriteria: InteractionResponse.jsonSerialize() includes correlationId field
+        criticality: contract
+        intent: Preserves correlation context for request-response matching after JSON round-trip
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/ResponseSerializesCorrelationIdTest.php
+
+      - acceptanceCriteria: InteractionResponse.jsonSerialize() includes data field with response-specific properties
+        criticality: contract
+        intent: Bundles all response parameters for complete serialization without data loss
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/ResponseSerializesDataFieldTest.php
+
+      - acceptanceCriteria: ConfirmResponse.jsonSerialize() includes confirmed and cancelled in data field
+        criticality: contract
+        intent: Serializes confirm-specific payload for machine consumption after deserialization
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/ConfirmResponseSerializationTest.php
+
+      - acceptanceCriteria: SelectResponse.jsonSerialize() includes selectedKey and cancelled in data field
+        criticality: contract
+        intent: Serializes select-specific payload for machine consumption after deserialization
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/SelectPatternTest.php
+
+      - acceptanceCriteria: ChoiceResponse.jsonSerialize() includes selectedKeys array and cancelled in data field
+        criticality: contract
+        intent: Serializes choice-specific payload for machine consumption after deserialization
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/ChoicePatternTest.php
+
+      - acceptanceCriteria: PromptResponse.jsonSerialize() includes input and cancelled in data field
+        criticality: contract
+        intent: Serializes prompt-specific payload for machine consumption after deserialization
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/PromptPatternTest.php
+
+  - name: json-deserialization
+    description: JSON deserialization for interaction messages
+    specs:
+      - acceptanceCriteria: Message.fromJson() reconstructs ConfirmRequest from JSON-decoded array
+        criticality: contract
+        intent: Enables bidirectional JSON serialization for confirm requests across network or persistence boundaries
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/ConfirmRequestFromJsonTest.php
+
+      - acceptanceCriteria: Message.fromJson() reconstructs SelectRequest from JSON-decoded array
+        criticality: contract
+        intent: Enables bidirectional JSON serialization for select requests across network or persistence boundaries
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/SelectPatternTest.php
+
+      - acceptanceCriteria: Message.fromJson() reconstructs ChoiceRequest from JSON-decoded array
+        criticality: contract
+        intent: Enables bidirectional JSON serialization for choice requests across network or persistence boundaries
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/ChoicePatternTest.php
+
+      - acceptanceCriteria: Message.fromJson() reconstructs PromptRequest from JSON-decoded array
+        criticality: contract
+        intent: Enables bidirectional JSON serialization for prompt requests across network or persistence boundaries
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/PromptPatternTest.php
+
+      - acceptanceCriteria: Message.fromJson() reconstructs ConfirmResponse from JSON-decoded array
+        criticality: contract
+        intent: Enables bidirectional JSON serialization for confirm responses across network or persistence boundaries
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/ConfirmResponseFromJsonTest.php
+
+      - acceptanceCriteria: Message.fromJson() reconstructs SelectResponse from JSON-decoded array
+        criticality: contract
+        intent: Enables bidirectional JSON serialization for select responses across network or persistence boundaries
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/SelectPatternTest.php
+
+      - acceptanceCriteria: Message.fromJson() reconstructs ChoiceResponse from JSON-decoded array
+        criticality: contract
+        intent: Enables bidirectional JSON serialization for choice responses across network or persistence boundaries
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/ChoicePatternTest.php
+
+      - acceptanceCriteria: Message.fromJson() reconstructs PromptResponse from JSON-decoded array
+        criticality: contract
+        intent: Enables bidirectional JSON serialization for prompt responses across network or persistence boundaries
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/Message/PromptPatternTest.php
+
+      - acceptanceCriteria: Deserialized InteractionRequest preserves correlation ID from JSON
+        criticality: contract
+        intent: Maintains request-response correlation across serialization boundaries for distributed systems
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/DeserializedRequestPreservesCorrelationTest.php
+
+      - acceptanceCriteria: Deserialized InteractionResponse preserves correlation ID from JSON
+        criticality: contract
+        intent: Maintains request-response correlation across serialization boundaries for distributed systems
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/DeserializedResponsePreservesCorrelationTest.php
+
+  - name: response-creation
+    description: Type-safe response creation with automatic correlation inheritance
+    specs:
+      - acceptanceCriteria: InteractionRequest.createResponse() creates ConfirmResponse with inherited correlation ID
+        criticality: contract
+        intent: Provides type-safe API for framework adapters to generate correlated confirm responses
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/CreateConfirmResponseTest.php
+
+      - acceptanceCriteria: InteractionRequest.createResponse() creates SelectResponse with inherited correlation ID
+        criticality: contract
+        intent: Provides type-safe API for framework adapters to generate correlated select responses
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/CreateSelectResponseTest.php
+
+      - acceptanceCriteria: InteractionRequest.createResponse() creates ChoiceResponse with inherited correlation ID
+        criticality: contract
+        intent: Provides type-safe API for framework adapters to generate correlated choice responses
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/CreateChoiceResponseTest.php
+
+      - acceptanceCriteria: InteractionRequest.createResponse() creates PromptResponse with inherited correlation ID
+        criticality: contract
+        intent: Provides type-safe API for framework adapters to generate correlated prompt responses
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/CreatePromptResponseTest.php
+
+      - acceptanceCriteria: InteractionRequest.createResponse() validates response class extends InteractionResponse
+        criticality: contract
+        intent: Enforces type safety by rejecting invalid response types at runtime with clear error messages
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/CreateResponseTypeValidationTest.php
+
+      - acceptanceCriteria: InteractionRequest.createResponse() accepts array payload for response data
+        criticality: contract
+        intent: Provides consistent payload format aligned with JSON serialization structure
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/CreateResponseArrayPayloadTest.php
+
+  - name: framework-adapter-subscription
+    description: Framework adapter subscription patterns for interaction handling
+    specs:
+      - acceptanceCriteria: Framework adapters subscribe to InteractionRequest via Region.on() with type filtering
+        criticality: contract
+        intent: Enables framework adapters to receive all interaction requests for processing via SubscriptionFeature
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/AdapterSubscribesToRequestsTest.php
+
+      - acceptanceCriteria: Framework adapters filter InteractionRequest by getType() for routing
+        criticality: contract
+        intent: Allows adapters to route requests to appropriate handlers based on interaction pattern type
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/AdapterFiltersRequestsByTypeTest.php
+
+      - acceptanceCriteria: Framework adapters receive source Region reference in subscription callback
+        criticality: contract
+        intent: Provides adapters with Region reference for emitting responses back to originating machine
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/AdapterReceivesSourceRegionTest.php
+
+      - acceptanceCriteria: Framework adapters emit InteractionResponse via source.notificationChain
+        criticality: contract
+        intent: Enables adapters to send responses through event bus for automatic correlation matching
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/AdapterEmitsViaNotificationChainTest.php
+
+      - acceptanceCriteria: Multiple framework adapters can subscribe to same InteractionRequest type
+        criticality: contract
+        intent: Supports multi-adapter scenarios where different frameworks handle same request simultaneously
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/MultipleAdaptersSubscribeTest.php
+
+      - acceptanceCriteria: First framework adapter response wins via MessageFeature auto-unsubscribe
+        criticality: contract
+        intent: Prevents duplicate responses from multiple adapters by accepting only first matching response
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/FirstAdapterResponseWinsTest.php
+
+  - name: framework-adapter-response-creation
+    description: Framework adapter response creation and emission patterns
+    specs:
+      - acceptanceCriteria: Framework adapters create responses via InteractionRequest.createResponse()
+        criticality: contract
+        intent: Ensures responses inherit correlation automatically without manual ID management
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/AdapterUsesCreateResponseTest.php
+
+      - acceptanceCriteria: Framework adapters set cancelled flag to true on timeout or user cancellation
+        criticality: contract
+        intent: Signals cancellation to machine for proper error handling and fallback execution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/AdapterSetsCancelledFlagTest.php
+
+      - acceptanceCriteria: Framework adapters validate response data before creating response
+        criticality: detail
+        intent: Enables framework-specific validation rules before emitting response to machine
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/AdapterValidatesResponseDataTest.php
+
+      - acceptanceCriteria: Framework adapters emit responses immediately after collection for low latency
+        criticality: detail
+        intent: Minimizes interaction round-trip time by avoiding batching or delayed emission
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/AdapterEmitsImmediatelyTest.php
