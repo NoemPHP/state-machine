@@ -544,6 +544,231 @@ features:
         intent: Enables non-blocking file reading by yielding during I/O operations, supporting concurrent file processing
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/LoadTest.php
 
+      - acceptanceCriteria: Save constructor accepts filepath as string
+        criticality: contract
+        intent: Provides file destination for write operation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveAcceptsFilepathTest.php
+
+      - acceptanceCriteria: Save constructor accepts data as string
+        criticality: contract
+        intent: Enables direct writing of string data to file
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveAcceptsStringDataTest.php
+
+      - acceptanceCriteria: Save constructor accepts data as Generator
+        criticality: contract
+        intent: Enables composable data pipelines from other I/O operations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveAcceptsGeneratorDataTest.php
+
+      - acceptanceCriteria: Save constructor accepts mode parameter with default 'w'
+        criticality: contract
+        intent: Configures write behavior (overwrite, append, exclusive)
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveAcceptsModeTest.php
+
+      - acceptanceCriteria: Save constructor accepts chunkSize parameter with default 8192
+        criticality: contract
+        intent: Configures memory efficiency for large data writes
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveAcceptsChunkSizeTest.php
+
+      - acceptanceCriteria: Save::__invoke() returns Generator
+        criticality: contract
+        intent: Provides non-blocking write operation compatible with async scheduler
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveReturnsGeneratorTest.php
+
+      - acceptanceCriteria: Save writes string data to file when invoked
+        criticality: contract
+        intent: Core write functionality for string data source
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveWritesStringDataTest.php
+
+      - acceptanceCriteria: Save creates file if it does not exist (mode w)
+        criticality: contract
+        intent: Standard file creation behavior
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveCreatesFileTest.php
+
+      - acceptanceCriteria: Save overwrites existing file when mode is 'w'
+        criticality: contract
+        intent: Implements standard overwrite semantics
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveOverwritesWithModeWTest.php
+
+      - acceptanceCriteria: Save consumes Generator by calling next() until completion
+        criticality: contract
+        intent: Implements generator consumption protocol for data pipelines
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveConsumesGeneratorTest.php
+
+      - acceptanceCriteria: Save collects all yielded values from Generator
+        criticality: contract
+        intent: Accumulates data from generator for writing to file
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveCollectsYieldedValuesTest.php
+
+      - acceptanceCriteria: Save writes collected generator values to file
+        criticality: contract
+        intent: Persists generator output to filesystem
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveWritesGeneratorOutputTest.php
+
+      - acceptanceCriteria: Save works with Exec generator as data source
+        criticality: contract
+        intent: Enables command output redirection to file
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/IO/SavePipeExecTest.php
+
+      - acceptanceCriteria: Save works with Fetch generator as data source
+        criticality: contract
+        intent: Enables HTTP response saving to file
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/IO/SavePipeFetchTest.php
+
+      - acceptanceCriteria: Save works with Load generator as data source
+        criticality: contract
+        intent: Enables file copying through generator pipeline
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/IO/SavePipeLoadTest.php
+
+      - acceptanceCriteria: Save works with custom user generator as data source
+        criticality: contract
+        intent: Supports arbitrary generator-based data sources
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveCustomGeneratorTest.php
+
+      - acceptanceCriteria: Save yields after each write chunk
+        criticality: contract
+        intent: Enables cooperative multitasking during large writes
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveYieldsPerChunkTest.php
+
+      - acceptanceCriteria: Save yields during generator consumption
+        criticality: contract
+        intent: Maintains responsiveness while consuming data source
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveYieldsDuringConsumptionTest.php
+
+      - acceptanceCriteria: Number of yields matches chunks written for string data
+        criticality: constraint
+        intent: Predictable yielding behavior for testing and scheduling
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveYieldCountTest.php
+
+      - acceptanceCriteria: Save writes string data in chunks of chunkSize bytes
+        criticality: contract
+        intent: Prevents memory exhaustion with large string data
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveWritesInChunksTest.php
+
+      - acceptanceCriteria: Save respects custom chunkSize parameter
+        criticality: contract
+        intent: Allows tuning memory vs I/O tradeoff
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveRespectsChunkSizeTest.php
+
+      - acceptanceCriteria: Final chunk may be smaller than chunkSize
+        criticality: constraint
+        intent: Handles data not evenly divisible by chunk size
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveHandlesPartialChunkTest.php
+
+      - acceptanceCriteria: Save generator returns total bytes written as int
+        criticality: contract
+        intent: Provides metadata about write operation for verification
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveReturnsBytesWrittenTest.php
+
+      - acceptanceCriteria: Bytes written matches data length for complete write
+        criticality: contract
+        intent: Confirms successful write operation completion
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveBytesMatchDataLengthTest.php
+
+      - acceptanceCriteria: Returns 0 bytes for empty string data
+        criticality: constraint
+        intent: Handles edge case of empty data gracefully
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveReturnsZeroForEmptyTest.php
+
+      - acceptanceCriteria: Returns 0 bytes when generator yields nothing
+        criticality: constraint
+        intent: Handles edge case of empty generator gracefully
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveReturnsZeroForEmptyGeneratorTest.php
+
+      - acceptanceCriteria: Mode 'w' creates new file or truncates existing
+        criticality: contract
+        intent: Standard overwrite semantics
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveModeWTest.php
+
+      - acceptanceCriteria: Mode 'a' appends to existing file without truncation
+        criticality: contract
+        intent: Enables append-only writes for logs and incremental data
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveModeATest.php
+
+      - acceptanceCriteria: Mode 'a' creates file if it does not exist
+        criticality: contract
+        intent: Convenient file creation with append mode
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveModeACreatesTest.php
+
+      - acceptanceCriteria: Mode 'x' creates file exclusively, fails if exists
+        criticality: contract
+        intent: Prevents accidental file overwrites with exclusive creation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveModeXTest.php
+
+      - acceptanceCriteria: Default mode is 'w' when not specified
+        criticality: contract
+        intent: Sensible default for common use case
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveDefaultModeTest.php
+
+      - acceptanceCriteria: Throws Exception when file cannot be opened
+        criticality: contract
+        intent: Clear error reporting for file access failures
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveThrowsOnOpenFailureTest.php
+
+      - acceptanceCriteria: Throws Exception when write operation fails
+        criticality: contract
+        intent: Detects and reports write failures (permissions, disk full)
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveThrowsOnWriteFailureTest.php
+
+      - acceptanceCriteria: Propagates exceptions from data source generator
+        criticality: contract
+        intent: Maintains exception semantics for generator pipelines
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SavePropagatesGeneratorExceptionTest.php
+
+      - acceptanceCriteria: Mode 'x' with existing file throws Exception
+        criticality: contract
+        intent: Enforces exclusive creation semantics
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveModeXExistingThrowsTest.php
+
+      - acceptanceCriteria: Save closes file resource in finally block
+        criticality: contract
+        intent: Guarantees resource cleanup even on exception
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveClosesResourceInFinallyTest.php
+
+      - acceptanceCriteria: File handle is closed before exception propagates
+        criticality: constraint
+        intent: Prevents resource leaks in error scenarios
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveClosesBeforeExceptionTest.php
+
+      - acceptanceCriteria: File handle is closed after successful write
+        criticality: constraint
+        intent: Proper resource management in success path
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveClosesAfterSuccessTest.php
+
+      - acceptanceCriteria: Save works with Call::call() invocation
+        criticality: contract
+        intent: Compatible with async coroutine patterns
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/IO/SaveWithCallTest.php
+
+      - acceptanceCriteria: Call::call() return value is bytes written from Save
+        criticality: contract
+        intent: Metadata flows through Call::call() API
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/IO/SaveCallReturnsBytesTest.php
+
+      - acceptanceCriteria: Save can be composed in Call::call(new Save(..., new Exec(...)))
+        criticality: contract
+        intent: Enables nested I/O operation composition
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/IO/SaveComposesWithExecTest.php
+
+      - acceptanceCriteria: Save can be composed in Call::call(new Save(..., new Fetch(...)))
+        criticality: contract
+        intent: Enables HTTP response piping to file
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/IO/SaveComposesWithFetchTest.php
+
+      - acceptanceCriteria: Save accepts absolute file paths
+        criticality: contract
+        intent: Explicit file location specification
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveAbsolutePathTest.php
+
+      - acceptanceCriteria: Save accepts relative file paths
+        criticality: contract
+        intent: Convenient path specification relative to working directory
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveRelativePathTest.php
+
+      - acceptanceCriteria: Relative paths resolve against current working directory
+        criticality: constraint
+        intent: Standard filesystem path resolution semantics
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/SaveRelativePathResolutionTest.php
+
       - acceptanceCriteria: StreamHandler reads resource incrementally
         criticality: contract
         intent: Yields each character or chunk from stream resource, enabling progressive processing of large streams without buffering entire content

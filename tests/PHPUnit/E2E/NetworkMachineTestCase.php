@@ -23,7 +23,7 @@ abstract class NetworkMachineTestCase extends AsyncMachineTestCase
 
         // Load test version of ServerConnection (defines global \ServerConnection class)
         if (!class_exists('ServerConnection', false)) {
-            require_once __DIR__.'/Support/ServerConnection.php';
+            require_once __DIR__ . '/Support/ServerConnection.php';
         }
     }
 

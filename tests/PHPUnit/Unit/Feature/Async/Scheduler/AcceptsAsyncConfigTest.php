@@ -27,7 +27,8 @@ final class AcceptsAsyncConfigTest extends TestCase
             timeout: 5.0
         );
 
-        $callback = function () {};
+        $callback = function () {
+        };
 
         // Should not throw
         $task = $scheduler->enqueue($generator, $config, $callback);
@@ -45,7 +46,8 @@ final class AcceptsAsyncConfigTest extends TestCase
 
         $config = new AsyncConfig(); // All defaults
 
-        $task = $scheduler->enqueue($generator, $config, function () {});
+        $task = $scheduler->enqueue($generator, $config, function () {
+        });
 
         $this->assertNotNull($task);
     }
@@ -58,7 +60,8 @@ final class AcceptsAsyncConfigTest extends TestCase
             yield 1;
         })();
 
-        $callback = function () {};
+        $callback = function () {
+        };
         $config = new AsyncConfig();
 
         $task = $scheduler->enqueue($generator, $config, $callback);

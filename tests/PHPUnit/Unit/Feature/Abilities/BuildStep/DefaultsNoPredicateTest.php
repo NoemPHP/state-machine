@@ -37,7 +37,7 @@ final class DefaultsNoPredicateTest extends RegionBuilderTestCase
 
         $registry = $builder->chainMail->get(AbilityRegistry::class);
 
-        
+
         $definition = $registry->get('always-available');
 
         $this->assertNull(

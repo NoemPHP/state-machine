@@ -20,7 +20,8 @@ final class TracksThrottleStateTest extends TestCase
 
         $config = new AsyncConfig(throttle: 1.0);
 
-        $task = $scheduler->enqueue($generator, $config, function () {});
+        $task = $scheduler->enqueue($generator, $config, function () {
+        });
 
         // Throttle state should exist for task (initially null before first execution)
         $this->assertNull($task->getLastExecutionTime());
@@ -36,7 +37,8 @@ final class TracksThrottleStateTest extends TestCase
 
         $config = new AsyncConfig(throttle: 1.0);
 
-        $task = $scheduler->enqueue($generator, $config, function () {});
+        $task = $scheduler->enqueue($generator, $config, function () {
+        });
 
         // Initial state should not be set
         $this->assertNull($task->getLastExecutionTime());
@@ -63,7 +65,8 @@ final class TracksThrottleStateTest extends TestCase
 
         $config = new AsyncConfig(); // No throttle
 
-        $task = $scheduler->enqueue($generator, $config, function () {});
+        $task = $scheduler->enqueue($generator, $config, function () {
+        });
         $scheduler->tick();
 
         // No state should be tracked for tasks without throttle

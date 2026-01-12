@@ -25,7 +25,8 @@ final class PriorityBasedTickBudgetTest extends TestCase
 
         $config = new AsyncConfig(priority: Priority::HIGH);
 
-        $scheduler->enqueue($generator, $config, function () {});
+        $scheduler->enqueue($generator, $config, function () {
+        });
         $scheduler->tick();
 
         // HIGH priority = 10 steps per tick
@@ -46,7 +47,8 @@ final class PriorityBasedTickBudgetTest extends TestCase
 
         $config = new AsyncConfig(priority: Priority::NORMAL);
 
-        $scheduler->enqueue($generator, $config, function () {});
+        $scheduler->enqueue($generator, $config, function () {
+        });
         $scheduler->tick();
 
         // NORMAL priority = 5 steps per tick
@@ -67,7 +69,8 @@ final class PriorityBasedTickBudgetTest extends TestCase
 
         $config = new AsyncConfig(priority: Priority::LOW);
 
-        $scheduler->enqueue($generator, $config, function () {});
+        $scheduler->enqueue($generator, $config, function () {
+        });
         $scheduler->tick();
 
         // LOW priority = 1 step per tick
@@ -103,9 +106,12 @@ final class PriorityBasedTickBudgetTest extends TestCase
             }
         })();
 
-        $scheduler->enqueue($lowGen, new AsyncConfig(priority: Priority::LOW), function () {});
-        $scheduler->enqueue($normalGen, new AsyncConfig(priority: Priority::NORMAL), function () {});
-        $scheduler->enqueue($highGen, new AsyncConfig(priority: Priority::HIGH), function () {});
+        $scheduler->enqueue($lowGen, new AsyncConfig(priority: Priority::LOW), function () {
+        });
+        $scheduler->enqueue($normalGen, new AsyncConfig(priority: Priority::NORMAL), function () {
+        });
+        $scheduler->enqueue($highGen, new AsyncConfig(priority: Priority::HIGH), function () {
+        });
 
         $scheduler->tick();
 

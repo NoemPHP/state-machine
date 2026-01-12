@@ -42,7 +42,7 @@ class RuntimeSpawnReturnsSameTypeTest extends TestCase
     public function testSpawnFromCustomRuntimeReturnsCustomType(): void
     {
         // Custom runtime class for testing
-        $customRuntime = new class(
+        $customRuntime = new class (
             (new RegionBuilder())->setStates('parent')->markInitial('parent')->build()
         ) extends Runtime {
             protected function createDefaultTrigger(int $iteration): object

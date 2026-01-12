@@ -106,6 +106,70 @@ The persistence layer will be implemented as an **optional feature** with no cha
 
 ---
 
+### 🔒 [security-considerations.md](./security-considerations.md) - Security Analysis
+
+**Security threats and mitigations**:
+
+1. **Arbitrary Code Execution** (Critical)
+   - Object injection vulnerabilities
+   - Malicious closure deserialization
+   - Class whitelist enforcement
+
+2. **Information Disclosure** (Medium)
+   - Sensitive data in snapshots
+   - Encryption at rest
+   - Automatic PII detection
+
+3. **Denial of Service** (Medium)
+   - Size/depth limits
+   - Timeout protection
+   - Memory monitoring
+
+4. **Compliance** (GDPR, SOC 2)
+   - Data retention policies
+   - Right to be forgotten
+   - Audit trails
+
+**Read this** before deploying to production.
+
+---
+
+### ⚡ [performance-analysis.md](./performance-analysis.md) - Performance Estimates
+
+**Expected performance characteristics**:
+
+- **Snapshot Sizes**: 500B (empty) → 500KB (large hierarchical)
+- **Serialization**: 0.2ms (small) → 15ms (large)
+- **Compression**: 70-80% size reduction with gzip
+- **Memory Overhead**: 5-7x snapshot size during capture
+- **Storage**: JSON (human-readable) vs igbinary (2x faster)
+
+**Optimization strategies**:
+- Lazy serialization
+- Incremental snapshots (delta compression)
+- Parallel serialization for hierarchical machines
+- Backend-specific optimizations
+
+**Read this** for capacity planning and optimization.
+
+---
+
+### 📚 [api-reference.md](./api-reference.md) - Complete API Documentation
+
+**Full API documentation**:
+
+- **PersistenceFeature**: Feature registration
+- **PersistenceManager**: capture(), restore(), snapshot(), validate()
+- **PersistenceBackend**: Interface + implementations
+- **SerializationPolicy**: exclude(), registerSerializer(), skipClosures()
+- **Built-in Backends**: JsonBackend, DatabaseBackend, CompressedBackend, EncryptedBackend
+- **Exceptions**: SerializationException, IncompatibleSnapshotException, SecurityException
+- **YAML Configuration**: Schema and examples
+
+**Read this** for implementation reference.
+
+---
+
 ## Quick Reference
 
 ### Key Design Decisions

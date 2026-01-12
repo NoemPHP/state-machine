@@ -1,0 +1,124 @@
+# CLI Agent - Interactive Command Line Interface
+# Consumes machine-generator as a tool
+# Demonstrates: tool composition, message passing, direct generator invocation
+
+machine:
+  require: !php require '/var/www/html/machines/cli-agent/bootstrap.php';
+  features:
+    # Machine loading for summon() (loaded before ExtendedState per test pattern)
+    - class: Noem\State\Feature\Loader\RegionLoader
+
+    # Core infrastructure
+    - class: Noem\State\Feature\ExtendedState\ExtendedState
+
+    # Async & messaging (after ExtendedState)
+    - class: Noem\State\Feature\Async\AsyncFeature
+    - class: Noem\State\Feature\Message\MessageFeature
+
+    # Abilities & interaction for agent communication
+    - class: Noem\State\Feature\Abilities\AbilitiesFeature
+    - class: Noem\State\Feature\Interaction\InteractionFeature
+    - class: Noem\State\Feature\Interaction\InteractionRegistryFeature
+
+  eventLoop:
+    autoRun: true
+
+states:
+  # ============================================================================
+  # STATE: welcome
+  # PURPOSE: Display banner and initialize
+  # ============================================================================
+  - name: welcome
+    onEnter:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): void {
+              echo str_repeat('=', 70) . "\n";
+              echo "   CLI AGENT - Generic Interactive Machine Adapter\n";
+              echo "   Dynamically adapts to any sub-machine's interaction needs\n";
+              echo str_repeat('=', 70) . "\n\n";
+          };
+
+    transitions:
+      - target: running_agent
+
+  # ============================================================================
+  # STATE: running_agent
+  # PURPOSE: Summon sub-agent and reactively handle its interaction requests
+  # ============================================================================
+  - name: running_agent
+    action:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): \Generator {
+              // Summon the sub-agent (configured or default)
+              $subAgentPath = $t->subAgentPath ?? machines_path('machine-agent', 'holon.yml');
+              echo "[Summoning sub-agent: $subAgentPath]\n";
+
+              try {
+                  $subAgent = $this->summon($subAgentPath);
+                  echo "[DEBUG] Summon returned\n";
+              } catch (\Exception $e) {
+                  echo "[ERROR] Summon failed: " . $e->getMessage() . "\n";
+                  echo "File: " . $e->getFile() . ":" . $e->getLine() . "\n";
+                  throw $e;
+              }
+              yield;
+
+              echo "[DEBUG] After first yield\n";
+
+              // Attach generic interaction adapter
+              // This will handle ANY InteractionRequest from the sub-agent dynamically
+              $adapter = new \CliAgent\InteractionAdapter($subAgent, verbose: true);
+              echo "[DEBUG] Adapter created\n";
+              $adapter->attach();
+              echo "[DEBUG] Adapter attached\n";
+              yield;
+
+              echo "[Sub-agent ready - responding to interaction requests...]\n\n";
+
+              // Run sub-agent - it drives the conversation through its own logic
+              // Adapter reactively handles any interactions as they occur
+              echo "[DEBUG] Creating runtime\n";
+              $runtime = new \Noem\State\StandardRuntime(
+                  $subAgent,
+                  new \Noem\State\RuntimeConfig(maxIterations: 0)  // Unlimited - sub-agent controls its own lifecycle
+              );
+              echo "[DEBUG] Starting runtime\n";
+              $runtime->run();  // Blocks until sub-agent completes
+              echo "[DEBUG] Runtime complete\n";
+              yield;
+
+              // Sub-agent completed - mark as done
+              $this->set('sub_agent_complete', true);
+
+              echo "\n[Sub-agent execution complete]\n\n";
+              yield;
+          };
+        async:
+          enabled: true
+
+    transitions:
+      - target: finished
+        # language=injectablephp
+        guard: !php |
+          return function(object $t): bool {
+              return $this->get('sub_agent_complete') === true;
+          };
+
+  # ============================================================================
+  # STATE: finished
+  # PURPOSE: Exit gracefully
+  # ============================================================================
+  - name: finished
+    onEnter:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): void {
+              echo str_repeat('=', 70) . "\n";
+              echo "   CLI ADAPTER SESSION COMPLETE\n";
+              echo str_repeat('=', 70) . "\n";
+          };
+
+initial: welcome
+final: finished

@@ -25,7 +25,8 @@ final class ThrottleBehaviorTest extends TestCase
 
         $config = new AsyncConfig(throttle: 0.05, priority: Priority::LOW); // 50ms throttle, 1 step
 
-        $scheduler->enqueue($generator, $config, function () {});
+        $scheduler->enqueue($generator, $config, function () {
+        });
 
         // First tick - should execute
         $scheduler->tick();
@@ -56,7 +57,8 @@ final class ThrottleBehaviorTest extends TestCase
 
         $config = new AsyncConfig(throttle: 0.02, priority: Priority::LOW); // 20ms throttle, 1 step
 
-        $scheduler->enqueue($generator, $config, function () {});
+        $scheduler->enqueue($generator, $config, function () {
+        });
 
         // Rapid ticks over 100ms
         $startTime = microtime(true);
@@ -83,7 +85,8 @@ final class ThrottleBehaviorTest extends TestCase
 
         $config = new AsyncConfig(throttle: 1.0, priority: Priority::LOW); // 1 second throttle, 1 step
 
-        $scheduler->enqueue($generator, $config, function () {});
+        $scheduler->enqueue($generator, $config, function () {
+        });
 
         // First tick should execute immediately
         $scheduler->tick();
@@ -114,8 +117,10 @@ final class ThrottleBehaviorTest extends TestCase
         $config1 = new AsyncConfig(throttle: 0.05, priority: Priority::LOW); // 50ms, 1 step
         $config2 = new AsyncConfig(throttle: 0.03, priority: Priority::LOW); // 30ms, 1 step
 
-        $scheduler->enqueue($gen1, $config1, function () {});
-        $scheduler->enqueue($gen2, $config2, function () {});
+        $scheduler->enqueue($gen1, $config1, function () {
+        });
+        $scheduler->enqueue($gen2, $config2, function () {
+        });
 
         // Both execute first time
         $scheduler->tick();

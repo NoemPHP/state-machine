@@ -132,8 +132,11 @@ class DispatchInvokesNotificationChainTest extends TestCase
 
         $region->trigger((object)['test' => true], false);
 
-        $this->assertEquals(['notification', 'action'], $callOrder,
-            'notificationChain should be called before actionChain');
+        $this->assertEquals(
+            ['notification', 'action'],
+            $callOrder,
+            'notificationChain should be called before actionChain'
+        );
     }
 
     public function testListenersReturnedByNotificationChainAreInvoked(): void

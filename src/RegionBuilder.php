@@ -59,7 +59,8 @@ class RegionBuilder
                 fn(): Chains\Notification => new Chains\Notification(),
                 Events::conjure(),
                 fn(Chains\ConnectedRegions $connections): Chains\Path => new Chains\Path($connections),
-                fn(): Callbacks\CallbackRegistry => new Callbacks\CallbackRegistry()
+                fn(): Callbacks\CallbackRegistry => new Callbacks\CallbackRegistry(),
+                fn(): Chains\BuilderMethodCall => new Chains\BuilderMethodCall()
             );
         }
         $this->chainMail = $chainMail;
@@ -369,5 +370,34 @@ class RegionBuilder
         }
         if (count($this->states) > 1) {
         }
+    }
+
+    /**
+     * Magic method to allow features to inject builder methods dynamically
+     *
+     * Features can hook into the Chains\BuilderMethodCall chain to intercept
+     * method calls and provide custom behavior.
+     *
+     * @param string $name Method name
+     * @param array $arguments Method arguments
+     * @return mixed
+     */
+    public function __call(string $name, array $arguments): mixed
+    {
+        try {
+            $chain = $this->chainMail->get(Chains\BuilderMethodCall::class);
+        } catch (\Noem\State\Middleware\ChainException) {
+            throw new \BadMethodCallException(
+                sprintf('Call to undefined method %s::%s()', static::class, $name)
+            );
+        }
+
+        $params = new Chains\Params\BuilderMethodCallParams(
+            builder: $this,
+            method: $name,
+            arguments: $arguments
+        );
+
+        return $chain->call($params);
     }
 }

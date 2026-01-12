@@ -1,0 +1,206 @@
+name: json-schema
+group: features
+description: |
+  JSON Schema validation and context initialization for state machine context fields. Enables declarative schema
+  definitions in YAML via context.schema array, automatic default value initialization during build, and runtime
+  validation through justinrainbow/json-schema library integration.
+
+features:
+  - name: feature-registration
+    description: Feature initialization and service registration
+    specs:
+      - acceptanceCriteria: JsonSchemaFeature implements Feature interface
+        criticality: contract
+        intent: Ensures feature integrates correctly with ChainMail feature loading system
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/ImplementsFeatureTest.php
+
+      - acceptanceCriteria: JsonSchemaFeature hooks into LoaderChains.Schema chain
+        criticality: contract
+        intent: Extends YAML schema to accept context.schema definitions, enabling declarative validation rules
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/HooksIntoSchemaChainTest.php
+
+      - acceptanceCriteria: JsonSchemaFeature hooks into EnhanceRegionBuilder chain
+        criticality: contract
+        intent: Processes context.schema during build phase to initialize defaults via AddJsonSchema BuildStep
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/HooksIntoEnhanceRegionBuilderTest.php
+
+  - name: schema-definition-yaml
+    description: YAML schema extension for context.schema array
+    specs:
+      - acceptanceCriteria: Schema accepts context.schema as array of field definitions
+        criticality: contract
+        intent: Enables declarative schema definitions in YAML configuration files for type-safe context fields
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/Schema/AcceptsContextSchemaArrayTest.php
+
+      - acceptanceCriteria: Schema field definition requires name as string property
+        criticality: contract
+        intent: Uniquely identifies context field for validation and initialization
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/Schema/FieldRequiresNameTest.php
+
+      - acceptanceCriteria: Schema field definition requires type as string property
+        criticality: contract
+        intent: Specifies JSON Schema type (string, number, integer, boolean, array, object) for validation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/Schema/FieldRequiresTypeTest.php
+
+      - acceptanceCriteria: Schema field definition accepts optional default value
+        criticality: contract
+        intent: Provides initial value for field when machine builds, enabling predictable context state
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/Schema/FieldAcceptsDefaultTest.php
+
+      - acceptanceCriteria: Schema field definition accepts optional description as string
+        criticality: contract
+        intent: Documents field purpose for developer reference and introspection
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/Schema/FieldAcceptsDescriptionTest.php
+
+      - acceptanceCriteria: Schema validates context.schema structure at YAML load time
+        criticality: constraint
+        intent: Catches schema definition errors during build phase, failing fast before execution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/Schema/ValidatesSchemaStructureTest.php
+
+  - name: build-step-integration
+    description: AddJsonSchema BuildStep for default value initialization
+    specs:
+      - acceptanceCriteria: AddJsonSchema implements BuildStep interface
+        criticality: contract
+        intent: Integrates with RegionBuilder build pipeline for schema processing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/BuildStep/ImplementsBuildStepTest.php
+
+      - acceptanceCriteria: AddJsonSchema constructor accepts schema array parameter
+        criticality: contract
+        intent: Receives parsed context.schema definitions from EnhanceRegionBuilder middleware
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/BuildStep/ConstructorAcceptsSchemaTest.php
+
+      - acceptanceCriteria: AddJsonSchema.callback() retrieves Meta chain from ChainMail
+        criticality: contract
+        intent: Accesses metadata storage infrastructure for context initialization
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/BuildStep/RetrievesMetaChainTest.php
+
+      - acceptanceCriteria: AddJsonSchema.callback() calls Meta chain with ContextMetaType
+        criticality: contract
+        intent: Targets ExtendedState context storage specifically, avoiding conflicts with other metadata types
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/BuildStep/CallsMetaWithContextTypeTest.php
+
+      - acceptanceCriteria: AddJsonSchema.callback() initializes each field with default value
+        criticality: contract
+        intent: Sets initial context values from schema definitions, establishing predictable runtime state
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/BuildStep/InitializesDefaultValuesTest.php
+
+      - acceptanceCriteria: AddJsonSchema.callback() uses null as default when not specified
+        criticality: contract
+        intent: Provides consistent default behavior when schema omits default property
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/BuildStep/DefaultsToNullTest.php
+
+      - acceptanceCriteria: AddJsonSchema executes during build phase before region completion
+        criticality: contract
+        intent: Ensures defaults available before first state callbacks execute
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/BuildStep/ExecutesDuringBuildTest.php
+
+  - name: runtime-validation-integration
+    description: Integration with existing validation infrastructure
+    specs:
+      - acceptanceCriteria: AbilitiesFeature uses justinrainbow/json-schema for parameter validation
+        criticality: contract
+        intent: Leverages existing validation library for abilities parameter schema validation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Abilities/Validation/UsesJsonSchemaLibraryTest.php
+
+      - acceptanceCriteria: JSON Schema validation uses justinrainbow/json-schema Validator class
+        criticality: contract
+        intent: Provides standard JSON Schema Draft-04 validation for parameter and response schemas
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/Validation/UsesValidatorClassTest.php
+
+      - acceptanceCriteria: Schema validation converts parameters to JSON-compatible format
+        criticality: contract
+        intent: Ensures validation operates on standard JSON types, converting PHP arrays to objects
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/Validation/ConvertsToJsonFormatTest.php
+
+      - acceptanceCriteria: Schema validation throws SchemaValidationException on failure
+        criticality: contract
+        intent: Provides structured error information including path and message for debugging
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/Validation/ThrowsOnValidationFailureTest.php
+
+      - acceptanceCriteria: Schema validation skips when schema array is empty
+        criticality: constraint
+        intent: Allows abilities without parameter validation by using empty schema
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/Validation/SkipsEmptySchemaTest.php
+
+  - name: context-storage-integration
+    description: Integration with ExtendedState context storage
+    specs:
+      - acceptanceCriteria: Schema fields accessible via $this->get() in state callbacks
+        criticality: contract
+        intent: Initialized schema fields integrate seamlessly with ExtendedState context API
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/Context/AccessibleViaGetTest.php
+
+      - acceptanceCriteria: Schema field defaults override when context explicitly set
+        criticality: contract
+        intent: Explicit context values in YAML take precedence over schema defaults
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/Context/ExplicitOverridesDefaultTest.php
+
+      - acceptanceCriteria: Schema fields modifiable via $this->set() in state callbacks
+        criticality: contract
+        intent: Schema initialization doesn't prevent runtime modification of context values
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/Context/ModifiableViaSetTest.php
+
+      - acceptanceCriteria: Schema initialization respects ContextMetaType isolation
+        criticality: contract
+        intent: Schema fields stored in ExtendedState namespace, avoiding conflicts with other metadata
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/Context/RespectsMetaTypeIsolationTest.php
+
+  - name: feature-dependencies
+    description: Feature interaction and dependency requirements
+    specs:
+      - acceptanceCriteria: JsonSchemaFeature optionally enhances ExtendedState when present
+        criticality: contract
+        intent: Provides schema initialization when ExtendedState loaded, gracefully skips otherwise
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/Dependencies/EnhancesExtendedStateTest.php
+
+      - acceptanceCriteria: JsonSchemaFeature optionally enhances RegionLoader when present
+        criticality: contract
+        intent: Adds YAML schema support when loader available, works standalone without loader
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/Dependencies/EnhancesRegionLoaderTest.php
+
+      - acceptanceCriteria: JsonSchemaFeature works without ExtendedState for validation-only usage
+        criticality: constraint
+        intent: Supports validation scenarios where context storage not required
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/Dependencies/WorksWithoutExtendedStateTest.php
+
+      - acceptanceCriteria: JsonSchemaFeature works without RegionLoader for programmatic usage
+        criticality: constraint
+        intent: Supports non-YAML workflows where schemas defined programmatically
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/Dependencies/WorksWithoutRegionLoaderTest.php
+
+  - name: yaml-configuration-example
+    description: Complete YAML configuration examples
+    specs:
+      - acceptanceCriteria: YAML context.schema accepts single field definition
+        criticality: contract
+        intent: Supports minimal schema with one field for simple state machines
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/JsonSchema/YamlSingleFieldTest.php
+
+      - acceptanceCriteria: YAML context.schema accepts multiple field definitions
+        criticality: contract
+        intent: Supports complex schemas with many fields for stateful workflows
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/JsonSchema/YamlMultipleFieldsTest.php
+
+      - acceptanceCriteria: YAML context.schema supports all JSON Schema primitive types
+        criticality: contract
+        intent: Validates string, number, integer, boolean, array, object types correctly
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/JsonSchema/YamlAllPrimitiveTypesTest.php
+
+      - acceptanceCriteria: YAML context.schema integrates with ExtendedState defaults
+        criticality: contract
+        intent: Schema defaults and explicit context values coexist correctly
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/JsonSchema/YamlIntegrationWithExtendedStateTest.php
+
+  - name: integration-complete-workflow
+    description: End-to-end workflow proving feature correctness
+    specs:
+      - acceptanceCriteria: Complete workflow from YAML schema to initialized context
+        criticality: integration
+        intent: Validates entire schema definition, parsing, initialization, and access cycle
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/JsonSchema/SchemaToContextWorkflowTest.php
+
+      - acceptanceCriteria: Complete workflow from schema definition to validation enforcement
+        criticality: integration
+        intent: Validates schema definitions used for runtime validation in abilities
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/JsonSchema/SchemaToValidationWorkflowTest.php

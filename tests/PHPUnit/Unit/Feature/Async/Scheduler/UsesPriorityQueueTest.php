@@ -38,8 +38,10 @@ final class UsesPriorityQueueTest extends TestCase
         $lowConfig = new AsyncConfig(priority: Priority::LOW);
         $highConfig = new AsyncConfig(priority: Priority::HIGH);
 
-        $scheduler->enqueue($lowGen, $lowConfig, function () {});
-        $scheduler->enqueue($highGen, $highConfig, function () {});
+        $scheduler->enqueue($lowGen, $lowConfig, function () {
+        });
+        $scheduler->enqueue($highGen, $highConfig, function () {
+        });
 
         // High priority should be extracted first from priority queue
         // This is verified by the scheduler processing order

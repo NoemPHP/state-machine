@@ -40,7 +40,7 @@ final class StoresPredicateTest extends RegionBuilderTestCase
 
         $registry = $builder->chainMail->get(AbilityRegistry::class);
 
-        
+
         $definition = $registry->get('test-ability');
 
         $this->assertSame(

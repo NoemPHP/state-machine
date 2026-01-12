@@ -199,7 +199,7 @@ AI intelligently chooses between two approaches:
 **holon.yml only**: Functions defined directly in YAML
 - Minimal file overhead
 - Simple callbacks inline with state definitions
-- Example: `!php return function($t) { $this->set('ready', true); };`
+- Example: `!php return function(object $t) { $this->set('ready', true); };`
 - Best for: Simple state management, counters, basic workflows
 
 #### Separate File (Complex Machines > 4 states)
@@ -290,10 +290,66 @@ $this->set('confidence_threshold', 0.75);
 
 | File | Purpose |
 |------|---------|
-| `holon.yml` | Machine definition with state flow |
-| `holon-functions.php` | Callback implementations (this machine's logic) |
+| `holon.yml` | Machine definition with inline callbacks |
+| `bootstrap.php` | Infrastructure setup (autoloader, path helpers, file I/O) |
 | `holon-spec.yaml` | Holon format specification (loaded by machine for generation) |
 | `README.md` | This file |
+
+**Architecture Note**: This machine demonstrates the **inline callback pattern** where all business logic is defined directly in `holon.yml`. The `bootstrap.php` file provides infrastructure concerns (PSR-4 autoloading, path resolution, atomic file writes) keeping the state machine focused on business logic.
+
+#### Bootstrap Helpers
+
+The `bootstrap.php` file provides the following helper functions:
+
+**Path Resolution**:
+- `machine_path(string $path)` - Resolve machine-relative paths
+- `machines_path(string $name, string $file = '')` - Access other machines
+
+**YAML Operations**:
+- `load_yaml(string $path)` - Load and parse YAML with error handling
+
+**Machine Generation**:
+- `ensure_machine_directory(string $name)` - Create machine directory
+- `atomic_write(string $path, string $content)` - Safe file writes
+- `is_valid_machine_name(string $name)` - Validate kebab-case names
+
+**PSR-4 Autoloader**:
+- Classes under `MachineAgent\` namespace auto-load from `src/` directory
+
+**Helper Classes** (autoloaded via `MachineAgent\` namespace):
+- `AiHelper` - Simplifies AI operations (capture, complete, analyze, plan)
+- `TemplateHelper` - Simplifies template streaming (YAML/PHP generation)
+
+These helpers offload boilerplate code from inline callbacks, keeping business logic focused and concise.
+
+#### Helper Class Usage
+
+**AiHelper** - Encapsulates common AI patterns:
+```php
+$ai = new \MachineAgent\AiHelper($this);
+
+// Analyze requirements with built-in schema
+$analysis = $ai->analyzeRequirements($userRequest, $qaHistory);
+
+// Generate clarifying question
+$question = $ai->generateQuestion($missingInfo);
+
+// Create implementation plan
+$plan = $ai->createPlan($requirements, $holonSpec, $examples);
+```
+
+**TemplateHelper** - Simplifies template streaming:
+```php
+$tpl = new \MachineAgent\TemplateHelper($this);
+
+// Stream AI completion
+$yaml = yield from $tpl->streamComplete($prompt, 'ollama');
+
+// Generate YAML with inline or separate functions
+$yaml = yield from $tpl->generateYaml($name, $states, $features, $reqs, $examples, $useInline);
+```
+
+These helpers demonstrate how to keep inline callbacks clean while leveraging infrastructure code through autoloading.
 
 ### Generated Machine Files
 

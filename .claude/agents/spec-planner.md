@@ -79,8 +79,19 @@ acceptance_criteria:
 - Request explicit approval before proceeding
 - Offer to adjust based on feedback
 
-### STEP 5: CREATE HANDOVER PAYLOAD
-After user approval, create a handover payload for core-development-expert:
+### STEP 5: ASK ABOUT IMPLEMENTATION
+After user approves specs, explicitly ASK:
+
+"✅ Specifications approved and written to [spec files].
+
+Would you like me to proceed with implementing these specs now? I can:
+- Start implementation immediately (launch core-development-expert)
+- Or stop here (specs are ready for later implementation)
+
+Please confirm if you'd like to proceed."
+
+### STEP 6: CREATE HANDOVER PAYLOAD (Only if user confirms)
+If user confirms they want implementation, create a handover payload for core-development-expert:
 
 ```json
 {
@@ -105,20 +116,19 @@ After user approval, create a handover payload for core-development-expert:
 }
 ```
 
-Then explicitly transfer control:
-"✅ Specification approved and written to [spec files].
+Then transfer control:
+"**HANDOVER TO core-development-expert**
 
-**HANDOVER TO core-development-expert**
-
-I'm now transferring this task to the core-development-expert agent with the following approved specifications:
+Transferring to core-development-expert agent with approved specifications:
 - Spec files: [list]
 - Component type: [type]
 - Test directory: [path]
 
-The core-development-expert will now:
-1. Create test class(es) that FAIL (red phase)
-2. Implement code to make tests pass (green phase)
-3. Run composer quality to verify
+The agent will now:
+1. RED PHASE: Write tests that FAIL (no code yet - TDD)
+2. Verify tests fail for correct reasons
+3. GREEN PHASE: Write code to make tests pass
+4. Run composer quality to verify
 
 [Launch core-development-expert agent with handover payload]"
 

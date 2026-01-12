@@ -85,7 +85,7 @@ abstract class Runtime implements \IteratorAggregate
     public function events(): \Generator
     {
         $buffer = [];
-        $deregister = $this->region->on(function($event) use (&$buffer) {
+        $deregister = $this->region->on(function ($event) use (&$buffer) {
             $buffer[] = $event;
         });
 

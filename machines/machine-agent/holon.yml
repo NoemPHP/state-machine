@@ -1,10 +1,13 @@
 # Machine Agent - Autonomous State Machine Generator
 # Self-contained Holon machine that generates other Holon machines
+# Demonstrates inline callback pattern for complex state machines
 
 machine:
-  require: !php require '/var/www/html/machines/machine-agent/holon-functions.php'
-
+  require: !php require '/var/www/html/machines/machine-agent/bootstrap.php';
   features:
+    # Machine loading (for interaction YAML processing)
+    - class: Noem\State\Feature\Loader\RegionLoader
+
     # Core infrastructure
     - class: Noem\State\Feature\ExtendedState\ExtendedState
 
@@ -50,118 +53,639 @@ machine:
     - class: Noem\State\Feature\Abilities\AbilitiesFeature
     - class: Noem\State\Feature\Agentic\AgenticFeature
 
+    # Interaction & discovery
+    - class: Noem\State\Feature\Interaction\InteractionFeature
+    - class: Noem\State\Feature\Interaction\InteractionRegistryFeature
+
   eventLoop:
-    autoRun: true
+    autoRun: true  # Starts immediately when summoned, drives its own flow
     maxIterations: 0  # Unlimited iterations for interactive session
 
+# Interaction Contracts - Exposed for discovery by external agents
+interactions:
+  - id: request-machine-description
+    type: prompt
+    question: "Describe the state machine you want to create"
+    state: gathering_requirements
+    metadata:
+      placeholder: "e.g., A task executor that processes jobs from a queue"
+      multiline: true
+      help: "Provide a clear description of what the machine should do"
+
+  - id: clarifying-question
+    type: prompt
+    question: "{{dynamic}}"  # Question generated dynamically by AI
+    state: questioning
+    metadata:
+      placeholder: "Your answer here"
+      help: "Answer helps improve generation confidence"
+
+  - id: confirm-generation
+    type: confirm
+    question: "Ready to generate machine with current requirements?"
+    state: planning_machine
+    metadata:
+      defaultValue: true
+
 states:
+  # ============================================================================
+  # STATE: idle
+  # PURPOSE: Initialize machine context and load specification documents
+  # ============================================================================
   - name: idle
     onEnter:
-      - run: !php return onEnterIdle()
+      - run: !php |
+          return function(object $t): void {
+              // Initialize context variables (silently, no console output)
+              $this->set('requirements', []);
+              $this->set('qa_history', []);
+              $this->set('confidence_score', 0.0);
+              $this->set('confidence_threshold', 0.75);
+              $this->set('should_exit', false);
+              $this->set('retry_count', 0);
+              $this->set('max_retries', 3);
+
+              // Load Holon specification using bootstrap helper
+              $this->set('holon_spec', load_yaml('holon-spec.yaml'));
+
+              // Load example machines using bootstrap helper
+              $examples = [
+                  'conversational-cli' => load_yaml(machines_path('conversational-cli', 'holon.yml')),
+                  'task-executor' => load_yaml(machines_path('task-executor', 'holon.yml')),
+              ];
+              $this->set('examples', $examples);
+          };
     transitions:
       - target: gathering_requirements
 
+  # ============================================================================
+  # STATE: gathering_requirements
+  # PURPOSE: Collect initial user request for machine generation (if not provided)
+  # ============================================================================
   - name: gathering_requirements
-    onEnter:
-      - run: !php return onEnterGatheringRequirements()
     action:
-      - run: !php return actionGatheringRequirements()
+      - run: !php |
+          return function(object $t): \Generator {
+              // Request machine description via interaction contract
+              // (Adapter may prefill this if data was already collected)
+              try {
+                  $input = yield from $this->interact('request-machine-description');
+                  $this->set('user_request', $input);
+              } catch (\Noem\State\Feature\Interaction\InteractionCancelledException $e) {
+                  // User cancelled interaction
+                  $this->set('should_exit', true);
+              }
+              yield;
+          };
         async:
           enabled: true
     transitions:
       - target: analyzing_requirements
-        guard: !php return guardHasUserRequest()
+        guard: !php |
+          return function(object $t): bool { return !empty($this->get('user_request', '')); };
       - target: finished
-        guard: !php return guardShouldExit()
+        guard: !php |
+          return function(object $t): bool { return $this->get('should_exit') === true; };
 
+  # ============================================================================
+  # STATE: analyzing_requirements
+  # PURPOSE: AI analyzes request to assess confidence and identify missing info
+  # ============================================================================
   - name: analyzing_requirements
-    onEnter:
-      - run: !php return onEnterAnalyzingRequirements()
     action:
-      - run: !php return actionAnalyzingRequirements()
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): \Generator {
+              // Use AiHelper to analyze requirements (offloads schema + prompt boilerplate)
+              $ai = new \MachineAgent\AiHelper($this);
+              $analysis = $ai->analyzeRequirements(
+                  $this->get('user_request'),
+                  $this->get('qa_history', [])
+              );
+              yield;
+
+              // Store analysis results (silently)
+              $this->set('confidence_score', $analysis['confidence']);
+              $this->set('machine_complexity', $analysis['complexity']);
+              $this->set('missing_info', $analysis['missing_info']);
+              $this->set('requirements', $analysis['extracted_requirements']);
+
+              $this->set('analysis_complete', true);
+              yield;
+          };
         async:
           enabled: true
     transitions:
       - target: questioning
-        guard: !php return guardAnalysisComplete()
+        guard: !php |
+          return function(object $t): bool { return $this->get('analysis_complete') === true; };
 
+  # ============================================================================
+  # STATE: questioning
+  # PURPOSE: Iteratively ask clarifying questions until confidence threshold met
+  # ============================================================================
   - name: questioning
-    onEnter:
-      - run: !php return onEnterQuestioning()
     action:
-      - run: !php return actionQuestioning()
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): \Generator {
+              $confidence = $this->get('confidence_score', 0.0);
+              $threshold = $this->get('confidence_threshold', 0.75);
+
+              // Skip questioning if confidence is sufficient
+              if ($confidence >= $threshold) {
+                  yield;
+                  return;
+              }
+
+              // Track question count (defensive: ensure it's never null)
+              $questionCount = $this->get('question_count', 0) ?? 0;
+
+              // Use AiHelper to generate clarifying question with structured interaction
+              $ai = new \MachineAgent\AiHelper($this);
+              $questionData = $ai->generateQuestion($this->get('missing_info', []), $questionCount);
+              yield;
+
+              // Use appropriate interaction type based on AI recommendation
+              try {
+                  $interactionType = $questionData['interaction_type'];
+                  $question = $questionData['question'];
+                  $options = $questionData['options'] ?? [];
+
+                  // Choose interaction based on type
+                  if ($interactionType === 'select' && !empty($options)) {
+                      // Single-choice interaction
+                      // IMPORTANT: Preserve array keys when mapping
+                      $mappedOptions = [];
+                      foreach ($options as $key => $label) {
+                          $mappedOptions[$key] = new \Noem\State\Feature\Interaction\SelectOption($label);
+                      }
+
+                      $request = new \Noem\State\Feature\Interaction\SelectRequest(
+                          question: $question,
+                          options: $mappedOptions
+                      );
+                      $response = yield from $this->interact($request);
+                      $answer = $response; // Selected key
+                  } elseif ($interactionType === 'choice' && !empty($options)) {
+                      // Multi-choice interaction
+                      // IMPORTANT: Preserve array keys when mapping
+                      $mappedOptions = [];
+                      foreach ($options as $key => $label) {
+                          $mappedOptions[$key] = new \Noem\State\Feature\Interaction\ChoiceOption($label);
+                      }
+
+                      $request = new \Noem\State\Feature\Interaction\ChoiceRequest(
+                          question: $question,
+                          options: $mappedOptions
+                      );
+                      $response = yield from $this->interact($request);
+                      $answer = implode(', ', $response); // Selected keys
+                  } else {
+                      // Fall back to free-form prompt
+                      $answer = yield from $this->interact('clarifying-question', [
+                          'question' => $question
+                      ]);
+                  }
+
+                  // Store Q&A pair and increment question count
+                  $qaHistory = $this->get('qa_history', []);
+                  $qaHistory[] = ['question' => $question, 'answer' => $answer];
+                  $this->set('qa_history', $qaHistory);
+                  $this->set('question_count', $questionCount + 1);
+
+                  // Show progress update
+                  echo "\n" . str_repeat('-', 70) . "\n";
+                  echo "Progress Update:\n";
+                  echo "• Confidence: " . number_format($confidence * 100, 0) . "% → Re-analyzing...\n";
+                  echo "• Questions asked: " . ($questionCount + 1) . "\n";
+
+                  // Brief summary from extracted requirements
+                  $extracted = $this->get('extracted_requirements', []);
+                  if (!empty($extracted)) {
+                      echo "• So far: ";
+                      $summaryParts = [];
+                      if (isset($extracted['purpose'])) {
+                          $summaryParts[] = $extracted['purpose'];
+                      }
+                      if (isset($extracted['type'])) {
+                          $summaryParts[] = "({$extracted['type']})";
+                      }
+                      echo implode(' ', array_slice($summaryParts, 0, 2)) . "\n";
+                  }
+                  echo str_repeat('-', 70) . "\n\n";
+
+                  // Re-analyze with new information
+                  $this->set('analysis_complete', false);
+              } catch (\Noem\State\Feature\Interaction\InteractionCancelledException $e) {
+                  // User cancelled interaction
+                  $this->set('should_exit', true);
+              }
+
+              yield;
+          };
         async:
           enabled: true
     transitions:
-      - target: questioning
-        guard: !php return guardQuestioningNotComplete()
+      - target: analyzing_requirements
+        guard: !php |
+          return function(object $t): bool { return $this->get('analysis_complete') === false && $this->get('should_exit') !== true; };
       - target: planning_machine
-        guard: !php return guardQuestioningComplete()
+        # language=injectablephp
+        guard: !php |
+          return function(object $t): bool { return $this->get('confidence_score', 0.0) >= $this->get('confidence_threshold', 0.75); };
       - target: finished
-        guard: !php return guardShouldExit()
+        # language=injectablephp
+        guard: !php |
+          return function(object $t): bool { return $this->get('should_exit') === true; };
 
+  # ============================================================================
+  # STATE: planning_machine
+  # PURPOSE: AI creates detailed implementation plan (states, features, schema)
+  # ============================================================================
   - name: planning_machine
     onEnter:
-      - run: !php return onEnterPlanningMachine()
+      - run: !php |
+          return function(object $t): void { echo "\n[Planning machine architecture...]\n"; };
     action:
-      - run: !php return actionPlanningMachine()
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): \Generator {
+              $requirements = $this->get('requirements');
+              $holonSpec = $this->get('holon_spec');
+              $examples = $this->get('examples');
+
+              $requirementsJson = json_encode($requirements, JSON_PRETTY_PRINT);
+              $holonSpecYaml = yaml_emit($holonSpec);
+              $examplesJson = json_encode($examples, JSON_PRETTY_PRINT);
+
+              // Define planning schema
+              $planSchema = [
+                  'type' => 'object',
+                  'required' => ['machine_name', 'states', 'features', 'context_variables'],
+                  'properties' => [
+                      'machine_name' => ['type' => 'string', 'pattern' => '^[a-z][a-z0-9-]*$'],
+                      'states' => [
+                          'type' => 'array',
+                          'items' => [
+                              'type' => 'object',
+                              'properties' => [
+                                  'name' => ['type' => 'string'],
+                                  'purpose' => ['type' => 'string'],
+                                  'transitions' => ['type' => 'array'],
+                              ],
+                          ],
+                      ],
+                      'features' => ['type' => 'array', 'items' => ['type' => 'string']],
+                      'context_variables' => ['type' => 'object'],
+                      'abilities_needed' => ['type' => 'array', 'items' => ['type' => 'object']],
+                  ],
+              ];
+
+              $prompt = "Create implementation plan:\n\nRequirements: {$requirementsJson}\n\nHolon Spec:\n{$holonSpecYaml}\n\nExamples:\n{$examplesJson}\n\nProvide:\n1. Machine name (kebab-case)\n2. States (name, purpose, transitions)\n3. Required features (full class names)\n4. Context variable schema\n5. Abilities to expose (if any)";
+
+              // AI planning with JSON schema validation
+              $plan = $this->capture($prompt, $planSchema, 'ollama');
+              yield;
+
+              // Store plan
+              $this->set('machine_name', $plan['machine_name']);
+              $this->set('state_flow', $plan['states']);
+              $this->set('required_features', $plan['features']);
+              $this->set('context_variables', $plan['context_variables']);
+              $this->set('abilities_needed', $plan['abilities_needed'] ?? []);
+
+              echo "[Plan created: {$plan['machine_name']} with " . count($plan['states']) . " states]\n";
+              $this->set('plan_complete', true);
+              yield;
+          };
         async:
           enabled: true
     transitions:
       - target: generating_yaml
-        guard: !php return guardPlanComplete()
+        guard: !php |
+          return function(object $t): bool { return $this->get('plan_complete') === true; };
 
+  # ============================================================================
+  # STATE: generating_yaml
+  # PURPOSE: Generate holon.yml (with inline or separate functions based on complexity)
+  # ============================================================================
   - name: generating_yaml
     onEnter:
-      - run: !php return onEnterGeneratingYaml()
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): void { echo "\n[Generating holon.yml...]\n"; };
     action:
-      - run: !php return actionGeneratingYaml()
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): \Generator {
+              $machineName = $this->get('machine_name');
+              $stateFlow = $this->get('state_flow');
+              $requiredFeatures = $this->get('required_features');
+              $requirements = $this->get('requirements');
+              $examples = $this->get('examples');
+
+              // Determine inline vs separate file approach
+              $stateCount = count($stateFlow);
+              $useInline = $stateCount <= 4;
+              $this->set('use_inline_functions', $useInline);
+
+              $stateFlowJson = json_encode($stateFlow, JSON_PRETTY_PRINT);
+              $requiredFeaturesJson = json_encode($requiredFeatures, JSON_PRETTY_PRINT);
+              $requirementsJson = json_encode($requirements, JSON_PRETTY_PRINT);
+              $examplesJson = json_encode($examples, JSON_PRETTY_PRINT);
+
+              // Build appropriate prompt using TemplateHelper
+              $tpl = new \MachineAgent\TemplateHelper($this);
+
+              if ($useInline) {
+                  $prompt = yield from $tpl->generateYaml(
+                      $machineName,
+                      $stateFlow,
+                      $requiredFeatures,
+                      $requirements,
+                      $examples,
+                      true  // useInline
+                  );
+                  // Prompt is now the YAML directly, skip AI generation
+                  $this->set('holon_yaml', $prompt);
+                  $this->set('yaml_generated', true);
+                  yield;
+                  return;
+              } else {
+                  $prompt = yield from $tpl->generateYaml(
+                      $machineName,
+                      $stateFlow,
+                      $requiredFeatures,
+                      $requirements,
+                      $examples,
+                      false  // useInline
+                  );
+                  // Prompt is now the YAML directly, skip to next state
+                  $this->set('holon_yaml', $prompt);
+                  $this->set('yaml_generated', true);
+                  yield;
+                  return;
+              }
+
+          };
         async:
           enabled: true
     transitions:
       - target: generating_functions
-        guard: !php return guardYamlGeneratedNeedsFunctions()
+        # language=injectablephp
+        guard: !php |
+          return function(object $t): bool { return $this->get('yaml_generated') === true && $this->get('use_inline_functions') !== true; };
       - target: validating_output
-        guard: !php return guardYamlGeneratedInline()
+        # language=injectablephp
+        guard: !php |
+          return function(object $t): bool { return $this->get('yaml_generated') === true && $this->get('use_inline_functions') === true; };
 
+  # ============================================================================
+  # STATE: generating_functions
+  # PURPOSE: Generate holon-functions.php for complex machines
+  # ============================================================================
   - name: generating_functions
     onEnter:
-      - run: !php return onEnterGeneratingFunctions()
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): void { echo "\n[Generating holon-functions.php...]\n"; };
     action:
-      - run: !php return actionGeneratingFunctions()
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): \Generator {
+              $machineName = $this->get('machine_name');
+              $stateFlow = $this->get('state_flow');
+              $contextVariables = $this->get('context_variables');
+              $requirements = $this->get('requirements');
+              $abilitiesNeeded = $this->get('abilities_needed');
+
+              // Generate PHP using TemplateHelper
+              $tpl = new \MachineAgent\TemplateHelper($this);
+
+              $php = yield from $tpl->generatePhp(
+                  $machineName,
+                  $stateFlow,
+                  $contextVariables,
+                  $requirements,
+                  $abilitiesNeeded
+              );
+
+              $this->set('holon_functions', $php);
+              echo "[PHP functions generated: " . strlen($php) . " bytes]\n";
+              $this->set('functions_generated', true);
+              yield;
+          };
         async:
           enabled: true
     transitions:
       - target: validating_output
-        guard: !php return guardFunctionsGenerated()
+        # language=injectablephp
+        guard: !php |
+          return function(object $t): bool { return $this->get('functions_generated') === true; };
 
+  # ============================================================================
+  # STATE: validating_output
+  # PURPOSE: Validate generated YAML and PHP syntax before delivery
+  # ============================================================================
   - name: validating_output
     onEnter:
-      - run: !php return onEnterValidatingOutput()
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): void { echo "\n[Validating generated machine...]\n"; };
     action:
-      - run: !php return actionValidatingOutput()
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): \Generator {
+              $yaml = $this->get('holon_yaml');
+              $php = $this->get('holon_functions', '');
+              $useInline = $this->get('use_inline_functions') === true;
+              $errors = [];
+              // Validate YAML syntax
+              try {
+                  yaml_parse($yaml);
+                  echo "✓ YAML syntax valid\n";
+              } catch (\Exception $e) {
+                  $errors[] = "YAML syntax error: " . $e->getMessage();
+                  echo "✗ YAML syntax error\n";
+              }
+              yield;
+              // Validate PHP syntax (only for separate file)
+              if (!$useInline && !empty($php)) {
+                  $tempFile = tempnam(sys_get_temp_dir(), 'machine_agent_php_');
+                  file_put_contents($tempFile, $php);
+                  $phpCheck = shell_exec("php -l " . escapeshellarg($tempFile) . " 2>&1");
+                  unlink($tempFile);
+                  if (strpos($phpCheck, 'No syntax errors') !== false) {
+                      echo "✓ PHP syntax valid\n";
+                  } else {
+                      $errors[] = "PHP syntax error: " . $phpCheck;
+                      echo "✗ PHP syntax error\n";
+                  }
+              } elseif ($useInline) {
+                  echo "✓ Using inline functions (no separate file to validate)\n";
+              }
+              yield;
+              // Structural validation
+              try {
+                  $structure = yaml_parse($yaml);
+                  if (!isset($structure['states']) || empty($structure['states'])) {
+                      $errors[] = "Missing or empty states definition";
+                  }
+                  if (!isset($structure['initial'])) {
+                      $errors[] = "Missing initial state";
+                  }
+                  if (!isset($structure['final'])) {
+                      $errors[] = "Missing final state";
+                  }
+              } catch (\Exception $e) {
+                  // Already caught above
+              }
+              yield;
+              $this->set('validation_errors', $errors);
+
+              if (empty($errors)) {
+                  echo "✓ All validations passed\n";
+                  $this->set('validation_passed', true);
+              } else {
+                  // Increment retry counter
+                  $retryCount = $this->get('retry_count', 0) + 1;
+                  $maxRetries = $this->get('max_retries', 3);
+                  $this->set('retry_count', $retryCount);
+
+                  echo "✗ Validation failed with " . count($errors) . " error(s)\n";
+                  foreach ($errors as $error) {
+                      echo "  - {$error}\n";
+                  }
+
+                  if ($retryCount >= $maxRetries) {
+                      echo "\n[Maximum retry attempts ({$maxRetries}) exceeded. Giving up.]\n";
+                      $this->set('validation_passed', false);
+                      $this->set('should_exit', true);
+                  } else {
+                      echo "\n[Retrying with error feedback... (Attempt {$retryCount}/{$maxRetries})]\n";
+                      $this->set('validation_passed', false);
+                  }
+              }
+              yield;
+          };
         async:
           enabled: true
     transitions:
       - target: delivering_machine
-        guard: !php return guardValidationPassed()
+        # language=injectablephp
+        guard: !php |
+          return function(object $t): bool { return $this->get('validation_passed') === true; };
+      - target: finished
+        # language=injectablephp
+        guard: !php |
+          return function(object $t): bool {
+              return $this->get('validation_passed') === false && $this->get('should_exit') === true;
+          };
       - target: planning_machine
-        guard: !php return guardValidationFailed()
+        # language=injectablephp
+        guard: !php |
+          return function(object $t): bool {
+              return $this->get('validation_passed') === false && $this->get('should_exit') !== true;
+          };
 
+  # ============================================================================
+  # STATE: delivering_machine
+  # PURPOSE: Write generated files to machines/{machine-name}/ directory
+  # ============================================================================
   - name: delivering_machine
     onEnter:
-      - run: !php return onEnterDeliveringMachine()
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): void { echo "\n[Delivering machine...]\n\n"; };
     action:
-      - run: !php return actionDeliveringMachine()
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): \Generator {
+              $machineName = $this->get('machine_name');
+              $yaml = $this->get('holon_yaml');
+              $php = $this->get('holon_functions', '');
+              $useInline = $this->get('use_inline_functions') === true;
+
+              // Validate machine name format
+              if (!is_valid_machine_name($machineName)) {
+                  throw new \RuntimeException("Invalid machine name: {$machineName} (must be kebab-case)");
+              }
+
+              // Create machine directory using bootstrap helper
+              $machineDir = ensure_machine_directory($machineName);
+              yield;
+
+              // Write YAML file atomically
+              atomic_write("{$machineDir}/holon.yml", $yaml);
+              $filesCreated = ["holon.yml (" . strlen($yaml) . " bytes)"];
+
+              // Write PHP file if not inline
+              if (!$useInline && !empty($php)) {
+                  atomic_write("{$machineDir}/holon-functions.php", $php);
+                  $filesCreated[] = "holon-functions.php (" . strlen($php) . " bytes)";
+              }
+              yield;
+
+              // Display success message
+              echo str_repeat('=', 70) . "\n";
+              echo "   MACHINE GENERATED SUCCESSFULLY\n";
+              echo str_repeat('=', 70) . "\n\n";
+              echo "Name: {$machineName}\n";
+              echo "Location: {$machineDir}/\n\n";
+              echo "Files created:\n";
+              foreach ($filesCreated as $file) {
+                  echo "  - {$file}\n";
+              }
+              echo "\n";
+              if ($useInline) {
+                  echo "Note: This machine uses inline PHP functions (no separate file needed)\n\n";
+              }
+              echo "To run your machine:\n";
+              echo "  ddev exec php run.php machines/{$machineName}/holon.yml\n\n";
+              echo str_repeat('=', 70) . "\n\n";
+
+              $this->set('delivery_complete', true);
+              yield;
+          };
         async:
           enabled: true
     transitions:
       - target: finished
-        guard: !php return guardDeliveryComplete()
+        # language=injectablephp
+        guard: !php |
+          return function(object $t): bool { return $this->get('delivery_complete') === true; };
 
+  # ============================================================================
+  # STATE: finished
+  # PURPOSE: Graceful exit with optional cancellation message
+  # ============================================================================
   - name: finished
     onEnter:
-      - run: !php return onEnterFinished()
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): void {
+              $shouldExit = $this->get('should_exit', false);
+              $retryCount = $this->get('retry_count', 0);
+              $maxRetries = $this->get('max_retries', 3);
+
+              if ($shouldExit) {
+                  if ($retryCount >= $maxRetries) {
+                      echo "\n" . str_repeat('=', 70) . "\n";
+                      echo "   GENERATION FAILED\n";
+                      echo str_repeat('=', 70) . "\n\n";
+                      echo "Could not generate valid machine after {$maxRetries} attempts.\n";
+                      echo "The AI-generated YAML had persistent syntax errors.\n\n";
+                      echo "Suggestions:\n";
+                      echo "  - Try simplifying your request\n";
+                      echo "  - Be more specific about states and transitions\n";
+                      echo "  - Check Ollama backend is responding correctly\n\n";
+                  } else {
+                      echo "\nOperation cancelled by user.\n\n";
+                  }
+              }
+              // Clean exit - machine stops here
+          };
 
 initial: idle
 final: finished

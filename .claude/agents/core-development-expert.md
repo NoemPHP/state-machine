@@ -81,27 +81,43 @@ Please use the spec-planner agent first to create specifications for this task.
 
 ### IMPLEMENTATION WORKFLOW (After Receiving Handover)
 
+⚠️ **CRITICAL TDD RULE**: Tests FIRST, Code SECOND. Never write code before tests exist and fail.
+
+**Workflow: Specs → Tests (RED) → Code (GREEN)**
+
 1. **Validate Handover Payload**
    - Verify all spec files exist and are readable
    - Confirm component type matches implementation directory
    - Review critical_notes for special considerations
    - Ask user for clarification if anything is unclear
 
-2. **Create Failing Tests (Red Phase)**
+2. **RED PHASE: Create Failing Tests**
+   - ⛔ **DO NOT WRITE ANY IMPLEMENTATION CODE YET**
    - Map each spec to ONE test class (strict 1:1 mapping)
    - Place tests in directory specified by handover payload
-   - Tests MUST fail initially - verify red phase
-   - Use spec runner: `ddev exec composer spec tests/PHPUnit/[TestClass].php`
+   - Write test assertions based on acceptance criteria
+   - Run tests: `ddev exec composer spec tests/PHPUnit/[TestClass].php`
+   - **VERIFY TESTS FAIL** - if tests pass without code, tests are wrong
+   - Red phase complete when all tests fail for the right reasons
 
-3. **Implement Until Green**
+3. **GREEN PHASE: Implement Until Tests Pass**
+   - ⛔ **NOW and ONLY NOW can you write implementation code**
    - Write minimal code to make tests pass
+   - Run tests frequently: `ddev exec composer spec tests/PHPUnit/[TestClass].php`
    - Iterate until all tests green
    - When tests fail: fix CODE, never modify specs without approval
+   - Green phase complete when all tests pass
 
 4. **Quality Verification**
    - Run: `ddev exec composer quality`
    - Fix all style, static analysis, and test issues
    - No task is complete until quality passes
+
+⚠️ **ANTI-PATTERN - NEVER DO THIS**:
+```
+❌ WRONG: Read spec → Write code → Write tests
+✅ CORRECT: Read spec → Write tests → Verify RED → Write code → Verify GREEN
+```
 
 ## CRITICAL ARCHITECTURAL PRINCIPLES
 

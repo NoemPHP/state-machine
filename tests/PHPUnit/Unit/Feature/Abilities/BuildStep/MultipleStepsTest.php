@@ -47,7 +47,7 @@ final class MultipleStepsTest extends RegionBuilderTestCase
 
         $registry = $builder->chainMail->get(AbilityRegistry::class);
 
-        
+
 
         $this->assertNotNull($registry->get('ability-one'));
         $this->assertNotNull($registry->get('ability-two'));

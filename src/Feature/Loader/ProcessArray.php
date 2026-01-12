@@ -224,7 +224,7 @@ class ProcessArray
         // Wrap untyped closure to add type hints
         // The wrapper will be rebound by ExtendedState, and when it runs,
         // it rebinds the inner callback to propagate the ExtendedState context
-        return function(object $t) use ($callback) {
+        return function (object $t) use ($callback) {
             // Rebind the inner callback to match this wrapper's binding
             // After ExtendedState rebinds this wrapper, $this will be Bound instance
             if ($callback instanceof \Closure) {

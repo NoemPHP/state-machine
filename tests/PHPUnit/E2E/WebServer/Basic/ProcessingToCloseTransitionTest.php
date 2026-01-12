@@ -53,7 +53,7 @@ class ProcessingToCloseTransitionTest extends NetworkMachineTestCase
                     'yaml' => $this->yaml(),
                     'yamlHelpers' => [
                         'get' => new \Noem\State\Feature\Loader\Helper\ContainerGetHelper([
-                            'processing.action' => function(object $trigger) use (&$processingCount) {
+                            'processing.action' => function (object $trigger) use (&$processingCount) {
                                 // Simulate multi-step response generation
                                 $processingCount++;
                                 if ($processingCount >= 2) {
@@ -61,11 +61,11 @@ class ProcessingToCloseTransitionTest extends NetworkMachineTestCase
                                     $this->set('responseComplete', true);
                                 }
                             },
-                            'processing.guard' => function(object $trigger): bool {
+                            'processing.guard' => function (object $trigger): bool {
                                 // Transition when response is complete
                                 return $this->get('responseComplete', false) === true;
                             },
-                            'close.onEnter' => function(object $trigger) use (&$closeEntered) {
+                            'close.onEnter' => function (object $trigger) use (&$closeEntered) {
                                 $closeEntered = true;
                             },
                         ])

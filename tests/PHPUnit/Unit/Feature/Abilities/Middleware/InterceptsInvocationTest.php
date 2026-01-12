@@ -186,7 +186,11 @@ class InterceptsInvocationTest extends TestCase
         $capturedParameters = null;
         $capturedRegion = null;
 
-        $middleware = function (InvokeAbilityParams $params, $next, $first) use (
+        $middleware = function (
+            InvokeAbilityParams $params,
+            $next,
+            $first
+        ) use (
             &$capturedAbilityName,
             &$capturedParameters,
             &$capturedRegion

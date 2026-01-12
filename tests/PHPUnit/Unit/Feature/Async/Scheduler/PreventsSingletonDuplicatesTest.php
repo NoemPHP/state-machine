@@ -14,7 +14,8 @@ final class PreventsSingletonDuplicatesTest extends TestCase
     {
         $scheduler = new CoroutineScheduler();
 
-        $callback = function () {};
+        $callback = function () {
+        };
         $config = new AsyncConfig(singleton: true);
 
         $gen1 = (function () {
@@ -39,7 +40,8 @@ final class PreventsSingletonDuplicatesTest extends TestCase
     {
         $scheduler = new CoroutineScheduler();
 
-        $callback = function () {};
+        $callback = function () {
+        };
         $config = new AsyncConfig(singleton: true);
 
         $gen1 = (function () {
@@ -68,7 +70,8 @@ final class PreventsSingletonDuplicatesTest extends TestCase
     {
         $scheduler = new CoroutineScheduler();
 
-        $callback = function () {};
+        $callback = function () {
+        };
         $config = new AsyncConfig(singleton: false); // Not singleton
 
         $gen1 = (function () {
@@ -91,8 +94,10 @@ final class PreventsSingletonDuplicatesTest extends TestCase
 
         $config = new AsyncConfig(singleton: true);
 
-        $callback1 = function () {};
-        $callback2 = function () {}; // Different instance
+        $callback1 = function () {
+        };
+        $callback2 = function () {
+        }; // Different instance
 
         $gen1 = (function () {
             yield 1;

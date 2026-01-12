@@ -1,7 +1,15 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Tests\PHPUnit\Integration\Feature\Ai\CapabilitySelection;
+
 use PHPUnit\Framework\TestCase;
-class ScoringAlgorithmTest extends TestCase {
-    public function testStub(): void { $this->assertTrue(true); }
+
+class ScoringAlgorithmTest extends TestCase
+{
+    public function testStub(): void
+    {
+        $this->assertTrue(true);
+    }
 }

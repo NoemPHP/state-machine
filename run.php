@@ -24,14 +24,22 @@ if (!is_readable($yamlPath)) {
 try {
     // Create region from YAML file using Holon
     // fromYaml() automatically detects and reads file paths
-    $region = Holon::fromYaml($yamlPath);
+    // Note: If the machine has eventLoop.autoRun: true, this will execute and return the final result
+    // Otherwise, it returns a Region that we need to execute manually
+    $result = Holon::fromYaml($yamlPath);
 
-    // Execute using standard runtime
-    $runtime = new StandardRuntime($region);
-    $isStillRunning = $runtime->run();
+    // Check if result is a Region (manual execution needed) or already executed (autoRun)
+    if ($result instanceof Region) {
+        // Execute using standard runtime
+        $runtime = new StandardRuntime($result);
+        $isStillRunning = $runtime->run();
 
-    // run() returns false when complete (blocking mode with steps=0)
-    echo "Execution complete: " . ($isStillRunning ? 'false' : 'true') . "\n";
+        // run() returns false when complete (blocking mode with steps=0)
+        echo "Execution complete: " . ($isStillRunning ? 'false' : 'true') . "\n";
+    } else {
+        // Machine auto-executed, result is the final trigger object
+        echo "Execution complete (auto-run)\n";
+    }
 } catch (\Throwable $e) {
     echo "Error during execution:\n" . $e->getMessage() . "\n";
     echo "\nStack trace:\n" . $e->getTraceAsString() . "\n";

@@ -1,0 +1,1048 @@
+# Holon YAML Format Specification
+# Complete reference for generating self-contained state machines
+
+format_version: "1.0"
+
+# ==============================================================================
+# MACHINE SECTION - Top-level configuration
+# ==============================================================================
+
+machine:
+  require:
+    syntax: "!php require '/absolute/path/to/functions.php'"
+    purpose: "Load module-level callback functions"
+    critical_notes:
+      - "MUST use container path, not host filesystem path"
+      - "Example: '/var/www/html/machines/my-machine/functions.php'"
+      - "Executes during bootstrap before any state machine logic"
+      - "Defines module-level functions that return closures"
+    example: |
+      machine:
+        require: !php require '/var/www/html/machines/todo-list/holon-functions.php'
+
+  features:
+    syntax: "Array of feature class definitions with optional config"
+    critical_ordering_rules:
+      - "ExtendedState MUST be first (provides $this-> context access)"
+      - "AsyncFeature MUST load AFTER ExtendedState"
+      - "TemplateFeature MUST load BEFORE AiFeature"
+      - "MessageFeature typically loads AFTER AsyncFeature"
+    example: |
+      features:
+        # CRITICAL: This order matters!
+        - class: Noem\State\Feature\ExtendedState\ExtendedState
+        - class: Noem\State\Feature\Template\TemplateFeature
+        - class: Noem\State\Feature\Ai\AiFeature
+        - class: Noem\State\Feature\Ai\AiConfigFeature
+          config:
+            credentials:
+              anthropic:
+                apiKey: "${ANTHROPIC_API_KEY}"
+              ollama:
+                baseUrl: 'http://localhost:11434/api'
+            modelPool:
+              - id: 'claude-sonnet'
+                provider: 'anthropic'
+                model: 'claude-sonnet-4'
+                complexity: 3      # 1=simple, 2=moderate, 3=complex
+                context: 200       # Context window in K tokens
+                cost: 'high'
+        - class: Noem\State\Feature\Async\AsyncFeature
+        - class: Noem\State\Feature\Message\MessageFeature
+        - class: Noem\State\Feature\Abilities\AbilitiesFeature
+        - class: Noem\State\Feature\Agentic\AgenticFeature
+
+  eventLoop:
+    purpose: "Configure automatic event loop execution"
+    options:
+      autoRun:
+        type: boolean
+        default: false
+        meaning: "true = run loop immediately, false = return Region instance"
+      maxIterations:
+        type: integer
+        default: 10000
+        unlimited: "0 or -1 for no limit"
+    example: |
+      eventLoop:
+        autoRun: true
+        maxIterations: 0  # Unlimited for interactive apps
+
+# ==============================================================================
+# STATES - Core state machine structure
+# ==============================================================================
+
+states:
+  required: true
+  syntax: "Array of state definitions"
+
+  state_definition:
+    required_fields: [name]
+    optional_fields: [onEnter, onExit, action, transitions]
+
+    name:
+      type: string
+      pattern: "snake_case"
+      example: "waiting_for_input"
+
+    onEnter:
+      purpose: "Runs once when entering state"
+      return_type: "void"
+      example: |
+        onEnter:
+          - run: !php return onEnterStateName()
+
+    onExit:
+      purpose: "Runs once when leaving state"
+      return_type: "void"
+      example: |
+        onExit:
+          - run: !php return onExitStateName()
+
+    action:
+      purpose: "Runs repeatedly while in state (until transition)"
+      return_type: "void (sync) OR Generator (async)"
+      async_requirement: "MUST return Generator and yield at least once if async enabled"
+      example: |
+        action:
+          - run: !php return actionStateName()
+            async:
+              enabled: true
+
+    transitions:
+      purpose: "Define conditions for moving to next state"
+      evaluation: "Guards checked in order, first true guard fires"
+      example: |
+        transitions:
+          - target: next_state
+            guard: !php return guardReady()
+          - target: error_state
+            guard: !php return guardHasError()
+
+# ==============================================================================
+# CALLBACK SIGNATURES - Module-level function patterns
+# ==============================================================================
+
+callback_signatures:
+  critical_pattern:
+    description: "ALL callbacks MUST follow this pattern"
+    reason: "ExtendedState binds closures to context at runtime"
+    pattern: |
+      function callbackName() {
+          return function(object $t): ReturnType {
+              // $t = trigger object
+              // $this-> = ExtendedState context (get/set/complete/capture/etc)
+          };
+      }
+
+  critical_type_filtering:
+    description: "Parameter type hint acts as EVENT FILTER (similar to PSR-14)"
+    behavior: |
+      Type hints are NOT just documentation - they control WHICH events invoke the callback!
+
+      - 'object $t' = CATCH-ALL (accepts ANY event payload)
+      - 'MyInterface $t' = FILTERED (only invoked if payload implements MyInterface)
+      - 'SpecificClass $t' = FILTERED (only invoked if payload is instance of SpecificClass)
+
+    examples:
+      catch_all: |
+        // This callback receives ALL events
+        function onEnterState() {
+            return function(object $t): void {
+                // Invoked for every event
+            };
+        }
+
+      filtered_by_interface: |
+        // This callback ONLY receives events implementing UserAction
+        function onEnterState() {
+            return function(UserAction $t): void {
+                // Only invoked when $t implements UserAction
+                $userId = $t->getUserId();
+            };
+        }
+
+      multiple_handlers: |
+        // You can register multiple handlers with different type filters
+        ->onAction('processing', function(object $t) {
+            // Fallback handler for all events
+        })
+        ->onAction('processing', function(ApiRequest $t) {
+            // Specific handler for ApiRequest events
+        })
+
+    critical_notes:
+      - "Type filtering happens BEFORE callback execution"
+      - "Multiple callbacks can coexist with different type filters"
+      - "Use 'object' when you don't need filtering"
+      - "Use specific types to create event-specific handlers"
+
+  onEnter_onExit:
+    return_type: "void"
+    pattern: |
+      function onEnterStateName() {
+          return function(object $t): void {
+              echo "Entering state\n";
+              $this->set('entered_at', time());
+          };
+      }
+
+  action_synchronous:
+    return_type: "void"
+    when_to_use: "Pure computation, no I/O"
+    pattern: |
+      function actionStateName() {
+          return function(object $t): void {
+              $count = $this->get('counter', 0);
+              $this->set('counter', $count + 1);
+          };
+      }
+
+  action_asynchronous:
+    return_type: "Generator"
+    when_to_use: "AI calls, I/O, abilities, any blocking operation"
+    critical_requirement: "MUST yield at least once"
+    pattern: |
+      function actionStateName() {
+          return function(object $t): Generator {
+              // AI text completion
+              $result = $this->capture($prompt, $schema, 'ollama');
+
+              // MUST yield at least once
+              yield;
+
+              // Process result
+              $this->set('ai_result', $result);
+          };
+      }
+
+    common_mistake: |
+      # WRONG - capture() returns value directly, NOT Generator
+      $result = yield from $this->capture(...);  // ❌ ERROR
+
+      # CORRECT - capture() returns the value
+      $result = $this->capture(...);             // ✅ CORRECT
+      yield;  // Still must yield for async scheduler
+
+  guard:
+    return_type: "bool (REQUIRED - MUST explicitly return boolean)"
+    purpose: "Return true to allow transition, false to prevent"
+    critical_requirement: "Guards MUST return bool - non-boolean returns will cause runtime errors"
+    type_filtering: "Guards support type filtering like other callbacks"
+    pattern: |
+      function guardCondition() {
+          return function(object $t): bool {
+              return $this->get('ready') === true;
+          };
+      }
+
+    filtered_guard_example: |
+      // Guard only checks specific event types
+      function guardUserAuthenticated() {
+          return function(LoginEvent $t): bool {
+              return $t->isAuthenticated();
+          };
+      }
+
+    common_mistakes: |
+      # ❌ WRONG - Missing return statement
+      function guardReady() {
+          return function(object $t): bool {
+              $this->get('ready');  // Missing return!
+          };
+      }
+
+      # ❌ WRONG - Returns non-boolean
+      function guardCount() {
+          return function(object $t): bool {
+              return $this->get('count');  // Returns int, not bool!
+          };
+      }
+
+      # ✅ CORRECT - Explicit boolean return
+      function guardReady() {
+          return function(object $t): bool {
+              return $this->get('ready') === true;
+          };
+      }
+
+# ==============================================================================
+# EVENT TYPE FILTERING - PSR-14 Style Event Dispatching
+# ==============================================================================
+
+event_type_filtering:
+  description: "Type hints on callback parameters act as event filters"
+
+  mechanism:
+    how_it_works: |
+      When a callback is registered with a type hint, the state machine checks
+      if the incoming event payload matches that type BEFORE invoking the callback.
+      This is similar to PSR-14 event dispatching where listeners filter by event type.
+
+    execution_order: |
+      1. Event triggered with payload
+      2. State machine checks callback parameter type hint
+      3. If payload matches type → invoke callback
+      4. If payload doesn't match type → skip callback
+      5. Multiple callbacks can coexist with different type filters
+
+  use_cases:
+    catch_all_handler:
+      when_to_use: "Default behavior, simple machines, no event filtering needed"
+      syntax: "function(object $t): ReturnType"
+      example: |
+        function onEnterProcessing() {
+            return function(object $t): void {
+                // Handles ALL events regardless of type
+                echo "Processing any event\n";
+            };
+        }
+
+    filtered_handler:
+      when_to_use: "Complex machines, event-specific behavior, type-safe access"
+      syntax: "function(SpecificType $t): ReturnType"
+      example: |
+        function onEnterProcessing() {
+            return function(ApiRequest $t): void {
+                // ONLY invoked for ApiRequest events
+                $endpoint = $t->getEndpoint();  // Type-safe access
+                echo "Processing API request to {$endpoint}\n";
+            };
+        }
+
+    multiple_handlers:
+      when_to_use: "Different behavior for different event types in same state"
+      example: |
+        // Register multiple handlers with different type filters
+        ->onAction('processing', function(object $t) {
+            // Fallback for all events
+            echo "Default processing\n";
+        })
+        ->onAction('processing', function(HttpRequest $t) {
+            // Specific handling for HTTP requests
+            $this->set('method', $t->getMethod());
+        })
+        ->onAction('processing', function(DatabaseQuery $t) {
+            // Specific handling for database queries
+            $this->set('table', $t->getTable());
+        })
+
+  real_world_examples:
+    user_authentication:
+      description: "Different guards for different event types"
+      code: |
+        // Guard only checks LoginEvent, ignores other events
+        function guardUserLoggedIn() {
+            return function(LoginEvent $t): bool {
+                return $t->isAuthenticated() === true;
+            };
+        }
+
+        // Catch-all guard checks context
+        function guardSessionActive() {
+            return function(object $t): bool {
+                return $this->get('session_active') === true;
+            };
+        }
+
+    api_routing:
+      description: "Route different API request types to different handlers"
+      code: |
+        ->onAction('handling_request', function(GetRequest $t): void {
+            $this->set('method', 'GET');
+            $this->set('data', $t->getQueryParams());
+        })
+        ->onAction('handling_request', function(PostRequest $t): void {
+            $this->set('method', 'POST');
+            $this->set('data', $t->getBody());
+        })
+
+    error_handling:
+      description: "Specific handlers for different error types"
+      code: |
+        ->onEnter('error_state', function(ValidationError $t): void {
+            $this->set('error_type', 'validation');
+            $this->set('errors', $t->getValidationErrors());
+        })
+        ->onEnter('error_state', function(DatabaseError $t): void {
+            $this->set('error_type', 'database');
+            $this->set('query', $t->getFailedQuery());
+        })
+        ->onEnter('error_state', function(object $t): void {
+            // Catch-all for other error types
+            $this->set('error_type', 'unknown');
+        })
+
+  critical_notes:
+    - "Type filtering happens BEFORE callback execution (performance optimization)"
+    - "instanceof check is used internally"
+    - "Interface type hints work (e.g., UserAction implements ActionInterface)"
+    - "Use 'object $t' when you don't need filtering (most common for simple machines)"
+    - "Multiple callbacks with same type filter are ALL invoked"
+    - "Guards with type filters only evaluate for matching events"
+
+# ==============================================================================
+# CONTEXT API - Methods available as $this-> in callbacks
+# ==============================================================================
+
+context_api:
+  availability: "Requires ExtendedState feature"
+
+  data_access:
+    get:
+      signature: "get(string $key, mixed $default = null): mixed"
+      purpose: "Retrieve value from context"
+      example: "$value = $this->get('user_input', '');"
+
+    set:
+      signature: "set(string $key, mixed $value): void"
+      purpose: "Store value in context"
+      example: "$this->set('counter', 42);"
+
+  ai_operations:
+    capture:
+      signature: "capture(string $prompt, array $schema, string $backend = 'openai'): array"
+      purpose: "AI structured data extraction with JSON Schema validation"
+      requires: "AiFeature"
+      returns: "array - Parsed JSON matching schema"
+      critical_note: "Returns value directly, NOT a Generator - do NOT use 'yield from'"
+      example: |
+        $schema = [
+            'type' => 'object',
+            'required' => ['name', 'age'],
+            'properties' => [
+                'name' => ['type' => 'string'],
+                'age' => ['type' => 'number']
+            ]
+        ];
+        $data = $this->capture('Extract user data', $schema, 'ollama');
+        yield;  # Still yield for async scheduler
+
+    complete:
+      signature: "complete(string $prompt, string $backend = 'openai'): string"
+      purpose: "AI text completion"
+      requires: "AiFeature"
+      returns: "string - Complete generated text"
+      note: "Use template() for streaming"
+      example: |
+        $text = $this->complete('Generate a greeting', 'anthropic');
+        yield;
+
+    template:
+      signature: "template(string $template): Generator"
+      purpose: "Render template with AI helpers (streaming)"
+      requires: "TemplateFeature + AiFeature"
+      returns: "Generator yielding string chunks"
+      example: |
+        $this->set('userName', 'Alice');
+        $template = $this->template(
+            <<<'TEMPLATE'
+        Hello {{userName}}!
+        {{#complete max=50 backend="ollama"}}
+        Generate a friendly greeting
+        {{/complete}}
+        TEMPLATE
+        );
+
+        $result = '';
+        while ($template->valid()) {
+            $chunk = $template->current();
+            $result .= $chunk;
+            $template->next();
+            yield;
+        }
+
+  abilities:
+    signature: "abilities(string $name, mixed $params = null): Message"
+    purpose: "Invoke registered tool/ability"
+    requires: "AbilitiesFeature"
+    returns: "Message object with then() for async response handling"
+    example: |
+      $msg = $this->abilities('calculate', ['numbers' => [1, 2, 3]]);
+      $msg->then(function($response) {
+          $this->set('total', $response->parameters['result']);
+      });
+      yield;
+
+  weave:
+    signature: "weave(string $intent, array $options = []): Generator"
+    purpose: "Autonomous AI-powered tool orchestration"
+    requires: "AgenticFeature"
+    returns: "Generator yielding result array"
+    example: |
+      $result = yield from $this->weave(
+          'Find user by email and update preferences',
+          tools: ['user-*'],
+          maxIterations: 5,
+          backend: 'anthropic'
+      );
+
+# ==============================================================================
+# FEATURE REFERENCE - What each feature provides
+# ==============================================================================
+
+features:
+  ExtendedState:
+    class: "Noem\\State\\Feature\\ExtendedState\\ExtendedState"
+    provides: ["$this->get()", "$this->set()"]
+    critical: "MUST be first feature loaded"
+
+  AsyncFeature:
+    class: "Noem\\State\\Feature\\Async\\AsyncFeature"
+    provides: ["Generator-based async execution", "Coroutine scheduler"]
+    critical: "MUST load AFTER ExtendedState"
+    enables: "async.enabled: true in actions"
+
+  TemplateFeature:
+    class: "Noem\\State\\Feature\\Template\\TemplateFeature"
+    provides: ["$this->template()", "Mustache rendering"]
+    required_for: "AiFeature template helpers"
+
+  AiFeature:
+    class: "Noem\\State\\Feature\\Ai\\AiFeature"
+    provides: ["$this->complete()", "$this->capture()", "Template AI helpers"]
+    requires: "TemplateFeature"
+
+  AiConfigFeature:
+    class: "Noem\\State\\Feature\\Ai\\AiConfigFeature"
+    provides: ["ModelPool", "Credential injection", "Capability-based selection"]
+    optional: true
+
+  MessageFeature:
+    class: "Noem\\State\\Feature\\Message\\MessageFeature"
+    provides: ["Message correlation", "Request-response pattern"]
+    required_for: "AbilitiesFeature"
+
+  AbilitiesFeature:
+    class: "Noem\\State\\Feature\\Abilities\\AbilitiesFeature"
+    provides: ["$this->abilities()", "Tool/ability system"]
+    requires: "MessageFeature"
+
+  AgenticFeature:
+    class: "Noem\\State\\Feature\\Agentic\\AgenticFeature"
+    provides: ["$this->weave()", "Autonomous AI orchestration"]
+    requires: ["AbilitiesFeature", "AiFeature"]
+
+# ==============================================================================
+# COMMON PATTERNS
+# ==============================================================================
+
+patterns:
+  interactive_cli:
+    description: "Long-running interactive application"
+    key_settings:
+      - "eventLoop.autoRun: true"
+      - "eventLoop.maxIterations: 0  # Unlimited"
+    structure: |
+      states:
+        - name: idle
+          onEnter: [run: !php return initialize()]
+          transitions: [{target: waiting_input}]
+
+        - name: waiting_input
+          action:
+            - run: !php return readInput()
+              async: {enabled: true}
+          transitions:
+            - {target: processing, guard: !php return hasInput()}
+            - {target: finished, guard: !php return shouldExit()}
+
+        - name: processing
+          action: [run: !php return processInput(), async: {enabled: true}]
+          transitions: [{target: waiting_input}]
+
+        - name: finished
+
+      initial: idle
+      final: finished
+
+  ai_workflow:
+    description: "AI-powered analysis with retry logic"
+    structure: |
+      states:
+        - name: analyzing
+          action: [run: !php return analyzeWithAI(), async: {enabled: true}]
+          transitions:
+            - {target: validating, guard: !php return analysisComplete()}
+
+        - name: validating
+          action: [run: !php return validate()]
+          transitions:
+            - {target: delivering, guard: !php return validationPassed()}
+            - {target: analyzing, guard: !php return needsRetry()}  # Retry
+
+        - name: delivering
+          onEnter: [run: !php return deliver()]
+          transitions: [{target: finished}]
+
+    callback_example: |
+      function analyzeWithAI() {
+          return function(object $t): Generator {
+              $input = $this->get('user_input');
+
+              $schema = [
+                  'type' => 'object',
+                  'required' => ['confidence', 'result'],
+                  'properties' => [
+                      'confidence' => ['type' => 'number'],
+                      'result' => ['type' => 'string']
+                  ]
+              ];
+
+              $analysis = $this->capture(
+                  "Analyze: " . $input,
+                  $schema,
+                  'ollama'
+              );
+
+              yield;  # Required for async
+
+              $this->set('analysis', $analysis);
+              $this->set('analysis_complete', true);
+          };
+      }
+
+# ==============================================================================
+# YAML TAGS
+# ==============================================================================
+
+yaml_tags:
+  php_tag:
+    syntax: "!php <expression>"
+    purpose: "Evaluate PHP code"
+    use_cases:
+      - "Callback references: !php return functionName()"
+      - "Inline functions: !php return function(object $t) { /* code */ };"
+      - "Require files: !php require '/path/file.php'"
+    critical_limitation: "No access to $this or runtime context during YAML parsing"
+    examples:
+      - "run: !php return onEnterIdle()"
+      - "run: !php return function(object $t) { $this->set('ready', true); };"
+      - "guard: !php return guardReady()"
+      - "guard: !php return function(object $t) { return $this->get('done') === true; };"
+      - "require: !php require '/var/www/html/functions.php'"
+
+# ==============================================================================
+# INLINE PHP FUNCTIONS
+# ==============================================================================
+
+inline_php_pattern:
+  description: "For simple callbacks, define functions directly in YAML instead of separate file"
+
+  when_to_use_inline:
+    - "Callback is 1-3 lines of simple logic"
+    - "No complex async operations (multiple yields)"
+    - "Logic is specific to this state (not reused)"
+    - "Machine has < 5 states"
+    - "Debugging is not a priority (inline harder to debug)"
+
+  when_to_use_separate_file:
+    - "Callback has > 3 lines or complex logic"
+    - "Multiple yield points or complex async flow"
+    - "Logic is reused across multiple states"
+    - "Machine has >= 5 states"
+    - "Needs proper IDE support and debugging"
+    - "Using AI operations with large prompts"
+    - "Complex template rendering"
+
+  inline_syntax:
+    onEnter_onExit: |
+      states:
+        - name: idle
+          onEnter:
+            - run: !php return function(object $t) { echo "Starting\n"; $this->set('started', true); };
+          onExit:
+            - run: !php return function(object $t) { echo "Stopping\n"; $this->set('stopped', true); };
+
+    simple_action: |
+      states:
+        - name: counting
+          action:
+            - run: !php return function(object $t) { $count = $this->get('count', 0); $this->set('count', $count + 1); };
+
+    simple_guard: |
+      transitions:
+        - target: next_state
+          guard: !php return function(object $t) { return $this->get('ready') === true; };
+
+    async_action_simple: |
+      states:
+        - name: processing
+          action:
+            - run: !php return function(object $t) { $result = $this->complete("Say hello", "ollama"); yield; $this->set('greeting', $result); };
+              async:
+                enabled: true
+
+  multiline_inline_syntax:
+    description: "For slightly longer inline functions, use YAML literal block syntax"
+    example: |
+      states:
+        - name: validating
+          action:
+            - run: !php |
+                return function(object $t) {
+                  $input = $this->get('user_input', '');
+                  if (strlen($input) < 3) {
+                    $this->set('error', 'Too short');
+                    return;
+                  }
+                  $this->set('valid', true);
+                };
+
+  comparison_patterns:
+    separate_file_approach: |
+      # holon.yml
+      machine:
+        require: !php require '/var/www/html/machines/todo-list/holon-functions.php'
+
+      states:
+        - name: idle
+          onEnter:
+            - run: !php return onEnterIdle()
+
+      # holon-functions.php
+      <?php
+      function onEnterIdle() {
+          return function(object $t): void {
+              echo "Starting\n";
+              $this->set('started', true);
+          };
+      }
+
+    inline_approach: |
+      # holon.yml (no separate file needed)
+      states:
+        - name: idle
+          onEnter:
+            - run: !php return function(object $t) { echo "Starting\n"; $this->set('started', true); };
+
+  phpstorm_syntax_highlighting:
+    description: "Enable full PHP syntax highlighting for inline callbacks in PHPStorm"
+    pattern: "Add '# language=injectablephp' comment immediately before !php tag"
+
+    example_single_line: |
+      states:
+        - name: idle
+          onEnter:
+            # language=injectablephp
+            - run: !php return function(object $t) { echo "Starting\n"; };
+
+    example_multiline: |
+      states:
+        - name: processing
+          action:
+            # language=injectablephp
+            - run: !php |
+                return function(object $t): \Generator {
+                    // Full IDE support: autocomplete, syntax highlighting, type hints
+                    $data = $this->get('data');
+                    $result = $this->complete("Process: {$data}", "ollama");
+                    yield;
+                    $this->set('result', $result);
+                };
+              async:
+                enabled: true
+
+    example_guard: |
+      transitions:
+        - target: next_state
+          # language=injectablephp
+          guard: !php |
+            return function(object $t): bool {
+                return $this->get('ready') === true;
+            };
+
+    critical_requirement: "ALWAYS include language injection comment in generated machines"
+    benefits:
+      - "Full PHP syntax highlighting in YAML files"
+      - "Autocomplete for $this-> methods"
+      - "Type hints and parameter suggestions"
+      - "Error detection and warnings"
+      - "Refactoring support"
+
+  critical_notes:
+    - "✅ ALWAYS add '# language=injectablephp' before inline PHP for IDE support"
+    - "Inline functions still follow module-level pattern (return closure)"
+    - "Type hint is FUNCTIONAL - acts as event filter (PSR-14 style)"
+    - "'object $t' = catch-all (accepts any event)"
+    - "'MyInterface $t' = filtered (only invoked if event implements MyInterface)"
+    - "Guards MUST return bool - non-boolean returns cause errors"
+    - "Still have access to $this-> context (bound at runtime)"
+    - "Can mix inline and file-based callbacks in same machine"
+    - "Inline code is harder to test and debug"
+
+  recommended_hybrid_approach:
+    description: "Use inline for simple state management, separate file for complex logic"
+    example: |
+      machine:
+        require: !php require '/var/www/html/machines/todo-list/holon-functions.php'
+
+      states:
+        - name: idle
+          # Simple inline
+          onEnter:
+            - run: !php return function(object $t) { $this->set('ready', true); };
+          transitions:
+            - target: processing
+
+        - name: processing
+          # Complex logic in separate file
+          action:
+            - run: !php return processWithAI()
+              async:
+                enabled: true
+          transitions:
+            - target: finished
+              guard: !php return function(object $t) { return $this->get('complete') === true; };
+
+  get_tag:
+    syntax: "!get <service>"
+    purpose: "Retrieve service from DI container"
+    availability: "After container built"
+
+  include_tag:
+    syntax: "!include <file>"
+    purpose: "Include external YAML file"
+    use_case: "Split large configurations"
+
+# ==============================================================================
+# CRITICAL DO's AND DON'Ts
+# ==============================================================================
+
+critical_rules:
+  dos:
+    - "✅ Load ExtendedState first"
+    - "✅ Load AsyncFeature AFTER ExtendedState"
+    - "✅ Use container paths (/var/www/html/...) in require"
+    - "✅ Make all actions return Generator if async enabled"
+    - "✅ Yield at least once in async actions"
+    - "✅ Use module-level functions returning closures (or inline !php functions)"
+    - "✅ Call capture() and complete() directly (NOT yield from)"
+    - "✅ Generate YAML strings for Holon::fromYaml() (NOT JSON or arrays)"
+    - "✅ Use inline !php for simple callbacks (< 3 lines)"
+    - "✅ Use separate file for complex logic (> 3 lines, multiple yields, AI prompts)"
+    - "✅ Guards MUST return bool (use === true/false for explicit comparison)"
+    - "✅ Use 'object $t' for catch-all event handling"
+    - "✅ Use specific type hints (MyInterface $t) for event filtering"
+
+  donts:
+    - "❌ DON'T load AsyncFeature before ExtendedState"
+    - "❌ DON'T use yield from with capture() or complete()"
+    - "❌ DON'T forget to yield in async actions"
+    - "❌ DON'T use host filesystem paths in require"
+    - "❌ DON'T use class methods for callbacks (use module-level functions or inline)"
+    - "❌ DON'T access $this in YAML !php tags (not available during parsing)"
+    - "❌ DON'T output JSON or PHP arrays when generating machines"
+    - "❌ DON'T inline complex logic (use separate file for debugging)"
+    - "❌ DON'T return non-boolean from guards (must return bool)"
+    - "❌ DON'T forget return statement in guards"
+    - "❌ DON'T treat type hints as documentation - they are FUNCTIONAL filters"
+
+# ==============================================================================
+# INITIAL & FINAL
+# ==============================================================================
+
+initial_final:
+  initial:
+    required: true
+    type: string
+    description: "Name of starting state"
+    example: "initial: idle"
+
+  final:
+    required: true
+    type: string
+    description: "Name of terminal state"
+    example: "final: finished"
+
+# ==============================================================================
+# MACHINE GENERATION OUTPUT FORMAT
+# ==============================================================================
+
+machine_generation:
+  critical_requirement: "When generating machines, AI MUST output valid YAML strings"
+
+  output_format:
+    description: "Output must be valid YAML compatible with Holon::fromYaml()"
+    format: "Plain text YAML string (NOT JSON, NOT PHP arrays)"
+
+  approach_selection:
+    description: "Choose between inline PHP or separate file based on complexity"
+
+    use_inline_approach_when:
+      - "Machine has <= 4 states"
+      - "All callbacks are < 3 lines"
+      - "No complex async operations (single yield points)"
+      - "No large AI prompts (< 200 characters)"
+      - "Simple state management only"
+
+    use_separate_file_when:
+      - "Machine has >= 5 states"
+      - "Any callback is > 3 lines"
+      - "Complex async with multiple yields"
+      - "Large AI prompts or templates"
+      - "Code reuse across states"
+      - "Debugging will be needed"
+
+  example_separate_file_output: |
+    machine:
+      require: !php require '/var/www/html/machines/todo-list/holon-functions.php'
+
+      features:
+        - class: Noem\State\Feature\ExtendedState\ExtendedState
+        - class: Noem\State\Feature\Async\AsyncFeature
+
+      eventLoop:
+        autoRun: true
+        maxIterations: 0
+
+    states:
+      - name: idle
+        onEnter:
+          - run: !php return onEnterIdle()
+        transitions:
+          - target: working
+
+      - name: working
+        action:
+          - run: !php return actionWorking()
+            async:
+              enabled: true
+        transitions:
+          - target: finished
+            guard: !php return guardComplete()
+
+      - name: finished
+
+    initial: idle
+    final: finished
+
+  example_inline_output: |
+    machine:
+      features:
+        - class: Noem\State\Feature\ExtendedState\ExtendedState
+        - class: Noem\State\Feature\Async\AsyncFeature
+
+      eventLoop:
+        autoRun: true
+        maxIterations: 0
+
+    states:
+      - name: idle
+        onEnter:
+          - run: !php return function(object $t) { $this->set('count', 0); echo "Counter initialized\n"; };
+        transitions:
+          - target: counting
+
+      - name: counting
+        action:
+          - run: !php return function(object $t) { $count = $this->get('count', 0); $this->set('count', $count + 1); echo "Count: " . ($count + 1) . "\n"; yield; };
+            async:
+              enabled: true
+        transitions:
+          - target: finished
+            guard: !php return function(object $t) { return $this->get('count', 0) >= 10; };
+
+      - name: finished
+        onEnter:
+          - run: !php return function(object $t) { echo "Finished counting!\n"; };
+
+    initial: idle
+    final: finished
+
+  wrong_format_json: |
+    # ❌ WRONG - JSON object (cannot be used with Holon::fromYaml())
+    {
+      "states": [
+        {"name": "idle", "transitions": [{"target": "working"}]}
+      ],
+      "initial": "idle",
+      "final": "finished"
+    }
+
+  wrong_format_array: |
+    # ❌ WRONG - PHP array structure (not YAML text)
+    [
+      'states' => [
+        ['name' => 'idle', 'transitions' => [['target' => 'working']]]
+      ],
+      'initial' => 'idle',
+      'final' => 'finished'
+    ]
+
+  post_processing_pattern:
+    description: "If using capture() with JSON schema, convert to YAML"
+    reason: "capture() returns structured data, but Holon::fromYaml() requires YAML string"
+    example_conversion: |
+      function generateMachine() {
+          return function(object $t): Generator {
+              // Get structured data from AI
+              $result = $this->capture($prompt, $schema, 'ollama');
+              yield;
+
+              // Convert to YAML string for Holon::fromYaml()
+              $yaml = "states:\n";
+              foreach ($result['states'] as $state) {
+                  $yaml .= "  - name: {$state['name']}\n";
+                  if (isset($state['transitions'])) {
+                      $yaml .= "    transitions:\n";
+                      foreach ($state['transitions'] as $trans) {
+                          $yaml .= "      - target: {$trans['target']}\n";
+                      }
+                  }
+              }
+              $yaml .= "initial: {$result['initial']}\n";
+              $yaml .= "final: {$result['final']}\n";
+
+              $this->set('machine_yaml', $yaml);
+              yield;
+          };
+      }
+
+  recommended_approach:
+    description: "Use complete() for direct YAML generation (no conversion needed)"
+    reason: "complete() returns text, perfect for YAML output"
+    example: |
+      function generateMachine() {
+          return function(object $t): Generator {
+              $prompt = "Generate valid YAML for a todo list machine...";
+
+              $template = $this->template(
+                  <<<'TEMPLATE'
+              {{#complete max=4000 backend="ollama"}}
+              {{promptText}}
+              {{/complete}}
+              TEMPLATE
+              );
+
+              $yaml = '';
+              while ($template->valid()) {
+                  $chunk = $template->current();
+                  $yaml .= $chunk;
+                  $template->next();
+                  yield;
+              }
+
+              // Clean markdown wrapping if AI adds it
+              $yaml = preg_replace('/^```ya?ml\n/', '', $yaml);
+              $yaml = preg_replace('/\n```$/', '', trim($yaml));
+
+              $this->set('machine_yaml', $yaml);
+              yield;
+          };
+      }
+
+  validation:
+    description: "Before using generated YAML"
+    steps:
+      - "Parse with yaml_parse() to check syntax"
+      - "Verify required keys exist (states, initial, final)"
+      - "Check all callback references (!php return functionName())"
+    example: |
+      $parsed = yaml_parse($yaml);
+      if ($parsed === false) {
+          throw new Exception('Invalid YAML syntax');
+      }
+      if (!isset($parsed['states'], $parsed['initial'], $parsed['final'])) {
+          throw new Exception('Missing required keys');
+      }

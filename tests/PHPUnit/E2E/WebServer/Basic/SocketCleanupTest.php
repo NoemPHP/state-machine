@@ -52,7 +52,7 @@ class SocketCleanupTest extends NetworkMachineTestCase
                     'yaml' => $this->yaml(),
                     'yamlHelpers' => [
                         'get' => new \Noem\State\Feature\Loader\Helper\ContainerGetHelper([
-                            'close.onEnter' => function(object $trigger) use ($connection, &$socketClosed) {
+                            'close.onEnter' => function (object $trigger) use ($connection, &$socketClosed) {
                                 // Close the client socket
                                 $connection->close();
                                 $socketClosed = true;

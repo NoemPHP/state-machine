@@ -138,10 +138,9 @@ class ParameterDeriver
      */
     public static function isCompatibleParameter(
         string|array|callable $callback,
-        object                $payload,
-        int                   $param = 0
-    ): bool
-    {
+        object $payload,
+        int $param = 0
+    ): bool {
         $parameterType = self::getParameterType($callback, $param);
 
         if ($parameterType !== 'object' && !$payload instanceof $parameterType) {

@@ -17,15 +17,23 @@ Event-based finite state machines with hierarchical states, middleware systems, 
 ```
 User Request
     ↓
-spec-planner agent → Creates YAML specs → User approves
+spec-planner agent → Creates YAML specs → User reviews
+    ↓
+User approves specs
+    ↓
+❓ ASK USER: "Should I proceed with implementing these specs?"
+    ↓
+If YES:
     ↓
 HANDOVER (JSON payload)
     ↓
-core-development-expert agent → Implements from specs
+core-development-expert agent → RED: Write FAILING tests
     ↓
-Tests (red) → Code (green) → Quality checks
+GREEN: Write code to pass tests → Quality checks
     ↓
 Done
+
+If NO: Stop (specs ready for later implementation)
 ```
 
 ### Critical Rules
@@ -75,15 +83,17 @@ User: "Add a MessageFeature for request-response patterns"
 → Launch spec-planner agent to create specifications
 ```
 
-**Output**: Approved spec files + JSON handover payload for core-development-expert
+**Output**: Approved spec files
+
+**Next Step**: After user approves specs, ASK if they want to proceed with implementation
 
 ### core-development-expert (Implementation Phase)
 
 **Use for**: Implementing code from approved specifications
 
 **When to invoke**:
-- After spec-planner completes and provides handover payload
-- When specs already exist and are approved
+- After spec-planner completes AND user confirms they want to proceed with implementation
+- When specs already exist and user wants them implemented
 
 **Requires**: JSON handover payload containing:
 - Spec file paths
@@ -189,6 +199,59 @@ Features extend RegionBuilder capabilities through wrapper pattern:
 
 ---
 
+## 🔧 Context Helpers
+
+When ExtendedState is enabled, callbacks have access to `$this` context helpers:
+
+### Data Access
+- `$this->get(string $key, mixed $default = null): mixed` - Retrieve context value
+- `$this->set(string $key, mixed $value): void` - Store context value
+
+### Dynamic Machine Loading (summon)
+
+**Requires**: RegionLoader + ExtendedState
+
+```php
+$childRegion = $this->summon(string $filepath): Region
+```
+
+Dynamically loads a child state machine from YAML during callback execution.
+
+**Key Points**:
+- Returns `Region` (NOT `Runtime`) - you control execution
+- Absolute paths used as-is, relative paths resolve against `loader.array.includes.basePath` or `getcwd()`
+- Configure basePath via RegionBuilder: `->build(['loader' => ['array' => ['includes' => ['basePath' => '/custom/path']]]])`
+- Fresh instance per call - store in context if reuse needed
+- Use `subscribe`/`dispatch` for parent-child communication
+
+**Example - Tool Composition**:
+```php
+->onAction('processing', function(object $t): \Generator {
+    // Load child machine
+    $generator = $this->summon('machines/machine-generator/holon.yml');
+    yield;
+
+    // Subscribe to child messages
+    $generator->subscribe('generation.complete', fn($msg) =>
+        $this->set('result', $msg->payload)
+    );
+
+    // Send request to child
+    $generator->dispatch('generate.request', (object)[
+        'payload' => ['description' => 'Create todo list'],
+    ]);
+    yield;
+
+    // Execute child until complete
+    while (!$generator->isComplete()) {
+        $generator->run();
+        yield;
+    }
+})
+```
+
+---
+
 ## ✅ Code Modification Rules
 
 ### ALLOWED - Internal Code
@@ -285,8 +348,9 @@ test -f machines/{machine-name}/CLAUDE.md && echo "EXISTS"
 
 4. **You**: Launch `core-development-expert` with handover payload
    - Validates payload
-   - Creates failing tests (red phase)
-   - Implements code (green phase)
+   - **RED PHASE**: Writes tests that FAIL (no implementation code yet)
+   - Verifies tests fail for correct reasons
+   - **GREEN PHASE**: Writes minimal code to make tests pass
    - Runs quality checks
    - Reports completion
 

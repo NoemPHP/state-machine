@@ -1,0 +1,542 @@
+name: presentation
+group: features
+description: |
+  Schema-enforced declarative state exposure for AI agents, monitoring dashboards, and debugging tools. Provides
+  RegionPresentation value object for metadata-rich field descriptions, PresentationRegistry for discovery-enabled
+  storage, and abilities-based enumeration following AbilitiesFeature patterns. Hard dependency on JsonSchemaFeature
+  ensures all exposed state is schema-validated and serializable.
+
+features:
+  - name: feature-registration
+    description: Feature initialization and service registration in ChainMail
+    specs:
+      - acceptanceCriteria: PresentationFeature implements Feature interface
+        criticality: contract
+        intent: Ensures feature integrates correctly with ChainMail feature loading system
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/ImplementsFeatureTest.php
+
+      - acceptanceCriteria: PresentationFeature requires JsonSchemaFeature dependency
+        criticality: contract
+        intent: Enforces schema validation requirement, failing fast if JsonSchemaFeature not loaded
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/RequiresJsonSchemaFeatureTest.php
+
+      - acceptanceCriteria: PresentationFeature requires ExtendedState feature dependency
+        criticality: contract
+        intent: Enforces context storage requirement for value retrieval, failing fast if ExtendedState not loaded
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/RequiresExtendedStateTest.php
+
+      - acceptanceCriteria: PresentationFeature requires AbilitiesFeature dependency
+        criticality: contract
+        intent: Enforces discovery mechanism requirement, failing fast if AbilitiesFeature not loaded
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/RequiresAbilitiesFeatureTest.php
+
+      - acceptanceCriteria: PresentationFeature registers PresentationRegistry Mesh in ChainMail
+        criticality: contract
+        intent: Provides centralized presentation storage through PresentationRegistry Mesh registration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/RegistersPresentationRegistryTest.php
+
+      - acceptanceCriteria: PresentationFeature registers discovery abilities in AbilityRegistry
+        criticality: contract
+        intent: Exposes enumerate-presentations and get-presented-state abilities for introspection
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/RegistersDiscoveryAbilitiesTest.php
+
+  - name: presentation-definition
+    description: Immutable RegionPresentation value object for state exposure metadata
+    specs:
+      - acceptanceCriteria: RegionPresentation stores key as readonly string property
+        criticality: contract
+        intent: Identifies context field for value retrieval and schema validation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Definition/StoresKeyTest.php
+
+      - acceptanceCriteria: RegionPresentation stores label as readonly string property
+        criticality: contract
+        intent: Provides human-readable display name for UI rendering and documentation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Definition/StoresLabelTest.php
+
+      - acceptanceCriteria: RegionPresentation stores intent as readonly string property
+        criticality: contract
+        intent: Describes semantic meaning and purpose for context-aware rendering decisions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Definition/StoresIntentTest.php
+
+      - acceptanceCriteria: RegionPresentation stores optional metadata array as readonly property
+        criticality: contract
+        intent: Provides extensible format hints (precision, unit, format) for rich rendering
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Definition/StoresMetadataTest.php
+
+      - acceptanceCriteria: RegionPresentation stores optional predicate callable as readonly property
+        criticality: contract
+        intent: Associates conditional logic for runtime filtering, enabling context-aware exposure
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Definition/StoresPredicateTest.php
+
+      - acceptanceCriteria: RegionPresentation is immutable after construction
+        criticality: constraint
+        intent: Prevents modification of presentation contracts after registration, ensuring predictable behavior
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Definition/ImmutabilityTest.php
+
+      - acceptanceCriteria: RegionPresentation implements JsonSerializable interface
+        criticality: contract
+        intent: Enables JSON serialization for discovery responses and external agent consumption
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Definition/ImplementsJsonSerializableTest.php
+
+      - acceptanceCriteria: RegionPresentation.jsonSerialize() excludes predicate property
+        criticality: contract
+        intent: Prevents serialization of non-serializable callables, keeping output clean for transmission
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Definition/SerializationExcludesPredicateTest.php
+
+      - acceptanceCriteria: RegionPresentation.jsonSerialize() includes key, label, intent, and metadata
+        criticality: contract
+        intent: Preserves complete presentation contract during serialization for external introspection
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Definition/SerializesAllPropertiesTest.php
+
+  - name: presentation-registry
+    description: Mesh-based storage for presentation definitions
+    specs:
+      - acceptanceCriteria: PresentationRegistry extends Mesh for presentation storage
+        criticality: contract
+        intent: Leverages Mesh infrastructure enabling ChainMail integration and middleware patterns
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Registry/ExtendsMeshTest.php
+
+      - acceptanceCriteria: PresentationRegistry.register() accepts RegionPresentation parameter
+        criticality: contract
+        intent: Provides type-safe registration API for presentation contracts
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Registry/RegisterAcceptsPresentationTest.php
+
+      - acceptanceCriteria: PresentationRegistry.register() validates key exists in JsonSchema
+        criticality: contract
+        intent: Enforces schema requirement at registration time, failing fast for unvalidated fields
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Registry/RegisterValidatesSchemaTest.php
+
+      - acceptanceCriteria: PresentationRegistry.register() throws SchemaNotFoundException when key missing from schema
+        criticality: contract
+        intent: Provides clear error messaging when attempting to expose unvalidated context fields
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Registry/RegisterThrowsOnMissingSchemaTest.php
+
+      - acceptanceCriteria: PresentationRegistry.register() stores RegionPresentation indexed by key
+        criticality: contract
+        intent: Enables direct lookup by field key during enumeration and value retrieval
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Registry/RegisterStoresByKeyTest.php
+
+      - acceptanceCriteria: PresentationRegistry.get() accepts string key parameter
+        criticality: contract
+        intent: Provides type-safe lookup API for retrieving specific presentation definitions
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Registry/GetAcceptsKeyTest.php
+
+      - acceptanceCriteria: PresentationRegistry.get() returns RegionPresentation when key exists
+        criticality: contract
+        intent: Retrieves registered presentation for value retrieval and metadata access
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Registry/GetReturnsPresentationTest.php
+
+      - acceptanceCriteria: PresentationRegistry.get() returns null when key does not exist
+        criticality: contract
+        intent: Provides safe lookup without exceptions, enabling existence checks before access
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Registry/GetReturnsNullTest.php
+
+      - acceptanceCriteria: PresentationRegistry.all() returns array of all registered RegionPresentations
+        criticality: contract
+        intent: Enables complete presentation enumeration before predicate filtering
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Registry/AllReturnsArrayTest.php
+
+      - acceptanceCriteria: PresentationRegistry.register() overwrites existing presentation with same key
+        criticality: constraint
+        intent: Allows presentation redefinition with explicit overwrite semantics, supporting runtime customization
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Registry/RegisterOverwritesTest.php
+
+  - name: registration-api-builder
+    description: RegionBuilder integration for presentation registration
+    specs:
+      - acceptanceCriteria: RegionBuilder provides presentation() method
+        criticality: contract
+        intent: Enables declarative presentation registration during machine construction phase
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Builder/ProvidesPresentationMethodTest.php
+
+      - acceptanceCriteria: RegionBuilder.presentation() accepts key, label, intent parameters
+        criticality: contract
+        intent: Provides minimal required parameters for presentation registration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Builder/AcceptsRequiredParametersTest.php
+
+      - acceptanceCriteria: RegionBuilder.presentation() accepts optional metadata parameter
+        criticality: contract
+        intent: Enables rich presentation definitions with rendering hints
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Builder/AcceptsMetadataParameterTest.php
+
+      - acceptanceCriteria: RegionBuilder.presentation() accepts optional predicate parameter
+        criticality: contract
+        intent: Enables conditional presentation exposure based on context evaluation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Builder/AcceptsPredicateParameterTest.php
+
+      - acceptanceCriteria: RegionBuilder.presentation() creates RegionPresentation and registers in PresentationRegistry
+        criticality: contract
+        intent: Delegates storage to registry ensuring presentations available before machine starts
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Builder/RegistersInRegistryTest.php
+
+      - acceptanceCriteria: RegionBuilder.presentation() returns RegionBuilder instance for chaining
+        criticality: contract
+        intent: Supports fluent builder pattern for multiple registration calls
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Builder/ReturnsBuilderTest.php
+
+      - acceptanceCriteria: Presentations registered via RegionBuilder available after build() completes
+        criticality: contract
+        intent: Ensures registration occurs early in build phase before state callbacks execute
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Builder/AvailableAfterBuildTest.php
+
+  - name: registration-api-bound-access
+    description: BoundAccess integration for runtime presentation registration
+    specs:
+      - acceptanceCriteria: BoundAccess provides presentation() method in state callbacks
+        criticality: contract
+        intent: Enables dynamic presentation declaration during machine execution for context-dependent exposure
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/BoundAccess/ProvidesPresentationMethodTest.php
+
+      - acceptanceCriteria: BoundAccess.presentation() accepts key, label, intent parameters
+        criticality: contract
+        intent: Provides consistent registration API across builder and runtime contexts
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/BoundAccess/AcceptsRequiredParametersTest.php
+
+      - acceptanceCriteria: BoundAccess.presentation() accepts optional metadata parameter
+        criticality: contract
+        intent: Enables rich presentation definitions during runtime registration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/BoundAccess/AcceptsMetadataParameterTest.php
+
+      - acceptanceCriteria: BoundAccess.presentation() accepts optional predicate parameter
+        criticality: contract
+        intent: Enables conditional presentation exposure with runtime context access
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/BoundAccess/AcceptsPredicateParameterTest.php
+
+      - acceptanceCriteria: BoundAccess.presentation() stores definition in region's PresentationRegistry
+        criticality: contract
+        intent: Adds presentation to same registry accessible via discovery abilities for unified introspection
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/BoundAccess/RegistersInRegistryTest.php
+
+      - acceptanceCriteria: BoundAccess.presentation() requires PresentationFeature loaded
+        criticality: constraint
+        intent: Enforces dependency checking preventing registration without supporting infrastructure
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/BoundAccess/RequiresPresentationFeatureTest.php
+
+      - acceptanceCriteria: Presentations registered via BoundAccess immediately available for discovery
+        criticality: contract
+        intent: Supports just-in-time registration pattern where presentations declared right before enumeration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/BoundAccess/ImmediatelyAvailableTest.php
+
+      - acceptanceCriteria: BoundAccess.presentation() returns callable unregister function
+        criticality: contract
+        intent: Provides unregistration mechanism for runtime-registered presentations enabling cleanup
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/BoundAccess/ReturnsUnregisterCallableTest.php
+
+      - acceptanceCriteria: Calling unregister callable removes presentation from PresentationRegistry
+        criticality: contract
+        intent: Enables dynamic removal of presentations from discovery and value retrieval
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/BoundAccess/UnregisterRemovesPresentationTest.php
+
+      - acceptanceCriteria: Unregister callable is idempotent
+        criticality: constraint
+        intent: Allows safe multiple calls without errors, simplifying cleanup logic
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/BoundAccess/UnregisterIdempotentTest.php
+
+      - acceptanceCriteria: Unregistered presentations excluded from enumerate-presentations
+        criticality: contract
+        intent: Ensures removed presentations immediately hidden from discovery
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/BoundAccess/UnregisterExcludesFromEnumerationTest.php
+
+      - acceptanceCriteria: get-presented-state ignores unregistered keys
+        criticality: contract
+        intent: Prevents value retrieval for removed presentations without throwing errors
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/BoundAccess/UnregisterIgnoredByGetStateTest.php
+
+      - acceptanceCriteria: Unregister callable works after key re-registration
+        criticality: constraint
+        intent: Each unregister callable targets specific registration instance, not just key
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/BoundAccess/UnregisterAfterReregistrationTest.php
+
+      - acceptanceCriteria: Unregister callable is unique per registration call
+        criticality: contract
+        intent: Multiple registrations of same key return different unregister callables
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/BoundAccess/UnregisterCallableUniqueTest.php
+
+  - name: unregistration-api
+    description: PresentationRegistry support for removing presentations
+    specs:
+      - acceptanceCriteria: PresentationRegistry.unregister() accepts string key parameter
+        criticality: contract
+        intent: Provides type-safe removal API matching registration pattern
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Registry/UnregisterAcceptsKeyTest.php
+
+      - acceptanceCriteria: PresentationRegistry.unregister() removes presentation by key
+        criticality: contract
+        intent: Deletes presentation from internal storage enabling cleanup
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Registry/UnregisterRemovesByKeyTest.php
+
+      - acceptanceCriteria: PresentationRegistry.unregister() is idempotent
+        criticality: constraint
+        intent: Multiple unregister calls for same key succeed without errors
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Registry/UnregisterIdempotentTest.php
+
+      - acceptanceCriteria: PresentationRegistry.get() returns null after unregister
+        criticality: contract
+        intent: Validates removal by returning null for previously registered keys
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Registry/GetReturnsNullAfterUnregisterTest.php
+
+  - name: discovery-ability-enumerate
+    description: enumerate-presentations ability for listing all visible presentations
+    specs:
+      - acceptanceCriteria: AbilityRegistry contains 'enumerate-presentations' ability after PresentationFeature loads
+        criticality: contract
+        intent: Provides built-in discovery mechanism following abilities pattern for consistency
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Discovery/EnumerateAbilityRegisteredTest.php
+
+      - acceptanceCriteria: enumerate-presentations ability accepts no required parameters
+        criticality: contract
+        intent: Enables simple invocation for retrieving complete presentation catalog
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Discovery/EnumerateAcceptsNoParametersTest.php
+
+      - acceptanceCriteria: enumerate-presentations ability returns array of presentation definitions
+        criticality: contract
+        intent: Provides complete presentation catalog for UI generation and documentation
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Presentation/Discovery/EnumerateIntegrationTest.php
+
+      - acceptanceCriteria: enumerate-presentations ability includes JSON Schema for each presentation
+        criticality: contract
+        intent: Provides validation context enabling external agents to validate retrieved values
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Presentation/Discovery/EnumerateIntegrationTest.php
+
+      - acceptanceCriteria: enumerate-presentations ability evaluates predicates at enumeration time
+        criticality: contract
+        intent: Filters presentations based on current context state, hiding unavailable fields
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Presentation/Discovery/EnumerateIntegrationTest.php
+
+      - acceptanceCriteria: enumerate-presentations ability excludes presentations with false predicates
+        criticality: contract
+        intent: Respects conditional visibility logic, exposing only context-appropriate fields
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Presentation/Discovery/PredicateFilteringIntegrationTest.php
+
+      - acceptanceCriteria: enumerate-presentations ability includes presentations without predicates
+        criticality: contract
+        intent: Treats absence of predicate as always-visible, simplifying unconditional presentations
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Presentation/Discovery/PredicateFilteringIntegrationTest.php
+
+      - acceptanceCriteria: enumerate-presentations ability serializes definitions to JSON-compatible arrays
+        criticality: contract
+        intent: Ensures response compatible with external agents and API transmission
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Presentation/Discovery/EnumerateIntegrationTest.php
+
+      - acceptanceCriteria: enumerate-presentations ability accessible via $this->abilities() in state callbacks
+        criticality: contract
+        intent: Enables machines to introspect their own exposed state for self-documentation
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Presentation/Discovery/EnumerateIntegrationTest.php
+
+      - acceptanceCriteria: enumerate-presentations ability uses message correlation pattern
+        criticality: contract
+        intent: Returns AbilityMessage requiring .then() callback, following abilities standard
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Presentation/Discovery/EnumerateIntegrationTest.php
+
+  - name: discovery-ability-get-state
+    description: get-presented-state ability for retrieving actual context values
+    specs:
+      - acceptanceCriteria: AbilityRegistry contains 'get-presented-state' ability after PresentationFeature loads
+        criticality: contract
+        intent: Provides value retrieval mechanism for enumerated presentations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Discovery/GetStateAbilityRegisteredTest.php
+
+      - acceptanceCriteria: get-presented-state ability accepts optional keys parameter as string array
+        criticality: contract
+        intent: Enables selective retrieval for efficiency, defaulting to all presentations when omitted
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Presentation/Discovery/GetPresentedStateIntegrationTest.php
+
+      - acceptanceCriteria: get-presented-state ability returns all presented values when keys omitted
+        criticality: contract
+        intent: Provides complete state snapshot for monitoring and debugging workflows
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Presentation/Discovery/GetPresentedStateIntegrationTest.php
+
+      - acceptanceCriteria: get-presented-state ability returns subset when keys specified
+        criticality: contract
+        intent: Enables targeted value retrieval for performance-sensitive scenarios
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Presentation/Discovery/GetPresentedStateIntegrationTest.php
+
+      - acceptanceCriteria: get-presented-state ability retrieves values via ExtendedState $this->get()
+        criticality: contract
+        intent: Uses standard context access pattern ensuring consistency with state machine context
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Presentation/Discovery/GetPresentedStateIntegrationTest.php
+
+      - acceptanceCriteria: get-presented-state ability respects predicate filtering
+        criticality: contract
+        intent: Only retrieves values for presentations with true predicates, hiding unavailable fields
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Presentation/Discovery/GetPresentedStateIntegrationTest.php
+
+      - acceptanceCriteria: get-presented-state ability returns key-value map with metadata
+        criticality: contract
+        intent: Bundles values with presentation metadata for context-aware rendering
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Presentation/Discovery/GetPresentedStateIntegrationTest.php
+
+      - acceptanceCriteria: get-presented-state ability accessible via $this->abilities() in state callbacks
+        criticality: contract
+        intent: Enables internal state introspection during execution
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Presentation/Discovery/GetPresentedStateIntegrationTest.php
+
+      - acceptanceCriteria: get-presented-state ability uses message correlation pattern
+        criticality: contract
+        intent: Returns AbilityMessage requiring .then() callback, following abilities standard
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Presentation/Discovery/GetPresentedStateIntegrationTest.php
+
+      - acceptanceCriteria: get-presented-state ability ignores unknown keys without error
+        criticality: constraint
+        intent: Allows resilient queries that tolerate stale presentation metadata
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Presentation/Discovery/GetPresentedStateIntegrationTest.php
+
+  - name: yaml-configuration-schema
+    description: YAML schema extension for declarative presentation registration
+    specs:
+      - acceptanceCriteria: RegionLoader Schema supports 'presentations' key at region level
+        criticality: contract
+        intent: Enables global presentation declarations in Holon YAML files
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Yaml/SchemaSupportsRegionLevelTest.php
+
+      - acceptanceCriteria: RegionLoader Schema supports 'presentations' key at state level
+        criticality: contract
+        intent: Enables state-scoped presentation declarations with automatic predicate generation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Yaml/SchemaSupportsStateLevelTest.php
+
+      - acceptanceCriteria: Schema validates 'key' as required string in presentation definitions
+        criticality: contract
+        intent: Enforces context field identifier requirement for every declared presentation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Yaml/SchemaRequiresKeyTest.php
+
+      - acceptanceCriteria: Schema validates 'label' as required string in presentation definitions
+        criticality: contract
+        intent: Enforces human-readable name requirement for UI rendering
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Yaml/SchemaRequiresLabelTest.php
+
+      - acceptanceCriteria: Schema validates 'intent' as required string in presentation definitions
+        criticality: contract
+        intent: Enforces semantic description requirement for context-aware rendering
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Yaml/SchemaRequiresIntentTest.php
+
+      - acceptanceCriteria: Schema validates 'metadata' as optional object in presentation definitions
+        criticality: contract
+        intent: Accepts format hints while remaining optional for minimal declarations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Yaml/SchemaAcceptsMetadataTest.php
+
+  - name: yaml-configuration-loading
+    description: YAML configuration parsing and registration
+    specs:
+      - acceptanceCriteria: EnhanceRegionBuilder processes region-level presentations during build phase
+        criticality: contract
+        intent: Registers global presentations before machine starts for immediate availability
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Yaml/ProcessesRegionPresentationsTest.php
+
+      - acceptanceCriteria: EnhanceRegionBuilder processes state-level presentations during build phase
+        criticality: contract
+        intent: Registers state-scoped presentations with auto-generated predicate checking currentState
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Yaml/ProcessesStatePresentationsTest.php
+
+      - acceptanceCriteria: State-level YAML presentations auto-generate predicate checking currentState
+        criticality: contract
+        intent: Automatically filters state-scoped presentations based on machine's current state
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Yaml/StateGeneratesPredicateTest.php
+
+      - acceptanceCriteria: State-level auto-generated predicate checks currentState matches state name
+        criticality: contract
+        intent: Returns true only when machine is in the state where presentation was declared
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Yaml/StatePredicateChecksCurrentStateTest.php
+
+      - acceptanceCriteria: YAML does not support explicit predicate definitions
+        criticality: constraint
+        intent: Keeps YAML simple by restricting predicates to programmatic registration only
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Yaml/YamlPredicatesNotSupportedTest.php
+
+      - acceptanceCriteria: YAML-registered presentations retrievable via PresentationRegistry.get()
+        criticality: contract
+        intent: Ensures YAML registrations behave identically to programmatic registrations
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Yaml/YamlRegistrationsRetrievableTest.php
+
+      - acceptanceCriteria: YAML-registered presentations discoverable via enumerate-presentations ability
+        criticality: contract
+        intent: Validates YAML presentations participate in full discovery infrastructure
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Yaml/YamlPresentationsDiscoverableTest.php
+
+      - acceptanceCriteria: YAML presentation registration validates schema existence at build time
+        criticality: contract
+        intent: Catches unvalidated field exposure during build phase, failing fast before execution
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Yaml/YamlValidatesSchemaAtBuildTest.php
+
+  - name: predicate-evaluation
+    description: Conditional visibility through predicate evaluation
+    specs:
+      - acceptanceCriteria: Presentations without predicates always visible in enumeration
+        criticality: contract
+        intent: Treats null predicate as unconditionally visible, simplifying common case
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Predicate/NullPredicateAlwaysVisibleTest.php
+
+      - acceptanceCriteria: Presentations with true predicates visible in enumeration
+        criticality: contract
+        intent: Includes presentation when predicate evaluates to truthy value
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Predicate/TruePredicateVisibleTest.php
+
+      - acceptanceCriteria: Presentations with false predicates hidden in enumeration
+        criticality: contract
+        intent: Excludes presentation when predicate evaluates to falsy value
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Predicate/FalsePredicateHiddenTest.php
+
+      - acceptanceCriteria: Predicate receives Region instance as parameter
+        criticality: contract
+        intent: Provides region context for predicate evaluation, enabling currentState checks
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Predicate/ReceivesRegionParameterTest.php
+
+      - acceptanceCriteria: Predicate exceptions treated as false
+        criticality: constraint
+        intent: Gracefully handles predicate errors by hiding presentation, avoiding enumeration failures
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Predicate/ExceptionTreatedAsFalseTest.php
+
+      - acceptanceCriteria: Predicates evaluated lazily at enumeration time
+        criticality: contract
+        intent: Ensures predicate evaluation reflects current state, not registration-time state
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Predicate/LazyEvaluationTest.php
+
+  - name: schema-validation-enforcement
+    description: JsonSchemaFeature integration for validation enforcement
+    specs:
+      - acceptanceCriteria: PresentationRegistry.register() retrieves schemas from JsonSchemaFeature
+        criticality: contract
+        intent: Accesses schema definitions for validation checking during registration
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Schema/RetrievesSchemasTest.php
+
+      - acceptanceCriteria: PresentationRegistry.register() validates key against context.schema definitions
+        criticality: contract
+        intent: Ensures exposed field has corresponding schema entry, enforcing validation requirement
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Schema/ValidatesKeyAgainstSchemaTest.php
+
+      - acceptanceCriteria: enumerate-presentations ability includes schema in response for each presentation
+        criticality: contract
+        intent: Bundles schema with presentation metadata enabling external validation
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Schema/EnumerateIncludesSchemaTest.php
+
+      - acceptanceCriteria: Schema inclusion in enumeration retrieves definitions from JsonSchemaFeature
+        criticality: contract
+        intent: Provides complete schema objects for external agent validation workflows
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Schema/EnumerateRetrievesSchemaTest.php
+
+      - acceptanceCriteria: get-presented-state values conform to registered schemas
+        criticality: contract
+        intent: Ensures retrieved values match schema types, maintaining serialization guarantees
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/Schema/GetStateConformsToSchemaTest.php
+
+  - name: integration-complete-workflow
+    description: End-to-end workflows proving feature correctness through integration tests
+    specs:
+      - acceptanceCriteria: Complete workflow from YAML presentation declaration to enumeration
+        criticality: integration
+        intent: Validates entire registration, schema validation, and discovery cycle
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Presentation/YamlToEnumerationWorkflowTest.php
+
+      - acceptanceCriteria: Complete workflow from programmatic registration to state retrieval
+        criticality: integration
+        intent: Validates registration, predicate evaluation, and value retrieval cycle
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Presentation/RegistrationToRetrievalWorkflowTest.php
+
+      - acceptanceCriteria: Complete workflow demonstrating state-scoped presentations with predicates
+        criticality: integration
+        intent: Validates automatic predicate generation and state-based visibility filtering
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Presentation/StateScopedPresentationsWorkflowTest.php
+
+      - acceptanceCriteria: Complete workflow demonstrating schema validation enforcement
+        criticality: integration
+        intent: Validates schema requirement catching unvalidated field exposure attempts
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Presentation/SchemaValidationWorkflowTest.php

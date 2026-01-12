@@ -52,10 +52,10 @@ class AcceptToProcessingTransitionTest extends NetworkMachineTestCase
                     'yaml' => $this->yaml(),
                     'yamlHelpers' => [
                         'get' => new \Noem\State\Feature\Loader\Helper\ContainerGetHelper([
-                            'accept.onEnter' => function(object $trigger) use (&$acceptEntered) {
+                            'accept.onEnter' => function (object $trigger) use (&$acceptEntered) {
                                 $acceptEntered = true;
                             },
-                            'processing.onEnter' => function(object $trigger) use (&$processingEntered) {
+                            'processing.onEnter' => function (object $trigger) use (&$processingEntered) {
                                 $processingEntered = true;
                             },
                         ])

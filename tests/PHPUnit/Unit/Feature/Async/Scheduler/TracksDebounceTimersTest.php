@@ -20,7 +20,8 @@ final class TracksDebounceTimersTest extends TestCase
 
         $config = new AsyncConfig(debounce: 0.5);
 
-        $task = $scheduler->enqueue($generator, $config, function () {});
+        $task = $scheduler->enqueue($generator, $config, function () {
+        });
 
         // Verify debounce time is tracked in task
         $this->assertNotNull($task->getDebounceTime());
@@ -38,7 +39,8 @@ final class TracksDebounceTimersTest extends TestCase
         $config = new AsyncConfig(debounce: 0.5);
 
         $beforeEnqueue = microtime(true);
-        $task = $scheduler->enqueue($generator, $config, function () {});
+        $task = $scheduler->enqueue($generator, $config, function () {
+        });
         $afterEnqueue = microtime(true);
 
         $enqueueTime = $task->getDebounceTime();
@@ -57,7 +59,8 @@ final class TracksDebounceTimersTest extends TestCase
 
         $config = new AsyncConfig(); // No debounce
 
-        $task = $scheduler->enqueue($generator, $config, function () {});
+        $task = $scheduler->enqueue($generator, $config, function () {
+        });
 
         // No timer should be set for tasks without debounce
         $this->assertNull($task->getDebounceTime());

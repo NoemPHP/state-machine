@@ -1,0 +1,622 @@
+# Machine Generator - Headless Machine Generation Holon
+# Generates state machines based on natural language descriptions via message protocol
+# No CLI I/O - purely message-driven for tool consumption
+
+machine:
+  require: !php require '/var/www/html/machines/machine-generator/bootstrap.php';
+  features:
+    # Loader (must be first for schema extensions to work)
+    - class: Noem\State\Feature\Loader\RegionLoader
+
+    # Core infrastructure
+    - class: Noem\State\Feature\ExtendedState\ExtendedState
+
+    # Messaging (must be before YAML parsing for onEvent support)
+    - class: Noem\State\Feature\Message\MessageFeature
+
+    # AI capabilities
+    - class: Noem\State\Feature\Template\TemplateFeature
+    - class: Noem\State\Feature\Ai\AiFeature
+    - class: Noem\State\Feature\Ai\AiConfigFeature
+      config:
+        credentials:
+          ollama:
+            baseUrl: 'http://telvanni:7863/api'
+        modelPool:
+          - id: 'qwen-coder'
+            provider: 'ollama'
+            model: 'qwen2.5-coder:14b-instruct-q4_K_M'
+            complexity: 3
+            context: 32
+            cost: 'low'
+        preferences:
+          defaultComplexity: 2
+          defaultContext: 32
+          preferProviders: ['ollama']
+
+    # Async (after ExtendedState)
+    - class: Noem\State\Feature\Async\AsyncFeature
+
+  eventLoop:
+    autoRun: false  # Controlled externally by consumer
+
+states:
+  # ============================================================================
+  # STATE: idle
+  # PURPOSE: Wait for GenerateRequest message to start generation
+  # ============================================================================
+  - name: idle
+    onEnter:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): void {
+              // Initialize context
+              $this->set('requirements', []);
+              $this->set('qa_history', []);
+              $this->set('confidence_score', 0.0);
+              $this->set('confidence_threshold', 0.75);
+              $this->set('retry_count', 0);
+              $this->set('max_retries', 3);
+              $this->set('waiting_for_response', false);
+
+              // Load knowledge base
+              $this->set('holon_spec', load_yaml('holon-spec.yaml'));
+              $examples = [
+                  'conversational-cli' => load_yaml(machines_path('conversational-cli', 'holon.yml')),
+                  'task-executor' => load_yaml(machines_path('task-executor', 'holon.yml')),
+              ];
+              $this->set('examples', $examples);
+          };
+
+    # Handle incoming events
+    action:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): void {
+              // Check if this is a generate.request event
+              if (isset($t->type) && $t->type === 'generate.request') {
+                  // Store request data
+                  $this->set('correlation_id', $t->correlation_id ?? uniqid('gen-'));
+                  $this->set('user_request', $t->payload['description'] ?? '');
+                  $this->set('qa_history', $t->payload['qa_history'] ?? []);
+              }
+          };
+
+    transitions:
+      - target: analyzing_requirements
+        # language=injectablephp
+        guard: !php |
+          return function(object $t): bool {
+              return !empty($this->get('user_request', ''));
+          };
+
+  # ============================================================================
+  # STATE: analyzing_requirements
+  # PURPOSE: AI analyzes request, emits AnalysisComplete message
+  # ============================================================================
+  - name: analyzing_requirements
+    action:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): \Generator {
+              $correlationId = $this->get('correlation_id');
+
+              // Use AiHelper to analyze
+              $ai = new \MachineAgent\AiHelper($this);
+              $analysis = $ai->analyzeRequirements(
+                  $this->get('user_request'),
+                  $this->get('qa_history', [])
+              );
+              yield;
+
+              // Store analysis
+              $this->set('confidence_score', $analysis['confidence']);
+              $this->set('machine_complexity', $analysis['complexity']);
+              $this->set('missing_info', $analysis['missing_info']);
+              $this->set('requirements', $analysis['extracted_requirements']);
+
+              // Emit AnalysisComplete event
+              $needsClarification = $analysis['confidence'] < $this->get('confidence_threshold', 0.75);
+              $this->dispatch((object)[
+                  'type' => 'analysis.complete',
+                  'correlation_id' => $correlationId,
+                  'timestamp' => time(),
+                  'payload' => [
+                      'confidence' => $analysis['confidence'],
+                      'complexity' => $analysis['complexity'],
+                      'missing_info' => $analysis['missing_info'],
+                      'needs_clarification' => $needsClarification,
+                  ],
+              ]);
+              yield;
+
+              $this->set('analysis_complete', true);
+              yield;
+          };
+        async:
+          enabled: true
+
+    transitions:
+      - target: questioning
+        # language=injectablephp
+        guard: !php |
+          return function(object $t): bool {
+              return $this->get('analysis_complete') === true;
+          };
+
+  # ============================================================================
+  # STATE: questioning
+  # PURPOSE: Request clarification if confidence low, wait for QuestionResponse
+  # ============================================================================
+  - name: questioning
+    onEnter:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): void {
+              $confidence = $this->get('confidence_score', 0.0);
+              $threshold = $this->get('confidence_threshold', 0.75);
+              $this->set('waiting_for_response', $confidence < $threshold);
+          };
+
+    action:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): \Generator {
+              // Handle question.response event
+              if (isset($t->type) && $t->type === 'question.response') {
+                  if ($t->payload['cancel'] ?? false) {
+                      $this->set('should_exit', true);
+                      $this->set('waiting_for_response', false);
+                      yield;
+                      return;
+                  }
+
+                  // Store answer
+                  $qaHistory = $this->get('qa_history', []);
+                  $qaHistory[] = [
+                      'question' => $this->get('last_question', ''),
+                      'answer' => $t->payload['answer'] ?? '',
+                  ];
+                  $this->set('qa_history', $qaHistory);
+
+                  // Re-analyze
+                  $this->set('analysis_complete', false);
+                  $this->set('waiting_for_response', false);
+                  yield;
+                  return;
+              }
+
+              // Skip if confidence sufficient
+              if (!$this->get('waiting_for_response', false)) {
+                  yield;
+                  return;
+              }
+
+              $correlationId = $this->get('correlation_id');
+
+              // Generate question
+              $ai = new \MachineAgent\AiHelper($this);
+              $question = $ai->generateQuestion($this->get('missing_info', []));
+              yield;
+
+              // Emit QuestionRequest event
+              $this->dispatch((object)[
+                  'type' => 'question.request',
+                  'correlation_id' => $correlationId,
+                  'timestamp' => time(),
+                  'payload' => [
+                      'question' => $question,
+                      'context' => $this->get('machine_complexity', 'moderate'),
+                  ],
+              ]);
+              yield;
+          };
+        async:
+          enabled: true
+
+    transitions:
+      - target: analyzing_requirements
+        # language=injectablephp
+        guard: !php |
+          return function(object $t): bool {
+              return $this->get('analysis_complete') === false &&
+                     $this->get('should_exit') !== true &&
+                     !$this->get('waiting_for_response', false);
+          };
+      - target: planning_machine
+        # language=injectablephp
+        guard: !php |
+          return function(object $t): bool {
+              $confidence = $this->get('confidence_score', 0.0);
+              $threshold = $this->get('confidence_threshold', 0.75);
+              return $confidence >= $threshold && !$this->get('waiting_for_response', false);
+          };
+      - target: finished
+        # language=injectablephp
+        guard: !php |
+          return function(object $t): bool {
+              return $this->get('should_exit') === true;
+          };
+
+  # ============================================================================
+  # STATE: planning_machine
+  # PURPOSE: Create implementation plan, emit ProgressUpdate
+  # ============================================================================
+  - name: planning_machine
+    onEnter:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): void {
+              $correlationId = $this->get('correlation_id');
+              $this->dispatch((object)[
+                  'type' => 'progress.update',
+                  'correlation_id' => $correlationId,
+                  'timestamp' => time(),
+                  'payload' => [
+                      'stage' => 'planning',
+                      'message' => 'Creating implementation plan...',
+                      'percent' => 30,
+                  ],
+              ]);
+          };
+
+    action:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): \Generator {
+              $ai = new \MachineAgent\AiHelper($this);
+              $plan = $ai->createPlan(
+                  $this->get('requirements'),
+                  $this->get('holon_spec'),
+                  $this->get('examples')
+              );
+              yield;
+
+              // Store plan
+              $this->set('machine_name', $plan['machine_name']);
+              $this->set('state_flow', $plan['states']);
+              $this->set('required_features', $plan['features']);
+              $this->set('context_variables', $plan['context_variables']);
+              $this->set('abilities_needed', $plan['abilities_needed'] ?? []);
+
+              // Determine inline vs separate file
+              $useInline = count($plan['states']) <= 4;
+              $this->set('use_inline_functions', $useInline);
+
+              $this->set('plan_complete', true);
+              yield;
+          };
+        async:
+          enabled: true
+
+    transitions:
+      - target: generating_yaml
+        # language=injectablephp
+        guard: !php |
+          return function(object $t): bool {
+              return $this->get('plan_complete') === true;
+          };
+
+  # ============================================================================
+  # STATE: generating_yaml
+  # PURPOSE: Generate YAML, emit ProgressUpdate
+  # ============================================================================
+  - name: generating_yaml
+    onEnter:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): void {
+              $correlationId = $this->get('correlation_id');
+              $this->dispatch((object)[
+                  'type' => 'progress.update',
+                  'correlation_id' => $correlationId,
+                  'timestamp' => time(),
+                  'payload' => [
+                      'stage' => 'generating_yaml',
+                      'message' => 'Generating holon.yml...',
+                      'percent' => 50,
+                  ],
+              ]);
+          };
+
+    action:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): \Generator {
+              $tpl = new \MachineAgent\TemplateHelper($this);
+              $yaml = yield from $tpl->generateYaml(
+                  $this->get('machine_name'),
+                  $this->get('state_flow'),
+                  $this->get('required_features'),
+                  $this->get('requirements'),
+                  $this->get('examples'),
+                  $this->get('use_inline_functions') === true
+              );
+
+              $this->set('holon_yaml', $yaml);
+              $this->set('yaml_generated', true);
+              yield;
+          };
+        async:
+          enabled: true
+
+    transitions:
+      - target: generating_functions
+        # language=injectablephp
+        guard: !php |
+          return function(object $t): bool {
+              return $this->get('yaml_generated') === true &&
+                     $this->get('use_inline_functions') !== true;
+          };
+      - target: validating_output
+        # language=injectablephp
+        guard: !php |
+          return function(object $t): bool {
+              return $this->get('yaml_generated') === true &&
+                     $this->get('use_inline_functions') === true;
+          };
+
+  # ============================================================================
+  # STATE: generating_functions
+  # PURPOSE: Generate PHP functions file
+  # ============================================================================
+  - name: generating_functions
+    onEnter:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): void {
+              $correlationId = $this->get('correlation_id');
+              $this->dispatch((object)[
+                  'type' => 'progress.update',
+                  'correlation_id' => $correlationId,
+                  'timestamp' => time(),
+                  'payload' => [
+                      'stage' => 'generating_php',
+                      'message' => 'Generating holon-functions.php...',
+                      'percent' => 65,
+                  ],
+              ]);
+          };
+
+    action:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): \Generator {
+              $tpl = new \MachineAgent\TemplateHelper($this);
+              $php = yield from $tpl->generatePhp(
+                  $this->get('machine_name'),
+                  $this->get('state_flow'),
+                  $this->get('context_variables'),
+                  $this->get('requirements'),
+                  $this->get('abilities_needed')
+              );
+
+              $this->set('holon_functions', $php);
+              $this->set('functions_generated', true);
+              yield;
+          };
+        async:
+          enabled: true
+
+    transitions:
+      - target: validating_output
+        # language=injectablephp
+        guard: !php |
+          return function(object $t): bool {
+              return $this->get('functions_generated') === true;
+          };
+
+  # ============================================================================
+  # STATE: validating_output
+  # PURPOSE: Validate generated files, emit ValidationResult
+  # ============================================================================
+  - name: validating_output
+    onEnter:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): void {
+              $correlationId = $this->get('correlation_id');
+              $this->dispatch((object)[
+                  'type' => 'progress.update',
+                  'correlation_id' => $correlationId,
+                  'timestamp' => time(),
+                  'payload' => [
+                      'stage' => 'validating',
+                      'message' => 'Validating generated machine...',
+                      'percent' => 80,
+                  ],
+              ]);
+          };
+
+    action:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): \Generator {
+              $yaml = $this->get('holon_yaml');
+              $php = $this->get('holon_functions', '');
+              $useInline = $this->get('use_inline_functions') === true;
+              $errors = [];
+
+              // YAML validation
+              try {
+                  $parsed = yaml_parse($yaml);
+                  if ($parsed === false) {
+                      $errors[] = 'YAML parsing failed';
+                  } elseif (!isset($parsed['states']) || empty($parsed['states'])) {
+                      $errors[] = 'Missing or empty states definition';
+                  }
+                  if (!isset($parsed['initial'])) {
+                      $errors[] = 'Missing initial state';
+                  }
+                  if (!isset($parsed['final'])) {
+                      $errors[] = 'Missing final state';
+                  }
+              } catch (\Exception $e) {
+                  $errors[] = 'YAML syntax error: ' . $e->getMessage();
+              }
+              yield;
+
+              // PHP validation (if separate file)
+              if (!$useInline && !empty($php)) {
+                  $tempFile = tempnam(sys_get_temp_dir(), 'mg_php_');
+                  file_put_contents($tempFile, $php);
+                  $phpCheck = shell_exec("php -l " . escapeshellarg($tempFile) . " 2>&1");
+                  unlink($tempFile);
+
+                  if (strpos($phpCheck, 'No syntax errors') === false) {
+                      $errors[] = 'PHP syntax error: ' . $phpCheck;
+                  }
+              }
+              yield;
+
+              // Handle validation result
+              $passed = empty($errors);
+              $this->set('validation_errors', $errors);
+              $this->set('validation_passed', $passed);
+
+              if (!$passed) {
+                  $retryCount = $this->get('retry_count', 0) + 1;
+                  $maxRetries = $this->get('max_retries', 3);
+                  $this->set('retry_count', $retryCount);
+
+                  if ($retryCount >= $maxRetries) {
+                      $this->set('should_exit', true);
+                  }
+              }
+
+              // Emit ValidationResult event
+              $correlationId = $this->get('correlation_id');
+              $this->dispatch((object)[
+                  'type' => 'validation.result',
+                  'correlation_id' => $correlationId,
+                  'timestamp' => time(),
+                  'payload' => [
+                      'passed' => $passed,
+                      'errors' => $errors,
+                      'retry_count' => $this->get('retry_count', 0),
+                      'max_retries' => $this->get('max_retries', 3),
+                  ],
+              ]);
+              yield;
+          };
+        async:
+          enabled: true
+
+    transitions:
+      - target: delivering_machine
+        # language=injectablephp
+        guard: !php |
+          return function(object $t): bool {
+              return $this->get('validation_passed') === true;
+          };
+      - target: finished
+        # language=injectablephp
+        guard: !php |
+          return function(object $t): bool {
+              return $this->get('validation_passed') === false &&
+                     $this->get('should_exit') === true;
+          };
+      - target: planning_machine
+        # language=injectablephp
+        guard: !php |
+          return function(object $t): bool {
+              return $this->get('validation_passed') === false &&
+                     $this->get('should_exit') !== true;
+          };
+
+  # ============================================================================
+  # STATE: delivering_machine
+  # PURPOSE: Write files, emit GenerationComplete
+  # ============================================================================
+  - name: delivering_machine
+    action:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): \Generator {
+              $machineName = $this->get('machine_name');
+              $yaml = $this->get('holon_yaml');
+              $php = $this->get('holon_functions', '');
+              $useInline = $this->get('use_inline_functions') === true;
+
+              // Create directory and write files
+              $machineDir = ensure_machine_directory($machineName);
+              atomic_write("{$machineDir}/holon.yml", $yaml);
+              $files = ['holon.yml' => strlen($yaml)];
+
+              if (!$useInline && !empty($php)) {
+                  atomic_write("{$machineDir}/holon-functions.php", $php);
+                  $files['holon-functions.php'] = strlen($php);
+              }
+              yield;
+
+              // Emit GenerationComplete event
+              $correlationId = $this->get('correlation_id');
+              $this->dispatch((object)[
+                  'type' => 'generation.complete',
+                  'correlation_id' => $correlationId,
+                  'timestamp' => time(),
+                  'payload' => [
+                      'machine_name' => $machineName,
+                      'directory' => $machineDir,
+                      'files' => $files,
+                      'inline_functions' => $useInline,
+                  ],
+              ]);
+              yield;
+
+              $this->set('delivery_complete', true);
+              yield;
+          };
+        async:
+          enabled: true
+
+    transitions:
+      - target: finished
+        # language=injectablephp
+        guard: !php |
+          return function(object $t): bool {
+              return $this->get('delivery_complete') === true;
+          };
+
+  # ============================================================================
+  # STATE: finished
+  # PURPOSE: Emit GenerationFailed if applicable, then exit
+  # ============================================================================
+  - name: finished
+    onEnter:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): void {
+              $shouldExit = $this->get('should_exit', false);
+              $deliveryComplete = $this->get('delivery_complete', false);
+
+              if ($shouldExit && !$deliveryComplete) {
+                  $correlationId = $this->get('correlation_id');
+                  $retryCount = $this->get('retry_count', 0);
+                  $maxRetries = $this->get('max_retries', 3);
+
+                  $reason = $retryCount >= $maxRetries ? 'max_retries_exceeded' : 'user_cancelled';
+                  $errors = $this->get('validation_errors', []);
+
+                  $this->dispatch((object)[
+                      'type' => 'generation.failed',
+                      'correlation_id' => $correlationId,
+                      'timestamp' => time(),
+                      'payload' => [
+                          'reason' => $reason,
+                          'message' => $reason === 'max_retries_exceeded'
+                              ? "Could not generate valid machine after {$maxRetries} attempts"
+                              : 'Generation cancelled by user',
+                          'errors' => $errors,
+                          'suggestions' => [
+                              'Try simplifying your request',
+                              'Be more specific about states and transitions',
+                              'Check Ollama backend is responding correctly',
+                          ],
+                      ],
+                  ]);
+              }
+          };
+
+initial: idle
+final: finished

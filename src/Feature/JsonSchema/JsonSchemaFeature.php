@@ -30,26 +30,28 @@ class JsonSchemaFeature implements Feature
                  */
                 $schema?->link(function (SchemaContext $context, callable $next) {
                     $contextSchema = $context->getCustomSchema('context');
-                    assert($contextSchema instanceof Structure);
-                    $contextSchema = $contextSchema->extend([
-                        'schema' => Expect::listOf(
-                            Expect::structure(
-                                [
-                                    'name' => Expect::string(),
-                                    'type' => Expect::string(),
-                                    'default' => Expect::string(),
-                                    'description' => Expect::string(),
-                                ]
-                            )
-                        ),
-                    ]);
-                    $context->addCustomSchema('context', $contextSchema);
-                    /**
-                     * Update the reference on the region schema since we just produced a new object
-                     */
-                    $context->region = $context->region->extend([
-                        'context' => $contextSchema,
-                    ]);
+                    // Only extend if context schema exists (RegionLoader may not be loaded)
+                    if ($contextSchema instanceof Structure) {
+                        $contextSchema = $contextSchema->extend([
+                            'schema' => Expect::listOf(
+                                Expect::structure(
+                                    [
+                                        'name' => Expect::string(),
+                                        'type' => Expect::string(),
+                                        'default' => Expect::string(),
+                                        'description' => Expect::string(),
+                                    ]
+                                )
+                            ),
+                        ]);
+                        $context->addCustomSchema('context', $contextSchema);
+                        /**
+                         * Update the reference on the region schema since we just produced a new object
+                         */
+                        $context->region = $context->region->extend([
+                            'context' => $contextSchema,
+                        ]);
+                    }
 
                     return $next($context);
                 });

@@ -21,7 +21,8 @@ class SingletonCallbackIdentityTest extends TestCase
         $scheduler = new CoroutineScheduler();
         $config = new AsyncConfig(singleton: true);
 
-        $callback = function () {};
+        $callback = function () {
+        };
 
         $gen1 = (function () {
             yield 'first';
@@ -38,7 +39,8 @@ class SingletonCallbackIdentityTest extends TestCase
         $this->assertSame($task1, $task2, 'Same callback should return existing task');
 
         // Different callback should create new task
-        $differentCallback = function () {};
+        $differentCallback = function () {
+        };
         $gen3 = (function () {
             yield 'third';
         })();

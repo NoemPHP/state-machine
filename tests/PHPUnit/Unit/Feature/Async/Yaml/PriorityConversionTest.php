@@ -17,7 +17,7 @@ class PriorityConversionTest extends TestCase
         $converter = new class {
             public function convertPriority(string $priority): Priority
             {
-                return match(strtolower($priority)) {
+                return match (strtolower($priority)) {
                     'low' => Priority::LOW,
                     'high' => Priority::HIGH,
                     default => Priority::NORMAL,
@@ -47,7 +47,7 @@ class PriorityConversionTest extends TestCase
         $converter = new class {
             public function convertPriority(string $priority): Priority
             {
-                return match(strtolower($priority)) {
+                return match (strtolower($priority)) {
                     'low' => Priority::LOW,
                     'high' => Priority::HIGH,
                     default => Priority::NORMAL,
@@ -73,7 +73,7 @@ class PriorityConversionTest extends TestCase
         $converter = new class {
             public function convertPriority(string $priority): Priority
             {
-                return match(strtolower($priority)) {
+                return match (strtolower($priority)) {
                     'low' => Priority::LOW,
                     'high' => Priority::HIGH,
                     default => Priority::NORMAL,

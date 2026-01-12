@@ -21,7 +21,8 @@ class SingletonCleanupTest extends TestCase
         $scheduler = new CoroutineScheduler();
         $config = new AsyncConfig(singleton: true);
 
-        $callback = function () {};
+        $callback = function () {
+        };
 
         // Create and finish a task
         $gen1 = (function () {

@@ -53,7 +53,7 @@ class MultipleConnectionSpawningTest extends NetworkMachineTestCase
                     'yamlHelpers' => [
                         'php' => new \Noem\State\Feature\Loader\Helper\PhpEvalHelper(),
                         'get' => new \Noem\State\Feature\Loader\Helper\ContainerGetHelper([
-                            'spawn.guard' => function(object $trigger) use (&$spawnedConnections): bool {
+                            'spawn.guard' => function (object $trigger) use (&$spawnedConnections): bool {
                                 if ($trigger instanceof \ServerConnection) {
                                     $spawnedConnections[] = $trigger;
                                     return true;

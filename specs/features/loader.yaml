@@ -1025,3 +1025,46 @@ features:
         criticality: contract
         intent: Validates dependency injection in actions
         test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Loader/Holon/ContainerAccessTest.php
+
+  - name: summon-helper
+    description: Runtime helper for loading external machines via Holon
+    specs:
+      - acceptanceCriteria: RegionLoader adds summon() method to BoundAccess chain
+        criticality: contract
+        intent: Enables loading external YAML machines from within callbacks without external context
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SummonHelperRegistrationTest.php
+
+      - acceptanceCriteria: summon() accepts filepath parameter
+        criticality: contract
+        intent: Takes path to YAML machine definition file
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SummonAcceptsFilepathTest.php
+
+      - acceptanceCriteria: summon() loads machine via Holon::fromYaml()
+        criticality: contract
+        intent: Delegates to Holon for complete machine bootstrapping with features and container
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SummonUsesHolonTest.php
+
+      - acceptanceCriteria: summon() returns Region instance
+        criticality: contract
+        intent: Returns built region ready for developer to execute or connect as needed
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SummonReturnsRegionTest.php
+
+      - acceptanceCriteria: summon() accepts absolute paths unchanged
+        criticality: contract
+        intent: Absolute paths (Unix /path or Windows C:\path) are used as-is without modification
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SummonAbsolutePathTest.php
+
+      - acceptanceCriteria: summon() resolves relative paths against getcwd()
+        criticality: contract
+        intent: Relative paths resolve from current working directory, enabling portable machine loading
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Loader/SummonRelativePathTest.php
+
+      - acceptanceCriteria: summon() works in YAML onEnter callbacks
+        criticality: contract
+        intent: Validates YAML compatibility for loading external machines declaratively
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Loader/SummonInYamlCallbackTest.php
+
+      - acceptanceCriteria: Developer controls execution of summoned region
+        criticality: contract
+        intent: Demonstrates summon() returns region for developer to wrap in Runtime and execute
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Loader/SummonDeveloperControlsExecutionTest.php

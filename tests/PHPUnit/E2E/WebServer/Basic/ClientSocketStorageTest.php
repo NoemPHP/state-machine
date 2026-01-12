@@ -53,7 +53,7 @@ class ClientSocketStorageTest extends NetworkMachineTestCase
                     'yaml' => $this->yaml(),
                     'yamlHelpers' => [
                         'get' => new \Noem\State\Feature\Loader\Helper\ContainerGetHelper([
-                            'accept.action' => function(object $trigger) use ($mockClient, &$storedClient) {
+                            'accept.action' => function (object $trigger) use ($mockClient, &$storedClient) {
                                 // Store client socket in extended state
                                 $this->set('client', $mockClient);
                                 $storedClient = $this->get('client');

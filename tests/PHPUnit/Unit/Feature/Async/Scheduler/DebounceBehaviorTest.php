@@ -25,7 +25,8 @@ final class DebounceBehaviorTest extends TestCase
 
         $config = new AsyncConfig(debounce: 0.05, priority: Priority::LOW); // 50ms debounce, 1 step
 
-        $scheduler->enqueue($generator, $config, function () {});
+        $scheduler->enqueue($generator, $config, function () {
+        });
 
         // Immediately tick - should not execute due to debounce
         $scheduler->tick();
@@ -44,7 +45,8 @@ final class DebounceBehaviorTest extends TestCase
         $scheduler = new CoroutineScheduler();
 
         $executions = 0;
-        $callback = function () {};
+        $callback = function () {
+        };
 
         $config = new AsyncConfig(debounce: 0.03, singleton: true); // 30ms debounce with singleton
 
@@ -89,7 +91,8 @@ final class DebounceBehaviorTest extends TestCase
 
         $config = new AsyncConfig(debounce: 0.02, priority: Priority::LOW); // 20ms debounce, 1 step
 
-        $scheduler->enqueue($generator, $config, function () {});
+        $scheduler->enqueue($generator, $config, function () {
+        });
 
         // Tick multiple times before debounce expires
         $scheduler->tick();
@@ -116,7 +119,8 @@ final class DebounceBehaviorTest extends TestCase
 
         $config = new AsyncConfig(debounce: 0.0); // Zero debounce
 
-        $scheduler->enqueue($generator, $config, function () {});
+        $scheduler->enqueue($generator, $config, function () {
+        });
 
         $scheduler->tick();
         $this->assertTrue($executed, 'Task with zero debounce should execute immediately');

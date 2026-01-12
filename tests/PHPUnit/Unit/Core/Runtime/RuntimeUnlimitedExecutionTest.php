@@ -143,7 +143,7 @@ class RuntimeUnlimitedExecutionTest extends TestCase
             ->setStates('initial', 'final')
             ->markInitial('initial')
             ->markFinal('final')
-            ->onEnter('initial', function(object $t) use (&$enterCalled) {
+            ->onEnter('initial', function (object $t) use (&$enterCalled) {
                 $enterCalled = true;
             })
             ->addBuildStep(new AddTransition('initial', 'final'))

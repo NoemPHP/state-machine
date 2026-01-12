@@ -97,6 +97,10 @@ class Holon
         if (!isset($regionConfig['final']) && isset($rawYaml['final'])) {
             $regionConfig['final'] = $rawYaml['final'];
         }
+        // Include interactions from top-level config for InteractionRegistryFeature
+        if (isset($rawYaml['interactions'])) {
+            $regionConfig['interactions'] = $rawYaml['interactions'];
+        }
 
         // Convert region config to YAML so it can be parsed with container-aware helpers
         $regionYaml = \Symfony\Component\Yaml\Yaml::dump($regionConfig, 10);
@@ -119,7 +123,11 @@ class Holon
         // Handle event loop configuration
         $eventLoopConfig = $machineConfig['eventLoop'] ?? [];
 
-        if ($eventLoopConfig['autoRun'] ?? false) {
+        // Allow options parameter to override YAML autoRun setting
+        // This is critical for summon() to prevent deadlocks
+        $autoRun = $options['autoRun'] ?? ($eventLoopConfig['autoRun'] ?? false);
+
+        if ($autoRun) {
             return self::runEventLoop($region, $eventLoopConfig, $container);
         }
 

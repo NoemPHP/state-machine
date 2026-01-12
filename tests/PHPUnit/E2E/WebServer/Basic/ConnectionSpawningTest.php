@@ -57,7 +57,7 @@ class ConnectionSpawningTest extends NetworkMachineTestCase
                     'yamlHelpers' => [
                         'php' => new \Noem\State\Feature\Loader\Helper\PhpEvalHelper(),
                         'get' => new \Noem\State\Feature\Loader\Helper\ContainerGetHelper([
-                            'spawn.guard' => function(object $trigger) use (&$spawnGuardCalled): bool {
+                            'spawn.guard' => function (object $trigger) use (&$spawnGuardCalled): bool {
                                 $spawnGuardCalled = true;
                                 return $trigger instanceof \ServerConnection;
                             }

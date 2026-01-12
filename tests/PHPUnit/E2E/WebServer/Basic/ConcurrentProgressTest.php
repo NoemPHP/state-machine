@@ -52,12 +52,12 @@ class ConcurrentProgressTest extends NetworkMachineTestCase
                     'yaml' => $this->yaml(),
                     'yamlHelpers' => [
                         'get' => new \Noem\State\Feature\Loader\Helper\ContainerGetHelper([
-                            'task1.action' => function(object $trigger) use (&$execution) {
+                            'task1.action' => function (object $trigger) use (&$execution) {
                                 $execution[] = 'task1-start';
                                 yield;
                                 $execution[] = 'task1-end';
                             },
-                            'task2.action' => function(object $trigger) use (&$execution) {
+                            'task2.action' => function (object $trigger) use (&$execution) {
                                 $execution[] = 'task2-start';
                                 yield;
                                 $execution[] = 'task2-end';

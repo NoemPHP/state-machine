@@ -52,7 +52,7 @@ class ConnectionYieldBehaviorTest extends NetworkMachineTestCase
                     'yaml' => $this->yaml(),
                     'yamlHelpers' => [
                         'get' => new \Noem\State\Feature\Loader\Helper\ContainerGetHelper([
-                            'processing.action' => function(object $trigger) use (&$executionSteps) {
+                            'processing.action' => function (object $trigger) use (&$executionSteps) {
                                 $executionSteps[] = 'step1';
                                 yield;  // Yield control
                                 $executionSteps[] = 'step2';

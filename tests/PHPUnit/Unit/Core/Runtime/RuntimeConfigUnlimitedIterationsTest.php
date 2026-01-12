@@ -33,16 +33,22 @@ class RuntimeConfigUnlimitedIterationsTest extends TestCase
     {
         $config = new RuntimeConfig(maxIterations: 0);
 
-        $this->assertLessThanOrEqual(0, $config->maxIterations,
-            'Zero or negative maxIterations indicates unlimited execution');
+        $this->assertLessThanOrEqual(
+            0,
+            $config->maxIterations,
+            'Zero or negative maxIterations indicates unlimited execution'
+        );
     }
 
     public function testNegativeOneIndicatesUnlimitedExecution(): void
     {
         $config = new RuntimeConfig(maxIterations: -1);
 
-        $this->assertLessThanOrEqual(0, $config->maxIterations,
-            'Zero or negative maxIterations indicates unlimited execution');
+        $this->assertLessThanOrEqual(
+            0,
+            $config->maxIterations,
+            'Zero or negative maxIterations indicates unlimited execution'
+        );
     }
 
     public function testUnlimitedIterationsIsReadonly(): void

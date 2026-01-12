@@ -29,7 +29,8 @@ class SchedulerSkipsDebounceTest extends TestCase
             }
         })();
 
-        $scheduler->enqueue($generator, $config, function () {});
+        $scheduler->enqueue($generator, $config, function () {
+        });
 
         // Tick immediately - should be skipped due to debounce
         $scheduler->tick();

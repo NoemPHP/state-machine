@@ -21,7 +21,8 @@ final class TracksTaskConfigTest extends TestCase
 
         $config = new AsyncConfig(priority: Priority::HIGH);
 
-        $task = $scheduler->enqueue($generator, $config, function () {});
+        $task = $scheduler->enqueue($generator, $config, function () {
+        });
 
         // Verify config is stored in task
         $this->assertSame($config, $task->getConfig());
@@ -41,8 +42,10 @@ final class TracksTaskConfigTest extends TestCase
         $config1 = new AsyncConfig(priority: Priority::HIGH);
         $config2 = new AsyncConfig(priority: Priority::LOW);
 
-        $task1 = $scheduler->enqueue($gen1, $config1, function () {});
-        $task2 = $scheduler->enqueue($gen2, $config2, function () {});
+        $task1 = $scheduler->enqueue($gen1, $config1, function () {
+        });
+        $task2 = $scheduler->enqueue($gen2, $config2, function () {
+        });
 
         // Verify each task has its own config
         $this->assertSame($config1, $task1->getConfig());

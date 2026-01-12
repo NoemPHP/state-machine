@@ -8,8 +8,11 @@ use Noem\State\Chains\ConnectedRegions;
 use Noem\State\Chains\DispatchAction;
 use Noem\State\Chains\EnhanceRegionBuilder;
 use Noem\State\Chains\Params;
+use Noem\State\Chains\Params\Config\LoaderConfig;
 use Noem\State\Connection;
 use Noem\State\Connection as C;
+use Noem\State\Feature\ExtendedState\ContextChains\BoundAccess;
+use Noem\State\Feature\ExtendedState\ContextChains\Params\BoundAccessParams;
 use Noem\State\Feature\Feature;
 use Noem\State\Feature\Includes\Chains\LoadFile;
 use Noem\State\Feature\Includes\IncludesFeature;
@@ -60,6 +63,7 @@ class RegionLoader implements Feature
         $chainMail->invoke($this->extendLoaderSchemaForSpawnerSupport(...));
         $chainMail->invoke($this->spawnRegionsOnActions(...));
         $chainMail->invoke($this->processSpawnerSchema(...));
+        $chainMail->invoke($this->registerSummonHelper(...));
     }
 
     /**
@@ -208,7 +212,7 @@ class RegionLoader implements Feature
                 $builder = $next($context);
                 assert($builder instanceof RegionBuilder);
 
-                $loaderConfig = $context->config(\Noem\State\Chains\Params\Config\LoaderConfig::class);
+                $loaderConfig = $context->config(LoaderConfig::class);
                 if (!$loaderConfig->hasStates()) {
                     return $builder;
                 }
@@ -332,5 +336,87 @@ class RegionLoader implements Feature
                 return $next($action);
             }
         );
+    }
+
+    /**
+     * Register summon() helper on BoundAccess chain
+     * Enables $this->summon('/path/to/machine.yml') in callbacks
+     * Supports absolute and relative paths (relative to loader.array.includes.basePath or getcwd())
+     */
+    public function registerSummonHelper(
+        EnhanceRegionBuilder $builderEnhancer,
+        ?BoundAccess $boundAccess = null
+    ): void {
+        // BoundAccess is optional - only available when ExtendedState is loaded
+        if (!$boundAccess) {
+            return;
+        }
+
+        // Link to EnhanceRegionBuilder to capture BuildParams for each build
+        $builderEnhancer->link(
+            function (Params\BuildParams $buildParams, callable $next) use ($boundAccess) {
+                // Register summon() on BoundAccess with captured BuildParams
+                $boundAccess->link(function (BoundAccessParams $params, callable $next) use ($buildParams) {
+                    if (
+                        $params->type !== BoundAccessParams::TYPE_METHOD
+                        || $params->name !== 'summon'
+                    ) {
+                        return $next($params);
+                    }
+
+                    // Extract filepath parameter
+                    $args = $params->payload;
+                    $filepath = $args[0] ?? null;
+
+                    if (!$filepath || !is_string($filepath)) {
+                        throw new \RuntimeException('summon() requires a filepath string as first parameter');
+                    }
+
+                    // Resolve path using BuildParams basePath, fallback to getcwd()
+                    $resolvedPath = $this->resolveSummonPath($filepath, $buildParams);
+
+                    // Load machine via Holon and return the Region
+                    // CRITICAL: Pass autoRun: false to prevent summoned machines from running immediately
+                    // The parent machine will control execution via Runtime
+                    return Holon::fromYaml($resolvedPath, ['autoRun' => false]);
+                });
+
+                return $next($buildParams);
+            }
+        );
+    }
+
+    /**
+     * Resolve summon path - absolute paths as-is, relative paths against basePath or getcwd()
+     */
+    private function resolveSummonPath(string $path, Params\BuildParams $buildParams): string
+    {
+        // Absolute paths are used as-is
+        if ($this->isAbsolutePath($path)) {
+            return $path;
+        }
+
+        // Relative path: resolve against configured basePath or getcwd()
+        $basePath = $buildParams->getPath('loader.array.includes.basePath') ?? getcwd();
+
+        return rtrim($basePath, '/') . '/' . ltrim($path, '/');
+    }
+
+    /**
+     * Check if path is absolute (Unix or Windows)
+     */
+    private function isAbsolutePath(string $path): bool
+    {
+        // Unix absolute path
+        if ($path[0] === '/') {
+            return true;
+        }
+
+        // Windows absolute path (e.g., C:\path or C:/path)
+        if (strlen($path) > 1 && $path[1] === ':') {
+            return true;
+        }
+
+        return false;
     }
 }

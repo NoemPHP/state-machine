@@ -22,7 +22,8 @@ final class TimeoutCancellationTest extends TestCase
 
         $config = new AsyncConfig(timeout: 0.01); // 10ms timeout
 
-        $task = $scheduler->enqueue($generator, $config, function () {});
+        $task = $scheduler->enqueue($generator, $config, function () {
+        });
 
         $this->assertFalse($task->isFinished());
 
@@ -48,7 +49,8 @@ final class TimeoutCancellationTest extends TestCase
         $config = new AsyncConfig(timeout: 0.05); // 50ms timeout
 
         $enqueueTime = microtime(true);
-        $task = $scheduler->enqueue($generator, $config, function () {});
+        $task = $scheduler->enqueue($generator, $config, function () {
+        });
 
         // Wait 30ms (within timeout)
         usleep(30000);
@@ -82,7 +84,8 @@ final class TimeoutCancellationTest extends TestCase
 
         $config = new AsyncConfig(timeout: 0.02); // 20ms timeout
 
-        $task = $scheduler->enqueue($generator, $config, function () {});
+        $task = $scheduler->enqueue($generator, $config, function () {
+        });
 
         // First tick - within timeout
         $scheduler->tick();
@@ -116,7 +119,8 @@ final class TimeoutCancellationTest extends TestCase
 
         $config = new AsyncConfig(); // No timeout
 
-        $task = $scheduler->enqueue($generator, $config, function () {});
+        $task = $scheduler->enqueue($generator, $config, function () {
+        });
 
         // Tick many times
         for ($i = 0; $i < 100; $i++) {

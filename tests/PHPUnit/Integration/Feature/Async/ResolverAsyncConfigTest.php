@@ -55,7 +55,6 @@ final class ResolverAsyncConfigTest extends TestCase
 
         // Result may not be available yet as resolver completes async
         // This tests that AsyncConfig is being used, not full resolution
-
     }
 
     public function testResolverPriorityAffectsExecution(): void

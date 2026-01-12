@@ -54,7 +54,7 @@ class ConnectionTriggerPropagationTest extends NetworkMachineTestCase
                     'yamlHelpers' => [
                         'php' => new \Noem\State\Feature\Loader\Helper\PhpEvalHelper(),
                         'get' => new \Noem\State\Feature\Loader\Helper\ContainerGetHelper([
-                            'spawn.guard' => function(object $trigger) use (&$spawnGuardReceived): bool {
+                            'spawn.guard' => function (object $trigger) use (&$spawnGuardReceived): bool {
                                 if ($trigger instanceof \ServerConnection) {
                                     // Only capture ServerConnection triggers (not subsequent tick triggers)
                                     $spawnGuardReceived = $trigger;
@@ -62,7 +62,7 @@ class ConnectionTriggerPropagationTest extends NetworkMachineTestCase
                                 }
                                 return false;
                             },
-                            'child.action' => function(object $trigger) use (&$childActionReceived) {
+                            'child.action' => function (object $trigger) use (&$childActionReceived) {
                                 if ($trigger instanceof \ServerConnection) {
                                     // Only capture ServerConnection triggers
                                     $childActionReceived = $trigger;

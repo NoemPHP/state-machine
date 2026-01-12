@@ -15,6 +15,7 @@ use Noem\State\Middleware\ChainMail;
 
 class OrthogonalRegions implements Feature
 {
+    #[\Override]
     public function __invoke(ChainMail $chainMail): void
     {
         $chainMail->supply(
@@ -22,10 +23,7 @@ class OrthogonalRegions implements Feature
         )->use(
             function (
                 ?LoaderChains\Schema $schema,
-                Chains\ConnectedRegions $connectedRegions,
-                Chains\Get $get,
-                Chains\Set $set,
-                ParentRegion $parentRegion
+                Chains\ConnectedRegions $connectedRegions
             ) {
                 /**
                  * Extend the region schema to support the 'regions' item within a state config
@@ -44,31 +42,11 @@ class OrthogonalRegions implements Feature
                     $context->region = $context->region->extend([
                         'states' => Expect::listOf($context->state),
                     ]);
+                    /** @psalm-suppress InternalMethod */
                     $nestedRegion->items($context->region);
 
                     return $next($context);
                 });
-                //$get->link(
-                //    function (Chains\Context\GetContext $context, callable $next, callable $first) use ($parentRegion) {
-                //        $parentRegion = $parentRegion->of($context->region);
-                //        if (!is_null($parentRegion)) {
-                //            $context->region = $parentRegion;
-                //        }
-                //        return $next($context);
-                //    }
-                //);
-                //$set->link(
-                //    function (Chains\Context\SetContext $context, callable $next, callable $first) use ($parentRegion) {
-                //        $parentRegion = $parentRegion->of($context->region);
-                //        if (!is_null($parentRegion)) {
-                //            $context->region = $parentRegion;
-                //        }
-                //        return $next($context);
-                //    }
-                //);
-                //$connectedRegions->link(function (Chains\Params\Connection $context, callable $next) {
-                //    return $next($context);
-                //});
             }
         );
     }
