@@ -45,7 +45,7 @@ class JsonSchemaFeature implements Feature
                                         'default' => Expect::mixed(),  // Accept any type (int, string, bool, etc.)
                                         'description' => Expect::string(),
                                     ]
-                                )
+                                )->otherItems()  // Allow extension by other features
                             ),
                         ]);
                         $context->addCustomSchema('context', $contextSchema);

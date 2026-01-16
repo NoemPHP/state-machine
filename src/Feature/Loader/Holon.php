@@ -101,6 +101,10 @@ class Holon
         if (isset($rawYaml['interactions'])) {
             $regionConfig['interactions'] = $rawYaml['interactions'];
         }
+        // Include context config for ExtendedState/JsonSchema/ContextBroadcast features
+        if (isset($rawYaml['context'])) {
+            $regionConfig['context'] = $rawYaml['context'];
+        }
 
         // Convert region config to YAML so it can be parsed with container-aware helpers
         $regionYaml = \Symfony\Component\Yaml\Yaml::dump($regionConfig, 10);

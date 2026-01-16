@@ -95,6 +95,11 @@ features:
         intent: Ensures defaults available before first state callbacks execute
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/BuildStep/ExecutesDuringBuildTest.php
 
+      - acceptanceCriteria: AddJsonSchema.callback() stores schema definition in JsonSchemaMetaType for discovery
+        criticality: contract
+        intent: Enables other features to discover schema definitions at runtime for schema-aware behavior
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/JsonSchema/BuildStep/StoresSchemaForDiscoveryTest.php
+
   - name: runtime-validation-integration
     description: Integration with existing validation infrastructure
     specs:
