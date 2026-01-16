@@ -40,7 +40,8 @@ If NO: Stop (specs ready for later implementation)
 
 1. ⛔ **NEVER write code without specs first**
    - No exceptions, no shortcuts
-   - If specs don't exist, use `spec-planner` agent first
+   - **ALWAYS use `spec-planner` agent** to create specs - never write them directly
+   - The agent ensures proper granularity and format
 
 2. ⛔ **NEVER modify specs without user approval**
    - Specs are contracts, not suggestions
@@ -60,6 +61,12 @@ If NO: Stop (specs ready for later implementation)
 5. ⛔ **NEVER modify /vendor/ directory**
    - External dependencies are read-only
    - Never patch packages directly
+
+6. ⛔ **Spec PUBLIC API, not internals**
+   - Spec context helpers, abilities, YAML config - things developers USE
+   - Don't spec internal classes (I/O helpers, data structures)
+   - Typical feature: 4-10 specs, NOT 50+
+   - Parameters by nature: "file path, search string" NOT `$filePath: string`
 
 ---
 
@@ -157,10 +164,22 @@ See `.claude/AGENT_HANDOVER_PROTOCOL.md` for complete handover protocol between 
 ### Key Commands
 
 ```bash
-# Run all tests
+# Run all spec tests
 ddev atlas
 
-# Run spec-specific tests
+# Run single spec file (fast!)
+ddev atlas specs/features/interaction.yaml
+
+# Run multiple spec files
+ddev atlas specs/features/async.yaml specs/features/message.yaml
+
+# Run with glob pattern (supports .yaml and .yml)
+ddev atlas specs/features/*.yaml
+
+# Sequential with stop-on-failure
+ddev atlas --stop-on-failure specs/features/async.yaml
+
+# Run PHPUnit test class directly
 ddev exec composer spec tests/PHPUnit/[TestClass].php
 
 # Quality checks (style + static analysis + tests)
@@ -179,6 +198,7 @@ ddev exec composer psalm
 
 Features extend RegionBuilder capabilities through wrapper pattern:
 
+### Core Infrastructure
 | Feature | Purpose | Critical Notes |
 |---------|---------|----------------|
 | **TransitionsFeature** | Automatic state transitions with guards | Default enabled |
@@ -186,14 +206,33 @@ Features extend RegionBuilder capabilities through wrapper pattern:
 | **AsyncFeature** | Coroutine-based async operations | Requires ExtendedState |
 | **RegionLoader** | Load machines from YAML/arrays | Often loaded first |
 | **Holon** | Complete machine bootstrap from YAML | One-liner setup |
-| **OrthogonalRegions** | Parallel state execution | Hierarchical composition |
+| **IncludesFeature** | File inclusion support for YAML | Required by RegionLoader |
+
+### Communication & Messaging
+| Feature | Purpose | Critical Notes |
+|---------|---------|----------------|
 | **SubscriptionFeature** | Global event listeners with type filtering | For cross-region communication |
+| **MessageFeature** | UUID-correlated request-response messaging | Promise-like `.then()` API |
+| **InteractionFeature** | Standardized human-machine interaction | Confirm/Select/Choice/Prompt patterns |
+
+### Agentic Capabilities
+| Feature | Purpose | Critical Notes |
+|---------|---------|----------------|
+| **AbilitiesFeature** | Schema-validated tool invocation | External agents call machine tools |
+| **AgenticFeature** | Autonomous tool orchestration via `weave()` | Requires Abilities + AI |
+| **PresentationFeature** | Schema-enforced state exposure | Requires JsonSchema + ExtendedState |
+| **AiFeature** | LLM integration (Claude, Ollama) | `capture()`, `complete()` helpers |
+
+### Other Features
+| Feature | Purpose | Critical Notes |
+|---------|---------|----------------|
+| **OrthogonalRegions** | Parallel state execution | Hierarchical composition |
 | **EventHooks** | Before/After hooks via attributes | Event interception |
 | **NamedEvents** | Named subscriptions via attributes | Fine-grained filtering |
 | **ComponentsFeature** | Entity/Component/System pattern | Attach behavior to states |
-| **JsonSchemaFeature** | JSON schema validation | Context validation |
+| **JsonSchemaFeature** | JSON schema validation | Context/ability validation |
 | **TemplateFeature** | Dynamic content generation | Mustache-style |
-| **AiFeature** | AI integration | Claude API |
+| **LoggingFeature** | Structured logging via Chain | `$this->log()` helper |
 
 **⚠️ CRITICAL**: Feature order matters! Features wrap each other in LIFO order.
 
@@ -203,9 +242,63 @@ Features extend RegionBuilder capabilities through wrapper pattern:
 
 When ExtendedState is enabled, callbacks have access to `$this` context helpers:
 
-### Data Access
+### Data Access (ExtendedState)
 - `$this->get(string $key, mixed $default = null): mixed` - Retrieve context value
 - `$this->set(string $key, mixed $value): void` - Store context value
+
+### Abilities (AbilitiesFeature)
+```php
+$this->abilities('tool-name', ['param' => 'value'])
+    ->then(fn($response) => $this->set('result', $response));
+```
+
+### Interactions (InteractionFeature)
+```php
+// Confirm (yes/no)
+$confirmed = yield from $this->interact(new ConfirmRequest(
+    question: 'Proceed with deployment?',
+    defaultValue: false
+));
+
+// Select one option
+$choice = yield from $this->interact(new SelectRequest(
+    question: 'Choose environment',
+    options: ['dev' => new SelectOption('Development'), 'prod' => new SelectOption('Production')]
+));
+
+// Free text input
+$input = yield from $this->interact(new PromptRequest(
+    question: 'Enter description',
+    placeholder: 'Describe the task...'
+));
+```
+
+### Presentations (PresentationFeature)
+```php
+// Register exposed state (returns unregister callable)
+$unregister = $this->presentation(
+    key: 'progress',
+    label: 'Progress',
+    intent: 'Task completion percentage'
+);
+```
+
+### AI Helpers (AiFeature)
+```php
+// Structured capture with schema
+$data = yield from $this->capture(
+    prompt: 'Extract user intent',
+    schema: ['type' => 'object', 'properties' => [...]]
+);
+
+// Text completion
+$text = yield from $this->complete('Summarize: ' . $content);
+```
+
+### Logging (LoggingFeature)
+```php
+$this->log('info', 'Processing started', ['item_count' => 42]);
+```
 
 ### Dynamic Machine Loading (summon)
 
@@ -369,8 +462,9 @@ test -f machines/{machine-name}/CLAUDE.md && echo "EXISTS"
 
 ❌ Writing code before specs exist
 ❌ Modifying specs when tests fail
-❌ Skipping spec-planner for new features
+❌ Writing specs directly instead of using spec-planner agent
 ❌ Invoking core-development-expert without handover
+❌ Speccing internal classes instead of public API
 ❌ Running commands outside DDEV container
 ❌ Consolidating or splitting specs without approval
 ❌ Modifying vendor directory

@@ -180,6 +180,76 @@ use Noem\State\Feature\Async\IO\Exec;
 })
 ```
 
+#### Replace - Streaming Literal String Replacement
+
+```php
+use Noem\State\Feature\Async\IO\Replace;
+
+->onAction('state', function(object $trigger) {
+    // Replace all occurrences of 'old' with 'new' in huge files
+    $replace = new Replace('/path/to/file.txt', 'old', 'new');
+    $generator = $replace();
+
+    // Consume generator - yields for cooperative multitasking
+    iterator_to_array($generator);
+    $replacementCount = $generator->getReturn();
+})
+```
+
+**Key Characteristics**:
+- **Constant memory**: O(chunk + search_length) regardless of file size
+- **Handles chunk boundaries**: Matches spanning chunk boundaries are detected correctly
+- **Atomic writes**: Uses temp file + rename pattern for safety
+- **Limit parameter**: Optional 4th parameter to limit replacements
+
+```php
+// Replace only first 2 occurrences
+$replace = new Replace($filePath, 'search', 'replace', 2);
+
+// Custom chunk size (default 8192)
+$replace = new Replace($filePath, 'search', 'replace', -1, 4096);
+```
+
+#### RegexReplace - Pattern-Based Replacement with Capture Groups
+
+```php
+use Noem\State\Feature\Async\IO\RegexReplace;
+
+->onAction('state', function(object $trigger) {
+    // Regex replacement with capture group support
+    $regexReplace = new RegexReplace(
+        '/path/to/file.txt',
+        '/(\w+)@(\w+\.\w+)/',  // Pattern with captures
+        '$1@replaced.com'      // Backreference in replacement
+    );
+    $generator = $regexReplace();
+
+    iterator_to_array($generator);
+    $replacementCount = $generator->getReturn();
+})
+```
+
+**Key Characteristics**:
+- **Full regex support**: Uses `preg_replace()` with all PHP regex features
+- **Capture groups**: Supports `$1`, `$2`, `${name}` backreferences
+- **Error reporting**: Uses `preg_last_error_msg()` for detailed error messages
+- **Non-streaming**: Loads full file (required for regex multi-line patterns)
+- **Limit parameter**: Optional 4th parameter to limit replacements
+
+```php
+// Replace only first 2 matches
+$regexReplace = new RegexReplace($filePath, '/pattern/', 'replace', 2);
+```
+
+**When to Use Which**:
+| Use Case | Class |
+|----------|-------|
+| Literal string replacement | `Replace` |
+| Huge files (GB+) | `Replace` (constant memory) |
+| Pattern matching | `RegexReplace` |
+| Capture groups/backreferences | `RegexReplace` |
+| Multi-line patterns | `RegexReplace` |
+
 ## Usage Patterns
 
 ### Multi-Step Async Action
@@ -896,6 +966,8 @@ foreach ($this->queue as $task) {
 | `src/Feature/Async/IO/Load.php` | File reading operation |
 | `src/Feature/Async/IO/Fetch.php` | HTTP request operation |
 | `src/Feature/Async/IO/Exec.php` | Shell command execution |
+| `src/Feature/Async/IO/Replace.php` | Streaming literal string replacement (constant memory) |
+| `src/Feature/Async/IO/RegexReplace.php` | Regex replacement with capture group support |
 
 ## Summary Checklist
 
@@ -917,7 +989,7 @@ When working with AsyncFeature:
 
 ---
 
-**Last Updated**: 2025-11-28
+**Last Updated**: 2025-01-15
 **Feature Status**: Stable, production-ready
 **Spec Coverage**: Comprehensive integration and unit test coverage
 **Known Limitations**: Cooperative multitasking only (not parallel), PHP generator overhead

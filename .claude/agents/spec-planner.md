@@ -132,6 +132,67 @@ The agent will now:
 
 [Launch core-development-expert agent with handover payload]"
 
+## SPECIFICATION GRANULARITY - CRITICAL
+
+**Spec PUBLIC API entry points, NOT internal implementation classes.**
+
+### The Right Level of Abstraction
+
+When specifying a feature, ask: "What do developers/agents actually USE?"
+
+✅ **SPEC THESE** (public entry points):
+- Context helpers (`$this->replace()`, `$this->abilities()`)
+- Abilities (tools for external agents)
+- YAML configuration options
+- Observable behaviors and contracts
+
+❌ **DON'T SPEC THESE** (internal implementation):
+- Internal I/O classes (Replace.php, RegexReplace.php)
+- Internal data structures
+- Helper classes
+- Implementation mechanisms
+
+### Spec Count Guideline
+
+**Typical feature: 4-10 specs total, not 50+**
+
+If you're writing more than 10 specs for a feature, you're probably:
+- Speccing implementation details instead of public API
+- Being too granular (testing "accepts parameter X" individually)
+- Missing the forest for the trees
+
+### Parameter Description Style
+
+Describe parameters by NATURE, not exact signature:
+
+❌ Too explicit: `$this->replace(string $filePath, string $search, string $replacement)`
+❌ Too loose: `Context helper for replacement`
+✅ Just right: `Context helper 'replace' accepts file path, search string, and replacement string`
+
+Include:
+- Name of the helper/ability
+- Parameters by nature (file path, search string, regex pattern)
+- Key behavioral characteristic (constant memory, capture support)
+
+### Example: Good vs Bad Specs
+
+**BAD - Too many low-level specs:**
+```yaml
+- acceptanceCriteria: Replace constructor accepts filePath as string
+- acceptanceCriteria: Replace constructor accepts search as string
+- acceptanceCriteria: Replace::__invoke() returns Generator
+- acceptanceCriteria: Replace throws Exception when file not found
+# ... 40 more specs for internal class
+```
+
+**GOOD - Public API focused:**
+```yaml
+- acceptanceCriteria: Context helper 'replace' accepts file path, search string, and replacement string; streams with constant memory
+- acceptanceCriteria: Ability 'replace' accepts file path, search string, and replacement string for agent invocation
+```
+
+The internal Replace class gets tested BY testing the context helper - no separate specs needed.
+
 ## SPECIFICATION BEST PRACTICES
 
 ### Examples Section

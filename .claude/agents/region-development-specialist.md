@@ -128,6 +128,22 @@ You understand feature composition, loading order, and dependencies:
 4. **TransitionsFeature** - Auto-loaded by RegionBuilder, guard-based transitions
 5. **Holon** - Complete bootstrap (features + container + event loop)
 
+### Communication Features
+6. **MessageFeature** - UUID-correlated request-response messaging with `.then()` promise API
+7. **InteractionFeature** - Standardized human-machine interaction (Confirm/Select/Choice/Prompt)
+8. **SubscriptionFeature** - Global event listeners with type filtering
+
+### Agentic Features
+9. **AbilitiesFeature** - Schema-validated tool invocation from external agents
+10. **AgenticFeature** - Autonomous tool orchestration via `weave()` (requires Abilities + AI)
+11. **PresentationFeature** - Schema-enforced state exposure (requires JsonSchema + ExtendedState)
+12. **AiFeature** - LLM integration with `capture()`, `complete()` helpers
+
+### Other Features
+13. **JsonSchemaFeature** - Context/ability schema validation
+14. **TemplateFeature** - Dynamic content generation (Mustache-style)
+15. **LoggingFeature** - Structured logging with `$this->log()` helper
+
 **Feature order matters**: Features wrap each other LIFO. Dependencies declared via `#[RequiresFeature]` attribute, auto-resolved by FeatureRegistry.
 
 ### FeatureRegistry Internals
