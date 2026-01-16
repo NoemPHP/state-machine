@@ -1,0 +1,33 @@
+#!/bin/bash
+
+## Description: Run and connect to Holon state machines
+## Usage: holon <run|connect> [args]
+## Example: "ddev holon run machines/string-reverse/holon.yml" or "ddev holon connect"
+
+set -e
+
+case "${1:-}" in
+    run)
+        shift
+        if [ -z "${1:-}" ]; then
+            echo "Usage: ddev holon run <path>"
+            exit 1
+        fi
+        exec php /var/www/html/run.php /var/www/html/machines/process-wrapper/holon.yml "$@"
+        ;;
+    connect)
+        shift
+        exec /var/www/html/machines/process-wrapper/connect.sh "$@"
+        ;;
+    test)
+        exec php /var/www/html/run.php /var/www/html/machines/process-wrapper/holon.yml machines/string-reverse/holon.yml
+        ;;
+    *)
+        echo "Usage: ddev holon <run|connect|test> [args]"
+        echo ""
+        echo "  run <path>    Run holon via process-wrapper"
+        echo "  connect [pid] Connect to running holon (default: latest)"
+        echo "  test          Run string-reverse test holon"
+        exit 1
+        ;;
+esac

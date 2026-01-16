@@ -1,28 +1,51 @@
 #!/bin/bash
 
-## Description: Map the entire spec territory - run all spec tests across every region
-## Usage: atlas [options]
-## Example: "ddev atlas" or "ddev atlas --quiet" or "ddev atlas --stop-on-failure"
-## Flags: [{"Name":"quiet","Shorthand":"q","Usage":"Suppress output except for errors"},{"Name":"verbose","Shorthand":"v","Usage":"Show detailed output including test outputs"},{"Name":"stop-on-failure","Usage":"Stop execution on first failure"}]
+## Description: Run spec tests (all or specific files)
+## Usage: atlas [options] [spec-files...]
+## Example: "ddev atlas" runs all specs
+## Example: "ddev atlas specs/features/interaction.yaml" runs single spec
+## Example: "ddev atlas specs/features/*.yaml" runs matching specs
+## Example: "ddev atlas --sequential --stop-on-failure"
 
 set -e
 
-# Color codes for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# Parse command line options to pass through to test runner
-OPTIONS=""
+SEQUENTIAL=false
 STOP_ON_FAILURE=false
+MAX_JOBS=${MAX_JOBS:-$(nproc 2>/dev/null || echo 4)}
+OPTIONS=""
+SPEC_ARGS=()
+
+INVALID_ARGS=()
 
 for arg in "$@"; do
     case $arg in
+        --sequential|-s)
+            SEQUENTIAL=true
+            ;;
         --stop-on-failure)
             STOP_ON_FAILURE=true
+            SEQUENTIAL=true  # Stop-on-failure requires sequential
+            ;;
+        --jobs=*)
+            MAX_JOBS="${arg#*=}"
+            ;;
+        -j*)
+            MAX_JOBS="${arg#-j}"
+            ;;
+        --*)
             OPTIONS="$OPTIONS $arg"
+            ;;
+        *.yaml|*.yml)
+            # Spec file argument - resolve to absolute path
+            if [[ "$arg" = /* ]]; then
+                SPEC_ARGS+=("$arg")
+            else
+                SPEC_ARGS+=("/var/www/html/$arg")
+            fi
+            ;;
+        specs/*|/*specs/*)
+            # Path-like argument that's not a .yaml/.yml file
+            INVALID_ARGS+=("$arg")
             ;;
         *)
             OPTIONS="$OPTIONS $arg"
@@ -30,95 +53,137 @@ for arg in "$@"; do
     esac
 done
 
-echo -e "${BLUE}╔══════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║${NC}  ${GREEN}Atlas: Mapping All Spec Regions${NC}                          ${BLUE}║${NC}"
-echo -e "${BLUE}╚══════════════════════════════════════════════════════════════╝${NC}"
-echo ""
+# Fail if invalid path arguments were passed
+if [ ${#INVALID_ARGS[@]} -gt 0 ]; then
+    echo "Error: Invalid spec file path(s) - must be .yaml or .yml files:"
+    for inv in "${INVALID_ARGS[@]}"; do
+        echo "  $inv"
+    done
+    exit 1
+fi
 
-# Find all spec files recursively in the specs directory
-SPEC_FILES=$(find /var/www/html/specs -type f -name "*.yaml" | sort)
+# If spec files were provided, use those; otherwise find all
+if [ ${#SPEC_ARGS[@]} -gt 0 ]; then
+    SPEC_FILES=""
+    MISSING=()
+    for spec in "${SPEC_ARGS[@]}"; do
+        if [ -f "$spec" ]; then
+            SPEC_FILES="$SPEC_FILES $spec"
+        else
+            MISSING+=("$spec")
+        fi
+    done
+
+    if [ ${#MISSING[@]} -gt 0 ]; then
+        echo "Error: Spec file(s) not found:"
+        for m in "${MISSING[@]}"; do
+            echo "  ${m#/var/www/html/}"
+        done
+        exit 1
+    fi
+
+    SPEC_FILES=$(echo "$SPEC_FILES" | tr ' ' '\n' | grep -v '^$' | sort)
+else
+    SPEC_FILES=$(find /var/www/html/specs -type f -name "*.yaml" | sort)
+fi
 
 if [ -z "$SPEC_FILES" ]; then
-    echo -e "${RED}❌ Error: No spec files found in specs/ directory${NC}"
+    echo "Error: No spec files found"
     exit 1
 fi
 
-# Count total spec files
-TOTAL_SPECS=$(echo "$SPEC_FILES" | wc -l)
-CURRENT=0
-FAILED_SPECS=()
-PASSED_SPECS=()
+TOTAL=$(echo "$SPEC_FILES" | wc -l)
 
-echo -e "${BLUE}Found ${TOTAL_SPECS} spec file(s) to test${NC}"
-echo ""
+# Sequential mode (or when stop-on-failure is needed)
+if [ "$SEQUENTIAL" = true ]; then
+    CURRENT=0
+    FAILED=()
 
-# Run test runner for each spec file
-for SPEC_FILE in $SPEC_FILES; do
-    CURRENT=$((CURRENT + 1))
-    # Get relative path for display
-    RELATIVE_PATH=${SPEC_FILE#/var/www/html/}
-    
-    echo -e "${BLUE}[${CURRENT}/${TOTAL_SPECS}]${NC} Testing: ${YELLOW}${RELATIVE_PATH}${NC}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    
-    # Run the test runner for this spec file
-    if /var/www/html/machines/middleware-test-runner-parallel/run.sh --spec="$SPEC_FILE" $OPTIONS; then
-        PASSED_SPECS+=("$RELATIVE_PATH")
-        echo -e "${GREEN}✓ Passed${NC}"
-    else
-        FAILED_SPECS+=("$RELATIVE_PATH")
-        echo -e "${RED}✗ Failed${NC}"
-        
-        # If stop-on-failure is enabled, exit immediately
-        if [ "$STOP_ON_FAILURE" = true ]; then
-            echo ""
-            echo -e "${RED}╔══════════════════════════════════════════════════════════════╗${NC}"
-            echo -e "${RED}║${NC}  ${RED}Stopping on first failure (--stop-on-failure)${NC}           ${RED}║${NC}"
-            echo -e "${RED}╚══════════════════════════════════════════════════════════════╝${NC}"
-            echo ""
-            echo -e "${YELLOW}Failed spec:${NC} ${RELATIVE_PATH}"
-            exit 1
+    for SPEC_FILE in $SPEC_FILES; do
+        CURRENT=$((CURRENT + 1))
+        RELATIVE=${SPEC_FILE#/var/www/html/}
+
+        if /var/www/html/machines/middleware-test-runner-parallel/run.sh --spec="$SPEC_FILE" $OPTIONS >/dev/null 2>&1; then
+            echo "[$CURRENT/$TOTAL] PASS $RELATIVE"
+        else
+            echo "[$CURRENT/$TOTAL] FAIL $RELATIVE"
+            FAILED+=("$RELATIVE")
+
+            if [ "$STOP_ON_FAILURE" = true ]; then
+                echo ""
+                echo "Stopped on failure: $RELATIVE"
+                exit 1
+            fi
         fi
-    fi
-    
-    echo ""
-done
+    done
+else
+    # Parallel mode
+    RESULTS_DIR=$(mktemp -d)
+    trap "rm -rf $RESULTS_DIR" EXIT
 
-# Print summary
-echo -e "${BLUE}╔══════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║${NC}  ${GREEN}Atlas Summary${NC}                                  ${BLUE}║${NC}"
-echo -e "${BLUE}╚══════════════════════════════════════════════════════════════╝${NC}"
-echo ""
-echo -e "Total specs tested: ${TOTAL_SPECS}"
-echo -e "${GREEN}Passed: ${#PASSED_SPECS[@]}${NC}"
-echo -e "${RED}Failed: ${#FAILED_SPECS[@]}${NC}"
-echo ""
+    echo "Running $TOTAL specs with $MAX_JOBS parallel jobs..."
 
-# List passed specs if verbose or if there are failures
-if [ ${#FAILED_SPECS[@]} -gt 0 ] || [[ "$OPTIONS" == *"--verbose"* ]] || [[ "$OPTIONS" == *"-v"* ]]; then
-    if [ ${#PASSED_SPECS[@]} -gt 0 ]; then
-        echo -e "${GREEN}✓ Passed specs:${NC}"
-        for spec in "${PASSED_SPECS[@]}"; do
-            echo -e "  ${GREEN}✓${NC} $spec"
-        done
-        echo ""
-    fi
+    # Run specs in parallel with job control
+    RUNNING=0
+    INDEX=0
+
+    for SPEC_FILE in $SPEC_FILES; do
+        INDEX=$((INDEX + 1))
+        RELATIVE=${SPEC_FILE#/var/www/html/}
+
+        # Launch job in background
+        (
+            if /var/www/html/machines/middleware-test-runner-parallel/run.sh --spec="$SPEC_FILE" $OPTIONS >/dev/null 2>&1; then
+                echo "PASS" > "$RESULTS_DIR/$INDEX"
+            else
+                echo "FAIL:$RELATIVE" > "$RESULTS_DIR/$INDEX"
+            fi
+        ) &
+
+        RUNNING=$((RUNNING + 1))
+
+        # Throttle: wait if we hit max jobs
+        if [ $RUNNING -ge $MAX_JOBS ]; then
+            wait -n 2>/dev/null || wait
+            RUNNING=$((RUNNING - 1))
+        fi
+    done
+
+    # Wait for remaining jobs
+    wait
+
+    # Collect results
+    PASSED=0
+    FAILED=()
+
+    for i in $(seq 1 $TOTAL); do
+        if [ -f "$RESULTS_DIR/$i" ]; then
+            RESULT=$(cat "$RESULTS_DIR/$i")
+            if [ "$RESULT" = "PASS" ]; then
+                PASSED=$((PASSED + 1))
+            else
+                FAILED+=("${RESULT#FAIL:}")
+            fi
+        fi
+    done
 fi
 
-# List failed specs
-if [ ${#FAILED_SPECS[@]} -gt 0 ]; then
-    echo -e "${RED}✗ Failed specs:${NC}"
-    for spec in "${FAILED_SPECS[@]}"; do
-        echo -e "  ${RED}✗${NC} $spec"
+echo ""
+if [ "$SEQUENTIAL" = true ]; then
+    echo "Results: $((TOTAL - ${#FAILED[@]}))/$TOTAL passed"
+else
+    echo "Results: $PASSED/$TOTAL passed"
+fi
+
+if [ ${#FAILED[@]} -gt 0 ]; then
+    echo ""
+    echo "Failed:"
+    for spec in "${FAILED[@]}"; do
+        echo "  $spec"
     done
     echo ""
-    echo -e "${YELLOW}⚠️  Run individual specs with:${NC}"
-    echo -e "   ${BLUE}ddev exec machines/middleware-test-runner-parallel/run.sh --spec=<path>${NC}"
+    echo -e "⚠️  Run individual specs with"
+    echo -e "ddev exec machines/middleware-test-runner-parallel/run.sh --spec=<path>"
     echo ""
     exit 1
 fi
-
-echo -e "${GREEN}╔══════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║${NC}  ${GREEN}✓ Atlas complete - all regions verified!${NC}                           ${GREEN}║${NC}"
-echo -e "${GREEN}╚══════════════════════════════════════════════════════════════╝${NC}"
-exit 0

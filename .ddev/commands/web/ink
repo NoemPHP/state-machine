@@ -1,0 +1,61 @@
+#!/bin/bash
+
+## Description: Run a Holon via process-wrapper and connect the React Ink CLI
+## Usage: ink <holon-path>
+## Example: "ddev ink machines/string-transform/holon.yml"
+
+set -e
+
+CLI_DIR="/var/www/html/clients/cli"
+
+if [ -z "${1:-}" ]; then
+    echo "Usage: ddev ink <holon-path>"
+    echo ""
+    echo "Example: ddev ink machines/string-transform/holon.yml"
+    exit 1
+fi
+
+HOLON_PATH="$1"
+
+# Check if node_modules exists
+if [ ! -d "$CLI_DIR/node_modules" ]; then
+    echo "Installing dependencies..."
+    cd "$CLI_DIR" && npm install
+fi
+
+# Check if built
+if [ ! -d "$CLI_DIR/dist" ]; then
+    echo "Building CLI..."
+    cd "$CLI_DIR" && npm run build
+fi
+
+# Start process-wrapper in daemon mode
+echo "Starting holon in daemon mode: $HOLON_PATH"
+php /var/www/html/run.php /var/www/html/machines/process-wrapper/holon.yml -d "$HOLON_PATH" &
+WRAPPER_PID=$!
+
+# Wait for runtime directory to be created
+sleep 1
+
+# Find the runtime directory
+RUNTIME_DIR=$(ls -td /tmp/holon-* 2>/dev/null | head -1)
+if [ -z "$RUNTIME_DIR" ]; then
+    echo "ERROR: No runtime directory found"
+    kill $WRAPPER_PID 2>/dev/null || true
+    exit 1
+fi
+
+echo "Runtime directory: $RUNTIME_DIR"
+
+# Cleanup on exit
+cleanup() {
+    echo ""
+    echo "Shutting down..."
+    kill $WRAPPER_PID 2>/dev/null || true
+    # Give it a moment to clean up
+    sleep 0.5
+}
+trap cleanup EXIT
+
+# Connect the ink CLI
+cd "$CLI_DIR" && node dist/index.js "$RUNTIME_DIR"

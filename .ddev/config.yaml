@@ -17,6 +17,8 @@ web_extra_exposed_ports:
     container_port: 8080
     http_port: 8079
     https_port: 8080
+webimage_extra_packages:
+  - socat
 # Key features of DDEV's config.yaml:
 
 # name: <projectname> # Name of the project, automatically provides
