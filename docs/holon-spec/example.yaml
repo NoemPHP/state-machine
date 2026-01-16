@@ -1,0 +1,79 @@
+# Complete Holon YAML Example - All features shown once
+# Container paths required: /var/www/html/...
+
+machine:
+  require: !php require '/var/www/html/machines/example/functions.php'  # Optional: load module functions
+
+  features:  # Order matters! See constraints.md
+    - class: Noem\State\Feature\ExtendedState\ExtendedState      # MUST be first
+    - class: Noem\State\Feature\JsonSchema\JsonSchemaFeature     # Enables context.schema
+    - class: Noem\State\Feature\ContextBroadcast\ContextBroadcastFeature  # Enables ContextChange events
+    - class: Noem\State\Feature\Template\TemplateFeature         # MUST be before AiFeature
+    - class: Noem\State\Feature\Ai\AiFeature                     # Enables $this->capture/complete
+    - class: Noem\State\Feature\Ai\AiConfigFeature
+      config:
+        credentials:
+          anthropic: { apiKey: "${ANTHROPIC_API_KEY}" }
+          ollama: { baseUrl: "http://localhost:11434/api" }
+        modelPool:
+          - { id: "claude", provider: "anthropic", model: "claude-sonnet-4", complexity: 3 }
+    - class: Noem\State\Feature\Async\AsyncFeature               # MUST be after ExtendedState
+    - class: Noem\State\Feature\Message\MessageFeature
+    - class: Noem\State\Feature\Abilities\AbilitiesFeature       # Requires MessageFeature
+    - class: Noem\State\Feature\Agentic\AgenticFeature           # Requires Abilities + Ai
+
+  eventLoop:
+    autoRun: true       # true = run immediately, false = return Region
+    maxIterations: 0    # 0 = unlimited
+
+context:
+  broadcast: true       # false = disable ALL ContextChange events for region
+  schema:               # Requires JsonSchemaFeature
+    - name: progress
+      type: integer
+      default: 0
+    - name: status
+      type: string
+      default: "pending"
+    - name: apiKey
+      type: string
+      broadcast: false  # Exclude from ContextChange events (sensitive data)
+
+states:
+  - name: idle
+    onEnter:
+      # language=injectablephp
+      - run: !php return function(object $t) { $this->set('ready', true); };
+    transitions:
+      - target: processing
+
+  - name: processing
+    action:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): \Generator {
+              $result = $this->capture("Analyze input", ['type' => 'object'], 'ollama');
+              yield;  # MUST yield at least once for async
+              $this->set('result', $result);
+          };
+        async:
+          enabled: true
+    transitions:
+      - target: finished
+        # language=injectablephp
+        guard: !php return function(object $t): bool { return $this->get('done') === true; };
+      - target: error
+        # language=injectablephp
+        guard: !php return function(object $t): bool { return $this->get('error') !== null; };
+
+  - name: error
+    onEnter:
+      - run: !php return onEnterError()  # Reference to function in require file
+
+  - name: finished
+    onExit:
+      # language=injectablephp
+      - run: !php return function(object $t) { echo "Done\n"; };
+
+initial: idle
+final: finished

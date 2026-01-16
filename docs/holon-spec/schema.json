@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Holon YAML Schema",
+  "type": "object",
+  "properties": {
+    "machine": {
+      "type": "object",
+      "properties": {
+        "require": { "description": "!php require '/path/to/functions.php'" },
+        "features": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "class": { "type": "string", "description": "FQCN of feature" },
+              "config": { "type": "object" }
+            },
+            "required": ["class"]
+          }
+        },
+        "eventLoop": {
+          "type": "object",
+          "properties": {
+            "autoRun": { "type": "boolean", "default": false },
+            "maxIterations": { "type": "integer", "default": 10000, "description": "0 = unlimited" }
+          }
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "properties": {
+        "broadcast": { "type": "boolean", "default": true, "description": "Region-level ContextChange opt-out" },
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "type": { "enum": ["string", "integer", "number", "boolean", "array", "object"] },
+              "default": {},
+              "description": { "type": "string" },
+              "broadcast": { "type": "boolean", "default": true, "description": "Property-level ContextChange opt-out" }
+            },
+            "required": ["name", "type"]
+          }
+        }
+      }
+    },
+    "states": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "onEnter": { "$ref": "#/$defs/callbacks" },
+          "onExit": { "$ref": "#/$defs/callbacks" },
+          "action": { "$ref": "#/$defs/callbacks" },
+          "transitions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "target": { "type": "string" },
+                "guard": { "description": "!php return fn(object $t): bool => condition" }
+              },
+              "required": ["target"]
+            }
+          }
+        },
+        "required": ["name"]
+      }
+    },
+    "initial": { "type": "string", "description": "Starting state name" },
+    "final": { "type": "string", "description": "Terminal state name" }
+  },
+  "required": ["states", "initial"],
+  "$defs": {
+    "callbacks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "run": { "description": "!php return functionName() OR !php return fn(object $t) => ..." },
+          "async": {
+            "type": "object",
+            "properties": {
+              "enabled": { "type": "boolean" }
+            }
+          }
+        },
+        "required": ["run"]
+      }
+    }
+  }
+}
