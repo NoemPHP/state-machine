@@ -6,6 +6,7 @@ namespace Noem\State\Feature\Abilities;
 
 use Noem\State\Chains\EnhanceRegionBuilder;
 use Noem\State\Chains\Notification;
+use Noem\State\Chains\PrepareInvokable;
 use Noem\State\Feature\Abilities\Chains\ExecuteAbilityHandler;
 use Noem\State\Feature\Abilities\Chains\InvokeAbility;
 use Noem\State\Feature\Abilities\Chains\ProcessAbilityResult;
@@ -41,7 +42,7 @@ class AbilitiesFeature implements Feature
         $registry = new AbilityRegistry();
         $chainMail->supply(
             fn(): AbilityRegistry => $registry,
-            fn(): ExecuteAbilityHandler => new ExecuteAbilityHandler(),
+            fn(?PrepareInvokable $p = null): ExecuteAbilityHandler => new ExecuteAbilityHandler($p),
             fn(Notification $n): ProcessAbilityResult => new ProcessAbilityResult($n),
             fn(Notification $n, ExecuteAbilityHandler $e, ProcessAbilityResult $r): InvokeAbility => new InvokeAbility($registry, $n, $e, $r)
         );

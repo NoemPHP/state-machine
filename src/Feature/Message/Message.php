@@ -24,6 +24,11 @@ abstract class Message implements \JsonSerializable
      */
     private ?Message $pendingResponse = null;
 
+    /**
+     * @var bool Tracks if response has been delivered (first-response-wins)
+     */
+    private bool $responseDelivered = false;
+
     protected function __construct(?string $correlationId = null)
     {
         $this->correlationId = $correlationId ?? $this->generateId();
@@ -72,9 +77,20 @@ abstract class Message implements \JsonSerializable
      *
      * If no handlers are registered yet, caches the response for delivery
      * when then() is called later (synchronous response pattern).
+     *
+     * First-response-wins: Subsequent deliverResponse() calls are ignored
+     * after the first successful delivery.
      */
     final public function deliverResponse(Message $response): void
     {
+        // First-response-wins: Ignore subsequent deliveries
+        if ($this->responseDelivered) {
+            return;
+        }
+
+        // Mark as delivered immediately to prevent multiple deliveries
+        $this->responseDelivered = true;
+
         // If no handlers registered, cache for later delivery
         if (empty($this->replyHandlers)) {
             $this->pendingResponse = $response;
@@ -150,33 +166,7 @@ abstract class Message implements \JsonSerializable
             return $fqcn::fromData($data['data'] ?? null, $data['correlationId'] ?? null);
         }
 
-        // Fallback to anonymous class
-        return self::createAnonymousMessage($data);
-    }
-
-    private static function createAnonymousMessage(array $data): static
-    {
-        return new class ($data['data'] ?? new \stdClass(), $data['correlationId'] ?? null) extends Message {
-            public function __construct(
-                public readonly object $data,
-                ?string $correlationId = null
-            ) {
-                parent::__construct($correlationId);
-            }
-
-            public function jsonSerialize(): mixed
-            {
-                return [
-                    'correlationId' => $this->correlationId,
-                    'type' => 'AnonymousMessage',
-                    'data' => $this->data
-                ];
-            }
-
-            protected static function fromData(mixed $data, ?string $correlationId): static
-            {
-                return new self($data, $correlationId);
-            }
-        };
+        // Fallback to StandardMessage for unknown/missing types
+        return StandardMessage::fromData($data['data'] ?? null, $data['correlationId'] ?? null);
     }
 }

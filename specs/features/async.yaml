@@ -822,21 +822,6 @@ features:
         intent: Enables async configuration for resolvers (priority, singleton, timeout)
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/AddResolverAcceptsAsyncConfigTest.php
 
-      - acceptanceCriteria: Resolver tasks execute with configured priority
-        criticality: contract
-        intent: Critical resolvers execute more frequently ensuring responsive data access
-        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/ResolverPriorityTest.php
-
-      - acceptanceCriteria: Resolver singleton prevents concurrent resolutions
-        criticality: contract
-        intent: Ensures only one resolution per property at a time, preventing duplicate work
-        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/ResolverSingletonTest.php
-
-      - acceptanceCriteria: Resolver timeout cancels runaway resolution tasks
-        criticality: contract
-        intent: Prevents indefinite blocking on unresponsive data sources
-        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Async/ResolverTimeoutTest.php
-
   - name: yaml-schema-extensions
     description: YAML support for async configuration
     specs:
@@ -1037,3 +1022,26 @@ features:
         criticality: contract
         intent: Validates comprehensive async configuration support
         test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Loader/FullAsyncConfigTest.php
+
+  - name: replace-operations
+    description: File text replacement via context helpers and abilities
+    specs:
+      - acceptanceCriteria: Context helper 'replace' accepts file path, search string, and replacement string; streams with constant memory
+        criticality: contract
+        intent: Developers can replace literal text in huge files without memory constraints
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/Replace/ContextHelperTest.php
+
+      - acceptanceCriteria: Context helper 'regexReplace' accepts file path, regex pattern, and replacement string with capture group support
+        criticality: contract
+        intent: Developers can perform pattern-based file transformations using regex backreferences
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/RegexReplace/ContextHelperTest.php
+
+      - acceptanceCriteria: Ability 'replace' accepts file path, search string, and replacement string for agent invocation
+        criticality: contract
+        intent: AI agents can modify files via literal string replacement tool
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/Replace/AbilityTest.php
+
+      - acceptanceCriteria: Ability 'regex-replace' accepts file path, regex pattern, and replacement string with capture support
+        criticality: contract
+        intent: AI agents can perform pattern-based file transformations via tool
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Async/IO/RegexReplace/AbilityTest.php

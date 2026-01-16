@@ -286,9 +286,9 @@ features:
         intent: Ensures feature integrates correctly with ChainMail feature loading system
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/InteractionFeatureImplementsFeatureTest.php
 
-      - acceptanceCriteria: InteractionFeature requires ExtendedState feature via BoundAccess availability check
+      - acceptanceCriteria: InteractionFeature declares ExtendedState dependency via RequiresFeature attribute
         criticality: contract
-        intent: Enforces dependency on ExtendedState for BoundAccess method binding, failing fast if missing
+        intent: Documents dependency on ExtendedState for BoundAccess method binding through RequiresFeature attribute
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Interaction/InteractionFeatureRequiresExtendedStateTest.php
 
       - acceptanceCriteria: InteractionFeature binds interact method to BoundAccess chain

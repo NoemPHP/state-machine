@@ -198,3 +198,26 @@ features:
         criticality: contract
         intent: Enforces consistent payload structure aligned with JSON serialization format
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/CreateResponseArrayPayloadTest.php
+
+  - name: standard-message
+    description: Fallback message wrapper for JSON payloads without registered Message subclasses
+    specs:
+      - acceptanceCriteria: StandardMessage extends Message base class
+        criticality: contract
+        intent: Integrates with existing Message infrastructure for correlation and serialization
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/StandardMessage/ExtendsMessageTest.php
+
+      - acceptanceCriteria: StandardMessage stores and exposes arbitrary array data via get() method
+        criticality: contract
+        intent: Provides generic access to JSON payload properties without requiring typed accessors
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/StandardMessage/DataAccessTest.php
+
+      - acceptanceCriteria: StandardMessage serializes to JSON and reconstructs via fromData()
+        criticality: contract
+        intent: Enables round-trip serialization for transmission and persistence
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/StandardMessage/SerializationTest.php
+
+      - acceptanceCriteria: Message.fromJson() returns StandardMessage for unknown or missing type field
+        criticality: contract
+        intent: Provides graceful fallback instead of failing on unregistered message types
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Message/StandardMessage/FallbackHydrationTest.php

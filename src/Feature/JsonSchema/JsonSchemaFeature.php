@@ -10,12 +10,15 @@ use Noem\State\Chains\EnhanceRegionBuilder;
 use Noem\State\Chains\Meta;
 use Noem\State\Chains\Params\BuildParams;
 use Noem\State\Feature\ExtendedState\ContextMetaType;
+use Noem\State\Feature\ExtendedState\ExtendedState;
 use Noem\State\Feature\Feature;
 use Noem\State\Feature\Loader\LoaderChains\Params\SchemaContext;
+use Noem\State\Feature\RequiresFeature;
 use Noem\State\Middleware\ChainMail;
 use Noem\State\Feature\Loader\LoaderChains;
 use Noem\State\RegionBuilder;
 
+#[RequiresFeature(ExtendedState::class)]
 class JsonSchemaFeature implements Feature
 {
     public function __invoke(ChainMail $chainMail): void
@@ -30,15 +33,16 @@ class JsonSchemaFeature implements Feature
                  */
                 $schema?->link(function (SchemaContext $context, callable $next) {
                     $contextSchema = $context->getCustomSchema('context');
-                    // Only extend if context schema exists (RegionLoader may not be loaded)
-                    if ($contextSchema instanceof Structure) {
+
+                    // Only extend if context schema exists (ExtendedState is loaded)
+                    if ($contextSchema !== null) {
                         $contextSchema = $contextSchema->extend([
                             'schema' => Expect::listOf(
                                 Expect::structure(
                                     [
                                         'name' => Expect::string(),
                                         'type' => Expect::string(),
-                                        'default' => Expect::string(),
+                                        'default' => Expect::mixed(),  // Accept any type (int, string, bool, etc.)
                                         'description' => Expect::string(),
                                     ]
                                 )

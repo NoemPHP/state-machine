@@ -99,6 +99,16 @@ class ExtendedState implements Feature
                 ]);
 
                 return $next($context);
+            }, prepend: true); // Prepend to run FIRST - creates base schema before other features extend it
+
+            /**
+             * Configure default bound access for 'region' property
+             */
+            $boundAccess->link(function (BoundAccessParams $params, callable $next) {
+                if ($params->type === BoundAccessParams::TYPE_PROPERTY && $params->name === 'region') {
+                    return $params->region;
+                }
+                return $next($params);
             });
 
             /**

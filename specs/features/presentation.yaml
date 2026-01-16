@@ -15,19 +15,19 @@ features:
         intent: Ensures feature integrates correctly with ChainMail feature loading system
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/ImplementsFeatureTest.php
 
-      - acceptanceCriteria: PresentationFeature requires JsonSchemaFeature dependency
+      - acceptanceCriteria: PresentationFeature declares JsonSchemaFeature dependency via RequiresFeature attribute
         criticality: contract
-        intent: Enforces schema validation requirement, failing fast if JsonSchemaFeature not loaded
+        intent: Documents schema validation requirement through RequiresFeature attribute declaration
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/RequiresJsonSchemaFeatureTest.php
 
-      - acceptanceCriteria: PresentationFeature requires ExtendedState feature dependency
+      - acceptanceCriteria: PresentationFeature declares ExtendedState dependency via RequiresFeature attribute
         criticality: contract
-        intent: Enforces context storage requirement for value retrieval, failing fast if ExtendedState not loaded
+        intent: Documents context storage requirement through RequiresFeature attribute declaration
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/RequiresExtendedStateTest.php
 
-      - acceptanceCriteria: PresentationFeature requires AbilitiesFeature dependency
+      - acceptanceCriteria: PresentationFeature declares AbilitiesFeature dependency via RequiresFeature attribute
         criticality: contract
-        intent: Enforces discovery mechanism requirement, failing fast if AbilitiesFeature not loaded
+        intent: Documents discovery mechanism requirement through RequiresFeature attribute declaration
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Presentation/RequiresAbilitiesFeatureTest.php
 
       - acceptanceCriteria: PresentationFeature registers PresentationRegistry Mesh in ChainMail

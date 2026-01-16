@@ -593,7 +593,7 @@ class AsyncFeature implements Feature
             if (isset($data['states'])) {
                 foreach ($data['states'] as &$state) {
                     // Process action callbacks
-                    if (isset($state['action'])) {
+                    if (isset($state['action']) && is_array($state['action'])) {
                         $state['action'] = $this->extractAsyncCallbacks(
                             $state['action'],
                             $asyncCallbacks,
@@ -603,7 +603,7 @@ class AsyncFeature implements Feature
                     }
 
                     // Process onEnter callbacks
-                    if (isset($state['onEnter'])) {
+                    if (isset($state['onEnter']) && is_array($state['onEnter'])) {
                         $state['onEnter'] = $this->extractAsyncCallbacks(
                             $state['onEnter'],
                             $asyncCallbacks,
@@ -613,7 +613,7 @@ class AsyncFeature implements Feature
                     }
 
                     // Process onExit callbacks
-                    if (isset($state['onExit'])) {
+                    if (isset($state['onExit']) && is_array($state['onExit'])) {
                         $state['onExit'] = $this->extractAsyncCallbacks(
                             $state['onExit'],
                             $asyncCallbacks,

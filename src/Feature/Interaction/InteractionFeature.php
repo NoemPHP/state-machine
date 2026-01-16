@@ -8,7 +8,10 @@ use Noem\State\Chains\Notification;
 use Noem\State\Chains\Params\Notify;
 use Noem\State\Feature\ExtendedState\ContextChains\BoundAccess;
 use Noem\State\Feature\ExtendedState\ContextChains\Params\BoundAccessParams;
+use Noem\State\Feature\ExtendedState\ExtendedState;
 use Noem\State\Feature\Feature;
+use Noem\State\Feature\RequiresFeature;
+use Noem\State\Middleware\ChainException;
 use Noem\State\Middleware\ChainMail;
 use Noem\State\Region;
 
@@ -23,11 +26,23 @@ use Noem\State\Region;
  * - SubscriptionFeature (for event emission)
  * - MessageFeature (for correlation)
  */
+#[RequiresFeature(ExtendedState::class)]
 class InteractionFeature implements Feature
 {
     #[Override]
     public function __invoke(ChainMail $chainMail): void
     {
+        // Verify ExtendedState is loaded (when not using FeatureRegistry)
+        try {
+            $chainMail->get(BoundAccess::class);
+        } catch (ChainException $e) {
+            throw new \RuntimeException(
+                'InteractionFeature requires ExtendedState to be loaded first',
+                0,
+                $e
+            );
+        }
+
         $chainMail->use($this->bindInteractMethod(...));
     }
 
@@ -39,15 +54,9 @@ class InteractionFeature implements Feature
      * - $this->interact(string $id, array $overrides = []) - Registry lookup
      */
     private function bindInteractMethod(
-        ?BoundAccess $boundAccess = null,
+        BoundAccess $boundAccess,
         ?InteractionRegistry $registry = null
     ): void {
-        if ($boundAccess === null) {
-            throw new \RuntimeException(
-                'InteractionFeature requires ExtendedState to be loaded first'
-            );
-        }
-
         $boundAccess->link(function (BoundAccessParams $params, callable $next) use ($registry) {
             if ($params->type !== BoundAccessParams::TYPE_METHOD || $params->name !== 'interact') {
                 return $next($params);

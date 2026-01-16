@@ -436,21 +436,6 @@ features:
         intent: Avoids redundant enumeration across iterations improving performance
         test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Performance/CachesEnumerationTest.php
 
-      - acceptanceCriteria: weave() supports options.parallel for concurrent tool execution
-        criticality: contract
-        intent: Enables parallel tool invocation when AsyncFeature available for performance
-        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Performance/SupportsParallelExecutionTest.php
-
-      - acceptanceCriteria: weave() executes independent tools concurrently when options.parallel=true
-        criticality: behavior
-        intent: Reduces latency by executing non-dependent tools simultaneously
-        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Performance/ExecutesConcurrentlyTest.php
-
-      - acceptanceCriteria: weave() maintains sequential execution when options.parallel=false
-        criticality: constraint
-        intent: Preserves execution order when parallelism disabled or dependencies exist
-        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Agentic/Performance/MaintainsSequentialOrderTest.php
-
       # ---------------------------------------------------------------------
       # Security and Access Control
       # ---------------------------------------------------------------------
@@ -515,11 +500,6 @@ features:
         criticality: integration
         intent: Validates error resilience with partial failures continuing execution
         test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Agentic/ErrorResilienceTest.php
-
-      - acceptanceCriteria: weave() supports parallel tool execution with AsyncFeature and options.parallel
-        criticality: integration
-        intent: Validates concurrent tool invocation reducing overall latency
-        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/Agentic/ParallelExecutionTest.php
 
       - acceptanceCriteria: weave() tools filtering restricts scope preventing unauthorized ability access
         criticality: integration

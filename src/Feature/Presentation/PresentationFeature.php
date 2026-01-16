@@ -4,15 +4,24 @@ declare(strict_types=1);
 
 namespace Noem\State\Feature\Presentation;
 
+use Nette\Schema\Expect;
+use Noem\State\Chains\EnhanceRegionBuilder;
+use Noem\State\Chains\Params\BuildParams;
 use Noem\State\Chains\Params\Config\LoaderConfig;
+use Noem\State\Feature\Abilities\AbilitiesFeature;
 use Noem\State\Feature\Abilities\AbilityDefinition;
 use Noem\State\Feature\Abilities\AbilityRegistry;
 use Noem\State\Feature\ExtendedState\ContextChains\BoundAccess;
 use Noem\State\Feature\ExtendedState\ContextChains\Params\BoundAccessParams;
+use Noem\State\Feature\ExtendedState\ExtendedState;
 use Noem\State\Feature\Feature;
 use Noem\State\Feature\JsonSchema\JsonSchemaFeature;
+use Noem\State\Feature\Loader\LoaderChains\Params\SchemaContext;
+use Noem\State\Feature\Loader\LoaderChains\Schema;
+use Noem\State\Feature\RequiresFeature;
 use Noem\State\Middleware\ChainMail;
 use Noem\State\Region;
+use Noem\State\RegionBuilder;
 use RuntimeException;
 
 /**
@@ -26,6 +35,9 @@ use RuntimeException;
  * - ExtendedState (context retrieval)
  * - AbilitiesFeature (discovery abilities)
  */
+#[RequiresFeature(ExtendedState::class)]
+#[RequiresFeature(JsonSchemaFeature::class)]
+#[RequiresFeature(AbilitiesFeature::class)]
 class PresentationFeature implements Feature
 {
     #[\Override]
@@ -41,6 +53,20 @@ class PresentationFeature implements Feature
                 if ($builderMethodCall !== null) {
                     $this->wireRegionBuilderMethod($builderMethodCall, $registry);
                 }
+            }
+        );
+
+        // Extend YAML schema and process presentations during build
+        $chainMail->supply()->use(
+            function (
+                ?EnhanceRegionBuilder $enhanceRegionBuilder = null,
+                ?Schema $schema = null
+            ) use ($registry) {
+                // Extend YAML schema to accept presentations
+                $this->extendYamlSchema($schema);
+
+                // Process presentations during build
+                $this->processYamlPresentations($enhanceRegionBuilder, $registry);
             }
         );
 
@@ -296,5 +322,137 @@ class PresentationFeature implements Feature
                     }
                 };
             }, prepend: true);
+    }
+
+    /**
+     * Extend YAML schema to accept presentations at region-level and state-level
+     */
+    private function extendYamlSchema(?Schema $schema): void
+    {
+        if ($schema === null) {
+            return;
+        }
+
+        $schema->link(function (SchemaContext $context, callable $next) {
+            // Define presentation schema structure
+            $presentationSchema = Expect::structure([
+                'key' => Expect::string()->required(),
+                'label' => Expect::string()->required(),
+                'intent' => Expect::string()->required(),
+                'metadata' => Expect::arrayOf(Expect::mixed()),
+            ]);
+
+            // Extend state schema with presentations array
+            $context->state = $context->state->extend([
+                'presentations' => Expect::listOf($presentationSchema),
+            ]);
+
+            // Update region schema to use new state schema AND add region-level presentations
+            $context->region = $context->region->extend([
+                'presentations' => Expect::listOf($presentationSchema),
+                'states' => Expect::listOf($context->state),
+            ]);
+
+            return $next($context);
+        });
+    }
+
+    /**
+     * Process YAML presentations during build phase
+     */
+    private function processYamlPresentations(
+        ?EnhanceRegionBuilder $enhanceRegionBuilder,
+        PresentationRegistry $registry
+    ): void {
+        if ($enhanceRegionBuilder === null) {
+            return;
+        }
+
+        $enhanceRegionBuilder->link(function (BuildParams $context, callable $next) use ($registry) {
+            $loaderConfig = $context->config(LoaderConfig::class);
+
+            // Populate schemas from context.schema for validation
+            $schemaDefinitions = $loaderConfig->context('schema', []);
+            if (is_array($schemaDefinitions) && !empty($schemaDefinitions)) {
+                $schemas = [];
+                foreach ($schemaDefinitions as $schemaDef) {
+                    if (isset($schemaDef['name'])) {
+                        $schemas[$schemaDef['name']] = $schemaDef;
+                    }
+                }
+                $registry->setSchemas($schemas);
+            }
+
+            // Process region-level presentations
+            $regionPresentations = $context->getPath('loader.array.presentations', []);
+            $this->registerYamlPresentations($regionPresentations, $registry, null);
+
+            // Process state-level presentations
+            $statesArray = $context->getPath('loader.array.states', []);
+
+            foreach ($statesArray as $stateConfig) {
+                if (!isset($stateConfig['presentations']) || !is_array($stateConfig['presentations'])) {
+                    continue;
+                }
+
+                $stateName = $stateConfig['name'] ?? null;
+                if ($stateName === null) {
+                    continue;
+                }
+
+                // Register state-level presentations with auto-generated predicate
+                $this->registerYamlPresentations(
+                    $stateConfig['presentations'],
+                    $registry,
+                    $stateName
+                );
+            }
+
+            // Call next and return the RegionBuilder
+            $builder = $next($context);
+            assert($builder instanceof RegionBuilder);
+
+            return $builder;
+        });
+    }
+
+    /**
+     * Register presentations from YAML configuration
+     *
+     * @param array $presentations Array of presentation definitions
+     * @param PresentationRegistry $registry The registry to register to
+     * @param string|null $stateName If provided, auto-generates predicate checking currentState
+     */
+    private function registerYamlPresentations(
+        array $presentations,
+        PresentationRegistry $registry,
+        ?string $stateName
+    ): void {
+        foreach ($presentations as $presentationData) {
+            $key = $presentationData['key'] ?? null;
+            $label = $presentationData['label'] ?? null;
+            $intent = $presentationData['intent'] ?? null;
+            $metadata = $presentationData['metadata'] ?? null;
+
+            if (!is_string($key) || !is_string($label) || !is_string($intent)) {
+                continue;
+            }
+
+            // Auto-generate predicate for state-level presentations
+            $predicate = null;
+            if ($stateName !== null) {
+                $predicate = fn(Region $region): bool => $region->currentState() === $stateName;
+            }
+
+            $presentation = new RegionPresentation(
+                key: $key,
+                label: $label,
+                intent: $intent,
+                metadata: $metadata,
+                predicate: $predicate
+            );
+
+            $registry->register($presentation);
+        }
     }
 }

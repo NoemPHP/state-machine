@@ -20,7 +20,9 @@ class AddJsonSchema implements BuildStep
         $region = $next($builder);
         $metadata = $meta->call(new \Noem\State\Chains\Params\Meta($region, ContextMetaType::get()));
         foreach ($this->schema as $type) {
-            $metadata[$type['name']] = $type['default'] ?? null;
+            $name = $type['name'];
+            $default = $type['default'] ?? null;
+            $metadata[$name] = $default;
         }
 
         return $region;
