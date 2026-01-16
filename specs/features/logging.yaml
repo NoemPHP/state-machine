@@ -1,0 +1,40 @@
+name: logging
+group: features
+description: Structured logging via Chain/Params infrastructure with context helper sugar
+
+features:
+  - name: logging-chain
+    description: LoggingChain and LogParams provide the middleware infrastructure for log emission
+    specs:
+      - acceptanceCriteria: LoggingFeature implements Feature interface
+        criticality: contract
+        intent: Integrates with ChainMail feature loading system
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Logging/ImplementsFeatureTest.php
+
+      - acceptanceCriteria: LoggingFeature registers LoggingChain in middleware stack
+        criticality: contract
+        intent: Provides chain for intercepting and routing log entries
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Logging/RegistersChainTest.php
+
+      - acceptanceCriteria: LogParams contains level, message, and context properties
+        criticality: contract
+        intent: Encapsulates log entry data for chain processing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Logging/LogParamsStructureTest.php
+
+      - acceptanceCriteria: LogParams includes timestamp and current state name
+        criticality: contract
+        intent: Provides execution context for log correlation and debugging
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Logging/LogParamsContextTest.php
+
+  - name: context-helper
+    description: Convenience method for logging from state callbacks
+    specs:
+      - acceptanceCriteria: LoggingFeature binds $this->log() method via BoundAccess
+        criticality: contract
+        intent: Provides ergonomic logging API in state callbacks
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Logging/BindsLogMethodTest.php
+
+      - acceptanceCriteria: $this->log(level, message, context) dispatches LogParams through LoggingChain
+        criticality: contract
+        intent: Routes log calls through chain for middleware processing
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/Logging/LogMethodDispatchTest.php
