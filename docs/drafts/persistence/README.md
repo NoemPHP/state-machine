@@ -20,7 +20,7 @@ The persistence layer will be implemented as an **optional feature** with no cha
 
 ## Documents
 
-### 📋 [persistence-layer.md](./persistence-layer.md) - Main Proposal
+### 📋 [persistence-layer.md](persistence-layer.md) - Main Proposal
 
 **Primary document** covering:
 - Architecture and design decisions
@@ -35,7 +35,7 @@ The persistence layer will be implemented as an **optional feature** with no cha
 
 ---
 
-### 🔬 [technical-research.md](./technical-research.md) - Implementation Patterns
+### 🔬 [technical-research.md](technical-research.md) - Implementation Patterns
 
 **Research findings** from existing codebase patterns:
 
@@ -68,7 +68,7 @@ The persistence layer will be implemented as an **optional feature** with no cha
 
 ---
 
-### 💡 [usage-examples.md](./usage-examples.md) - Practical Examples
+### 💡 [usage-examples.md](usage-examples.md) - Practical Examples
 
 **Real-world usage scenarios**:
 
@@ -106,7 +106,7 @@ The persistence layer will be implemented as an **optional feature** with no cha
 
 ---
 
-### 🔒 [security-considerations.md](./security-considerations.md) - Security Analysis
+### 🔒 [security-considerations.md](security-considerations.md) - Security Analysis
 
 **Security threats and mitigations**:
 
@@ -134,7 +134,7 @@ The persistence layer will be implemented as an **optional feature** with no cha
 
 ---
 
-### ⚡ [performance-analysis.md](./performance-analysis.md) - Performance Estimates
+### ⚡ [performance-analysis.md](performance-analysis.md) - Performance Estimates
 
 **Expected performance characteristics**:
 
@@ -154,7 +154,7 @@ The persistence layer will be implemented as an **optional feature** with no cha
 
 ---
 
-### 📚 [api-reference.md](./api-reference.md) - Complete API Documentation
+### 📚 [api-reference.md](api-reference.md) - Complete API Documentation
 
 **Full API documentation**:
 
@@ -319,9 +319,9 @@ When contributing to this proposal:
 ## Related Resources
 
 ### Internal
-- [Runtime Proposal](../runtime/Runtime.md) - Runtime architecture
-- [Abilities API](../abilities-api/abilities-api.md) - Similar feature pattern
-- [ExtendedState CLAUDE.md](/src/Feature/ExtendedState/CLAUDE.md) - Context management
+- [Runtime Proposal](../../proposals/runtime/Runtime.md) - Runtime architecture
+- [Abilities API](../../proposals/abilities-api/abilities-api.md) - Similar feature pattern
+- [ExtendedState CLAUDE.md](/Feature/ExtendedState/CLAUDE.md) - Context management
 
 ### External
 - [JSON Schema](https://json-schema.org/) - Schema validation patterns

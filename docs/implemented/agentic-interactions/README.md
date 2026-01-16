@@ -1,9 +1,11 @@
-# Agentic Interaction Patterns - Proposal
+# Agentic Interaction Patterns
 
-**Status**: Draft - Planning Phase
+**Status**: ✅ Implemented
 **Created**: 2026-01-03
-**Target**: Future Release
+**Implemented**: 2026-01-09
 **Type**: Feature + Message Protocol
+
+> **Note**: InteractionFeature is now fully implemented. See `specs/features/interaction.yaml` for the complete specification and `src/Feature/Interaction/` for the implementation.
 
 ---
 
