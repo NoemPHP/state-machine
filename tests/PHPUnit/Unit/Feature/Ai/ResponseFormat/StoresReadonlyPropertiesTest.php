@@ -17,6 +17,20 @@ class StoresReadonlyPropertiesTest extends TestCase
     #[Test]
     public function storesReadonlyPropertiesTest(): void
     {
-        $this->markTestIncomplete('Spec approved, implementation pending');
+        $definition = ['type' => 'string'];
+        $responseFormat = new \Noem\State\Feature\Ai\ResponseFormat('text', $definition);
+
+        // Verify properties are accessible
+        $this->assertSame('text', $responseFormat->format);
+        $this->assertSame($definition, $responseFormat->definition);
+
+        // PHP will enforce readonly at compile time, so we can't test modification directly
+        // But we can verify the reflection shows readonly
+        $reflection = new \ReflectionClass($responseFormat);
+        $formatProp = $reflection->getProperty('format');
+        $definitionProp = $reflection->getProperty('definition');
+
+        $this->assertTrue($formatProp->isReadOnly(), 'format should be readonly');
+        $this->assertTrue($definitionProp->isReadOnly(), 'definition should be readonly');
     }
 }

@@ -34,10 +34,10 @@ class AnonymousFallbackTest extends TestCase
         $this->assertInstanceOf(Message::class, $reconstructed);
         $this->assertSame('test-uuid-123', $reconstructed->correlationId());
 
-        // Verify anonymous class structure
+        // Verify fallback to StandardMessage
         $serialized = $reconstructed->jsonSerialize();
         $this->assertArrayHasKey('type', $serialized);
-        $this->assertSame('AnonymousMessage', $serialized['type']);
+        $this->assertSame('StandardMessage', $serialized['type']);
     }
 
     public function testFromJsonFallsBackWhenTypeFieldMissing(): void

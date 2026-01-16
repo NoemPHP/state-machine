@@ -35,6 +35,25 @@ final class CustomTemplatesTest extends TestCase
         //   - Continuation prompt uses custom continuation template
         // - Verify templates receive correct variable substitution
 
-        $this->markTestIncomplete('Integration test requires custom template and AI backend mocking');
+        /**
+         * ======================================================================
+         * INTENTIONALLY SKIPPED - STUB TEST FOR FUTURE IMPLEMENTATION
+         * ======================================================================
+         *
+         * This test is marked as skipped because the specification has been
+         * approved but implementation is pending. This is intentional - the test
+         * exists as a placeholder to ensure all acceptance criteria are tracked.
+         *
+         * Acceptance Criterion: weave() with custom AiConfigFeature templates uses configured prompts
+         *
+         * When implementing, refer to the specification for detailed requirements
+         * and ensure all acceptance criteria are met before marking as complete.
+         *
+         * Related spec: specs/features/agentic.yaml
+         * ======================================================================
+         */
+        $this->markTestSkipped(
+            'Integration test requires custom template and AI backend mocking'
+        );
     }
 }

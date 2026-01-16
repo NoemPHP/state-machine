@@ -20,28 +20,41 @@ class CircularDependencyDetectionTest extends TestCase
 {
     public function testDirectCircularDependencyThrowsException(): void
     {
-        // This test will use named classes since we need mutual references
-        // which anonymous classes can't express directly
+        // CircularFeatureA requires CircularFeatureB
+        // CircularFeatureB requires CircularFeatureA
+        // This creates a direct circular dependency: A -> B -> A
 
         $this->expectException(\LogicException::class);
         $this->expectExceptionMessageMatches('/circular.*dependenc/i');
 
-        // We'll create the circular dependency in the implementation
-        // For now, this is a placeholder that will fail until implementation
-        $this->markTestIncomplete(
-            'Circular dependency detection requires named test fixture classes'
+        $builder = new RegionBuilder();
+        $builder->enableFeatures(
+            new \Noem\State\Test\Unit\Core\RegionBuilder\Fixtures\CircularFeatureA(),
+            new \Noem\State\Test\Unit\Core\RegionBuilder\Fixtures\CircularFeatureB()
         );
+
+        // Should throw LogicException during build when circular dependency is detected
+        $builder->setStates('initial')->build();
     }
 
     public function testIndirectCircularDependencyThrowsException(): void
     {
-        // A → B → C → A creates a cycle
+        // CircularFeatureIndirectA requires CircularFeatureIndirectB
+        // CircularFeatureIndirectB requires CircularFeatureC
+        // CircularFeatureC requires CircularFeatureIndirectA
+        // This creates an indirect circular dependency: A → B → C → A
 
         $this->expectException(\LogicException::class);
         $this->expectExceptionMessageMatches('/circular.*dependenc/i');
 
-        $this->markTestIncomplete(
-            'Circular dependency detection requires named test fixture classes'
+        $builder = new RegionBuilder();
+        $builder->enableFeatures(
+            new \Noem\State\Test\Unit\Core\RegionBuilder\Fixtures\CircularFeatureIndirectA(),
+            new \Noem\State\Test\Unit\Core\RegionBuilder\Fixtures\CircularFeatureIndirectB(),
+            new \Noem\State\Test\Unit\Core\RegionBuilder\Fixtures\CircularFeatureC()
         );
+
+        // Should throw LogicException during build when circular dependency is detected
+        $builder->setStates('initial')->build();
     }
 }

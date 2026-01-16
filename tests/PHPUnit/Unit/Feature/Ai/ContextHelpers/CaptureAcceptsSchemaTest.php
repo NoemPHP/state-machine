@@ -27,6 +27,25 @@ class CaptureAcceptsSchemaTest extends TestCase
         $feature($chainMail);
 
         // Test will verify capture method signature accepts optional schema array
-        $this->markTestIncomplete('Implementation needed: schema parameter');
+        /**
+         * ======================================================================
+         * INTENTIONALLY SKIPPED - STUB TEST FOR FUTURE IMPLEMENTATION
+         * ======================================================================
+         *
+         * This test is marked as skipped because the specification has been
+         * approved but implementation is pending. This is intentional - the test
+         * exists as a placeholder to ensure all acceptance criteria are tracked.
+         *
+         * Acceptance Criterion: Context capture() method accepts optional schema parameter
+         *
+         * When implementing, refer to the specification for detailed requirements
+         * and ensure all acceptance criteria are met before marking as complete.
+         *
+         * Related spec: specs/features/ai.yaml
+         * ======================================================================
+         */
+        $this->markTestSkipped(
+            'Implementation needed: schema parameter'
+        );
     }
 }

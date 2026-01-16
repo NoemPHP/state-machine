@@ -17,6 +17,12 @@ class SetsResponseFormatTest extends TestCase
     #[Test]
     public function setsResponseFormat(): void
     {
-        $this->markTestIncomplete('Spec approved, implementation pending');
+        $builder = new \Noem\State\Feature\Ai\RequestBuilder();
+        $responseFormat = new \Noem\State\Feature\Ai\ResponseFormat('json', ['type' => 'object']);
+
+        $result = $builder->setResponseFormat($responseFormat);
+
+        $this->assertSame($builder, $result, 'setResponseFormat should return self for fluent interface');
+        $this->assertSame($responseFormat, $builder['responseFormat'], 'ResponseFormat should be set correctly');
     }
 }

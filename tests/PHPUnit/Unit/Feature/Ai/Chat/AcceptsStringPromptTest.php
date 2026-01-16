@@ -17,6 +17,10 @@ class AcceptsStringPromptTest extends TestCase
     #[Test]
     public function acceptsStringPromptTest(): void
     {
-        $this->markTestIncomplete('Spec approved, implementation pending');
+        $mockBackend = $this->createMock(\Noem\State\Feature\Ai\Backend\BackendInterface::class);
+
+        $chat = new \Noem\State\Feature\Ai\Chat('Test prompt', true, $mockBackend);
+
+        $this->assertInstanceOf(\Noem\State\Feature\Ai\Chat::class, $chat, 'Should construct with string prompt');
     }
 }

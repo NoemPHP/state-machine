@@ -17,6 +17,17 @@ class YieldsTextContentTest extends TestCase
     #[Test]
     public function yieldsTextContentTest(): void
     {
-        $this->markTestIncomplete('Spec approved, implementation pending');
+        $mockBackend = $this->createMock(\Noem\State\Feature\Ai\Backend\BackendInterface::class);
+        $mockBackend->method('stream')
+            ->willReturn((function() {
+                yield ['choices' => [['message' => ['content' => 'Hello ']]]];
+                yield ['choices' => [['message' => ['content' => 'world']]]];
+            })());
+
+        $chat = new \Noem\State\Feature\Ai\Chat('Test', true, $mockBackend);
+
+        $result = iterator_to_array($chat());
+
+        $this->assertSame(['Hello ', 'world'], $result, 'Should yield text content from message field');
     }
 }

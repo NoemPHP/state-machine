@@ -17,6 +17,11 @@ class SetsMaxTokensTest extends TestCase
     #[Test]
     public function setsMaxTokens(): void
     {
-        $this->markTestIncomplete('Spec approved, implementation pending');
+        $builder = new \Noem\State\Feature\Ai\RequestBuilder();
+
+        $result = $builder->setMaxTokens(1024);
+
+        $this->assertSame($builder, $result, 'setMaxTokens should return self for fluent interface');
+        $this->assertSame(1024, $builder['maxTokens'], 'Max tokens should be set correctly');
     }
 }

@@ -17,6 +17,16 @@ class IncludesResponseFormatTest extends TestCase
     #[Test]
     public function includesResponseFormatTest(): void
     {
-        $this->markTestIncomplete('Spec approved, implementation pending');
+        $responseFormat = new \Noem\State\Feature\Ai\ResponseFormat('json', ['type' => 'object']);
+        $request = (new \Noem\State\Feature\Ai\RequestBuilder())
+            ->setPrompt('Test')
+            ->setResponseFormat($responseFormat)
+            ->build();
+
+        $mockBackend = $this->createMock(\Noem\State\Feature\Ai\Backend\BackendInterface::class);
+
+        $chat = new \Noem\State\Feature\Ai\Chat($request, true, $mockBackend);
+
+        $this->assertInstanceOf(\Noem\State\Feature\Ai\Chat::class, $chat, 'Should support response format in request');
     }
 }

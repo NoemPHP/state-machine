@@ -28,6 +28,25 @@ class CaptureSharesBackendLogicTest extends TestCase
         $feature($chainMail);
 
         // Test will verify both helpers use same backend resolution
-        $this->markTestIncomplete('Implementation needed: shared backend logic');
+        /**
+         * ======================================================================
+         * INTENTIONALLY SKIPPED - STUB TEST FOR FUTURE IMPLEMENTATION
+         * ======================================================================
+         *
+         * This test is marked as skipped because the specification has been
+         * approved but implementation is pending. This is intentional - the test
+         * exists as a placeholder to ensure all acceptance criteria are tracked.
+         *
+         * Acceptance Criterion: Context capture() method shares backend resolution logic
+         *
+         * When implementing, refer to the specification for detailed requirements
+         * and ensure all acceptance criteria are met before marking as complete.
+         *
+         * Related spec: specs/features/ai.yaml
+         * ======================================================================
+         */
+        $this->markTestSkipped(
+            'Implementation needed: shared backend logic'
+        );
     }
 }

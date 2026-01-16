@@ -17,6 +17,25 @@ class CompleteHelperInlineModeTest extends TestCase
     #[Test]
     public function completeHelperInlineModeTest(): void
     {
-        $this->markTestIncomplete('Spec approved, implementation pending');
+        /**
+         * ======================================================================
+         * INTENTIONALLY SKIPPED - STUB TEST FOR FUTURE IMPLEMENTATION
+         * ======================================================================
+         *
+         * This test is marked as skipped because the specification has been
+         * approved but implementation is pending. This is intentional - the test
+         * exists as a placeholder to ensure all acceptance criteria are tracked.
+         *
+         * Acceptance Criterion: Complete helper supports inline mode with buffer
+         *
+         * When implementing, refer to the specification for detailed requirements
+         * and ensure all acceptance criteria are met before marking as complete.
+         *
+         * Related spec: specs/features/ai.yaml
+         * ======================================================================
+         */
+        $this->markTestSkipped(
+            'Spec approved, implementation pending'
+        );
     }
 }

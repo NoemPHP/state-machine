@@ -7,6 +7,7 @@ namespace Tests\Unit\Feature\JsonSchema\BuildStep;
 use Noem\State\Feature\ExtendedState\ContextMetaType;
 use Noem\State\Feature\ExtendedState\ExtendedState;
 use Noem\State\Feature\JsonSchema\AddJsonSchema;
+use Noem\State\Feature\JsonSchema\JsonSchemaFeature;
 use Noem\State\RegionBuilder;
 use PHPUnit\Framework\TestCase;
 
@@ -27,7 +28,10 @@ final class InitializesDefaultValuesTest extends TestCase
 
         $builder = new RegionBuilder();
         $region = $builder
-            ->enableFeatures(new ExtendedState())
+            ->enableFeatures(
+                new ExtendedState(),
+                new JsonSchemaFeature()
+            )
             ->setStates('idle')
             ->addBuildStep(new AddJsonSchema($schema))
             ->build();

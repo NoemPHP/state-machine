@@ -22,13 +22,51 @@ class CaptureHelperUsesJsonSchemaTest extends TestCase
     public function captureHelperUsesDefaultArrayOfStringsSchema(): void
     {
         // When no schema parameter provided, should use default array<string> schema
-        $this->markTestIncomplete('Implementation needed: default schema');
+        /**
+         * ======================================================================
+         * INTENTIONALLY SKIPPED - STUB TEST FOR FUTURE IMPLEMENTATION
+         * ======================================================================
+         *
+         * This test is marked as skipped because the specification has been
+         * approved but implementation is pending. This is intentional - the test
+         * exists as a placeholder to ensure all acceptance criteria are tracked.
+         *
+         * Acceptance Criterion: Capture helper uses JSON schema response format from schema
+         *
+         * When implementing, refer to the specification for detailed requirements
+         * and ensure all acceptance criteria are met before marking as complete.
+         *
+         * Related spec: specs/features/ai.yaml
+         * ======================================================================
+         */
+        $this->markTestSkipped(
+            'Implementation needed: default schema'
+        );
     }
 
     #[Test]
     public function captureHelperUsesCustomSchema(): void
     {
         // When schema parameter provided, should use that schema instead
-        $this->markTestIncomplete('Implementation needed: custom schema');
+        /**
+         * ======================================================================
+         * INTENTIONALLY SKIPPED - STUB TEST FOR FUTURE IMPLEMENTATION
+         * ======================================================================
+         *
+         * This test is marked as skipped because the specification has been
+         * approved but implementation is pending. This is intentional - the test
+         * exists as a placeholder to ensure all acceptance criteria are tracked.
+         *
+         * Acceptance Criterion: Capture helper uses JSON schema response format from schema
+         *
+         * When implementing, refer to the specification for detailed requirements
+         * and ensure all acceptance criteria are met before marking as complete.
+         *
+         * Related spec: specs/features/ai.yaml
+         * ======================================================================
+         */
+        $this->markTestSkipped(
+            'Implementation needed: default schema'
+        );
     }
 }

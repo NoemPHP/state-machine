@@ -17,6 +17,11 @@ class SetsPromptTest extends TestCase
     #[Test]
     public function setsPrompt(): void
     {
-        $this->markTestIncomplete('Spec approved, implementation pending');
+        $builder = new \Noem\State\Feature\Ai\RequestBuilder();
+
+        $result = $builder->setPrompt('Hello, AI!');
+
+        $this->assertSame($builder, $result, 'setPrompt should return self for fluent interface');
+        $this->assertSame('Hello, AI!', $builder['prompt'], 'Prompt should be set correctly');
     }
 }

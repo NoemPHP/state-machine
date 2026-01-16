@@ -37,7 +37,7 @@ class MigrationGuideExistsTest extends TestCase
         // If no migration guide exists yet, that's acceptable - mark as incomplete
         // This is a documentation task, not a code implementation task
         if (!$found) {
-            $this->markTestIncomplete('Migration guide should be created at one of: ' . implode(', ', $possiblePaths));
+            $this->fail('Migration guide should be created at one of: ' . implode(', ', $possiblePaths));
         }
     }
 }

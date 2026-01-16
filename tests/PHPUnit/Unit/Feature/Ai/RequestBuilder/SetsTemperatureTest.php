@@ -17,6 +17,11 @@ class SetsTemperatureTest extends TestCase
     #[Test]
     public function setsTemperature(): void
     {
-        $this->markTestIncomplete('Spec approved, implementation pending');
+        $builder = new \Noem\State\Feature\Ai\RequestBuilder();
+
+        $result = $builder->setTemperature(0.8);
+
+        $this->assertSame($builder, $result, 'setTemperature should return self for fluent interface');
+        $this->assertSame(0.8, $builder['temperature'], 'Temperature should be set correctly');
     }
 }

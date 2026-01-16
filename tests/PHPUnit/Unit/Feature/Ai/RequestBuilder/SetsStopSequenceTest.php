@@ -17,6 +17,11 @@ class SetsStopSequenceTest extends TestCase
     #[Test]
     public function setsStopSequence(): void
     {
-        $this->markTestIncomplete('Spec approved, implementation pending');
+        $builder = new \Noem\State\Feature\Ai\RequestBuilder();
+
+        $result = $builder->setStop('\n\n');
+
+        $this->assertSame($builder, $result, 'setStop should return self for fluent interface');
+        $this->assertSame('\n\n', $builder['stop'], 'Stop sequence should be set correctly');
     }
 }

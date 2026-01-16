@@ -26,6 +26,25 @@ class RegistersCaptureMethodTest extends TestCase
         // AiFeature registers middleware on BoundAccess when available
         // This requires ExtendedState to be loaded first
         // The actual verification requires integration test with Region/ExtendedState
-        $this->markTestIncomplete('Implementation needed: capture() method registration');
+        /**
+         * ======================================================================
+         * INTENTIONALLY SKIPPED - STUB TEST FOR FUTURE IMPLEMENTATION
+         * ======================================================================
+         *
+         * This test is marked as skipped because the specification has been
+         * approved but implementation is pending. This is intentional - the test
+         * exists as a placeholder to ensure all acceptance criteria are tracked.
+         *
+         * Acceptance Criterion: AiFeature registers capture() method in ExtendedState context
+         *
+         * When implementing, refer to the specification for detailed requirements
+         * and ensure all acceptance criteria are met before marking as complete.
+         *
+         * Related spec: specs/features/ai.yaml
+         * ======================================================================
+         */
+        $this->markTestSkipped(
+            'Implementation needed: capture() method registration'
+        );
     }
 }

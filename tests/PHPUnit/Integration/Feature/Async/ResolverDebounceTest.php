@@ -21,7 +21,7 @@ class ResolverDebounceTest extends TestCase
     public function testResolverDebounceDelaysExecutionUntilAccessStops(): void
     {
         // RED TEST: Resolver feature not yet fully implemented
-        $this->markTestIncomplete(
+        $this->fail(
             'Resolver debounce test awaiting AddResolver AsyncConfig implementation. ' .
             'When implemented, this should test that debounced resolvers delay execution ' .
             'until property access activity stops.'

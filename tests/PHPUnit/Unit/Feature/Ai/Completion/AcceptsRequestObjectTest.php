@@ -17,6 +17,19 @@ class AcceptsRequestObjectTest extends TestCase
     #[Test]
     public function acceptsRequestObject(): void
     {
-        $this->markTestIncomplete('Spec approved, implementation pending');
+        $request = (new \Noem\State\Feature\Ai\RequestBuilder())
+            ->setPrompt('Test prompt')
+            ->build();
+
+        // Create mock backend
+        $mockBackend = $this->createMock(\Noem\State\Feature\Ai\Backend\BackendInterface::class);
+
+        $completion = new \Noem\State\Feature\Ai\Completion(
+            $request,
+            true,
+            $mockBackend
+        );
+
+        $this->assertInstanceOf(\Noem\State\Feature\Ai\Completion::class, $completion, 'Should construct with Request object');
     }
 }

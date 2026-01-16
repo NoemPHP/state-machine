@@ -17,7 +17,21 @@ final class RegisterAcceptsPresentationTest extends TestCase
 {
     public function testRegisterAcceptsRegionPresentation(): void
     {
-        // This test will be implemented once we understand how to provide schema context
-        $this->markTestIncomplete('Requires schema context setup');
+        $registry = new PresentationRegistry();
+
+        // Set up schema context (required for registration)
+        $registry->setSchemas(['testKey' => ['type' => 'string']]);
+
+        $presentation = new RegionPresentation(
+            key: 'testKey',
+            label: 'Test Label',
+            intent: 'Test Intent'
+        );
+
+        // Should accept RegionPresentation without error
+        $registry->register($presentation);
+
+        // Verify registration succeeded
+        $this->assertSame($presentation, $registry->get('testKey'));
     }
 }

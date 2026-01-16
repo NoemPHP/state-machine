@@ -14,7 +14,7 @@ use Noem\State\Feature\Presentation\PresentationFeature;
 use Noem\State\Feature\Subscription\SubscriptionFeature;
 use Noem\State\Feature\Transitions\TransitionsFeature;
 use Noem\State\RegionBuilder;
-use Noem\State\Runtime;
+use Noem\State\StandardRuntime;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -32,43 +32,60 @@ class EnumerateIntegrationTest extends TestCase
             new AsyncFeature(),
             new AbilitiesFeature(),
             new PresentationFeature(),
-            new TransitionsFeature()
+            new TransitionsFeature(),
+            new RegionLoader()
         );
 
-        // Define schema
-        $builder->setSchema([
-            'userCount' => ['type' => 'integer', 'default' => 42],
-            'status' => ['type' => 'string', 'default' => 'active'],
+        $yamlContent = <<<'YAML'
+states:
+  - name: initial
+    transitions:
+      - target: processing
+  - name: processing
+    onEnter:
+      - run: !php |
+          return function(object $trigger) {
+              # Register presentations
+              $this->presentation('userCount', 'Active Users', 'Current user count');
+              $this->presentation('status', 'Status', 'System status');
+
+              # Call enumerate-presentations ability
+              $this->abilities('enumerate-presentations')->then(function ($response) {
+                  $this->set('enumerateResult', $response->parameters);
+              });
+              yield;
+          };
+    transitions:
+      - target: final
+  - name: final
+YAML;
+
+        $helpers = ['php' => new \Noem\State\Feature\Loader\Helper\PhpEvalHelper()];
+        $schema = [
+            'userCount' => ['name' => 'userCount', 'type' => 'integer', 'default' => 0],
+            'status' => ['name' => 'status', 'type' => 'string', 'default' => 'idle'],
+        ];
+        $region = $builder->build([
+            'loader' => [
+                'yaml' => $yamlContent,
+                'yamlHelpers' => $helpers,
+                'context' => ['schema' => array_values($schema)],
+            ]
         ]);
 
-        // Register presentations
-        $builder->presentation('userCount', 'Active Users', 'Current user count');
-        $builder->presentation('status', 'Status', 'System status');
+        // Manually populate schemas in PresentationRegistry
+        $presentationRegistry = $builder->chainMail->get(\Noem\State\Feature\Presentation\PresentationRegistry::class);
+        $presentationRegistry->setSchemas($schema);
 
-        // Build state machine
-        $builder
-            ->setStates('initial', 'processing', 'final')
-            ->setInitial('initial')
-            ->addTransition('initial', 'start', 'processing')
-            ->addTransition('processing', 'done', 'final')
-            ->onEnter('processing', function (object $trigger): \Generator {
-                // Call enumerate-presentations ability
-                $this->abilities('enumerate-presentations')->then(function ($response) {
-                    $this->set('enumerateResult', $response->parameters);
-                });
-                yield;
+        $runtime = new StandardRuntime($region);
 
-                // Transition to final
-                $this->trigger('done');
-            });
-
-        $region = $builder->build();
-        $runtime = new Runtime($region);
-
-        $runtime->trigger('start');
         $runtime->run();
 
-        $result = $region->get('enumerateResult');
+        // Access context through Meta chain since Region doesn't have get() method
+        $meta = $builder->chainMail->get(\Noem\State\Chains\Meta::class);
+        $metaParams = new \Noem\State\Chains\Params\Meta($region, \Noem\State\Feature\ExtendedState\ContextMetaType::get());
+        $context = $meta->call($metaParams);
+        $result = $context['enumerateResult'];
 
         // Test: Returns array
         $this->assertIsArray($result);
@@ -109,70 +126,78 @@ class EnumerateIntegrationTest extends TestCase
         );
 
         $yamlContent = <<<'YAML'
-context:
-  schema:
-    - name: visible
-      type: string
-      default: test
-    - name: hidden
-      type: string
-      default: test
-    - name: nullPred
-      type: string
-      default: test
 states:
   - name: initial
     transitions:
-      - event: start
-        target: processing
+      - target: processing
   - name: processing
-    onEnter: |
-      # Presentation with true predicate
-      $this->presentation(
-          'visible',
-          'Visible',
-          'Should be visible',
-          null,
-          fn($r) => true
-      );
+    onEnter:
+      - run: !php |
+          return function(object $trigger) {
+              # Presentation with true predicate
+              $this->presentation(
+                  'visible',
+                  'Visible',
+                  'Should be visible',
+                  null,
+                  fn($r) => true
+              );
 
-      # Presentation with false predicate
-      $this->presentation(
-          'hidden',
-          'Hidden',
-          'Should be hidden',
-          null,
-          fn($r) => false
-      );
+              # Presentation with false predicate
+              $this->presentation(
+                  'hidden',
+                  'Hidden',
+                  'Should be hidden',
+                  null,
+                  fn($r) => false
+              );
 
-      # Presentation with null predicate
-      $this->presentation(
-          'nullPred',
-          'Null Predicate',
-          'Should be visible',
-          null,
-          null
-      );
+              # Presentation with null predicate
+              $this->presentation(
+                  'nullPred',
+                  'Null Predicate',
+                  'Should be visible',
+                  null,
+                  null
+              );
 
-      $this->abilities('enumerate-presentations')->then(function($response) {
-          $this->set('result', $response->parameters);
-      });
-      yield;
-
-      $this->trigger('done');
+              $this->abilities('enumerate-presentations')->then(function($response) {
+                  $this->set('result', $response->parameters);
+              });
+              yield;
+          };
     transitions:
-      - event: done
-        target: final
+      - target: final
   - name: final
 YAML;
 
-        $region = $builder->build(['loader' => ['yaml' => $yamlContent]]);
-        $runtime = new Runtime($region);
+        $helpers = ['php' => new \Noem\State\Feature\Loader\Helper\PhpEvalHelper()];
+        $schema = [
+            'visible' => ['name' => 'visible', 'type' => 'string', 'default' => 'test'],
+            'hidden' => ['name' => 'hidden', 'type' => 'string', 'default' => 'test'],
+            'nullPred' => ['name' => 'nullPred', 'type' => 'string', 'default' => 'test'],
+        ];
+        $region = $builder->build([
+            'loader' => [
+                'yaml' => $yamlContent,
+                'yamlHelpers' => $helpers,
+                'context' => ['schema' => array_values($schema)],
+            ]
+        ]);
 
-        $runtime->trigger('start');
+        // Manually populate schemas in PresentationRegistry
+        $presentationRegistry = $builder->chainMail->get(\Noem\State\Feature\Presentation\PresentationRegistry::class);
+        $presentationRegistry->setSchemas($schema);
+
+        $runtime = new StandardRuntime($region);
+
         $runtime->run();
 
-        $result = $region->get('result');
+        // Access context through Meta chain since Region doesn't have get() method
+        $meta = $builder->chainMail->get(\Noem\State\Chains\Meta::class);
+        $metaParams = new \Noem\State\Chains\Params\Meta($region, \Noem\State\Feature\ExtendedState\ContextMetaType::get());
+        $context = $meta->call($metaParams);
+        $result = $context['result'];
         $presentations = $result['presentations'];
 
         // Test: Includes true predicate
@@ -202,43 +227,56 @@ YAML;
         );
 
         $yamlContent = <<<'YAML'
-context:
-  schema:
-    - name: testKey
-      type: string
-      default: testValue
 states:
   - name: initial
     transitions:
-      - event: start
-        target: processing
+      - target: processing
   - name: processing
-    onEnter: |
-      $this->presentation('testKey', 'Test Label', 'Test Intent');
+    onEnter:
+      - run: !php |
+          return function(object $trigger) {
+              $this->presentation('testKey', 'Test Label', 'Test Intent');
 
-      # Access via $this->abilities() in state callback
-      $this->abilities('enumerate-presentations')->then(function($response) {
-          $this->set('accessible', true);
-          $this->set('result', $response->parameters);
-      });
-      yield;
-
-      $this->trigger('done');
+              # Access via $this->abilities() in state callback
+              $this->abilities('enumerate-presentations')->then(function($response) {
+                  $this->set('accessible', true);
+                  $this->set('result', $response->parameters);
+              });
+              yield;
+          };
     transitions:
-      - event: done
-        target: final
+      - target: final
   - name: final
 YAML;
 
-        $region = $builder->build(['loader' => ['yaml' => $yamlContent]]);
-        $runtime = new Runtime($region);
+        $helpers = ['php' => new \Noem\State\Feature\Loader\Helper\PhpEvalHelper()];
+        $schema = [
+            'testKey' => ['name' => 'testKey', 'type' => 'string', 'default' => 'testValue'],
+        ];
+        $region = $builder->build([
+            'loader' => [
+                'yaml' => $yamlContent,
+                'yamlHelpers' => $helpers,
+                'context' => ['schema' => array_values($schema)],
+            ]
+        ]);
 
-        $runtime->trigger('start');
+        // Manually populate schemas in PresentationRegistry
+        $presentationRegistry = $builder->chainMail->get(\Noem\State\Feature\Presentation\PresentationRegistry::class);
+        $presentationRegistry->setSchemas($schema);
+
+        $runtime = new StandardRuntime($region);
+
         $runtime->run();
 
+        // Access context through Meta chain since Region doesn't have get() method
+        $meta = $builder->chainMail->get(\Noem\State\Chains\Meta::class);
+        $metaParams = new \Noem\State\Chains\Params\Meta($region, \Noem\State\Feature\ExtendedState\ContextMetaType::get());
+        $context = $meta->call($metaParams);
+
         // Verify ability was accessible and executed
-        $this->assertTrue($region->get('accessible'));
-        $this->assertNotNull($region->get('result'));
+        $this->assertTrue($context['accessible']);
+        $this->assertNotNull($context['result']);
     }
 
     public function testEnumeratePresentationsUsesMessageCorrelation(): void
@@ -257,42 +295,55 @@ YAML;
         );
 
         $yamlContent = <<<'YAML'
-context:
-  schema:
-    - name: testKey
-      type: string
-      default: testValue
 states:
   - name: initial
     transitions:
-      - event: start
-        target: processing
+      - target: processing
   - name: processing
-    onEnter: |
-      $this->presentation('testKey', 'Test Label', 'Test Intent');
+    onEnter:
+      - run: !php |
+          return function(object $trigger) {
+              $this->presentation('testKey', 'Test Label', 'Test Intent');
 
-      # Verify .then() callback pattern works
-      $callbackExecuted = false;
-      $this->abilities('enumerate-presentations')->then(function($response) use (&$callbackExecuted) {
-          $callbackExecuted = true;
-          $this->set('correlationWorked', true);
-      });
-      yield;
-
-      $this->trigger('done');
+              # Verify .then() callback pattern works
+              $callbackExecuted = false;
+              $this->abilities('enumerate-presentations')->then(function($response) use (&$callbackExecuted) {
+                  $callbackExecuted = true;
+                  $this->set('correlationWorked', true);
+              });
+              yield;
+          };
     transitions:
-      - event: done
-        target: final
+      - target: final
   - name: final
 YAML;
 
-        $region = $builder->build(['loader' => ['yaml' => $yamlContent]]);
-        $runtime = new Runtime($region);
+        $helpers = ['php' => new \Noem\State\Feature\Loader\Helper\PhpEvalHelper()];
+        $schema = [
+            'testKey' => ['name' => 'testKey', 'type' => 'string', 'default' => 'testValue'],
+        ];
+        $region = $builder->build([
+            'loader' => [
+                'yaml' => $yamlContent,
+                'yamlHelpers' => $helpers,
+                'context' => ['schema' => array_values($schema)],
+            ]
+        ]);
 
-        $runtime->trigger('start');
+        // Manually populate schemas in PresentationRegistry
+        $presentationRegistry = $builder->chainMail->get(\Noem\State\Feature\Presentation\PresentationRegistry::class);
+        $presentationRegistry->setSchemas($schema);
+
+        $runtime = new StandardRuntime($region);
+
         $runtime->run();
 
+        // Access context through Meta chain since Region doesn't have get() method
+        $meta = $builder->chainMail->get(\Noem\State\Chains\Meta::class);
+        $metaParams = new \Noem\State\Chains\Params\Meta($region, \Noem\State\Feature\ExtendedState\ContextMetaType::get());
+        $context = $meta->call($metaParams);
+
         // Verify correlation pattern worked via .then() callback
-        $this->assertTrue($region->get('correlationWorked'));
+        $this->assertTrue($context['correlationWorked']);
     }
 }

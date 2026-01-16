@@ -30,6 +30,25 @@ final class ConditionalToolSelectionTest extends TestCase
         // - Verify iteration 2 selects different tools based on iteration 1 output
         // - Verify conditional logic in AI prompts receives previous results
 
-        $this->markTestIncomplete('Integration test requires AI backend mocking and multi-iteration workflow');
+        /**
+         * ======================================================================
+         * INTENTIONALLY SKIPPED - STUB TEST FOR FUTURE IMPLEMENTATION
+         * ======================================================================
+         *
+         * This test is marked as skipped because the specification has been
+         * approved but implementation is pending. This is intentional - the test
+         * exists as a placeholder to ensure all acceptance criteria are tracked.
+         *
+         * Acceptance Criterion: weave() handles conditional tool selection based on first iteration results
+         *
+         * When implementing, refer to the specification for detailed requirements
+         * and ensure all acceptance criteria are met before marking as complete.
+         *
+         * Related spec: specs/features/agentic.yaml
+         * ======================================================================
+         */
+        $this->markTestSkipped(
+            'Integration test requires AI backend mocking and multi-iteration workflow'
+        );
     }
 }

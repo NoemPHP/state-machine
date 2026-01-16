@@ -17,6 +17,11 @@ class AcceptsFormatAndDefinitionTest extends TestCase
     #[Test]
     public function acceptsFormatAndDefinitionTest(): void
     {
-        $this->markTestIncomplete('Spec approved, implementation pending');
+        $definition = ['type' => 'object', 'properties' => ['name' => ['type' => 'string']]];
+
+        $responseFormat = new \Noem\State\Feature\Ai\ResponseFormat('json', $definition);
+
+        $this->assertSame('json', $responseFormat->format, 'Format should be stored correctly');
+        $this->assertSame($definition, $responseFormat->definition, 'Definition should be stored correctly');
     }
 }

@@ -17,6 +17,11 @@ class SetsModelTest extends TestCase
     #[Test]
     public function setsModel(): void
     {
-        $this->markTestIncomplete('Spec approved, implementation pending');
+        $builder = new \Noem\State\Feature\Ai\RequestBuilder();
+
+        $result = $builder->setModel('gpt-4');
+
+        $this->assertSame($builder, $result, 'setModel should return self for fluent interface');
+        $this->assertSame('gpt-4', $builder['model'], 'Model should be set correctly');
     }
 }

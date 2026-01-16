@@ -17,6 +17,22 @@ class ProcessesBufferIncrementallyTest extends TestCase
     #[Test]
     public function processesBufferIncrementallyTest(): void
     {
-        $this->markTestIncomplete('Spec approved, implementation pending');
+        $mockBackend = $this->createMock(\Noem\State\Feature\Ai\Backend\BackendInterface::class);
+        $mockBackend->method('stream')
+            ->willReturn((function() {
+                yield ['choices' => [['message' => ['content' => 'First']]]];
+                yield ['choices' => [['message' => ['content' => ' chunk']]]];
+            })());
+
+        $chat = new \Noem\State\Feature\Ai\Chat('Test', true, $mockBackend);
+
+        $generator = $chat();
+
+        // First chunk available immediately
+        $this->assertSame('First', $generator->current());
+        $generator->next();
+
+        // Second chunk available after advancing
+        $this->assertSame(' chunk', $generator->current());
     }
 }

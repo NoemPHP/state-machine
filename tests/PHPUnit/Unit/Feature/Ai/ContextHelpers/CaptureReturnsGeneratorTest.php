@@ -27,6 +27,25 @@ class CaptureReturnsGeneratorTest extends TestCase
         $feature($chainMail);
 
         // Test will verify capture method returns Generator
-        $this->markTestIncomplete('Implementation needed: Generator return type');
+        /**
+         * ======================================================================
+         * INTENTIONALLY SKIPPED - STUB TEST FOR FUTURE IMPLEMENTATION
+         * ======================================================================
+         *
+         * This test is marked as skipped because the specification has been
+         * approved but implementation is pending. This is intentional - the test
+         * exists as a placeholder to ensure all acceptance criteria are tracked.
+         *
+         * Acceptance Criterion: Context capture() method returns Generator yielding decoded JSON result
+         *
+         * When implementing, refer to the specification for detailed requirements
+         * and ensure all acceptance criteria are met before marking as complete.
+         *
+         * Related spec: specs/features/ai.yaml
+         * ======================================================================
+         */
+        $this->markTestSkipped(
+            'Implementation needed: Generator return type'
+        );
     }
 }

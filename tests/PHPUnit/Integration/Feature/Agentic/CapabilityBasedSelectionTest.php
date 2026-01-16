@@ -31,6 +31,25 @@ final class CapabilityBasedSelectionTest extends TestCase
         // - Verify complexity/context parameters influence backend selection
         // - Verify weave respects backend selection throughout workflow
 
-        $this->markTestIncomplete('Integration test requires ModelPool and multi-backend setup');
+        /**
+         * ======================================================================
+         * INTENTIONALLY SKIPPED - STUB TEST FOR FUTURE IMPLEMENTATION
+         * ======================================================================
+         *
+         * This test is marked as skipped because the specification has been
+         * approved but implementation is pending. This is intentional - the test
+         * exists as a placeholder to ensure all acceptance criteria are tracked.
+         *
+         * Acceptance Criterion: weave() integrates with capability-based backend selection
+         *
+         * When implementing, refer to the specification for detailed requirements
+         * and ensure all acceptance criteria are met before marking as complete.
+         *
+         * Related spec: specs/features/agentic.yaml
+         * ======================================================================
+         */
+        $this->markTestSkipped(
+            'Integration test requires ModelPool and multi-backend setup'
+        );
     }
 }
