@@ -23,7 +23,7 @@ class YieldsRawJsonTest extends TestCase
 
         $mockBackend = $this->createMock(\Noem\State\Feature\Ai\Backend\BackendInterface::class);
         $mockBackend->method('stream')
-            ->willReturn((function() use ($chunk1, $chunk2) {
+            ->willReturn((function () use ($chunk1, $chunk2) {
                 yield $chunk1;
                 yield $chunk2;
             })());

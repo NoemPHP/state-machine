@@ -43,11 +43,12 @@ class InteractReturnsValueTest extends TestCase
                 // Get return value
                 $generator->next();
                 $returnedValue = $generator->getReturn();
-            });
+        });
         $builder->initialState('test');
 
         $region = $builder->build();
-        $runtime = new \Noem\State\StandardRuntime($region); $runtime->run();
+        $runtime = new \Noem\State\StandardRuntime($region);
+        $runtime->run();
 
         $this->assertTrue($returnedValue, 'interact() should return response value');
     }

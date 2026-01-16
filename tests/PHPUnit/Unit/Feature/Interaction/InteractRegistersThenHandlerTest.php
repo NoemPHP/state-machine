@@ -37,11 +37,12 @@ class InteractRegistersThenHandlerTest extends TestCase
                 // Trigger response delivery manually
                 $response = new ConfirmResponse(confirmed: true, correlationId: $request->correlationId());
                 $request->deliverResponse($response);
-            });
+        });
         $builder->initialState('test');
 
         $region = $builder->build();
-        $runtime = new \Noem\State\StandardRuntime($region); $runtime->run();
+        $runtime = new \Noem\State\StandardRuntime($region);
+        $runtime->run();
 
         $this->assertTrue($handlerRegistered);
     }

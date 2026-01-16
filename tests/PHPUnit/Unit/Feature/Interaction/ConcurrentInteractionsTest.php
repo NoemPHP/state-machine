@@ -42,11 +42,12 @@ class ConcurrentInteractionsTest extends TestCase
                 // Deliver responses with correct correlation IDs
                 $request1->deliverResponse(new ConfirmResponse(confirmed: true, correlationId: $request1->correlationId()));
                 $request2->deliverResponse(new ConfirmResponse(confirmed: false, correlationId: $request2->correlationId()));
-            });
+        });
         $builder->initialState('test');
 
         $region = $builder->build();
-        $runtime = new \Noem\State\StandardRuntime($region); $runtime->run();
+        $runtime = new \Noem\State\StandardRuntime($region);
+        $runtime->run();
 
         $this->assertTrue($response1, 'First interaction should receive true');
         $this->assertFalse($response2, 'Second interaction should receive false');

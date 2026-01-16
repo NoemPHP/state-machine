@@ -47,11 +47,12 @@ class InteractYieldsUntilResponseTest extends TestCase
                 // After response, generator should complete
                 $generator->next();
                 $afterResponse = !$generator->valid();
-            });
+        });
         $builder->initialState('test');
 
         $region = $builder->build();
-        $runtime = new \Noem\State\StandardRuntime($region); $runtime->run();
+        $runtime = new \Noem\State\StandardRuntime($region);
+        $runtime->run();
 
         $this->assertTrue($yielded, 'interact() should yield while waiting');
         $this->assertTrue($afterResponse, 'interact() should complete after response');

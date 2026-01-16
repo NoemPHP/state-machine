@@ -34,7 +34,7 @@ class AdapterFiltersRequestsByTypeTest extends TestCase
         $builder->addState('test')->onEnter('test', function (object $trigger): \Generator {
                 yield from $this->interact(new ConfirmRequest(question: 'Confirm?'));
                 yield from $this->interact(new SelectRequest(question: 'Select?', options: []));
-            });
+        });
         $builder->initialState('test');
 
         $region = $builder->build();
@@ -50,7 +50,8 @@ class AdapterFiltersRequestsByTypeTest extends TestCase
             }
         });
 
-        $runtime = new \Noem\State\StandardRuntime($region); $runtime->run();
+        $runtime = new \Noem\State\StandardRuntime($region);
+        $runtime->run();
 
         $this->assertGreaterThan(0, $confirmCount + $selectCount, 'Adapter should filter requests by type');
     }

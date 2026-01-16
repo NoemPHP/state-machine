@@ -29,7 +29,8 @@ class AdapterReceivesRequestTest extends TestCase
         );
         $builder->addState('test')->onEnter('test', function (object $trigger) {
                 $request = new ConfirmRequest(question: 'Test?');
-                $request->then(function ($r) {});
+                $request->then(function ($r) {
+                });
 
                 $generator = $this->interact($request);
                 $generator->current();
@@ -37,7 +38,7 @@ class AdapterReceivesRequestTest extends TestCase
                 // Provide response
                 $request->deliverResponse(new ConfirmResponse(confirmed: true, correlationId: $request->correlationId()));
                 $generator->next();
-            });
+        });
         $builder->initialState('test');
 
         $region = $builder->build();
@@ -47,7 +48,8 @@ class AdapterReceivesRequestTest extends TestCase
             $receivedRequest = $request;
         });
 
-        $runtime = new \Noem\State\StandardRuntime($region); $runtime->run();
+        $runtime = new \Noem\State\StandardRuntime($region);
+        $runtime->run();
 
         $this->assertInstanceOf(InteractionRequest::class, $receivedRequest);
     }

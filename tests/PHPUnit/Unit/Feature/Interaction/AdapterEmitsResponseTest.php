@@ -42,11 +42,12 @@ class AdapterEmitsResponseTest extends TestCase
                 $request->deliverResponse($response);
 
                 $generator->next();
-            });
+        });
         $builder->initialState('test');
 
         $region = $builder->build();
-        $runtime = new \Noem\State\StandardRuntime($region); $runtime->run();
+        $runtime = new \Noem\State\StandardRuntime($region);
+        $runtime->run();
 
         $this->assertTrue($responseEmitted, 'Framework adapter should emit response via notificationChain');
     }

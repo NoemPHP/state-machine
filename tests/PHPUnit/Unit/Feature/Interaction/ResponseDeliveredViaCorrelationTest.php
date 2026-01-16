@@ -37,11 +37,12 @@ class ResponseDeliveredViaCorrelationTest extends TestCase
                 // Deliver correlated response
                 $response = new ConfirmResponse(confirmed: true, correlationId: $request->correlationId());
                 $request->deliverResponse($response);
-            });
+        });
         $builder->initialState('test');
 
         $region = $builder->build();
-        $runtime = new \Noem\State\StandardRuntime($region); $runtime->run();
+        $runtime = new \Noem\State\StandardRuntime($region);
+        $runtime->run();
 
         $this->assertTrue($delivered, 'Response should be delivered via correlation ID matching');
     }

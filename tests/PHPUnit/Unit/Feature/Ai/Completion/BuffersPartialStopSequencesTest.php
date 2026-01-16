@@ -25,7 +25,7 @@ class BuffersPartialStopSequencesTest extends TestCase
 
         $mockBackend = $this->createMock(\Noem\State\Feature\Ai\Backend\BackendInterface::class);
         $mockBackend->method('stream')
-            ->willReturn((function() {
+            ->willReturn((function () {
                 yield ['choices' => [['text' => 'First']]];
                 yield ['choices' => [['text' => ' chunk']]];
             })());

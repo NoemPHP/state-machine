@@ -34,25 +34,26 @@ class InteractThrowsOnCancelledTest extends TestCase
                     // Response handler
                 });
 
-                try {
-                    $generator = $this->interact($request);
-                    $generator->current(); // Start generator
+            try {
+                $generator = $this->interact($request);
+                $generator->current(); // Start generator
 
-                    // Deliver cancelled response
-                    $response = new ConfirmResponse(confirmed: false, cancelled: true, correlationId: $request->correlationId());
-                    $request->deliverResponse($response);
+                // Deliver cancelled response
+                $response = new ConfirmResponse(confirmed: false, cancelled: true, correlationId: $request->correlationId());
+                $request->deliverResponse($response);
 
-                    // This should throw
-                    $generator->next();
-                    $generator->getReturn();
-                } catch (InteractionCancelledException $e) {
-                    $exceptionCaught = true;
-                }
-            });
+                // This should throw
+                $generator->next();
+                $generator->getReturn();
+            } catch (InteractionCancelledException $e) {
+                $exceptionCaught = true;
+            }
+        });
         $builder->initialState('test');
 
         $region = $builder->build();
-        $runtime = new \Noem\State\StandardRuntime($region); $runtime->run();
+        $runtime = new \Noem\State\StandardRuntime($region);
+        $runtime->run();
 
         $this->assertTrue($exceptionCaught, 'interact() should throw InteractionCancelledException when cancelled');
     }

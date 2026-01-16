@@ -265,7 +265,7 @@ YAML;
                 label: 'Dynamic',
                 intent: 'Visibility changes',
                 metadata: null,
-                predicate: function($r) use ($meta) {
+                predicate: function ($r) use ($meta) {
                     $metaParams = new \Noem\State\Chains\Params\Meta($r, \Noem\State\Feature\ExtendedState\ContextMetaType::get());
                     $context = $meta->call($metaParams);
                     return $context['counter'] > 0;

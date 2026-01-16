@@ -33,7 +33,10 @@ final class ExecutesDuringBuildTest extends TestCase
         $metaChain = $builder->chainMail->get(\Noem\State\Chains\Meta::class);
         $metadata = $metaChain->call(new \Noem\State\Chains\Params\Meta($region, \Noem\State\Feature\ExtendedState\ContextMetaType::get()));
 
-        $this->assertEquals('initialized', $metadata['field1'],
-            'Schema defaults must be available before first state callback executes');
+        $this->assertEquals(
+            'initialized',
+            $metadata['field1'],
+            'Schema defaults must be available before first state callback executes'
+        );
     }
 }

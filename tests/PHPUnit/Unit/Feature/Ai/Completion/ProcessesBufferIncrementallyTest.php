@@ -20,7 +20,7 @@ class ProcessesBufferIncrementallyTest extends TestCase
         // Test that chunks are yielded immediately without waiting for full response
         $mockBackend = $this->createMock(\Noem\State\Feature\Ai\Backend\BackendInterface::class);
         $mockBackend->method('stream')
-            ->willReturn((function() {
+            ->willReturn((function () {
                 yield ['choices' => [['text' => 'First']]];
                 yield ['choices' => [['text' => ' chunk']]];
             })());

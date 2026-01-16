@@ -37,7 +37,7 @@ final class ConvertsToJsonFormatTest extends TestCase
                         'value' => ['type' => 'string'],
                     ],
                 ],
-                handler: function(mixed $params) use (&$parametersCaptured) {
+                handler: function (mixed $params) use (&$parametersCaptured) {
                     // Capture parameters to verify they were converted
                     $parametersCaptured = $params;
                     return ['result' => 'ok'];
@@ -47,7 +47,7 @@ final class ConvertsToJsonFormatTest extends TestCase
             ->onEnter('idle', function (object $t) {
                 // Invoke with array - should be converted to JSON format for validation
                 $this->abilities('test-ability', ['value' => 'test'])
-                    ->then(function($response) {
+                    ->then(function ($response) {
                         // Response received
                     });
             })

@@ -19,7 +19,7 @@ class YieldsTextContentTest extends TestCase
     {
         $mockBackend = $this->createMock(\Noem\State\Feature\Ai\Backend\BackendInterface::class);
         $mockBackend->method('stream')
-            ->willReturn((function() {
+            ->willReturn((function () {
                 yield ['choices' => [['message' => ['content' => 'Hello ']]]];
                 yield ['choices' => [['message' => ['content' => 'world']]]];
             })());

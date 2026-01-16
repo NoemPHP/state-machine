@@ -40,11 +40,12 @@ class BoundAccessInterceptsInteractTest extends TestCase
                 $intercepted = $generator instanceof \Generator;
 
                 // Don't actually yield (would block test)
-            });
+        });
         $builder->initialState('test');
 
         $region = $builder->build();
-        $runtime = new \Noem\State\StandardRuntime($region); $runtime->run();
+        $runtime = new \Noem\State\StandardRuntime($region);
+        $runtime->run();
 
         $this->assertTrue($intercepted, 'interact() call was not intercepted by BoundAccess');
     }

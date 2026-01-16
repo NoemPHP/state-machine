@@ -22,7 +22,7 @@ class InteractThrowsOnInvalidParameterTest extends TestCase
         );
         $builder->addState('test')->onEnter('test', function (object $trigger) {
                 $this->interact(new \stdClass());
-            });
+        });
         $builder->initialState('test');
 
         $region = $builder->build();
@@ -30,6 +30,7 @@ class InteractThrowsOnInvalidParameterTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('interact() requires InteractionRequest');
 
-        $runtime = new \Noem\State\StandardRuntime($region); $runtime->run();
+        $runtime = new \Noem\State\StandardRuntime($region);
+        $runtime->run();
     }
 }

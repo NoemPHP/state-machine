@@ -45,5 +45,4 @@ class EnumerateAcceptsNoParametersTest extends TestCase
         $this->assertIsArray($schema);
         // Schema should allow calling with no parameters
     }
-
 }

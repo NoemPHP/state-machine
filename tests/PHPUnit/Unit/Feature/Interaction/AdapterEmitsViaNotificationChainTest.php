@@ -42,11 +42,12 @@ class AdapterEmitsViaNotificationChainTest extends TestCase
                 $request->deliverResponse($response);
 
                 $generator->next();
-            });
+        });
         $builder->initialState('test');
 
         $region = $builder->build();
-        $runtime = new \Noem\State\StandardRuntime($region); $runtime->run();
+        $runtime = new \Noem\State\StandardRuntime($region);
+        $runtime->run();
 
         $this->assertTrue($responseDelivered, 'Adapter should emit response via notificationChain');
     }

@@ -41,11 +41,12 @@ class NestedInteractionsTest extends TestCase
                 // Deliver responses in LIFO order (inner first, then outer)
                 $inner->deliverResponse(new ConfirmResponse(confirmed: true, correlationId: $inner->correlationId()));
                 $outer->deliverResponse(new ConfirmResponse(confirmed: true, correlationId: $outer->correlationId()));
-            });
+        });
         $builder->initialState('test');
 
         $region = $builder->build();
-        $runtime = new \Noem\State\StandardRuntime($region); $runtime->run();
+        $runtime = new \Noem\State\StandardRuntime($region);
+        $runtime->run();
 
         $this->assertSame(['inner', 'outer'], $completionOrder, 'Nested interactions should complete LIFO');
     }

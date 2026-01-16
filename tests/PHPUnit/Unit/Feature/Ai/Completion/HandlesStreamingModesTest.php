@@ -25,7 +25,7 @@ class HandlesStreamingModesTest extends TestCase
 
         // Test asText=true mode
         $mockBackend1 = $this->createMock(\Noem\State\Feature\Ai\Backend\BackendInterface::class);
-        $mockBackend1->method('stream')->willReturn((function() use ($chunks) {
+        $mockBackend1->method('stream')->willReturn((function () use ($chunks) {
             yield from $chunks;
         })());
 
@@ -37,7 +37,7 @@ class HandlesStreamingModesTest extends TestCase
 
         // Test asText=false mode
         $mockBackend2 = $this->createMock(\Noem\State\Feature\Ai\Backend\BackendInterface::class);
-        $mockBackend2->method('stream')->willReturn((function() use ($chunks) {
+        $mockBackend2->method('stream')->willReturn((function () use ($chunks) {
             yield from $chunks;
         })());
 

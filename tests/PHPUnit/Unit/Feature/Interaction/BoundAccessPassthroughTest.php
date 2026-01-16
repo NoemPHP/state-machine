@@ -26,7 +26,7 @@ class BoundAccessPassthroughTest extends TestCase
                 // These ExtendedState methods should work unchanged
                 $this->set('testKey', 'testValue');
                 $getValue = $this->get('testKey');
-            });
+        });
         $builder->initialState('test');
 
         $region = $builder->build();

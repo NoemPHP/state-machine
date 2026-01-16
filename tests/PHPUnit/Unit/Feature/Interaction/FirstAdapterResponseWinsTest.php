@@ -32,7 +32,7 @@ class FirstAdapterResponseWinsTest extends TestCase
         $builder->addState('test')->onEnter('test', function (object $trigger) use (&$receivedValue): \Generator {
                 // interact() returns the value directly (boolean for ConfirmRequest)
                 $receivedValue = yield from $this->interact(new ConfirmRequest(question: 'Test?'));
-            });
+        });
         $builder->initialState('test');
 
         $region = $builder->build();

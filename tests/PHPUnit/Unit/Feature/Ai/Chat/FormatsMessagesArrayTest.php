@@ -21,7 +21,7 @@ class FormatsMessagesArrayTest extends TestCase
         // Message formatting is delegated to the backend
         $mockBackend = $this->createMock(\Noem\State\Feature\Ai\Backend\BackendInterface::class);
         $mockBackend->method('stream')
-            ->willReturn((function() {
+            ->willReturn((function () {
                 yield ['choices' => [['message' => ['content' => 'Response']]]];
             })());
 

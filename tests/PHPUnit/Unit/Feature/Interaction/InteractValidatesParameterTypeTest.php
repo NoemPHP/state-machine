@@ -25,17 +25,18 @@ class InteractValidatesParameterTypeTest extends TestCase
             new \Noem\State\Feature\Interaction\InteractionRegistryFeature()
         );
         $builder->addState('test')->onEnter('test', function (object $trigger) use (&$exceptionCaught) {
-                try {
-                    // Pass invalid parameter (not InteractionRequest)
-                    $this->interact('invalid');
-                } catch (\InvalidArgumentException $e) {
-                    $exceptionCaught = true;
-                }
-            });
+            try {
+                // Pass invalid parameter (not InteractionRequest)
+                $this->interact('invalid');
+            } catch (\InvalidArgumentException $e) {
+                $exceptionCaught = true;
+            }
+        });
         $builder->initialState('test');
 
         $region = $builder->build();
-        $runtime = new \Noem\State\StandardRuntime($region); $runtime->run();
+        $runtime = new \Noem\State\StandardRuntime($region);
+        $runtime->run();
 
         $this->assertTrue($exceptionCaught, 'interact() should validate parameter type');
     }

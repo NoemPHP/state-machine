@@ -31,7 +31,7 @@ class MultipleAdaptersSubscribeTest extends TestCase
         );
         $builder->addState('test')->onEnter('test', function (object $trigger): \Generator {
                 yield from $this->interact(new ConfirmRequest(question: 'Test?'));
-            });
+        });
         $builder->initialState('test');
 
         $region = $builder->build();

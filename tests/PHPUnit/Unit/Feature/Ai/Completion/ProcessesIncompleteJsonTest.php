@@ -20,7 +20,7 @@ class ProcessesIncompleteJsonTest extends TestCase
         // Test that incomplete JSON chunks (missing text field) are handled gracefully
         $mockBackend = $this->createMock(\Noem\State\Feature\Ai\Backend\BackendInterface::class);
         $mockBackend->method('stream')
-            ->willReturn((function() {
+            ->willReturn((function () {
                 // Chunk with missing text field
                 yield ['choices' => [['delta' => 'content']]];
                 // Normal chunk

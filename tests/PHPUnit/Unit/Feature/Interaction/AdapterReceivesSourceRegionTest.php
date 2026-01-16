@@ -31,7 +31,7 @@ class AdapterReceivesSourceRegionTest extends TestCase
         );
         $builder->addState('test')->onEnter('test', function (object $trigger): \Generator {
                 yield from $this->interact(new ConfirmRequest(question: 'Test?'));
-            });
+        });
         $builder->initialState('test');
 
         $region = $builder->build();
@@ -42,7 +42,8 @@ class AdapterReceivesSourceRegionTest extends TestCase
             $request->deliverResponse(new ConfirmResponse(true, false, $request->correlationId()));
         });
 
-        $runtime = new \Noem\State\StandardRuntime($region); $runtime->run();
+        $runtime = new \Noem\State\StandardRuntime($region);
+        $runtime->run();
 
         $this->assertInstanceOf(Region::class, $receivedRegion, 'Adapter should receive source Region reference');
     }

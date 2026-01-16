@@ -42,10 +42,10 @@ class InteractEmitsRequestTest extends TestCase
                 $request->deliverResponse($response);
 
                 // Consume generator
-                foreach ($generator as $value) {
-                    break;
-                }
-            });
+            foreach ($generator as $value) {
+                break;
+            }
+        });
         $builder->initialState('test');
 
         $region = $builder->build();
@@ -55,7 +55,8 @@ class InteractEmitsRequestTest extends TestCase
             $requestReceived = true;
         });
 
-        $runtime = new \Noem\State\StandardRuntime($region); $runtime->run();
+        $runtime = new \Noem\State\StandardRuntime($region);
+        $runtime->run();
 
         $this->assertTrue($requestReceived, 'InteractionRequest should be emitted via NotificationChain');
     }

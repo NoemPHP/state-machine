@@ -20,7 +20,7 @@ class YieldsTextChunksTest extends TestCase
         // Create mock backend that returns streaming JSON chunks
         $mockBackend = $this->createMock(\Noem\State\Feature\Ai\Backend\BackendInterface::class);
         $mockBackend->method('stream')
-            ->willReturn((function() {
+            ->willReturn((function () {
                 yield ['choices' => [['text' => 'Hello ']]];
                 yield ['choices' => [['text' => 'world']]];
                 yield ['choices' => [['text' => '!']]];

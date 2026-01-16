@@ -26,7 +26,7 @@ class HandlesStopSequencesTest extends TestCase
         // Mock backend returns single chunk with stop sequence inline
         $mockBackend = $this->createMock(\Noem\State\Feature\Ai\Backend\BackendInterface::class);
         $mockBackend->method('stream')
-            ->willReturn((function() {
+            ->willReturn((function () {
                 yield ['choices' => [['text' => 'Complete']]];
             })());
 
