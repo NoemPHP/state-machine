@@ -1,10 +1,8 @@
 # Persistence Layer - Performance Analysis
 
-**Date**: 2025-12-28
-**Status**: Estimation Phase
-**Related**: persistence-layer.md
-
----
+**Status**: Draft
+**Created**: 2025-12-28
+**Related**: [README.md](./README.md)
 
 ## Overview
 

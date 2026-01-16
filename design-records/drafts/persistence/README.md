@@ -1,10 +1,7 @@
-# Persistence Layer Proposal
+# Persistence Layer
 
-**Status**: Draft - Planning Phase
+**Status**: Draft
 **Created**: 2025-12-28
-**Target**: Future Release
-
----
 
 ## Overview
 
@@ -319,8 +316,8 @@ When contributing to this proposal:
 ## Related Resources
 
 ### Internal
-- [Runtime Proposal](../../proposals/runtime/Runtime.md) - Runtime architecture
-- [Abilities API](../../proposals/abilities-api/abilities-api.md) - Similar feature pattern
+- [Runtime Proposal](../../greenlit/runtime/Runtime.md) - Runtime architecture
+- [Abilities API](../../greenlit/abilities-api/abilities-api.md) - Similar feature pattern
 - [ExtendedState CLAUDE.md](/Feature/ExtendedState/CLAUDE.md) - Context management
 
 ### External

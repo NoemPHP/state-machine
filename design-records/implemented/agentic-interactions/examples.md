@@ -1,9 +1,8 @@
-# Agentic Interaction Patterns - Usage Examples
+# Agentic Interaction Patterns - Examples
 
-**Part of**: [Agentic Interactions Proposal](./README.md)
-**Focus**: Practical real-world usage scenarios and code examples
-
----
+**Status**: Implemented
+**Created**: 2026-01-03
+**Related**: [README.md](./README.md)
 
 ## Table of Contents
 
@@ -969,9 +968,9 @@ These examples demonstrate:
 ✅ **Advanced patterns** - Nested interactions, conditional flows, timeout handling
 
 **Next Steps**:
-- Review [architecture.md](./architecture.md) for technical details
-- See [interaction-patterns.md](./interaction-patterns.md) for full specification
-- Explore [README.md](./README.md) for overview and roadmap
+- Review [architecture.md](architecture.md) for technical details
+- See [interaction-patterns.md](interaction-patterns.md) for full specification
+- Explore [README.md](README.md) for overview and roadmap
 
 ---
 

@@ -1,8 +1,11 @@
-# Spec Standard Enhancement: Flexible Test Execution Configuration
+# Spec Standard Enhancement
 
-## Status
+**Status**: Draft
+**Created**: 2026-01-13
 
-**Proposed** - 2026-01-13
+## Overview
+
+Flexible test execution configuration for the spec standard, enabling fine-grained control over test bootstrapping, selection, execution, and reporting.
 
 ## Problem Statement
 

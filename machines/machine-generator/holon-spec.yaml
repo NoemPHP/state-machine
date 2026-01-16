@@ -24,6 +24,8 @@ machine:
     syntax: "Array of feature class definitions with optional config"
     critical_ordering_rules:
       - "ExtendedState MUST be first (provides $this-> context access)"
+      - "JsonSchemaFeature loads AFTER ExtendedState (extends context with schema)"
+      - "ContextBroadcastFeature loads AFTER ExtendedState (hooks into Set chain)"
       - "AsyncFeature MUST load AFTER ExtendedState"
       - "TemplateFeature MUST load BEFORE AiFeature"
       - "MessageFeature typically loads AFTER AsyncFeature"
@@ -31,6 +33,8 @@ machine:
       features:
         # CRITICAL: This order matters!
         - class: Noem\State\Feature\ExtendedState\ExtendedState
+        - class: Noem\State\Feature\JsonSchema\JsonSchemaFeature
+        - class: Noem\State\Feature\ContextBroadcast\ContextBroadcastFeature
         - class: Noem\State\Feature\Template\TemplateFeature
         - class: Noem\State\Feature\Ai\AiFeature
         - class: Noem\State\Feature\Ai\AiConfigFeature
@@ -67,6 +71,152 @@ machine:
       eventLoop:
         autoRun: true
         maxIterations: 0  # Unlimited for interactive apps
+
+# ==============================================================================
+# CONTEXT SECTION - Extended state configuration
+# ==============================================================================
+
+context:
+  purpose: "Configure extended state with typed schema and broadcast control"
+  requires: "ExtendedState feature (and optionally JsonSchemaFeature, ContextBroadcastFeature)"
+
+  schema:
+    purpose: "Define typed context properties with defaults and validation"
+    requires: "JsonSchemaFeature"
+    syntax: "Array of field definitions"
+    field_properties:
+      name:
+        type: string
+        required: true
+        description: "Context field name (used with $this->get()/$this->set())"
+      type:
+        type: string
+        required: true
+        values: ["string", "integer", "number", "boolean", "array", "object"]
+        description: "JSON Schema type for validation"
+      default:
+        type: mixed
+        required: false
+        description: "Initial value set during build (before first state callback)"
+      description:
+        type: string
+        required: false
+        description: "Human-readable documentation"
+      broadcast:
+        type: boolean
+        required: false
+        default: true
+        requires: "ContextBroadcastFeature"
+        description: "Set to false to exclude property from ContextChange events"
+    example: |
+      context:
+        schema:
+          - name: progress
+            type: integer
+            default: 0
+            description: Task completion percentage
+          - name: status
+            type: string
+            default: "pending"
+          - name: apiKey
+            type: string
+            broadcast: false  # Sensitive - exclude from broadcasts
+          - name: config
+            type: object
+            default:
+              timeout: 30
+              retries: 3
+
+  broadcast:
+    purpose: "Region-level control over ContextChange event emission"
+    requires: "ContextBroadcastFeature"
+    type: boolean
+    default: true
+    behavior:
+      true: "Emit ContextChange events for context mutations (subject to schema filtering)"
+      false: "Disable ALL ContextChange events for this region"
+    example: |
+      # Region with broadcasts enabled (default)
+      context:
+        broadcast: true
+        schema:
+          - name: publicData
+            type: string
+
+      # Internal region with broadcasts disabled (performance optimization)
+      context:
+        broadcast: false
+        schema:
+          - name: internalCache
+            type: object
+
+  broadcast_filtering_levels:
+    description: "Three-level serialization control for ContextChange events"
+    levels:
+      1_default:
+        condition: "No JsonSchemaFeature loaded"
+        behavior: "ALL $this->set() calls emit ContextChange events"
+      2_schema_based:
+        condition: "JsonSchemaFeature loaded with context.schema defined"
+        behavior: "Only schema-defined properties emit events; non-schema properties are silent"
+      3_property_opt_out:
+        condition: "Schema property has broadcast: false"
+        behavior: "That specific property never emits events, even though schema-defined"
+      4_region_opt_out:
+        condition: "context.broadcast: false"
+        behavior: "NO properties emit events (overrides all other settings)"
+    example: |
+      context:
+        broadcast: true  # Region-level: enabled
+        schema:
+          - name: userId        # Will emit ContextChange
+            type: integer
+          - name: userName      # Will emit ContextChange
+            type: string
+          - name: sessionToken  # Will NOT emit (broadcast: false)
+            type: string
+            broadcast: false
+          # Note: $this->set('nonSchemaKey', value) will NOT emit
+          # because JsonSchemaFeature is loaded and 'nonSchemaKey' isn't in schema
+
+  complete_example: |
+    machine:
+      features:
+        - class: Noem\State\Feature\ExtendedState\ExtendedState
+        - class: Noem\State\Feature\JsonSchema\JsonSchemaFeature
+        - class: Noem\State\Feature\ContextBroadcast\ContextBroadcastFeature
+
+    context:
+      broadcast: true
+      schema:
+        - name: taskId
+          type: integer
+          description: Public task identifier
+        - name: progress
+          type: integer
+          default: 0
+          description: Completion percentage (0-100)
+        - name: status
+          type: string
+          default: "pending"
+        - name: apiCredentials
+          type: object
+          broadcast: false  # Never broadcast sensitive data
+        - name: internalBuffer
+          type: array
+          broadcast: false  # Performance: high-frequency updates
+
+    states:
+      - name: processing
+        onEnter:
+          - run: !php |
+              return function(object $t) {
+                  $this->set('taskId', 123);        // Emits ContextChange
+                  $this->set('progress', 50);       // Emits ContextChange
+                  $this->set('apiCredentials', []); // Silent (broadcast: false)
+                  $this->set('tempData', 'value');  // Silent (not in schema)
+              };
+    initial: processing
 
 # ==============================================================================
 # STATES - Core state machine structure
@@ -486,6 +636,22 @@ features:
     class: "Noem\\State\\Feature\\ExtendedState\\ExtendedState"
     provides: ["$this->get()", "$this->set()"]
     critical: "MUST be first feature loaded"
+
+  JsonSchemaFeature:
+    class: "Noem\\State\\Feature\\JsonSchema\\JsonSchemaFeature"
+    provides: ["context.schema validation", "Default value initialization", "Schema discovery for other features"]
+    requires: "ExtendedState"
+    enables: "Typed context properties with defaults"
+
+  ContextBroadcastFeature:
+    class: "Noem\\State\\Feature\\ContextBroadcast\\ContextBroadcastFeature"
+    provides: ["ContextChange events on $this->set()", "Region/property broadcast opt-out"]
+    requires: "ExtendedState"
+    optional_integration: "JsonSchemaFeature (enables schema-based filtering)"
+    use_cases:
+      - "Real-time UI updates"
+      - "External monitoring/logging"
+      - "State synchronization across systems"
 
   AsyncFeature:
     class: "Noem\\State\\Feature\\Async\\AsyncFeature"

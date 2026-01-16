@@ -1,9 +1,8 @@
 # Persistence Layer - Usage Examples
 
-**Date**: 2025-12-28
-**Related**: persistence-layer.md, technical-research.md
-
----
+**Status**: Draft
+**Created**: 2025-12-28
+**Related**: [README.md](./README.md)
 
 ## Quick Start
 

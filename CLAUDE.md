@@ -17,6 +17,22 @@ Event-based finite state machines with hierarchical states, middleware systems, 
 ```
 User Request
     ↓
+┌─────────────────────────────────────────────────────────┐
+│ Is this a NEW feature requiring design exploration?     │
+│ (unclear requirements, architectural decisions needed)  │
+└─────────────────────────────────────────────────────────┘
+    ↓ YES                              ↓ NO (clear requirements)
+solution-architect agent               │
+    ↓                                  │
+Creates design record in               │
+design-records/drafts/                 │
+    ↓                                  │
+User reviews → approves                │
+    ↓                                  │
+Moves to design-records/greenlit/      │
+    ↓                                  ↓
+    └──────────────────────────────────┘
+                    ↓
 spec-planner agent → Creates YAML specs → User reviews
     ↓
 User approves specs
@@ -74,13 +90,40 @@ If NO: Stop (specs ready for later implementation)
 
 This project uses specialized sub-agents for different phases of development:
 
-### spec-planner (Planning Phase)
+### solution-architect (Design Phase)
 
-**Use for**: Creating or modifying specifications
+**Use for**: New features requiring research, design exploration, and architectural decisions
 
 **When to invoke**:
-- New features or enhancements
+- Completely new capabilities with unclear requirements
+- Features requiring architectural decisions
+- Problems needing investigation before solutions
+- Integration with external systems
+- Performance optimization exploration
+
+**When NOT to invoke**:
+- Bug fixes with clear expected behavior → use spec-planner directly
+- Features with clear, well-defined requirements → use spec-planner directly
+- Implementation of already-designed features
+
+**Example**:
+```
+User: "Add persistence support so machines can save and restore state"
+→ Launch solution-architect to research options and create design proposal
+```
+
+**Output**: Design record in `design-records/drafts/` for user approval
+
+**Next Step**: After user approves design, it moves to `design-records/greenlit/`, then spec-planner creates YAML specs
+
+### spec-planner (Specification Phase)
+
+**Use for**: Creating YAML specifications from greenlit designs or clear requirements
+
+**When to invoke**:
+- Features with greenlit design records
 - Bug fixes (create spec for expected behavior)
+- Features with clear, well-defined requirements
 - Refactoring that changes behavior
 - Any task requiring new specifications
 
@@ -90,7 +133,7 @@ User: "Add a MessageFeature for request-response patterns"
 → Launch spec-planner agent to create specifications
 ```
 
-**Output**: Approved spec files
+**Output**: Approved spec files in `/specs/`
 
 **Next Step**: After user approves specs, ASK if they want to proceed with implementation
 
@@ -151,6 +194,10 @@ See `.claude/AGENT_HANDOVER_PROTOCOL.md` for complete handover protocol between 
 │   ├── chain/             # Middleware
 │   ├── features/          # Features
 │   └── machines/          # End-to-end scenarios
+├── design-records/         # Design documentation
+│   ├── drafts/            # Work-in-progress designs
+│   ├── greenlit/          # Approved, ready for specs
+│   └── implemented/       # Completed features
 ├── tests/PHPUnit/         # Test suite (✅ create/modify)
 │   ├── Unit/              # Unit tests
 │   ├── Integration/       # Integration tests
@@ -414,13 +461,34 @@ test -f machines/{machine-name}/CLAUDE.md && echo "EXISTS"
 
 ---
 
-## 🔍 Development Workflow Example
+## 🔍 Development Workflow Examples
 
-### Scenario: User wants new feature
+### Scenario A: Complex new feature (needs design)
+
+1. **User**: "Add persistence support so machines can save and restore state"
+
+2. **You**: Launch `solution-architect` agent (unclear requirements, architectural decisions needed)
+   - Researches codebase for serialization patterns
+   - Identifies options (file, database, Redis)
+   - Creates design record in `design-records/drafts/persistence/`
+   - Presents trade-offs and recommendations
+
+3. **User**: Reviews design, requests changes or approves
+   - Design moves to `design-records/greenlit/`
+
+4. **You**: Launch `spec-planner` agent
+   - Creates YAML specs based on greenlit design
+   - Presents specs for approval
+
+5. **User**: Approves specs
+
+6. **spec-planner**: Generates handover payload → `core-development-expert` implements
+
+### Scenario B: Clear feature (skip design)
 
 1. **User**: "Add a CachingFeature that memoizes state computations"
 
-2. **You**: Launch `spec-planner` agent
+2. **You**: Launch `spec-planner` agent (requirements are clear)
    - spec-planner creates YAML specs in `/specs/features/caching.yaml`
    - Presents to user for approval
    - User approves
@@ -447,7 +515,7 @@ test -f machines/{machine-name}/CLAUDE.md && echo "EXISTS"
    - Runs quality checks
    - Reports completion
 
-### Scenario: Specs already exist
+### Scenario C: Specs already exist
 
 1. **User**: "The specs are in specs/core/guards.yaml - implement this"
 
@@ -474,6 +542,9 @@ test -f machines/{machine-name}/CLAUDE.md && echo "EXISTS"
 ## 📖 Additional Resources
 
 - `.claude/AGENT_HANDOVER_PROTOCOL.md` - Complete handover protocol
+- `.claude/agents/solution-architect.md` - Design exploration agent definition
 - `.claude/agents/spec-planner.md` - Specification agent definition
 - `.claude/agents/core-development-expert.md` - Implementation agent definition
+- `design-records/` - Design documentation (drafts → greenlit → implemented)
+- `docs/holon-spec/` - Compact Holon YAML spec for AI agents (schema, example, constraints)
 - `README.md` - Project setup and quick start

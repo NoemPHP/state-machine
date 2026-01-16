@@ -1,9 +1,8 @@
-# Persistence Layer - Technical Research & Patterns
+# Persistence Layer - Technical Research
 
-**Date**: 2025-12-28
-**Related**: persistence-layer.md (main proposal)
-
----
+**Status**: Draft
+**Created**: 2025-12-28
+**Related**: [README.md](./README.md)
 
 ## Research Summary
 

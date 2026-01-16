@@ -1,11 +1,8 @@
-# Proposal: `$this->weave()` - Agentic Tool Selection and Execution
+# Weave - Agentic Tool Selection and Execution
 
-**Status**: Draft Proposal
-**Feature**: AiFeature Enhancement
-**Spec File**: `specs/features/ai.yaml`
-**Date**: 2025-12-26
-
----
+**Status**: Implemented
+**Created**: 2025-12-26
+**Related**: [ai-enhancements.md](./ai-enhancements.md)
 
 ## Overview
 

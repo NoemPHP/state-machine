@@ -1,35 +1,44 @@
-# Active Proposals
+# Approved Designs
 
-This directory contains **proposals for features that are not yet implemented**.
+**Status**: Index
+**Updated**: 2026-01-16
 
-## Current Proposals
+## Overview
 
-| File | Status | Description |
-|------|--------|-------------|
-| `machine-agent.md` | Draft | Autonomous machine generation from natural language |
-| `process-wrapper.md` | Draft | Unix-style process wrapper for Holons (stdin/stdout/stderr) |
-| `model-selection-by-capability.md` | Draft | Capability-based AI model selection |
+This directory contains **approved design records** that are ready for specification creation and implementation.
 
-## Proposal Lifecycle
+## Lifecycle
 
 ```
-Draft → Review → Approved → Spec Created → Implementation
-                                ↓
-                      Moved to /docs/implemented/
+design-records/drafts/     User approves design
+        ↓                           ↓
+design-records/greenlit/   spec-planner creates YAML specs
+        ↓                           ↓
+design-records/implemented/  Feature complete
 ```
 
-## Contributing
+## Current Approved Designs
 
-To propose a new feature:
+| Directory | Description | Next Step |
+|-----------|-------------|-----------|
+| *(empty)* | No designs currently awaiting implementation | - |
 
-1. Create a markdown file in this directory
-2. Include: problem statement, proposed solution, API design, alternatives considered
-3. Submit for review
-4. Once approved, create specs in `/specs/`
-5. After implementation, move documentation to `/docs/implemented/`
+## Moving Documents Here
+
+When a design is approved:
+
+1. Update the document's `**Status**:` field to `Approved`
+2. Move the folder: `mv design-records/drafts/{topic}/ design-records/greenlit/`
+3. Update any internal links if necessary
+
+## Next Steps for Approved Designs
+
+1. Use `spec-planner` agent to create YAML specifications
+2. Get user approval on specs
+3. Use `core-development-expert` to implement
+4. Move to `implemented/` when complete
 
 ## See Also
 
-- `/docs/implemented/` - Documentation for implemented features
-- `/docs/drafts/` - Work-in-progress technical documentation
-- `/specs/` - Formal specifications (source of truth)
+- [drafts/](../drafts/) - Work-in-progress designs
+- [implemented/](../implemented/) - Completed features

@@ -1,9 +1,12 @@
 # Agentic Interaction Patterns
 
-**Status**: ✅ Implemented
+**Status**: Implemented
 **Created**: 2026-01-03
 **Implemented**: 2026-01-09
-**Type**: Feature + Message Protocol
+
+## Overview
+
+This document defines a **minimal set of standardized interaction patterns** for autonomous state machines to communicate with external agents, supervisors, and orchestration frameworks.
 
 > **Note**: InteractionFeature is now fully implemented. See `specs/features/interaction.yaml` for the complete specification and `src/Feature/Interaction/` for the implementation.
 
@@ -148,7 +151,7 @@ $region->on(function(InteractionRequest $request, ?Region $source) {
 
 ## Documents
 
-### 📋 [interaction-patterns.md](./interaction-patterns.md) - Main Proposal
+### 📋 [interaction-patterns.md](interaction-patterns.md) - Main Proposal
 
 **Primary document** covering:
 - Detailed pattern specifications (Confirm, Select, Choice, Prompt)

@@ -1,18 +1,32 @@
-# Implemented Features - Reference Documentation
+# Implemented Features
 
-This directory contains **design documentation for features that have been implemented**.
+**Status**: Index
+**Updated**: 2026-01-16
 
-These documents serve as architectural reference material. For current usage documentation, see the respective feature's `CLAUDE.md` file in `src/Feature/`.
+## Overview
+
+This directory contains **design records for features that have been implemented**. These documents serve as architectural reference material.
+
+For current usage documentation, see the respective feature's `CLAUDE.md` file in `src/Feature/`.
 
 ## Contents
 
-| Directory/File | Feature | Spec | Implementation |
-|----------------|---------|------|----------------|
-| `agentic-interactions/` | InteractionFeature | `specs/features/interaction.yaml` | `src/Feature/Interaction/` |
-| `presentation-feature.md` | PresentationFeature | `specs/features/presentation.yaml` | `src/Feature/Presentation/` |
-| `abilities-api/` | AbilitiesFeature | `specs/features/abilities.yaml` | `src/Feature/Abilities/` |
-| `ai-enhancements/` | AiFeature, AgenticFeature | `specs/features/ai.yaml`, `specs/features/agentic.yaml` | `src/Feature/Ai/`, `src/Feature/Agentic/` |
-| `runtime/` | Runtime Architecture | `specs/core/` | `src/` (core) |
+| Directory | Feature | Spec | Implementation |
+|-----------|---------|------|----------------|
+| [abilities-api/](./abilities-api/) | AbilitiesFeature | `specs/features/abilities.yaml` | `src/Feature/Abilities/` |
+| [agentic-interactions/](./agentic-interactions/) | InteractionFeature | `specs/features/interaction.yaml` | `src/Feature/Interaction/` |
+| [ai-enhancements/](./ai-enhancements/) | AiFeature, AgenticFeature | `specs/features/ai.yaml` | `src/Feature/Ai/`, `src/Feature/Agentic/` |
+| [context-broadcast/](./context-broadcast/) | ContextBroadcastFeature | `specs/features/context-broadcast.yaml` | `src/Feature/ContextBroadcast/` |
+| [model-selection-by-capability/](./model-selection-by-capability/) | AI Model Selection | - | `src/Feature/Ai/` |
+| [presentation/](./presentation/) | PresentationFeature | `specs/features/presentation.yaml` | `src/Feature/Presentation/` |
+| [runtime/](./runtime/) | Runtime Architecture | `specs/core/runtime.yaml` | `src/` (core) |
+
+## Document Structure
+
+Each implemented feature directory contains:
+
+- **Primary document** - Core design and architecture
+- **Companion documents** (optional) - Examples, deep-dives, analysis
 
 ## Usage
 
@@ -22,12 +36,13 @@ For up-to-date usage instructions, prefer:
 2. **Spec files**: `specs/features/{name}.yaml`
 3. **Tests**: `tests/PHPUnit/Unit/Feature/{Name}/`
 
-These documents are preserved for:
+These design records are preserved for:
+
 - Historical context on design decisions
 - Architectural rationale
 - Implementation planning reference
 
 ## See Also
 
-- `/docs/proposals/` - Active proposals not yet implemented
-- `/docs/drafts/` - Work-in-progress documentation
+- [drafts/](../drafts/) - Work-in-progress designs
+- [greenlit/](../greenlit/) - Approved, awaiting implementation

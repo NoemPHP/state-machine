@@ -1,9 +1,8 @@
 # Agentic Interaction Patterns - Architecture
 
-**Part of**: [Agentic Interactions Proposal](./README.md)
-**Focus**: Technical architecture and component relationships
-
----
+**Status**: Implemented
+**Created**: 2026-01-03
+**Related**: [README.md](./README.md)
 
 ## System Architecture
 
@@ -746,4 +745,4 @@ Agent responds
 - SubscriptionFeature → Event emission and listening
 - ExtendedState → Context storage (optional)
 
-**Next**: See [interaction-patterns.md](./interaction-patterns.md) for detailed specifications.
+**Next**: See [interaction-patterns.md](interaction-patterns.md) for detailed specifications.

@@ -1,11 +1,12 @@
-# OrthogonalRegions Runtime Extension
+# Runtime - Orthogonal Regions Extension
 
-**Problem**: Dynamic sub-region spawning requires external Runtime context (`use($parentRuntime)`), breaking YAML and isolated configs
-**Solution**: Extend OrthogonalRegions feature with `$this->summon()` method for declarative runtime spawning
+**Status**: Implemented
+**Created**: 2025-12-14
+**Related**: [Runtime.md](./Runtime.md)
 
-**Supersedes**: Manual Mesh passing approaches in Runtime-Context-Sharing.md
+## Overview
 
----
+Extends OrthogonalRegions feature with `$this->summon()` method for declarative runtime spawning, solving the external context problem.
 
 ## Problem: External Context Breaks Declarative Nature
 

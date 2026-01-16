@@ -1,5 +1,8 @@
 # Async Feature - Unimplemented Functionality
 
+**Status**: Draft
+**Created**: 2025-12-28
+
 ## Overview
 
 AsyncFeature currently implements 177/199 specs. The remaining 22 specs document planned functionality that extends the async system with advanced control flow and lazy resolution capabilities.

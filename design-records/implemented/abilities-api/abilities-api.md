@@ -1,10 +1,8 @@
-# Abilities API Proposal
+# Abilities API
 
-**Status**: Draft
-**Author**: Claude Code
-**Date**: 2025-12-22
-**Related Components**: MessageFeature, Message, ChainMail, Mesh, Chain, BoundAccess
-**Dependencies**: MessageFeature (required), ExtendedState (required)
+**Status**: Implemented
+**Created**: 2025-12-22
+**Related**: [MessageFeature](../../../src/Feature/Message/), [AbilitiesFeature](../../../src/Feature/Abilities/)
 
 ## Overview
 

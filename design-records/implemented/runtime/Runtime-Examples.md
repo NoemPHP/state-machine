@@ -1,6 +1,8 @@
-# Runtime API Examples
+# Runtime - Examples
 
-Companion document to [Runtime.md](Runtime.md) showing concrete usage patterns.
+**Status**: Implemented
+**Created**: 2025-12-14
+**Related**: [Runtime.md](./Runtime.md)
 
 ## Table of Contents
 

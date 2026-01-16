@@ -1,9 +1,9 @@
 # Model Selection by Capability
 
-## Status
-**Draft** - Proposed
+**Status**: Implemented
+**Created**: 2025-12-20
 
-## Summary
+## Overview
 Enable declarative model selection based on abstract capability requirements (complexity, context) rather than specific model names, with transparent sourcing from a configurable cross-provider model pool.
 
 ## Motivation

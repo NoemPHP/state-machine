@@ -1,13 +1,10 @@
-# Agentic Interaction Patterns - Proposal
+# Agentic Interaction Patterns - Core Proposal
 
-**Status**: Draft - Planning Phase
+**Status**: Implemented
 **Created**: 2026-01-03
-**Target**: Future Release
-**Type**: Feature + Message Protocol
+**Related**: [README.md](./README.md)
 
----
-
-## Executive Summary
+## Overview
 
 This proposal defines a **minimal set of standardized interaction patterns** for autonomous state machines to communicate with external agents, supervisors, and orchestration frameworks. These patterns complement the existing **Abilities API** (inward business logic invocation) by providing a **soft contract for outward interactions** (requesting information, decisions, and input from external entities).
 

@@ -186,11 +186,16 @@ $this->set('confidence_threshold', 0.75);  # Adjust confidence threshold
 |------|---------|
 | `holon.yml` | State machine definition (headless, message-driven) |
 | `bootstrap.php` | Infrastructure (autoloader, helpers) |
-| `holon-spec.yaml` | Holon format knowledge base |
+| `holon-spec.yaml` | Holon format knowledge base (verbose, human-readable) |
 | `src/AiHelper.php` | AI operation helpers |
 | `src/TemplateHelper.php` | Template streaming helpers |
 | `MESSAGE_PROTOCOL.md` | Message format specification |
 | `README.md` | This file |
+
+**Compact Spec (for AI agents)**: See `docs/holon-spec/` for machine-readable spec (~250 lines vs ~1200 lines):
+- `schema.json` - JSON Schema for validation
+- `example.yaml` - Complete annotated example
+- `constraints.md` - Feature order, callback patterns, broadcast levels
 
 ## Dependencies
 

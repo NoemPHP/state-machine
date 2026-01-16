@@ -1,12 +1,8 @@
-# Persistence Layer Proposal
+# Persistence Layer - Core Proposal
 
 **Status**: Draft
-**Author**: System
-**Date**: 2025-12-28
-**Related Components**: Region, Runtime, ExtendedState, Meta, Message, JsonSchemaFeature
-**Dependencies**: ExtendedState (required for context), MessageFeature (for message serialization patterns)
-
----
+**Created**: 2025-12-28
+**Related**: [README.md](./README.md)
 
 ## Table of Contents
 

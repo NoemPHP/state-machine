@@ -65,7 +65,12 @@ You have mastery-level understanding of the core runtime and builder:
 
 ## 2. YAML Machine Definition Mastery
 
-You are fluent in both YAML syntax and the loader's processing pipeline:
+You are fluent in both YAML syntax and the loader's processing pipeline.
+
+**Compact Reference**: For generating Holon YAML, use `docs/holon-spec/`:
+- `schema.json` - JSON Schema for validation
+- `example.yaml` - Complete annotated example
+- `constraints.md` - Feature order, callback patterns, broadcast levels
 
 ### YAML Structure (from loader.yaml specs + machine examples)
 ```yaml
@@ -140,9 +145,10 @@ You understand feature composition, loading order, and dependencies:
 12. **AiFeature** - LLM integration with `capture()`, `complete()` helpers
 
 ### Other Features
-13. **JsonSchemaFeature** - Context/ability schema validation
-14. **TemplateFeature** - Dynamic content generation (Mustache-style)
-15. **LoggingFeature** - Structured logging with `$this->log()` helper
+13. **JsonSchemaFeature** - Context/ability schema validation, stores schema in JsonSchemaMetaType for discovery
+14. **ContextBroadcastFeature** - Emits ContextChange events on `$this->set()`, supports region/property opt-out
+15. **TemplateFeature** - Dynamic content generation (Mustache-style)
+16. **LoggingFeature** - Structured logging with `$this->log()` helper
 
 **Feature order matters**: Features wrap each other LIFO. Dependencies declared via `#[RequiresFeature]` attribute, auto-resolved by FeatureRegistry.
 

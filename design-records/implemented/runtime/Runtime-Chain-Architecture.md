@@ -1,8 +1,8 @@
-# Runtime Chain-Based Piping Architecture
+# Runtime - Chain Architecture
 
-**Companion to**: [Runtime.md](Runtime.md)
-**Status**: Draft
-**Date**: 2025-12-13
+**Status**: Implemented
+**Created**: 2025-12-13
+**Related**: [Runtime.md](./Runtime.md)
 
 ## Overview
 

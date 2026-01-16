@@ -1,10 +1,8 @@
 # Persistence Layer - API Reference
 
-**Date**: 2025-12-28
-**Version**: 1.0.0 (Draft)
-**Related**: persistence-layer.md
-
----
+**Status**: Draft
+**Created**: 2025-12-28
+**Related**: [README.md](./README.md)
 
 ## Table of Contents
 

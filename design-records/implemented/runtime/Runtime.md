@@ -1,10 +1,7 @@
-# Runtime Proposal
+# Runtime
 
-**Status**: Draft (Ready for implementation)
-**Date**: 2025-12-14  
-**Implementation Plan**: See `../IMPLEMENTATION_PLAN.md`
-
----
+**Status**: Implemented
+**Created**: 2025-12-14
 
 ## Table of Contents
 
