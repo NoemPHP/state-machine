@@ -1,0 +1,79 @@
+name: context-broadcast
+group: features
+description: |
+  Real-time context change notification system that emits ContextChange events when $this->set() is called,
+  enabling external observers to monitor state machine context mutations. Provides three-level serialization
+  control (default, schema-based, property-level) and integrates with SubscriptionFeature for type-safe filtering.
+
+features:
+  - name: context-change-event-contract
+    description: ContextChange event structure and JSON serialization
+    specs:
+      - acceptanceCriteria: ContextChange event contains path, key, value, previousValue, and timestamp properties; implements JsonSerializable with type field for polymorphic deserialization
+        criticality: contract
+        intent: Provides complete change context with full audit trail for external observers; enables JSON serialization for IPC, logging, and transmission with type-safe deserialization
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/ContextBroadcast/ContextChangeEventTest.php
+
+  - name: context-change-emission
+    description: Automatic ContextChange event emission on context mutations
+    specs:
+      - acceptanceCriteria: Calling $this->set() emits a ContextChange event via notification system with previous value tracking; each set operation triggers exactly one event after value is stored
+        criticality: contract
+        intent: Provides one-to-one correspondence between context mutations and notifications; ensures observers receive notifications only after value successfully stored with accurate previous value
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/ContextBroadcast/ContextChangeEmissionTest.php
+
+  - name: external-subscription
+    description: External subscription to ContextChange events
+    specs:
+      - acceptanceCriteria: External code subscribes to ContextChange events via $region->on(); listeners receive event and source region parameters; returns deregister callable for cleanup; supports multiple listeners and type-based filtering via SubscriptionFeature
+        criticality: contract
+        intent: Provides standard SubscriptionFeature API for observing context changes; enables subscription lifecycle management to prevent memory leaks; supports multiple observers with predictable execution and selective filtering
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/ContextBroadcast/ExternalSubscriptionTest.php
+
+  - name: default-broadcast-behavior
+    description: Default broadcast behavior without schema restrictions
+    specs:
+      - acceptanceCriteria: All context changes broadcast when JsonSchemaFeature is not loaded; properties without schema definitions broadcast by default
+        criticality: contract
+        intent: Provides simplest default for basic use cases with full observability; ensures complete visibility into context mutations when no schema restrictions exist
+        test: vendor/bin/phpunit tests/PHPUnit/Unit/Feature/ContextBroadcast/DefaultBroadcastTest.php
+
+  - name: schema-based-filtering
+    description: Schema-based broadcast filtering with JsonSchemaFeature
+    specs:
+      - acceptanceCriteria: Only schema-defined properties broadcast when JsonSchemaFeature is loaded; non-schema properties do not emit ContextChange events
+        criticality: contract
+        intent: Treats schema properties as public API and non-schema as internal implementation details; prevents broadcasting internal state that may contain non-serializable objects
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/ContextBroadcast/SchemaBasedFilteringTest.php
+
+  - name: property-level-opt-out
+    description: Per-property broadcast control via schema flags
+    specs:
+      - acceptanceCriteria: YAML schema accepts optional broadcast boolean flag per property; schema properties with broadcast false do not emit ContextChange events; properties default to broadcast true when flag omitted
+        criticality: contract
+        intent: Enables fine-grained control over which schema properties broadcast; excludes sensitive or complex properties from external observation; provides safe default where all schema properties are public unless explicitly excluded
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/ContextBroadcast/PropertyOptOutTest.php
+
+  - name: region-level-opt-out
+    description: Region-wide broadcast control
+    specs:
+      - acceptanceCriteria: YAML context.broadcast boolean flag controls region-wide broadcasting; no ContextChange events emitted when context.broadcast is false; defaults to true when omitted; region-level false overrides property-level true
+        criticality: contract
+        intent: Enables complete broadcast opt-out for entire region via configuration; provides performance optimization for internal regions with high-frequency changes; region-wide opt-out takes precedence over individual property configuration
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/ContextBroadcast/RegionOptOutTest.php
+
+  - name: feature-dependencies
+    description: Feature interaction and dependency requirements
+    specs:
+      - acceptanceCriteria: ContextBroadcastFeature requires ExtendedState feature for context helpers and Set chain infrastructure; optionally integrates with JsonSchemaFeature for schema-based filtering; optionally integrates with SubscriptionFeature for type-based listener filtering; functions independently with basic notification delivery when optional features absent
+        criticality: contract
+        intent: Ensures required dependencies for core functionality; enhances with schema-based filtering when JsonSchemaFeature present; leverages type-based listener filtering when SubscriptionFeature available; maintains standalone operation without optional features
+        test: vendor/bin/phpunit tests/PHPUnit/Integration/Feature/ContextBroadcast/FeatureDependenciesTest.php
+
+  - name: end-to-end-workflows
+    description: Complete workflows proving feature correctness
+    specs:
+      - acceptanceCriteria: Complete workflow from $this->set() to listener invocation with ContextChange delivery; schema-based filtering with JsonSchemaFeature excluding non-schema properties; region-level opt-out preventing all broadcasts; property-level opt-out for sensitive data; multiple simultaneous listeners receiving distinct events
+        criticality: integration
+        intent: Validates entire emission, delivery, and observation cycle; proves schema-based filtering works end-to-end with real feature composition; validates region-wide disable functionality with actual YAML configuration; proves fine-grained property exclusion works with schema integration; validates concurrent observation with independent listener state
+        test: vendor/bin/phpunit tests/PHPUnit/E2E/Feature/ContextBroadcast/EndToEndWorkflowsTest.php
