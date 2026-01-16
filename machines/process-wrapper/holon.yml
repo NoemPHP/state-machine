@@ -1,0 +1,489 @@
+# Process Wrapper Holon
+#
+# Wraps any Holon into a Unix-style process.
+#
+# Modes:
+#   Interactive (default): Reads from terminal stdin, echoes to stdout + broadcasts
+#   Daemon (-d flag): Reads from FIFO, broadcasts only (no local echo)
+#
+# Usage (from project root):
+#   php run.php machines/process-wrapper/holon.yml path/to/inner.yml
+#   php run.php machines/process-wrapper/holon.yml -d path/to/inner.yml
+#
+# Both modes create runtime directory with sockets for external observers.
+
+machine:
+  require: !php require '/var/www/html/machines/process-wrapper/bootstrap.php';
+
+  eventLoop:
+    autoRun: true
+    maxIterations: 0  # Unlimited for long-running process
+
+  features:
+    - class: Noem\State\Feature\Loader\RegionLoader
+    - class: Noem\State\Feature\ExtendedState\ExtendedState
+    - class: Noem\State\Feature\Async\AsyncFeature
+    - class: Noem\State\Feature\Logging\LoggingFeature
+
+states:
+  # ============================================================
+  # PHASE 1: Mode Detection
+  # ============================================================
+  - name: detecting_mode
+    action:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): void {
+              global $argv;
+              $daemonMode = in_array('-d', $argv, true) || in_array('--daemon', $argv, true);
+              $this->set('daemon_mode', $daemonMode);
+              $this->set('pid', getmypid());
+          };
+
+    transitions:
+      - target: setting_up_daemon
+        # language=injectablephp
+        guard: !php |
+          return fn(object $t): bool => $this->get('daemon_mode', false) === true;
+
+      - target: setting_up_interactive
+
+  # ============================================================
+  # PHASE 2a: Interactive Mode Setup
+  # ============================================================
+  - name: setting_up_interactive
+    action:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): void {
+              $isTty = posix_isatty(STDIN);
+              $this->set('stdin_is_tty', $isTty);
+              $this->set('local_echo', true);
+
+              // Always non-blocking for async I/O (even TTY)
+              stream_set_blocking(STDIN, false);
+
+              $this->set('stdin', STDIN);
+              $this->log('info', 'Interactive mode configured', [
+                  'tty' => $isTty,
+              ]);
+          };
+
+    transitions:
+      - target: setup_io
+
+  # ============================================================
+  # PHASE 2b: Daemon Mode Setup
+  # ============================================================
+  - name: setting_up_daemon
+    action:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): void {
+              $this->set('stdin_is_tty', false);
+              $this->set('local_echo', false);
+
+              // FIFO will be opened after runtime dir is created
+              $this->log('info', 'Daemon mode configured');
+          };
+
+    transitions:
+      - target: setup_io
+
+  # ============================================================
+  # PHASE 3: Shared I/O Setup (Runtime Dir, Sockets, Parser)
+  # ============================================================
+  - name: setup_io
+    action:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): void {
+              $pid = $this->get('pid');
+              $daemonMode = $this->get('daemon_mode', false);
+
+              // Create runtime directory (both modes)
+              $runtimeDir = new \ProcessWrapper\RuntimeDirectory($pid);
+              $runtimeDir->create();
+              $this->set('runtime_dir', $runtimeDir);
+
+              // Create broadcast sockets (both modes)
+              $channels = [];
+              foreach (['stdout', 'stderr', 'interactions', 'logs'] as $name) {
+                  $socket = $runtimeDir->createSocket($name);
+                  $channels[$name] = new \ProcessWrapper\BroadcastChannel($name, $socket);
+              }
+              $this->set('channels', $channels);
+
+              // Create bidirectional control socket
+              $controlSocket = $runtimeDir->createSocket('control');
+              $controlChannel = new \ProcessWrapper\ControlChannel($controlSocket);
+              $this->set('control_channel', $controlChannel);
+
+              // Open stdin source
+              if ($daemonMode) {
+                  // Daemon: use FIFO
+                  $stdin = $runtimeDir->openStdinFifo();
+                  $this->set('stdin', $stdin);
+              }
+              // Interactive: stdin already set in setting_up_interactive
+
+              // Create stream parser
+              $parser = new \ProcessWrapper\StreamParser();
+              $this->set('parser', $parser);
+
+              // Write manifest
+              $runtimeDir->writeManifest([
+                  'json_messages',
+                  'raw_passthrough',
+                  'interactions',
+                  'logging',
+                  'mode' => $daemonMode ? 'daemon' : 'interactive',
+              ]);
+
+              $this->log('info', 'I/O setup complete', [
+                  'pid' => $pid,
+                  'runtime_dir' => $runtimeDir->getPath(),
+                  'mode' => $daemonMode ? 'daemon' : 'interactive',
+              ]);
+          };
+
+    transitions:
+      - target: loading_holon
+
+  # ============================================================
+  # PHASE 4: Load Inner Holon
+  # ============================================================
+  - name: loading_holon
+    action:
+      # language=injectablephp
+      - run: !php |
+          use Noem\State\Feature\Interaction\InteractionRequest;
+
+          return function(object $t): void {
+              global $argv;
+
+              // Find holon path: CLI arg (skip flags) > env var > context
+              $args = array_values(array_filter($argv, fn($a) => !str_starts_with($a, '-')));
+              $holonPath = $args[2] ?? null;
+              $holonPath ??= getenv('INNER_HOLON_PATH') ?: null;
+              $holonPath ??= $this->get('inner_holon_path');
+
+              if ($holonPath === null) {
+                  $this->set('load_error', 'No inner holon path provided. Use: php run.php process-wrapper/holon.yml [-d] <inner.yml>');
+                  return;
+              }
+
+              $this->log('info', 'Loading inner holon', ['path' => $holonPath]);
+
+              try {
+                  $innerHolon = $this->summon($holonPath);
+                  $this->set('inner_holon', $innerHolon);
+                  $this->set('load_error', null);
+                  $this->log('info', 'Inner holon loaded successfully');
+
+                  // Subscribe to inner holon's notification chain for interaction requests
+                  $channels = $this->get('channels');
+                  $controlChannel = $this->get('control_channel');
+                  $localEcho = $this->get('local_echo', false);
+
+                  $innerHolon->on(function(object $event) use ($channels, $controlChannel, $localEcho): void {
+                      // Check if event is an InteractionRequest
+                      if (!$event instanceof InteractionRequest) {
+                          return;
+                      }
+
+                      // Serialize and broadcast on interactions channel
+                      $json = json_encode($event) . "\n";
+
+                      if (isset($channels['interactions'])) {
+                          $channels['interactions']->broadcast($json);
+                      }
+
+                      // Also broadcast on control channel for bidirectional clients
+                      $controlChannel->broadcast($json);
+
+                      $this->log('debug', 'Interaction request emitted', [
+                          'type' => $event->getType(),
+                          'correlationId' => $event->correlationId(),
+                      ]);
+                  });
+
+                  $this->log('info', 'Subscribed to inner holon interaction requests');
+              } catch (\Throwable $e) {
+                  $this->set('load_error', $e->getMessage());
+                  $this->log('error', 'Failed to load inner holon', [
+                      'path' => $holonPath,
+                      'error' => $e->getMessage(),
+                  ]);
+              }
+          };
+
+    transitions:
+      - target: running
+        # language=injectablephp
+        guard: !php |
+          return fn(object $t): bool => $this->get('inner_holon') !== null;
+
+      - target: error
+        # language=injectablephp
+        guard: !php |
+          return fn(object $t): bool => $this->get('load_error') !== null;
+
+  # ============================================================
+  # PHASE 5: Main Loop
+  # ============================================================
+  - name: running
+    action:
+      # language=injectablephp
+      - run: !php |
+          use Noem\State\Feature\Message\Message;
+          use Noem\State\Feature\Interaction\InteractionResponse;
+          use Noem\State\Chains\Params\Notify;
+
+          return function(object $t): void {
+              // Early exit check
+              if ($this->get('inner_complete', false) || $this->get('stdin_eof', false)) {
+                  return;
+              }
+
+              $channels = $this->get('channels');
+              $controlChannel = $this->get('control_channel');
+              $stdin = $this->get('stdin');
+              $parser = $this->get('parser');
+              $innerHolon = $this->get('inner_holon');
+              $isTty = $this->get('stdin_is_tty', false);
+              $localEcho = $this->get('local_echo', false);
+
+              // Accept new socket connections on broadcast channels
+              foreach ($channels as $channel) {
+                  $channel->tick();
+              }
+
+              // Collect input from all sources
+              $inputLines = [];
+
+              // Control channel: tick returns input lines from connected clients
+              $controlInput = $controlChannel->tick();
+              foreach ($controlInput as $line) {
+                  $inputLines[] = $line;
+              }
+
+              // Stdin/FIFO input
+              $rawInput = $isTty ? fgets($stdin) : @fread($stdin, 8192);
+              if ($rawInput !== false && $rawInput !== '') {
+                  foreach ($parser->feed($rawInput) as $parsed) {
+                      $inputLines[] = $parsed;
+                  }
+              }
+
+              // Check for EOF (pipe/FIFO mode)
+              if (!$isTty && $stdin !== null && feof($stdin)) {
+                  foreach ($parser->flush() as $parsed) {
+                      $inputLines[] = $parsed;
+                  }
+                  $this->set('stdin_eof', true);
+              }
+
+              // Sleep if no input from any source
+              if (empty($inputLines)) {
+                  usleep(10000);  // 10ms
+                  return;
+              }
+
+              // Helper to broadcast output
+              $broadcastOutput = function(string $output) use ($channels, $controlChannel, $localEcho): void {
+                  if ($output === '' || $output === false) {
+                      return;
+                  }
+                  // Broadcast to stdout channel
+                  if (isset($channels['stdout'])) {
+                      $channels['stdout']->broadcast($output);
+                  }
+                  // Broadcast to control channel (bidirectional)
+                  $controlChannel->broadcast($output);
+                  // Local echo if enabled
+                  if ($localEcho) {
+                      echo $output;
+                  }
+              };
+
+              // Helper to check if JSON is an interaction response
+              $isInteractionResponse = function(array $data): bool {
+                  if (!isset($data['type']) || !isset($data['correlationId'])) {
+                      return false;
+                  }
+                  $type = $data['type'];
+                  return str_contains($type, 'InteractionResponse')
+                      || str_contains($type, 'ConfirmResponse')
+                      || str_contains($type, 'SelectResponse')
+                      || str_contains($type, 'ChoiceResponse')
+                      || str_contains($type, 'PromptResponse');
+              };
+
+              // Process all input
+              foreach ($inputLines as $parsed) {
+                  // Check if input is a Message (already parsed by StreamParser)
+                  if ($parsed instanceof Message) {
+                      // Check if it's an interaction response
+                      if ($parsed instanceof InteractionResponse) {
+                          // Notify inner holon's notification chain directly
+                          $listeners = $innerHolon->notificationChain->call(new Notify($innerHolon, $parsed));
+                          foreach ($listeners as $listener) {
+                              $listener($parsed, $innerHolon);
+                          }
+                          $this->log('debug', 'Injected interaction response', [
+                              'correlationId' => $parsed->correlationId(),
+                          ]);
+                          continue;
+                      }
+
+                      // Other messages - trigger normally
+                      ob_start();
+                      $innerHolon->trigger($parsed);
+                      $innerHolon->trigger((object)[]);
+                      $broadcastOutput(ob_get_clean());
+
+                      if ($innerHolon->isFinal()) {
+                          $this->set('inner_complete', true);
+                          return;
+                      }
+                      continue;
+                  }
+
+                  // Check if it's a JSON string that looks like an interaction response
+                  if (is_string($parsed)) {
+                      $jsonData = json_decode($parsed, true);
+                      if (is_array($jsonData) && $isInteractionResponse($jsonData)) {
+                          try {
+                              $response = Message::fromJson($jsonData);
+                              if ($response instanceof InteractionResponse) {
+                                  // Notify inner holon's notification chain directly
+                                  // Call twice: first to count, second to execute (generators are single-use)
+                                  $listeners = $innerHolon->notificationChain->call(new Notify($innerHolon, $response));
+                                  foreach ($listeners as $listener) {
+                                      $listener($response, $innerHolon);
+                                  }
+
+                                  // Trigger inner holon multiple times to process the response through async
+                                  ob_start();
+                                  for ($i = 0; $i < 5; $i++) {
+                                      $innerHolon->trigger((object)[]);
+                                  }
+                                  $broadcastOutput(ob_get_clean());
+
+                                  $this->log('debug', 'Injected interaction response from JSON', [
+                                      'type' => $jsonData['type'],
+                                      'correlationId' => $response->correlationId(),
+                                  ]);
+                                  continue;
+                              }
+                          } catch (\Throwable $e) {
+                              $this->log('warning', 'Failed to parse interaction response', [
+                                  'error' => $e->getMessage(),
+                              ]);
+                          }
+                      }
+                  }
+
+                  // Regular input - dispatch to inner holon
+                  ob_start();
+                  $innerHolon->trigger((object)['raw_input' => $parsed]);
+                  $innerHolon->trigger((object)[]);
+                  $broadcastOutput(ob_get_clean());
+
+                  // Check for completion
+                  if ($innerHolon->isFinal()) {
+                      $this->set('inner_complete', true);
+                      return;
+                  }
+              }
+          };
+
+    transitions:
+      # LIFO order: fallback first (checked last), specific second (checked first)
+      - target: running
+
+      - target: shutdown
+        # language=injectablephp
+        guard: !php |
+          return fn(object $t): bool =>
+              $this->get('inner_complete', false) === true
+              || $this->get('stdin_eof', false) === true;
+
+  # ============================================================
+  # PHASE 6: Error Handling
+  # ============================================================
+  - name: error
+    action:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): void {
+              $error = $this->get('load_error', 'Unknown error');
+              $channels = $this->get('channels');
+
+              // Broadcast to stderr socket
+              if (isset($channels['stderr'])) {
+                  $errorJson = json_encode([
+                      'type' => 'error',
+                      'message' => $error,
+                      'timestamp' => time(),
+                  ]) . "\n";
+                  $channels['stderr']->broadcast($errorJson);
+              }
+
+              // Also write to real stderr
+              fwrite(STDERR, "Error: {$error}\n");
+          };
+
+    transitions:
+      - target: shutdown
+
+  # ============================================================
+  # PHASE 7: Shutdown
+  # ============================================================
+  - name: shutdown
+    action:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): void {
+              $this->log('info', 'Process wrapper shutting down');
+
+              // Flush parser
+              $parser = $this->get('parser');
+              if ($parser !== null) {
+                  foreach ($parser->flush() as $remaining) {
+                      // Discard remaining data
+                  }
+              }
+
+              // Close broadcast channels
+              $channels = $this->get('channels');
+              if ($channels !== null) {
+                  foreach ($channels as $channel) {
+                      $channel->close();
+                  }
+              }
+
+              // Close control channel
+              $controlChannel = $this->get('control_channel');
+              if ($controlChannel !== null) {
+                  $controlChannel->close();
+              }
+
+              // Cleanup runtime directory
+              $runtimeDir = $this->get('runtime_dir');
+              if ($runtimeDir !== null) {
+                  $runtimeDir->cleanup();
+              }
+          };
+
+    transitions:
+      - target: done
+
+  # ============================================================
+  # PHASE 8: Final
+  # ============================================================
+  - name: done
+    final: true
+
+initial: detecting_mode

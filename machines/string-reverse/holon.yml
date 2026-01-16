@@ -1,0 +1,43 @@
+# String Reverse - Minimal test holon
+#
+# Reverses any input string. Exits on "exit".
+# Used to test the process wrapper.
+
+machine:
+  features:
+    - class: Noem\State\Feature\ExtendedState\ExtendedState
+    - class: Noem\State\Feature\Transitions\TransitionsFeature
+
+states:
+  - name: running
+    action:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): void {
+              $input = $t->raw_input ?? null;
+
+              if ($input === null) {
+                  return;
+              }
+
+              $trimmed = trim($input);
+
+              if ($trimmed === 'exit') {
+                  echo "Goodbye!\n";
+                  return;
+              }
+
+              $reversed = strrev($trimmed);
+              echo $reversed . "\n";
+          };
+
+    transitions:
+      - target: done
+        # language=injectablephp
+        guard: !php |
+          return fn(object $t): bool => trim($t->raw_input ?? '') === 'exit';
+
+  - name: done
+    final: true
+
+initial: running

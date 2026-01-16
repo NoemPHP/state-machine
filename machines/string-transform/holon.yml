@@ -1,0 +1,119 @@
+# String Transform - Interactive test holon
+#
+# Uses InteractionFeature to ask whether to reverse or uppercase a string.
+# Emits SelectRequest via $this->interact() pattern.
+# Exits on "exit".
+# Used to test the process wrapper with interaction relay (future).
+
+machine:
+  features:
+    - class: Noem\State\Feature\ExtendedState\ExtendedState
+    - class: Noem\State\Feature\Transitions\TransitionsFeature
+    - class: Noem\State\Feature\Async\AsyncFeature
+    - class: Noem\State\Feature\Message\MessageFeature
+    - class: Noem\State\Feature\Interaction\InteractionFeature
+
+states:
+  - name: waiting_for_input
+    action:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): void {
+              $input = $t->raw_input ?? null;
+
+              if ($input === null) {
+                  return;
+              }
+
+              $trimmed = trim($input);
+
+              if ($trimmed === '') {
+                  return;
+              }
+
+              if ($trimmed === 'exit') {
+                  $this->set('should_exit', true);
+                  return;
+              }
+
+              // Store input for processing
+              $this->set('pending_input', $trimmed);
+          };
+
+    transitions:
+      - target: done
+        # language=injectablephp
+        guard: !php |
+          return fn(object $t): bool => $this->get('should_exit', false) === true;
+
+      - target: asking_transform_type
+        # language=injectablephp
+        guard: !php |
+          return fn(object $t): bool => $this->get('pending_input') !== null;
+
+  - name: asking_transform_type
+    action:
+      # language=injectablephp
+      - run: !php |
+          use Noem\State\Feature\Interaction\SelectRequest;
+          use Noem\State\Feature\Interaction\SelectOption;
+
+          return function(object $t): \Generator {
+              $input = $this->get('pending_input');
+
+              // Emit interaction request
+              $request = new SelectRequest(
+                  question: "How would you like to transform '$input'?",
+                  options: [
+                      'reverse' => new SelectOption('Reverse', 'Reverse the string characters'),
+                      'uppercase' => new SelectOption('Uppercase', 'Convert to uppercase'),
+                      'lowercase' => new SelectOption('Lowercase', 'Convert to lowercase'),
+                  ],
+                  defaultKey: 'reverse'
+              );
+
+              try {
+                  // interact() returns the response value directly (selectedKey for SelectRequest)
+                  $selectedKey = yield from $this->interact($request);
+                  $this->set('transform_type', $selectedKey);
+              } catch (\Noem\State\Feature\Interaction\InteractionCancelledException $e) {
+                  // Cancelled - use default
+                  $this->set('transform_type', 'reverse');
+              }
+          };
+
+    transitions:
+      - target: transforming
+        # language=injectablephp
+        guard: !php |
+          return fn(object $t): bool => $this->get('transform_type') !== null;
+
+  - name: transforming
+    action:
+      # language=injectablephp
+      - run: !php |
+          return function(object $t): void {
+              $input = $this->get('pending_input');
+              $transformType = $this->get('transform_type', 'reverse');
+
+              $result = match($transformType) {
+                  'reverse' => strrev($input),
+                  'uppercase' => strtoupper($input),
+                  'lowercase' => strtolower($input),
+                  default => $input,
+              };
+
+              echo $result . "\n";
+
+              // Clear state for next input
+              $this->set('pending_input', null);
+              $this->set('transform_type', null);
+          };
+
+    transitions:
+      - target: waiting_for_input
+
+  - name: done
+    final: true
+
+initial: waiting_for_input
